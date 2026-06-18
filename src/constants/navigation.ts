@@ -3,6 +3,7 @@ import {
   CalendarDays,
   FileArchive,
   FileText,
+  Palette,
   HelpCircle,
   LayoutDashboard,
   LogOut,
@@ -54,6 +55,11 @@ export const secondaryNavigation = [
     label: "Configurações",
     href: "/configuracoes",
     icon: Settings,
+  },
+  {
+    label: "Design System",
+    href: "/design-system",
+    icon: Palette,
   },
   {
     label: "Ajuda",

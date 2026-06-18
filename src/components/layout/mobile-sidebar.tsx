@@ -20,7 +20,7 @@ export function MobileSidebar({ open, onClose }: MobileSidebarProps) {
       <div
         onClick={onClose}
         className={cn(
-          "absolute inset-0 bg-slate-950/45 transition-opacity",
+          "absolute inset-0 bg-slate-950/55 transition-opacity",
           open ? "opacity-100" : "opacity-0"
         )}
       />
@@ -35,7 +35,7 @@ export function MobileSidebar({ open, onClose }: MobileSidebarProps) {
           <button
             type="button"
             onClick={onClose}
-            className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-white transition hover:bg-white/20"
+            className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-xl bg-white text-[#3956a6] shadow-sm transition hover:bg-[#eef2ff]"
             aria-label="Fechar menu"
           >
             <X size={20} />

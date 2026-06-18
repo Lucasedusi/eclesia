@@ -33,7 +33,7 @@ export function AppShell({ children, title, subtitle }: AppShellProps) {
   }
 
   return (
-    <div className="min-h-screen bg-[#F4F6FA]">
+    <div className="min-h-screen bg-[var(--background)]">
       <div className="fixed inset-y-0 left-0 z-40 hidden lg:block">
         <AppSidebar
           collapsed={sidebarCollapsed}

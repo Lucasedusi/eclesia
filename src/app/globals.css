@@ -6,10 +6,21 @@
   --primary-dark: #2f478b;
   --primary-light: #eef2ff;
 
+  /* Azul escuro institucional */
+  --dark-blue: #0a0f4d;
+
   /* Base visual */
   --background: #f6f7f9;
   --foreground: #1f2937;
   --card: #ffffff;
+  --white: #ffffff;
+
+  /* Escala neutra */
+  --g2: #cfcec9;
+  --g3: #e7e5df;
+  --g6: #6b7280;
+  --g9: #1f2937;
+
   --muted: #6b7280;
   --muted-light: #9ca3af;
 
@@ -22,20 +33,19 @@
   --success-light: #ecfdf3;
   --warning: #f59e0b;
   --warning-light: #fffbeb;
-  --danger: #dc2626;
-  --danger-light: #fef2f2;
+  --danger: rgb(255, 114, 109);
+  --danger-dark: rgb(235, 85, 80);
+  --danger-light: #fff1f0;
   --info: #2563eb;
   --info-light: #eff6ff;
 
   /* Radius */
-  --radius-sm: 10px;
-  --radius-md: 14px;
-  --radius-lg: 18px;
-  --radius-xl: 24px;
+  --radius-control: 10px;
+  --radius-card: 14px;
 
-  /* Sombras */
-  --shadow-soft: 0 10px 30px rgba(31, 41, 55, 0.06);
-  --shadow-card: 0 8px 22px rgba(31, 41, 55, 0.05);
+  /* Sombras minimalistas */
+  --shadow-soft: 0 10px 28px rgba(15, 23, 42, 0.05);
+  --shadow-card: 0 8px 24px rgba(15, 23, 42, 0.04);
 }
 
 * {
@@ -97,105 +107,119 @@ a {
   background: transparent;
 }
 
-/* Utilitários visuais da aplicação */
+/* Utilitários visuais */
 .app-card {
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius-xl);
+  border: none;
+  border-radius: var(--radius-card);
   background: var(--card);
   box-shadow: var(--shadow-card);
 }
 
-.app-card-bordered {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
+.app-card-soft {
+  border: none;
+  border-radius: var(--radius-card);
   background: var(--card);
+  box-shadow: var(--shadow-soft);
+}
+
+.app-card-header {
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
+  background: var(--dark-blue);
+  color: #ffffff;
 }
 
 .app-input {
-  height: 48px;
   width: 100%;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: #ffffff;
-  padding: 0 14px;
-  color: var(--foreground);
+  padding: 13px 56px;
+  border: 1.5px solid var(--g2);
+  border-radius: var(--radius-control);
+  font-size: 14px;
+  font-family: "Manrope", sans-serif;
+  font-weight: 500;
+  color: var(--g9);
+  background: var(--white);
   outline: none;
   transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease,
-    background 0.2s ease;
+    border-color 0.15s,
+    box-shadow 0.15s;
 }
 
 .app-input::placeholder {
-  color: #a3a3a3;
+  color: #9ca3af;
 }
 
 .app-input:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 4px rgba(57, 86, 166, 0.12);
+  box-shadow: 0 0 0 4px rgba(57, 86, 166, 0.1);
 }
 
 .app-textarea {
-  min-height: 120px;
   width: 100%;
+  min-height: 120px;
   resize: vertical;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: #ffffff;
-  padding: 12px 14px;
-  color: var(--foreground);
+  padding: 13px 16px;
+  border: 1.5px solid var(--g2);
+  border-radius: var(--radius-control);
+  font-size: 14px;
+  font-family: "Manrope", sans-serif;
+  font-weight: 500;
+  color: var(--g9);
+  background: var(--white);
   outline: none;
   transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease,
-    background 0.2s ease;
+    border-color 0.15s,
+    box-shadow 0.15s;
 }
 
 .app-textarea::placeholder {
-  color: #a3a3a3;
+  color: #40c50f;
 }
 
 .app-textarea:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 4px rgba(57, 86, 166, 0.12);
+  box-shadow: 0 0 0 4px rgba(57, 86, 166, 0.1);
 }
 
 .app-label {
   display: block;
   margin-bottom: 8px;
-  color: #333333;
-  font-size: 0.875rem;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 600;
+  color: #3a3a39;
+  letter-spacing: -0.005em;
 }
 
 .app-helper {
   margin-top: 6px;
   color: var(--muted);
-  font-size: 0.78rem;
-  line-height: 1.4;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.45;
 }
 
 .app-button-primary {
   display: inline-flex;
-  min-height: 46px;
+  min-height: 48px;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  border-radius: var(--radius-md);
+  border: none;
+  border-radius: var(--radius-control);
   background: var(--primary);
-  padding: 0 18px;
+  padding: 12px 16px;
   color: #ffffff;
-  font-size: 0.9rem;
-  font-weight: 800;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
   transition:
-    transform 0.2s ease,
-    background 0.2s ease,
-    box-shadow 0.2s ease;
+    background 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
 }
 
 .app-button-primary:hover {
   background: var(--primary-dark);
-  box-shadow: 0 10px 22px rgba(57, 86, 166, 0.22);
+  box-shadow: 0 8px 18px rgba(57, 86, 166, 0.18);
 }
 
 .app-button-primary:active {
@@ -204,21 +228,22 @@ a {
 
 .app-button-secondary {
   display: inline-flex;
-  min-height: 46px;
+  min-height: 48px;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
+  border: 1.5px solid var(--g2);
+  border-radius: var(--radius-control);
   background: #ffffff;
-  padding: 0 18px;
+  padding: 0 16px;
   color: var(--foreground);
-  font-size: 0.9rem;
-  font-weight: 800;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
   transition:
-    background 0.2s ease,
-    border-color 0.2s ease,
-    color 0.2s ease;
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
 }
 
 .app-button-secondary:hover {
@@ -229,13 +254,13 @@ a {
 
 .app-badge {
   display: inline-flex;
-  min-height: 28px;
+  min-height: 26px;
   align-items: center;
   justify-content: center;
-  border-radius: 999px;
-  padding: 0 12px;
-  font-size: 0.75rem;
-  font-weight: 800;
+  border-radius: var(--radius-control);
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .app-badge-primary {
@@ -250,14 +275,25 @@ a {
 
 .app-page-title {
   color: #111827;
-  font-size: 1.5rem;
-  font-weight: 800;
+  font-size: 18px;
+  font-weight: 700;
   letter-spacing: -0.02em;
 }
 
 .app-page-subtitle {
   margin-top: 4px;
   color: var(--muted);
-  font-size: 0.92rem;
+  font-size: 14px;
+  font-weight: 500;
   line-height: 1.5;
+}
+
+/* Scroll invisível */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
