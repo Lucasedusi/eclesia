@@ -29,9 +29,9 @@ export function Textarea({
       <textarea
         id={id}
         className={cn(
-          "min-h-[120px] w-full resize-y rounded-[6px] border border-transparent bg-[#f6f7f9] px-3 py-[17px] font-['Manrope'] !text-[14px] !font-semibold !text-[#090f4d] outline-none transition",
+          "min-h-[120px] w-full resize-y rounded-[6px] border border-gray-100 bg-[#f6f7f9] px-3 py-[17px] font-['Manrope'] !text-[13px] !font-semibold !text-[#090f4d] outline-none transition",
           "placeholder:text-slate-400",
-          "focus:border-[#3956a6]/25 focus:bg-white focus:ring-4 focus:ring-[#3956a6]/[0.08]",
+          "focus:border-[#3956a6]/25 focus:bg-white focus:ring-3 focus:ring-[#3956a6]/[0.08]",
           error &&
             "border-[#F76464] bg-white focus:border-[#F76464] focus:ring-[#F76464]/10",
           className,

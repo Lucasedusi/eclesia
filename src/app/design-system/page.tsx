@@ -87,7 +87,7 @@ export default function DesignSystemPage() {
                 id="nome"
                 label="Nome completo"
                 placeholder="Ex: João da Silva"
-                helperText="Informe o nome completo conforme documento."
+                /*helperText="Informe o nome completo conforme documento."*/
               />
 
               <Input

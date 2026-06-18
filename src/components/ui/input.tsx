@@ -20,7 +20,7 @@ export function Input({
       {label && (
         <label
           htmlFor={id}
-          className="mb-2 block text-[13px] font-semibold tracking-[-0.005em] text-[#3A3A39]"
+          className="mb-2 block text-[12px] font-semibold tracking-[-0.005em] text-[#3A3A39]"
         >
           {label}
         </label>
@@ -29,9 +29,9 @@ export function Input({
       <input
         id={id}
         className={cn(
-          "w-full rounded-[6px] border border-transparent bg-[#f6f7f9] px-3 py-[17px] !text-[14px] !font-semibold !text-[#090f4d] outline-none transition",
+          "w-full rounded-[6px] border border-gray-100 bg-[#f6f7f9] px-3 py-[13px] !text-[13px] !font-semibold !text-[#090f4d] outline-none transition",
           "placeholder:text-slate-300",
-          "focus:border-[#3956a6]/25 focus:bg-white focus:ring-4 focus:ring-[#3956a6]/[0.08]",
+          "focus:border-[#3956a6]/25 focus:bg-white focus:ring-3 focus:ring-[#3956a6]/[0.08]",
           error &&
             "border-[#F76464] bg-white focus:border-[#F76464] focus:ring-[#F76464]/10",
           className,
