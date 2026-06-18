@@ -2,7 +2,8 @@ import {
   CalendarDays,
   FileArchive,
   Plus,
-  Save,
+  X,
+  UserRoundPlus,
   Users,
   Wallet,
 } from "lucide-react";
@@ -118,11 +119,14 @@ export default function DesignSystemPage() {
             </div>
 
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
-              <Button variant="secondary">Cancelar</Button>
-
               <Button>
-                <Save size={18} />
+                <UserRoundPlus size={18} />
                 Salvar cadastro
+              </Button>
+
+              <Button variant="secondary">
+                <X />
+                Cancelar
               </Button>
             </div>
           </FormSection>

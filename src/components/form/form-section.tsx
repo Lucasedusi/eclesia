@@ -31,7 +31,7 @@ export function FormSection({
       >
         <h2
           className={cn(
-            "text-[18px] font-bold tracking-tight",
+            "text-[16px] font-bold tracking-tight",
             darkHeader ? "text-white" : "text-[rgb(27,27,27)]",
           )}
         >
@@ -41,7 +41,7 @@ export function FormSection({
         {description && (
           <p
             className={cn(
-              "mt-1 text-[14px] font-medium leading-6",
+              "mt-1 text-[12px] font-medium leading-[13px]",
               darkHeader ? "text-white/70" : "text-slate-500",
             )}
           >

@@ -29,19 +29,18 @@ export function Input({
       <input
         id={id}
         className={cn(
-          "w-full rounded-[10px] border-[1.5px] bg-white px-4 py-[13px] font-['Manrope'] text-[14px] font-medium text-slate-800 outline-none transition",
-          "placeholder:text-slate-400",
-          "focus:border-[#3956a6] focus:ring-4 focus:ring-[#3956a6]/10",
-          error ? "border-[rgb(255,114,109)]" : "border-[#cfcec9]",
+          "w-full rounded-[6px] border border-transparent bg-[#f6f7f9] px-3 py-[17px] !text-[14px] !font-semibold !text-[#090f4d] outline-none transition",
+          "placeholder:text-slate-300",
+          "focus:border-[#3956a6]/25 focus:bg-white focus:ring-4 focus:ring-[#3956a6]/[0.08]",
+          error &&
+            "border-[#F76464] bg-white focus:border-[#F76464] focus:ring-[#F76464]/10",
           className,
         )}
         {...props}
       />
 
       {error ? (
-        <p className="mt-1.5 text-xs font-semibold text-[rgb(255,114,109)]">
-          {error}
-        </p>
+        <p className="mt-1.5 text-xs font-semibold text-[#F76464]">{error}</p>
       ) : helperText ? (
         <p className="mt-1.5 text-xs font-medium leading-5 text-slate-500">
           {helperText}
