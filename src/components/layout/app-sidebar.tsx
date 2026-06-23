@@ -1,20 +1,19 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronLeft, ChevronRight, Church } from "lucide-react";
-import {
-  footerNavigation,
-  mainNavigation,
-  secondaryNavigation,
-} from "@/constants/navigation";
+import type { LucideIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { mainNavigation, secondaryNavigation } from "@/constants/navigation";
 import { APP_CONFIG } from "@/constants/app";
-import { cn } from "@/utils/cn";
+import * as S from "./app-sidebar.styles";
 
-type NavigationItem =
-  | (typeof mainNavigation)[number]
-  | (typeof secondaryNavigation)[number]
-  | (typeof footerNavigation)[number];
+type NavigationItem = {
+  label: string;
+  href: string;
+  icon: LucideIcon;
+  indicator?: boolean;
+  notification?: boolean;
+};
 
 type AppSidebarProps = {
   collapsed?: boolean;
@@ -22,6 +21,43 @@ type AppSidebarProps = {
   onNavigate?: () => void;
   mobile?: boolean;
 };
+
+function EclesiaLogo({ collapsed = false }: { collapsed?: boolean }) {
+  return (
+    <S.LogoWrapper $collapsed={collapsed} aria-hidden="true">
+      <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path
+          d="M24 44C35.0457 44 44 35.0457 44 24C44 12.9543 35.0457 4 24 4C12.9543 4 4 12.9543 4 24C4 35.0457 12.9543 44 24 44Z"
+          fill="#415BA5"
+        />
+        <path
+          d="M24 4C24 15.0457 15.0457 24 4 24C4 12.9543 12.9543 4 24 4Z"
+          fill="#6C82DA"
+        />
+        <path
+          d="M24 4C35.0457 4 44 12.9543 44 24C32.9543 24 24 15.0457 24 4Z"
+          fill="#243B87"
+        />
+        <path
+          d="M24 36C30.6274 36 36 30.6274 36 24C36 17.3726 30.6274 12 24 12C17.3726 12 12 17.3726 12 24C12 30.6274 17.3726 36 24 36Z"
+          fill="#071426"
+        />
+        <path
+          d="M24 12C24 18.6274 18.6274 24 12 24C12 17.3726 17.3726 12 24 12Z"
+          fill="#8EA0F2"
+        />
+      </svg>
+    </S.LogoWrapper>
+  );
+}
+
+function SidebarAvatar() {
+  return (
+    <S.Avatar aria-hidden="true">
+      <span>LE</span>
+    </S.Avatar>
+  );
+}
 
 export function AppSidebar({
   collapsed = false,
@@ -43,126 +79,82 @@ export function AppSidebar({
   function renderNavItem(item: NavigationItem) {
     const Icon = item.icon;
     const active = isActive(item.href);
+    const hasIndicator = item.indicator ?? item.notification;
 
     return (
-      <Link
+      <S.NavItem
         key={item.href}
         href={item.href}
         onClick={onNavigate}
         title={isCollapsed ? item.label : undefined}
-        className={cn(
-          "group relative flex items-center gap-3 rounded-[14px] px-3 py-3 text-sm font-bold transition-all",
-          isCollapsed && "justify-center px-0",
-          active
-            ? "bg-[#3956a6] text-white shadow-sm"
-            : "text-white/72 hover:bg-white/10 hover:text-white",
-        )}
+        $active={active}
+        $collapsed={isCollapsed}
       >
-        <Icon
-          size={20}
-          className={cn(
-            "shrink-0 transition",
-            active ? "text-white" : "text-white/65 group-hover:text-white",
-          )}
-        />
+        <S.IconSlot>
+          <Icon size={20} strokeWidth={1.55} />
+          {hasIndicator && <S.Indicator />}
+        </S.IconSlot>
 
-        {!isCollapsed && <span className="truncate">{item.label}</span>}
-
-        {isCollapsed && (
-          <span className="pointer-events-none absolute left-[4.6rem] z-50 whitespace-nowrap rounded-xl bg-slate-950 px-3 py-2 text-xs font-bold text-white opacity-0 shadow-lg transition group-hover:opacity-100">
-            {item.label}
-          </span>
-        )}
-      </Link>
+        {!isCollapsed && <S.NavLabel>{item.label}</S.NavLabel>}
+        {isCollapsed && <S.Tooltip>{item.label}</S.Tooltip>}
+      </S.NavItem>
     );
   }
 
   return (
-    <aside
-      className={cn(
-        "flex h-full flex-col overflow-hidden border-r border-white/10 bg-[#071426] text-white transition-all duration-300",
-        isCollapsed ? "w-[88px]" : "w-72",
-      )}
-    >
-      <div
-        className={cn(
-          "relative flex h-24 items-center gap-3 border-b border-white/10 px-5",
-          isCollapsed && "justify-center px-4",
-        )}
-      >
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[16px] bg-[#3956a6] text-white shadow-sm">
-          <Church size={24} />
-        </div>
+    <S.SidebarRoot $collapsed={isCollapsed}>
+      <S.SidebarHeader $collapsed={isCollapsed}>
+        <S.Brand>
+          <EclesiaLogo collapsed={isCollapsed} />
 
-        {!isCollapsed && (
-          <div className="min-w-0">
-            <h1 className="truncate text-xl font-extrabold leading-none tracking-tight text-white">
-              {APP_CONFIG.name}
-            </h1>
-            <p className="mt-1 truncate text-xs font-bold text-white/50">
-              Gestão da Igreja
-            </p>
-          </div>
-        )}
+          {!isCollapsed && <S.BrandName>{APP_CONFIG.name}</S.BrandName>}
+        </S.Brand>
 
         {!mobile && onToggleCollapse && (
-          <button
+          <S.CollapseButton
             type="button"
             onClick={onToggleCollapse}
-            className="absolute -right-4 top-8 flex h-8 w-8 items-center justify-center rounded-full border border-[#cfcec9] bg-white text-[#3956a6] shadow-sm transition hover:bg-[#eef2ff]"
             aria-label={isCollapsed ? "Expandir sidebar" : "Recolher sidebar"}
           >
             {isCollapsed ? (
-              <ChevronRight size={18} />
+              <ChevronRight size={20} strokeWidth={2} />
             ) : (
-              <ChevronLeft size={18} />
+              <ChevronLeft size={18} strokeWidth={2} />
             )}
-          </button>
+          </S.CollapseButton>
         )}
-      </div>
+      </S.SidebarHeader>
 
-      <div className="no-scrollbar flex-1 overflow-y-auto overflow-x-hidden px-4 py-5">
-        <div className="mb-6">
-          {!isCollapsed && (
-            <p className="mb-3 px-3 text-[11px] font-extrabold uppercase tracking-[0.18em] text-white/35">
-              Principal
-            </p>
-          )}
+      <S.SidebarScrollArea>
+        <S.NavList $collapsed={isCollapsed} aria-label="Menu principal">
+          {mainNavigation.map((item) => renderNavItem(item))}
+        </S.NavList>
 
-          <nav className="space-y-1.5">
-            {mainNavigation.map((item) => renderNavItem(item))}
-          </nav>
-        </div>
+        <S.NavDivider />
 
-        <div className="mt-7">
-          {!isCollapsed && (
-            <p className="mb-3 px-3 text-[11px] font-extrabold uppercase tracking-[0.18em] text-white/35">
-              Sistema
-            </p>
-          )}
+        <S.NavList $collapsed={isCollapsed} $secondary aria-label="Menu do sistema">
+          {secondaryNavigation.map((item) => renderNavItem(item))}
+        </S.NavList>
+      </S.SidebarScrollArea>
 
-          <nav className="space-y-1.5">
-            {secondaryNavigation.map((item) => renderNavItem(item))}
-          </nav>
-        </div>
-      </div>
+      <S.SidebarFooter>
+        {isCollapsed ? (
+          <S.FooterCollapsed>
+            <SidebarAvatar />
+          </S.FooterCollapsed>
+        ) : (
+          <S.FooterContent>
+            <SidebarAvatar />
 
-      <div className="border-t border-white/10 p-4">
-        {!isCollapsed && (
-          <div className="mb-3 rounded-[18px] border border-white/10 bg-white/5 p-4">
-            <p className="text-sm font-extrabold text-white">
-              Ambiente inicial
-            </p>
-            <p className="mt-1 text-xs leading-5 text-white/50">
-              Base preparada para modelagem dos módulos.
-            </p>
-          </div>
+            <S.FooterText>
+              <S.FooterEyebrow>Bem-vindo 👋</S.FooterEyebrow>
+              <S.FooterName>Lucas Eduardo</S.FooterName>
+            </S.FooterText>
+
+            <ChevronRight size={19} strokeWidth={1.9} />
+          </S.FooterContent>
         )}
-
-        <nav className="space-y-1.5">
-          {footerNavigation.map((item) => renderNavItem(item))}
-        </nav>
-      </div>
-    </aside>
+      </S.SidebarFooter>
+    </S.SidebarRoot>
   );
 }

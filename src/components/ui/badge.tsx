@@ -1,36 +1,25 @@
-import { HTMLAttributes } from "react";
-import { cn } from "@/utils/cn";
+"use client";
 
-type BadgeVariant = "primary" | "success" | "warning" | "danger" | "neutral";
+import { HTMLAttributes } from "react";
+import * as S from "./badge.styles";
+
+type BadgeVariant = S.StyledBadgeVariant;
 
 type BadgeProps = HTMLAttributes<HTMLSpanElement> & {
   variant?: BadgeVariant;
-};
-
-const variants: Record<BadgeVariant, string> = {
-  primary: "bg-[#eef2ff] text-[#3956a6]",
-  success: "bg-emerald-50 text-emerald-700",
-  warning: "bg-amber-50 text-amber-700",
-  danger: "bg-[rgb(255,114,109)]/10 text-[rgb(235,85,80)]",
-  neutral: "bg-slate-100 text-slate-600",
+  dot?: boolean;
 };
 
 export function Badge({
-  className,
   variant = "primary",
+  dot = false,
   children,
   ...props
 }: BadgeProps) {
   return (
-    <span
-      className={cn(
-        "inline-flex min-h-[26px] items-center justify-center rounded-[10px] px-3 text-xs font-semibold",
-        variants[variant],
-        className,
-      )}
-      {...props}
-    >
+    <S.BadgeRoot $variant={variant} {...props}>
+      {dot && <S.BadgeDot $variant={variant} />}
       {children}
-    </span>
+    </S.BadgeRoot>
   );
 }

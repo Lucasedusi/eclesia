@@ -1,5 +1,7 @@
+"use client";
+
 import { ReactNode } from "react";
-import { cn } from "@/utils/cn";
+import * as S from "./form-section.styles";
 
 type FormSectionProps = {
   title: string;
@@ -17,40 +19,70 @@ export function FormSection({
   darkHeader = false,
 }: FormSectionProps) {
   return (
-    <section
-      className={cn(
-        "overflow-hidden rounded-[14px] bg-white shadow-[0_8px_24px_rgba(15,23,42,0.04)]",
-        className,
-      )}
-    >
-      <div
-        className={cn(
-          "px-6 py-5",
-          darkHeader ? "bg-[#0A0F4D] text-white" : "bg-white",
-        )}
-      >
-        <h2
-          className={cn(
-            "text-[16px] font-bold tracking-tight",
-            darkHeader ? "text-white" : "text-[rgb(27,27,27)]",
-          )}
-        >
-          {title}
-        </h2>
+    <S.FormSectionRoot className={className}>
+      <S.FormSectionHeader $dark={darkHeader}>
+        <S.FormSectionTitle $dark={darkHeader}>{title}</S.FormSectionTitle>
 
         {description && (
-          <p
-            className={cn(
-              "mt-1 text-[12px] font-medium leading-[13px]",
-              darkHeader ? "text-white/70" : "text-slate-500",
-            )}
-          >
+          <S.FormSectionDescription $dark={darkHeader}>
             {description}
-          </p>
+          </S.FormSectionDescription>
         )}
-      </div>
+      </S.FormSectionHeader>
 
-      <div className="p-6">{children}</div>
-    </section>
+      <S.FormSectionBody>{children}</S.FormSectionBody>
+    </S.FormSectionRoot>
+  );
+}
+
+type FormContainerProps = {
+  title: string;
+  description?: string;
+  step?: number;
+  totalSteps?: number;
+  children: ReactNode;
+  footer?: ReactNode;
+  className?: string;
+};
+
+export function FormContainer({
+  title,
+  description,
+  step,
+  totalSteps,
+  children,
+  footer,
+  className,
+}: FormContainerProps) {
+  const progress = step && totalSteps ? Math.min((step / totalSteps) * 100, 100) : 0;
+  const hasProgress = Boolean(step && totalSteps);
+
+  return (
+    <S.FormContainerRoot className={className}>
+      <S.FormContainerHeader>
+        <div>
+          <S.FormContainerTitle>{title}</S.FormContainerTitle>
+          {description && (
+            <S.FormContainerDescription>{description}</S.FormContainerDescription>
+          )}
+        </div>
+
+        {hasProgress && (
+          <S.StepText>
+            <span>Step {step}</span> of {totalSteps}
+          </S.StepText>
+        )}
+      </S.FormContainerHeader>
+
+      {hasProgress && (
+        <S.ProgressTrack>
+          <S.ProgressBar $progress={progress} />
+        </S.ProgressTrack>
+      )}
+
+      <S.FormContainerBody>{children}</S.FormContainerBody>
+
+      {footer && <S.FormContainerFooter>{footer}</S.FormContainerFooter>}
+    </S.FormContainerRoot>
   );
 }

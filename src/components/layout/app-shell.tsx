@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { AppHeader } from "./app-header";
 import { AppSidebar } from "./app-sidebar";
 import { MobileSidebar } from "./mobile-sidebar";
-import { cn } from "@/utils/cn";
+import * as S from "./app-shell.styles";
 
 type AppShellProps = {
   children: React.ReactNode;
@@ -12,56 +12,47 @@ type AppShellProps = {
   subtitle?: string;
 };
 
+const SIDEBAR_STORAGE_KEY = "eclesias-sidebar-collapsed";
+
 export function AppShell({ children, title, subtitle }: AppShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
-    const savedValue = localStorage.getItem("eclesias-sidebar-collapsed");
-
-    if (savedValue) {
-      setSidebarCollapsed(savedValue === "true");
-    }
+    const storedValue = localStorage.getItem(SIDEBAR_STORAGE_KEY);
+    setSidebarCollapsed(storedValue === "true");
   }, []);
 
   function handleToggleSidebar() {
     setSidebarCollapsed((current) => {
       const nextValue = !current;
-      localStorage.setItem("eclesias-sidebar-collapsed", String(nextValue));
+      localStorage.setItem(SIDEBAR_STORAGE_KEY, String(nextValue));
       return nextValue;
     });
   }
 
   return (
-    <div className="min-h-screen bg-[var(--background)]">
-      <div className="fixed inset-y-0 left-0 z-40 hidden lg:block">
+    <S.ShellRoot>
+      <S.DesktopSidebarSlot>
         <AppSidebar
           collapsed={sidebarCollapsed}
           onToggleCollapse={handleToggleSidebar}
         />
-      </div>
+      </S.DesktopSidebarSlot>
 
-      <MobileSidebar
-        open={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-      />
+      <MobileSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      <div
-        className={cn(
-          "transition-all duration-300",
-          sidebarCollapsed ? "lg:pl-[88px]" : "lg:pl-72"
-        )}
-      >
+      <S.Content $collapsed={sidebarCollapsed}>
         <AppHeader
           title={title}
           subtitle={subtitle}
           onOpenSidebar={() => setSidebarOpen(true)}
         />
 
-        <main className="px-4 py-6 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-7xl">{children}</div>
-        </main>
-      </div>
-    </div>
+        <S.Main>
+          <S.MainInner>{children}</S.MainInner>
+        </S.Main>
+      </S.Content>
+    </S.ShellRoot>
   );
 }

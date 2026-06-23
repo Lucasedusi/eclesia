@@ -1,12 +1,11 @@
 import {
-  BarChart3,
+  Bell,
   CalendarDays,
+  CircleHelp,
   FileArchive,
   FileText,
-  Palette,
-  HelpCircle,
   LayoutDashboard,
-  LogOut,
+  Palette,
   Settings,
   Users,
   Wallet,
@@ -27,6 +26,7 @@ export const mainNavigation = [
     label: "Eventos",
     href: "/eventos",
     icon: CalendarDays,
+    notification: true,
   },
   {
     label: "Financeiro",
@@ -43,14 +43,15 @@ export const mainNavigation = [
     href: "/relatorios",
     icon: FileText,
   },
-  {
-    label: "Indicadores",
-    href: "/indicadores",
-    icon: BarChart3,
-  },
 ];
 
 export const secondaryNavigation = [
+  {
+    label: "Notificações",
+    href: "/notificacoes",
+    icon: Bell,
+    notification: true,
+  },
   {
     label: "Configurações",
     href: "/configuracoes",
@@ -62,16 +63,10 @@ export const secondaryNavigation = [
     icon: Palette,
   },
   {
-    label: "Ajuda",
-    href: "/ajuda",
-    icon: HelpCircle,
+    label: "Suporte",
+    href: "/suporte",
+    icon: CircleHelp,
   },
 ];
 
-export const footerNavigation = [
-  {
-    label: "Sair",
-    href: "/sair",
-    icon: LogOut,
-  },
-];
+export const footerNavigation = [] as const;
