@@ -1,12 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 
-export async function getAppName() {
+export async function getAppName(): Promise<string | null> {
   const supabase = await createClient();
 
   const { data, error } = await supabase
     .from("app_settings")
-    .select("value")
-    .eq("key", "app_name")
+    .select("app_name")
+    .limit(1)
     .maybeSingle();
 
   if (error) {
@@ -14,5 +14,5 @@ export async function getAppName() {
     return null;
   }
 
-  return data?.value ?? null;
+  return data?.app_name ?? null;
 }

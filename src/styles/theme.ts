@@ -20,7 +20,7 @@ export const theme = {
       inverse: "#FFFFFF",
     },
     surface: {
-      background: "#F4F6F9",
+      background: "#EAEDF7",
       card: "#FFFFFF",
       soft: "#F9FAFB",
       muted: "#F2F4F7",
