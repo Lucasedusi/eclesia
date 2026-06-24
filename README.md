@@ -32,7 +32,7 @@ O projeto utiliza:
 - **Next.js**
 - **React**
 - **TypeScript**
-- **Tailwind CSS**
+- **Styled-Components**
 - **Supabase**
 - **Manrope Font**
 - **Lucide React Icons**
@@ -65,49 +65,7 @@ Supabase
 └── APIs
 ```
 
-src
-├── actions
-├── app
-│ ├── design-system
-│ ├── globals.css
-│ ├── layout.tsx
-│ └── page.tsx
-├── components
-│ ├── form
-│ │ └── form-section.tsx
-│ ├── layout
-│ │ ├── app-header.tsx
-│ │ ├── app-shell.tsx
-│ │ ├── app-sidebar.tsx
-│ │ └── mobile-sidebar.tsx
-│ └── ui
-│ ├── badge.tsx
-│ ├── button.tsx
-│ ├── card.tsx
-│ ├── input.tsx
-│ ├── page-header.tsx
-│ ├── select.tsx
-│ ├── stat-card.tsx
-│ └── textarea.tsx
-├── constants
-│ ├── app.ts
-│ └── navigation.ts
-├── hooks
-├── lib
-│ └── supabase
-│ ├── client.ts
-│ └── server.ts
-├── services
-│ └── app-settings.service.ts
-├── styles
-├── types
-│ └── common.ts
-└── utils
-└── cn.ts
-
-```
-
-----------------
+---
 
 ## Módulos Gerais
 
@@ -126,8 +84,7 @@ Status do membro;
 Histórico;
 Documentos anexos;
 Filtros e listagem;
-Edição e inativação.
-2. Congregações
+Edição e inativação. 2. Congregações
 
 Base para relacionar membros, relatórios e organização administrativa.
 
@@ -138,8 +95,7 @@ Regional;
 Endereço;
 Dirigente;
 Status;
-Observações.
-3. Eventos
+Observações. 3. Eventos
 
 Evolução da ideia inicial feita no Bubble.
 
@@ -151,8 +107,7 @@ Itens do evento;
 Pagamentos;
 Check-in;
 Relatórios;
-Status de inscrição.
-4. Financeiro
+Status de inscrição. 4. Financeiro
 
 Módulo para controle de tesouraria e movimentações.
 
@@ -165,8 +120,7 @@ Categorias;
 Transferências;
 Comprovantes;
 Relatórios;
-Dashboard financeiro.
-5. Documentos
+Dashboard financeiro. 5. Documentos
 
 Área interna para organização e arquivamento.
 
@@ -178,8 +132,7 @@ Documentos por módulo;
 Documentos por membro;
 Documentos administrativos;
 Controle de acesso;
-Histórico de uploads.
-6. Permissões
+Histórico de uploads. 6. Permissões
 
 Módulo essencial para segurança.
 
@@ -191,6 +144,7 @@ Tesouraria;
 Liderança;
 Visualizador;
 Usuário por departamento.
+
 ```
 
 ---
@@ -244,3 +198,4 @@ roles / cargos ou funções
 users / usuários do sistema
 user_profiles / perfis de acesso
 audit_logs / histórico de ações
+```
