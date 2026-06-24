@@ -72,7 +72,7 @@ export const theme = {
     focus: "0 0 0 3px rgba(65, 91, 165, 0.10)",
   },
   layout: {
-    sidebarExpanded: "280px",
+    sidebarExpanded: "310px",
     sidebarCollapsed: "96px",
     topbarHeight: "80px",
     contentMaxWidth: "1440px",
