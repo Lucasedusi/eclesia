@@ -25,7 +25,7 @@ export const FormHeader = styled.header`
   flex-direction: column;
   gap: 14px;
   border-bottom: 1px solid ${({ theme }) => theme.colors.border.soft};
-  background: #ffffff;
+  background: #fffff;
   padding: 26px;
 
   @media (min-width: 768px) {
@@ -54,7 +54,7 @@ export const HeaderBadge = styled.span`
 
 export const FormTitle = styled.h1`
   color: ${({ theme }) => theme.colors.text.title};
-  font-size: 24px;
+  font-size: 44px;
   font-weight: 700;
   letter-spacing: -0.04em;
 
@@ -162,8 +162,9 @@ export const FieldBlock = styled.div`
 `;
 
 export const FieldLabel = styled.label`
-  color: ${({ theme }) => theme.colors.text.title};
-  font-size: 12px;
+  color: #f00;
+  background: #f00;
+  font-size: 22px;
   font-weight: 500;
 `;
 
@@ -325,4 +326,19 @@ export const ReviewValue = styled.dd`
   font-weight: 600;
   line-height: 20px;
   word-break: break-word;
+`;
+
+export const ToastPosition = styled.div`
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 80;
+  width: min(380px, calc(100vw - 32px));
+
+  @media (max-width: 640px) {
+    top: 16px;
+    right: 16px;
+    left: 16px;
+    width: auto;
+  }
 `;

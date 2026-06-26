@@ -18,6 +18,7 @@ export const theme = {
       muted: "#667085",
       soft: "#98A2B3",
       inverse: "#FFFFFF",
+      label: "#667085",
     },
     surface: {
       background: "#EAEDF7",

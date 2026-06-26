@@ -47,7 +47,7 @@ export function AppHeader({ onOpenSidebar }: AppHeaderProps) {
           </S.MobileMenuButton>
 
           <S.Greeting>
-            Paz do Senhor, <strong>Secretário</strong> 👋
+            Paz do Senhor, <strong>Secretário da silva</strong> 👋
           </S.Greeting>
         </S.HeaderLeft>
 

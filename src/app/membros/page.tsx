@@ -31,7 +31,7 @@ export default function MembersPage() {
     >
       <PageHeader
         title="Membros"
-        subtitle="Comece pelo cadastro de um novo membro. A listagem e os filtros serão implementados nas próximas etapas."
+        subtitle="Comece pelo cadastro de um novo membro. O cadastro no banco já está ativo. A listagem e os filtros serão implementados nas próximas etapas."
         badge="Módulo inicial"
         action={
           <Link href="/membros/novo" className="app-button-primary">
@@ -81,8 +81,8 @@ export default function MembersPage() {
             <p className="mt-3 max-w-3xl text-sm font-medium leading-7 text-slate-600">
               A primeira entrega concentra a experiência do formulário: etapas,
               progresso, campos obrigatórios, revisão e carregamento das opções
-              auxiliares. O salvamento real no banco será feito na próxima
-              etapa.
+              auxiliares. O salvamento real no banco agora cria o membro, seus
+              vínculos iniciais e o histórico automático.
             </p>
 
             <div className="mt-6">
@@ -99,10 +99,12 @@ export default function MembersPage() {
             </p>
 
             <ul className="mt-4 space-y-3 text-sm font-medium leading-6 text-slate-600">
-              <li>• Envio do cadastro para a tabela members.</li>
-              <li>• Criação do vínculo com cargos e ministérios.</li>
-              <li>• Histórico automático do cadastro inicial.</li>
-              <li>• Listagem, filtros e edição de membros.</li>
+              <li>• Cadastro real na tabela members já implementado.</li>
+              <li>• Vínculo inicial com cargo e ministério já implementado.</li>
+              <li>
+                • Histórico automático do cadastro inicial já implementado.
+              </li>
+              <li>• Próximo passo: listagem, filtros e edição de membros.</li>
             </ul>
           </div>
         </div>

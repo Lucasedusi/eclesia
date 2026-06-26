@@ -11,8 +11,8 @@ export const FieldWrapper = styled.div`
 
 export const FieldLabel = styled.label`
   font-size: 12px;
-  font-weight: 500;
-  color: ${({ theme }) => theme.colors.text.title};
+  font-weight: 400;
+  color: ${({ theme }) => theme.colors.text.label};
   line-height: 1.2;
 `;
 

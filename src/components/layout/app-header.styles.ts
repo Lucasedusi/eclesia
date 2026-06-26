@@ -57,7 +57,7 @@ export const MobileMenuButton = styled.button`
 
 export const Greeting = styled.p`
   margin: 0;
-  color: #64748b;
+  color: #;
   font-size: 14px;
   font-weight: 500;
   line-height: 1;

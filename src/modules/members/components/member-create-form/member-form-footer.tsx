@@ -22,14 +22,21 @@ export function MemberFormFooter({
   return (
     <S.FormFooter>
       <S.FooterHint>
-        {isLastStep
-          ? "Revise as informações antes de finalizar."
-          : "Os campos obrigatórios desta etapa precisam ser preenchidos para avançar."}
+        {saving
+          ? "Aguarde enquanto o cadastro é salvo."
+          : isLastStep
+            ? "Revise as informações antes de finalizar."
+            : "Os campos obrigatórios desta etapa precisam ser preenchidos para avançar."}
       </S.FooterHint>
 
       <S.FooterActions>
         {!isFirstStep && (
-          <Button type="button" variant="secondary" onClick={onBack}>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={onBack}
+            disabled={saving}
+          >
             <ArrowLeft aria-hidden="true" />
             Voltar
           </Button>
@@ -39,7 +46,7 @@ export function MemberFormFooter({
           {isLastStep ? (
             <>
               <Save aria-hidden="true" />
-              Salvar cadastro
+              {saving ? "Salvando..." : "Salvar cadastro"}
             </>
           ) : (
             <>

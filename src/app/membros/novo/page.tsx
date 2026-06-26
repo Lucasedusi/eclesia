@@ -14,7 +14,7 @@ export default async function NewMemberPage() {
       subtitle="Cadastro multi etapas do módulo de membros"
     >
       <PageHeader
-        title="Cadastrar mebro"
+        title="Cadastrar membro"
         subtitle="Preencha as informações por etapas."
         action={
           <Link href="/membros" className="app-button-secondary">

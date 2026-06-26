@@ -1,16 +1,12 @@
 "use client";
 
 import { ChangeEvent, useMemo, useState } from "react";
-import {
-  AlertCircle,
-  CheckCircle2,
-  Info,
-  ShieldCheck,
-  UserPlus,
-} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { AlertCircle, CheckCircle2, Info, ShieldCheck } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { Toast } from "@/components/ui/toast";
 import {
   brazilianStateOptions,
   educationLevelOptions,
@@ -34,12 +30,19 @@ import {
   validateAllMemberFormSteps,
   validateMemberFormStep,
 } from "../../utils/member-form-validation";
+import { createMemberAction } from "../../actions/create-member.action";
 import { MemberFormFooter } from "./member-form-footer";
 import { MemberFormProgress } from "./member-form-progress";
 import * as S from "./member-create-form.styles";
 
 type MemberCreateFormProps = {
   options: MemberFormOptions;
+};
+
+type FormToast = {
+  title: string;
+  description?: string;
+  variant: "success" | "danger" | "warning" | "neutral";
 };
 
 type TextAreaFieldProps = {
@@ -91,12 +94,15 @@ function displayValue(value?: string) {
 }
 
 export function MemberCreateForm({ options }: MemberCreateFormProps) {
+  const router = useRouter();
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [formData, setFormData] = useState<MemberFormData>(
     initialMemberFormData,
   );
   const [errors, setErrors] = useState<MemberFormErrors>({});
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [toast, setToast] = useState<FormToast | null>(null);
 
   const currentStep = memberFormSteps[currentStepIndex];
   const isFirstStep = currentStepIndex === 0;
@@ -113,14 +119,19 @@ export function MemberCreateForm({ options }: MemberCreateFormProps) {
     });
   }
 
-  function updateField(field: keyof MemberFormData, value: string) {
+  function clearFeedbackMessages() {
     setSuccessMessage(null);
+    setToast(null);
+  }
+
+  function updateField(field: keyof MemberFormData, value: string) {
+    clearFeedbackMessages();
     setFormData((currentData) => ({ ...currentData, [field]: value }));
     clearFieldError(field);
   }
 
   function updateBooleanField(field: keyof MemberFormData, checked: boolean) {
-    setSuccessMessage(null);
+    clearFeedbackMessages();
     setFormData((currentData) => ({ ...currentData, [field]: checked }));
     clearFieldError(field);
   }
@@ -137,39 +148,92 @@ export function MemberCreateForm({ options }: MemberCreateFormProps) {
     return !hasValidationErrors(stepErrors);
   }
 
+  function goToFirstInvalidStep(allErrors: MemberFormErrors) {
+    if (!hasValidationErrors(allErrors)) return;
+
+    const firstInvalidStepIndex = memberFormSteps.findIndex((step) => {
+      const stepErrors = validateMemberFormStep(step.id, formData);
+      return hasValidationErrors(stepErrors);
+    });
+
+    if (firstInvalidStepIndex >= 0) {
+      setCurrentStepIndex(firstInvalidStepIndex);
+    }
+  }
+
   function goToPreviousStep() {
-    if (isFirstStep) return;
+    if (isFirstStep || isSaving) return;
     setCurrentStepIndex((index) => index - 1);
-    setSuccessMessage(null);
+    clearFeedbackMessages();
+  }
+
+  async function handleSubmit() {
+    const allErrors = validateAllMemberFormSteps(
+      stepIds as MemberFormStepId[],
+      formData,
+    );
+    setErrors(allErrors);
+
+    if (hasValidationErrors(allErrors)) {
+      setToast({
+        title: "Existem campos obrigatórios pendentes",
+        description: "Revise as etapas destacadas antes de salvar o cadastro.",
+        variant: "warning",
+      });
+      goToFirstInvalidStep(allErrors);
+      return;
+    }
+
+    setIsSaving(true);
+    setToast({
+      title: "Salvando cadastro",
+      description:
+        "Estamos registrando o membro e criando os vínculos iniciais.",
+      variant: "neutral",
+    });
+
+    const result = await createMemberAction(formData);
+
+    if (!result.success) {
+      setIsSaving(false);
+
+      if (result.fieldErrors) {
+        setErrors(result.fieldErrors);
+        goToFirstInvalidStep(result.fieldErrors);
+      }
+
+      setToast({
+        title: "Não foi possível salvar",
+        description: result.message,
+        variant: "danger",
+      });
+      return;
+    }
+
+    setSuccessMessage(result.message);
+    setToast({
+      title: result.warningMessage
+        ? "Cadastro salvo com atenção"
+        : "Cadastro salvo",
+      description:
+        result.warningMessage ??
+        "Você será redirecionado para a tela de membros.",
+      variant: result.warningMessage ? "warning" : "success",
+    });
+
+    window.setTimeout(() => {
+      router.push("/membros");
+      router.refresh();
+    }, 1400);
   }
 
   function goToNextStep() {
-    setSuccessMessage(null);
+    clearFeedbackMessages();
+
+    if (isSaving) return;
 
     if (isLastStep) {
-      const allErrors = validateAllMemberFormSteps(
-        stepIds as MemberFormStepId[],
-        formData,
-      );
-      setErrors(allErrors);
-
-      if (hasValidationErrors(allErrors)) {
-        const firstInvalidStepIndex = memberFormSteps.findIndex((step) => {
-          const stepErrors = validateMemberFormStep(step.id, formData);
-          return hasValidationErrors(stepErrors);
-        });
-
-        if (firstInvalidStepIndex >= 0) {
-          setCurrentStepIndex(firstInvalidStepIndex);
-        }
-
-        return;
-      }
-
-      console.log("Dados validados do formulário de membros:", formData);
-      setSuccessMessage(
-        "Formulário validado com sucesso. Na próxima etapa vamos enviar esses dados para o Supabase.",
-      );
+      void handleSubmit();
       return;
     }
 
@@ -898,8 +962,23 @@ export function MemberCreateForm({ options }: MemberCreateFormProps) {
           isLastStep={isLastStep}
           onBack={goToPreviousStep}
           onNext={goToNextStep}
+          saving={isSaving}
         />
       </S.FormCard>
+
+      {toast ? (
+        <S.ToastPosition>
+          <Toast
+            title={toast.title}
+            description={toast.description}
+            variant={toast.variant}
+            filled
+            timeLabel="agora"
+            brandLabel="Eclésia"
+            onClose={() => setToast(null)}
+          />
+        </S.ToastPosition>
+      ) : null}
     </S.FormLayout>
   );
 }
