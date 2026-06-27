@@ -162,8 +162,7 @@ export const FieldBlock = styled.div`
 `;
 
 export const FieldLabel = styled.label`
-  color: #f00;
-  background: #f00;
+  color: ${({ theme }) => theme.colors.text.title};
   font-size: 22px;
   font-weight: 500;
 `;

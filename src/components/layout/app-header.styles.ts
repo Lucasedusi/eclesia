@@ -11,12 +11,12 @@ export const HeaderRoot = styled.header`
 `;
 
 export const HeaderInner = styled.div`
-  height: ${({ theme }) => theme.layout.topbarHeight};
+  // height: ${({ theme }) => theme.layout.topbarHeight};
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 0 28px;
+  padding: 14px 28px;
 
   @media (max-width: 640px) {
     padding: 0 16px;
@@ -84,7 +84,7 @@ export const HeaderActions = styled.div`
 
 export const ThemeToggle = styled.button`
   width: 56px;
-  height: 34px;
+  height: 30px;
   display: flex;
   align-items: center;
   padding: 4px;
@@ -131,7 +131,7 @@ export const IconButton = styled.button`
   align-items: center;
   justify-content: center;
   border: 0;
-  border-radius: ${({ theme }) => theme.radius.full};
+  border-radius: ${({ theme }) => theme.radius.sm};
   color: #637381;
   background: transparent;
   cursor: pointer;
@@ -180,20 +180,20 @@ export const UserMeta = styled.div`
 export const UserName = styled.p`
   margin: 0;
   color: #212b36;
-  font-size: 14px;
-  font-weight: 800;
+  font-size: 13px;
+  font-weight: 600;
 `;
 
 export const UserRole = styled.p`
-  margin: 6px 0 0;
+  margin: 3px 0 0;
   color: #637381;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 400;
 `;
 
 export const UserAvatar = styled.div`
-  width: 44px;
-  height: 44px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;

@@ -10,7 +10,7 @@ export const FieldWrapper = styled.div`
 `;
 
 export const FieldLabel = styled.label`
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 400;
   color: ${({ theme }) => theme.colors.text.label};
   line-height: 1.2;
@@ -26,7 +26,7 @@ export const SelectControl = styled.select<{ $hasError?: boolean }>`
   background: ${({ theme }) =>
     (theme as any).colors?.background?.input ?? "#ffffff"};
   padding: 0 42px 0 14px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   color: ${({ theme }) => theme.colors.text.title};
   outline: none;
@@ -41,7 +41,7 @@ export const SelectControl = styled.select<{ $hasError?: boolean }>`
     border-color: ${({ theme, $hasError }) =>
       $hasError ? "#F57E77" : theme.colors.brand.primary};
     background: #ffffff;
-    box-shadow: 0 0 0 3px
+    box-shadow: 0 0 0 1px
       ${({ $hasError }) =>
         $hasError ? "rgba(245, 126, 119, 0.14)" : "rgba(65, 91, 165, 0.14)"};
   }
