@@ -13,6 +13,8 @@ import {
 import { AppShell } from "@/components/layout/app-shell";
 import { APP_CONFIG } from "@/constants/app";
 import { getAppName } from "@/services/app-settings.service";
+import { requireAccessContext } from "@/modules/auth/services/access-context.service";
+import { PERMISSIONS } from "@/modules/auth/constants/permissions";
 
 const summaryCards = [
   {
@@ -101,10 +103,12 @@ const chartBars = [
 ];
 
 export default async function Home() {
-  const appNameFromDatabase = await getAppName();
+  const context = await requireAccessContext(PERMISSIONS.dashboardView);
+  const appNameFromDatabase = await getAppName(context.church.id);
 
   return (
     <AppShell
+      authContext={context}
       title="Dashboard"
       subtitle="Visão geral administrativa da plataforma"
     >

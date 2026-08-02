@@ -1,0 +1,33 @@
+import { InvitationAccept } from "@/modules/users/components/invitation-accept";
+import {
+  getInvitationByToken,
+  resolveInvitationAccount,
+} from "@/modules/users/services/invitation.service";
+
+export default async function InvitationPage({
+  params,
+}: {
+  params: Promise<{ token: string }>;
+}) {
+  const { token } = await params;
+  const invitation = await getInvitationByToken(token);
+  const account = invitation
+    ? await resolveInvitationAccount(invitation)
+    : null;
+  const preview = invitation
+    ? {
+        invitedName: invitation.invitedName,
+        email: invitation.email,
+        churchName: invitation.churchName,
+        role: invitation.role,
+        scope: invitation.scope,
+        expiresAt: invitation.expiresAt,
+        accountMode:
+          account?.mode === "SIGN_IN"
+            ? ("SIGN_IN" as const)
+            : ("SET_PASSWORD" as const),
+      }
+    : null;
+
+  return <InvitationAccept token={token} preview={preview} />;
+}

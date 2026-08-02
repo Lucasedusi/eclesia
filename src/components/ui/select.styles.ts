@@ -23,8 +23,7 @@ export const SelectControl = styled.select<{ $hasError?: boolean }>`
   border: 1px solid
     ${({ theme, $hasError }) =>
       $hasError ? "#F57E77" : theme.colors.border.default};
-  background: ${({ theme }) =>
-    (theme as any).colors?.background?.input ?? "#ffffff"};
+  background: ${({ theme }) => theme.colors.surface.card};
   padding: 0 42px 0 14px;
   font-size: 13px;
   font-weight: 500;

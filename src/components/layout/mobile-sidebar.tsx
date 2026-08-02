@@ -3,13 +3,15 @@
 import { X } from "lucide-react";
 import { AppSidebar } from "./app-sidebar";
 import * as S from "./mobile-sidebar.styles";
+import type { AuthContext } from "@/modules/auth/types/auth.types";
 
 type MobileSidebarProps = {
   open: boolean;
   onClose: () => void;
+  authContext: AuthContext;
 };
 
-export function MobileSidebar({ open, onClose }: MobileSidebarProps) {
+export function MobileSidebar({ open, onClose, authContext }: MobileSidebarProps) {
   return (
     <S.OverlayRoot $open={open}>
       <S.Backdrop
@@ -25,7 +27,7 @@ export function MobileSidebar({ open, onClose }: MobileSidebarProps) {
             <X size={20} strokeWidth={1.8} />
           </S.CloseButton>
 
-          <AppSidebar onNavigate={onClose} mobile />
+          <AppSidebar onNavigate={onClose} mobile authContext={authContext} />
         </S.PanelInner>
       </S.Panel>
     </S.OverlayRoot>

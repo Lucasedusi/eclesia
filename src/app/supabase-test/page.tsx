@@ -1,4 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
+import { requireAccessContext } from "@/modules/auth/services/access-context.service";
+import { PERMISSIONS } from "@/modules/auth/constants/permissions";
 
 function TestSection({
   title,
@@ -42,16 +44,19 @@ function TestSection({
 }
 
 export default async function SupabaseTestPage() {
+  const context = await requireAccessContext(PERMISSIONS.settingsView);
   const supabase = await createClient();
 
   const { data: churches, error: churchesError } = await supabase
     .from("churches")
     .select("id, name, status, city, state")
+    .eq("id", context.church.id)
     .limit(5);
 
   const { data: congregations, error: congregationsError } = await supabase
     .from("congregations")
     .select("id, church_id, name, status, city, state")
+    .eq("church_id", context.church.id)
     .limit(5);
 
   const { data: roles, error: rolesError } = await supabase
@@ -59,11 +64,13 @@ export default async function SupabaseTestPage() {
     .select(
       "id, church_id, name, category, level, is_ministerial, is_leadership, status",
     )
+    .eq("church_id", context.church.id)
     .limit(5);
 
   const { data: ministries, error: ministriesError } = await supabase
     .from("ministries")
     .select("id, church_id, congregation_id, name, category, is_global, status")
+    .eq("church_id", context.church.id)
     .limit(5);
 
   const { data: members, error: membersError } = await supabase
@@ -71,6 +78,7 @@ export default async function SupabaseTestPage() {
     .select(
       "id, church_id, congregation_id, full_name, member_status, member_type, created_at",
     )
+    .eq("church_id", context.church.id)
     .limit(5);
 
   return (

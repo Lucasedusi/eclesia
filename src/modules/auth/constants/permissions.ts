@@ -1,0 +1,43 @@
+export const PERMISSIONS = {
+  dashboardView: "dashboard.view",
+  churchView: "church.view",
+  churchUpdate: "church.update",
+  organizationView: "organization.view",
+  regionsManage: "regions.manage",
+  congregationsManage: "congregations.manage",
+  settingsView: "settings.view",
+  settingsUpdate: "settings.update",
+  usersView: "users.view",
+  usersInvite: "users.invite",
+  usersUpdateAccess: "users.update_access",
+  usersSuspendAccess: "users.suspend_access",
+  usersManagePermissions: "users.manage_permissions",
+  auditView: "audit.view",
+  membersViewBasic: "members.view_basic",
+  membersViewFull: "members.view_full",
+  membersCreate: "members.create",
+  membersUpdate: "members.update",
+  membersChangeStatus: "members.change_status",
+  membersTransfer: "members.transfer",
+  membersArchive: "members.archive",
+  membersExport: "members.export",
+  membersViewSensitiveIdentity: "members.view_sensitive_identity",
+  membersManageSensitiveIdentity: "members.manage_sensitive_identity",
+  membersManageDocuments: "members.manage_documents",
+  membersViewSensitiveDocuments: "members.view_sensitive_documents",
+  membersViewPastoralNotes: "members.view_pastoral_notes",
+  membersEditPastoralNotes: "members.edit_pastoral_notes",
+  memberRolesView: "member_roles.view",
+  memberRolesManage: "member_roles.manage",
+  ministriesView: "ministries.view",
+  ministriesManage: "ministries.manage",
+} as const;
+
+export type PermissionKey = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
+
+export function hasPermission(
+  permissions: readonly string[],
+  permission: string,
+) {
+  return permissions.includes(permission);
+}

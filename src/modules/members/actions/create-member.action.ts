@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { requireAccessContext } from "@/modules/auth/services/access-context.service";
+import { PERMISSIONS, hasPermission } from "@/modules/auth/constants/permissions";
 import { memberFormSteps } from "../constants/member-form-options";
 import {
   generateNextMemberCode,
@@ -19,6 +21,7 @@ import {
 } from "../utils/member-form-validation";
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
+type SecuredMemberFormData = MemberFormData & { created_by: string };
 
 type CreateMemberSuccess = {
   success: true;
@@ -60,6 +63,7 @@ async function getEntityNameById(
   supabase: SupabaseServerClient,
   table: "roles" | "ministries",
   id: string,
+  churchId: string,
 ) {
   if (!id) return null;
 
@@ -67,6 +71,7 @@ async function getEntityNameById(
     .from(table)
     .select("name")
     .eq("id", id)
+    .eq("church_id", churchId)
     .limit(1)
     .maybeSingle();
 
@@ -97,9 +102,6 @@ function buildMemberPayload(
     nationality: blankToNull(formData.nationality) ?? "Brasileira",
     natural_city: blankToNull(formData.natural_city),
     natural_state: blankToNull(formData.natural_state),
-    cpf: blankToNull(formData.cpf),
-    rg: blankToNull(formData.rg),
-    issuing_agency: blankToNull(formData.issuing_agency),
     profession: blankToNull(formData.profession),
     education_level: blankToNull(formData.education_level),
     physical_file_number: blankToNull(formData.physical_file_number),
@@ -142,13 +144,12 @@ function buildMemberPayload(
     is_active_in_ministry: Boolean(formData.is_active_in_ministry),
     can_receive_notifications: Boolean(formData.can_receive_notifications),
     notes: blankToNull(formData.notes),
-    pastoral_notes: blankToNull(formData.pastoral_notes),
   };
 }
 
 async function createMemberRoleLink(
   supabase: SupabaseServerClient,
-  formData: MemberFormData,
+  formData: SecuredMemberFormData,
   memberId: string,
 ) {
   if (!formData.main_role_id) return null;
@@ -161,6 +162,7 @@ async function createMemberRoleLink(
     is_primary: true,
     status: "ACTIVE",
     start_date: dateToNull(formData.joined_at || formData.received_date),
+    created_by: formData.created_by,
   });
 
   return error;
@@ -168,7 +170,7 @@ async function createMemberRoleLink(
 
 async function createMemberMinistryLink(
   supabase: SupabaseServerClient,
-  formData: MemberFormData,
+  formData: SecuredMemberFormData,
   memberId: string,
 ) {
   if (!formData.ministry_id) return null;
@@ -182,6 +184,7 @@ async function createMemberMinistryLink(
     is_primary: true,
     status: "ACTIVE",
     start_date: dateToNull(formData.joined_at || formData.received_date),
+    created_by: formData.created_by,
   });
 
   return error;
@@ -189,7 +192,7 @@ async function createMemberMinistryLink(
 
 async function createInitialMemberHistory(
   supabase: SupabaseServerClient,
-  formData: MemberFormData,
+  formData: SecuredMemberFormData,
   memberId: string,
 ) {
   const eventDate =
@@ -206,6 +209,7 @@ async function createInitialMemberHistory(
     description: "Registro criado automaticamente no cadastro inicial.",
     event_date: eventDate,
     is_sensitive: false,
+    created_by: formData.created_by,
   });
 
   return error;
@@ -219,10 +223,16 @@ function buildWarningMessage(warnings: string[]) {
 export async function createMemberAction(
   formData: MemberFormData,
 ): Promise<CreateMemberActionResult> {
+  const context = await requireAccessContext(PERMISSIONS.membersCreate);
+  const securedFormData = {
+    ...formData,
+    church_id: context.church.id,
+    created_by: context.profile.id,
+  } as SecuredMemberFormData;
   const allStepIds = memberFormSteps.map(
     (step) => step.id,
   ) as MemberFormStepId[];
-  const fieldErrors = validateAllMemberFormSteps(allStepIds, formData);
+  const fieldErrors = validateAllMemberFormSteps(allStepIds, securedFormData);
 
   if (hasValidationErrors(fieldErrors)) {
     return {
@@ -234,18 +244,36 @@ export async function createMemberAction(
 
   try {
     const supabase = await createClient();
+    const { data: canUseCongregation } = await supabase.rpc("can_access_congregation", {
+      p_church_id: context.church.id,
+      p_congregation_id: securedFormData.congregation_id,
+    });
+    if (!canUseCongregation) {
+      return { success: false, message: "A congregação selecionada não pertence ao seu escopo de acesso." };
+    }
+
+    const hasSensitiveIdentity = Boolean(
+      blankToNull(securedFormData.cpf) || blankToNull(securedFormData.rg) || blankToNull(securedFormData.issuing_agency),
+    );
+    if (hasSensitiveIdentity && !hasPermission(context.permissions, PERMISSIONS.membersManageSensitiveIdentity)) {
+      return { success: false, message: "Seu acesso não permite cadastrar CPF ou RG." };
+    }
+    if (blankToNull(securedFormData.pastoral_notes) && !hasPermission(context.permissions, PERMISSIONS.membersEditPastoralNotes)) {
+      return { success: false, message: "Seu acesso não permite registrar observações pastorais." };
+    }
+
     const generatedCode = await generateNextMemberCode(
       supabase,
-      formData.church_id,
+      context.church.id,
     );
 
     const [mainRoleName, ministryName] = await Promise.all([
-      getEntityNameById(supabase, "roles", formData.main_role_id),
-      getEntityNameById(supabase, "ministries", formData.ministry_id),
+      getEntityNameById(supabase, "roles", securedFormData.main_role_id, context.church.id),
+      getEntityNameById(supabase, "ministries", securedFormData.ministry_id, context.church.id),
     ]);
 
     const memberPayload = buildMemberPayload(
-      formData,
+      securedFormData,
       generatedCode.memberCode,
       mainRoleName,
       ministryName,
@@ -266,6 +294,30 @@ export async function createMemberAction(
 
     const warnings: string[] = [];
 
+    if (hasSensitiveIdentity) {
+      const { error: identityError } = await supabase.from("member_sensitive_identity").insert({
+        member_id: createdMember.id,
+        church_id: context.church.id,
+        cpf: blankToNull(securedFormData.cpf),
+        rg: blankToNull(securedFormData.rg),
+        issuing_agency: blankToNull(securedFormData.issuing_agency),
+        created_by: context.profile.id,
+        updated_by: context.profile.id,
+      });
+      if (identityError) warnings.push("O cadastro foi salvo, mas os dados de CPF/RG não foram vinculados.");
+    }
+
+    if (blankToNull(securedFormData.pastoral_notes)) {
+      const { error: pastoralError } = await supabase.from("member_pastoral_notes").insert({
+        member_id: createdMember.id,
+        church_id: context.church.id,
+        notes: securedFormData.pastoral_notes.trim(),
+        created_by: context.profile.id,
+        updated_by: context.profile.id,
+      });
+      if (pastoralError) warnings.push("O cadastro foi salvo, mas a observação pastoral não foi vinculada.");
+    }
+
     const codeUpdateError = await updateNextMemberCodeNumber(
       supabase,
       generatedCode.settingsId,
@@ -283,9 +335,9 @@ export async function createMemberAction(
     }
 
     const [roleLinkError, ministryLinkError, historyError] = await Promise.all([
-      createMemberRoleLink(supabase, formData, createdMember.id),
-      createMemberMinistryLink(supabase, formData, createdMember.id),
-      createInitialMemberHistory(supabase, formData, createdMember.id),
+      createMemberRoleLink(supabase, securedFormData, createdMember.id),
+      createMemberMinistryLink(supabase, securedFormData, createdMember.id),
+      createInitialMemberHistory(supabase, securedFormData, createdMember.id),
     ]);
 
     if (roleLinkError) {

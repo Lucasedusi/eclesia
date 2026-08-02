@@ -2,6 +2,8 @@ import Link from "next/link";
 import { ClipboardList, Plus, Search, UserPlus, Users } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { PageHeader } from "@/components/ui/page-header";
+import { requireAccessContext } from "@/modules/auth/services/access-context.service";
+import { PERMISSIONS } from "@/modules/auth/constants/permissions";
 
 const memberQuickStats = [
   {
@@ -23,9 +25,11 @@ const memberQuickStats = [
   },
 ];
 
-export default function MembersPage() {
+export default async function MembersPage() {
+  const context = await requireAccessContext(PERMISSIONS.membersViewBasic);
   return (
     <AppShell
+      authContext={context}
       title="Membros"
       subtitle="Gestão de membros, congregados, visitantes e crianças"
     >

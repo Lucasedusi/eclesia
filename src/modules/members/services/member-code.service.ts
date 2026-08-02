@@ -86,26 +86,7 @@ async function queryAppSettings(
   if (typedSettingsByChurch) {
     return { data: typedSettingsByChurch, errorMessage: null };
   }
-
-  // Fallback para desenvolvimento: se ainda existir apenas uma configuração
-  // ativa/global, ela também pode ser usada. Isso evita salvar membro sem código
-  // quando o church_id da configuração ainda não foi vinculado corretamente.
-  const { data: firstActiveSettings, error: firstActiveSettingsError } =
-    await supabase
-      .from("app_settings")
-      .select(selectColumns)
-      .eq("status", "ACTIVE")
-      .is("deleted_at", null)
-      .limit(1)
-      .maybeSingle();
-
-  if (firstActiveSettingsError) {
-    return { data: null, errorMessage: firstActiveSettingsError.message };
-  }
-
-  const typedFirstActiveSettings = firstActiveSettings as AppSettingsRow | null;
-
-  return { data: typedFirstActiveSettings, errorMessage: null };
+  return { data: null, errorMessage: null };
 }
 
 async function findAppSettings(

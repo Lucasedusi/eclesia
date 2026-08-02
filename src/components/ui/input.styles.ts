@@ -44,7 +44,7 @@ export const InputControl = styled.input<{ $hasError?: boolean }>`
       $hasError ? "#F57E77" : theme.colors.brand.primary};
     background: #ffffff;
     box-shadow: 0 0 0 1px
-      ${({ theme, $hasError }) =>
+      ${({ $hasError }) =>
         $hasError ? "rgba(245, 126, 119, 0.14)" : "rgba(65, 91, 165, 0.14)"};
   }
 

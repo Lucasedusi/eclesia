@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import type { AuthContext } from "@/modules/auth/types/auth.types";
 import type {
   MemberFormOptions,
   SelectOption,
@@ -37,29 +38,40 @@ function emptyOptions(errorMessage?: string): MemberFormOptions {
   };
 }
 
-export async function getMemberFormOptions(): Promise<MemberFormOptions> {
+export async function getMemberFormOptions(context: AuthContext): Promise<MemberFormOptions> {
   try {
     const supabase = await createClient();
+
+    let congregationsQuery = supabase
+      .from("congregations")
+      .select("id, name, city, state")
+      .eq("church_id", context.church.id)
+      .eq("status", "ACTIVE")
+      .is("deleted_at", null);
+
+    if (context.access.scope === "REGION" && context.access.regionId) {
+      congregationsQuery = congregationsQuery.eq("region_id", context.access.regionId);
+    }
+    if (context.access.scope === "CONGREGATION" && context.access.congregationId) {
+      congregationsQuery = congregationsQuery.eq("id", context.access.congregationId);
+    }
 
     const [churchesResult, congregationsResult, rolesResult, ministriesResult] =
       await Promise.all([
         supabase
           .from("churches")
           .select("id, name, city, state")
+          .eq("id", context.church.id)
           .eq("status", "ACTIVE")
           .is("deleted_at", null)
           .order("name", { ascending: true }),
 
-        supabase
-          .from("congregations")
-          .select("id, name, city, state")
-          .eq("status", "ACTIVE")
-          .is("deleted_at", null)
-          .order("name", { ascending: true }),
+        congregationsQuery.order("name", { ascending: true }),
 
         supabase
           .from("roles")
           .select("id, name, category")
+          .eq("church_id", context.church.id)
           .eq("status", "ACTIVE")
           .is("deleted_at", null)
           .order("level", { ascending: true })
@@ -68,6 +80,7 @@ export async function getMemberFormOptions(): Promise<MemberFormOptions> {
         supabase
           .from("ministries")
           .select("id, name, category, is_global")
+          .eq("church_id", context.church.id)
           .eq("status", "ACTIVE")
           .is("deleted_at", null)
           .order("name", { ascending: true }),

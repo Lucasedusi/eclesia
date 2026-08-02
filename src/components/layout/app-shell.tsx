@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { AuthContext } from "@/modules/auth/types/auth.types";
 import { AppHeader } from "./app-header";
 import { AppSidebar } from "./app-sidebar";
 import { MobileSidebar } from "./mobile-sidebar";
@@ -10,17 +11,20 @@ type AppShellProps = {
   children: React.ReactNode;
   title?: string;
   subtitle?: string;
+  authContext: AuthContext;
 };
 
 const SIDEBAR_STORAGE_KEY = "eclesias-sidebar-collapsed";
 
-export function AppShell({ children, title, subtitle }: AppShellProps) {
+export function AppShell({ children, title, subtitle, authContext }: AppShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
-    const storedValue = localStorage.getItem(SIDEBAR_STORAGE_KEY);
-    setSidebarCollapsed(storedValue === "true");
+    const frame = window.requestAnimationFrame(() => {
+      setSidebarCollapsed(localStorage.getItem(SIDEBAR_STORAGE_KEY) === "true");
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, []);
 
   function handleToggleSidebar() {
@@ -37,16 +41,18 @@ export function AppShell({ children, title, subtitle }: AppShellProps) {
         <AppSidebar
           collapsed={sidebarCollapsed}
           onToggleCollapse={handleToggleSidebar}
+          authContext={authContext}
         />
       </S.DesktopSidebarSlot>
 
-      <MobileSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <MobileSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} authContext={authContext} />
 
       <S.Content $collapsed={sidebarCollapsed}>
         <AppHeader
           title={title}
           subtitle={subtitle}
           onOpenSidebar={() => setSidebarOpen(true)}
+          authContext={authContext}
         />
 
         <S.Main>

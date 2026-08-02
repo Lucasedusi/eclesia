@@ -7,20 +7,25 @@ import {
   LayoutDashboard,
   Palette,
   Settings,
+  ShieldCheck,
+  UserCog,
   Users,
   Wallet,
 } from "lucide-react";
+import { PERMISSIONS } from "@/modules/auth/constants/permissions";
 
 export const mainNavigation = [
   {
     label: "Dashboard",
     href: "/",
     icon: LayoutDashboard,
+    requiredPermission: PERMISSIONS.dashboardView,
   },
   {
     label: "Membros",
     href: "/membros",
     icon: Users,
+    requiredPermission: PERMISSIONS.membersViewBasic,
   },
   {
     label: "Eventos",
@@ -47,6 +52,18 @@ export const mainNavigation = [
 
 export const secondaryNavigation = [
   {
+    label: "Usuários",
+    href: "/usuarios",
+    icon: UserCog,
+    requiredPermission: PERMISSIONS.usersView,
+  },
+  {
+    label: "Auditoria",
+    href: "/auditoria",
+    icon: ShieldCheck,
+    requiredPermission: PERMISSIONS.auditView,
+  },
+  {
     label: "Notificações",
     href: "/notificacoes",
     icon: Bell,
@@ -56,6 +73,7 @@ export const secondaryNavigation = [
     label: "Configurações",
     href: "/configuracoes",
     icon: Settings,
+    requiredPermission: PERMISSIONS.settingsView,
   },
   {
     label: "Design System",

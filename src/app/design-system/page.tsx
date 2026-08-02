@@ -1,6 +1,3 @@
-"use client";
-
-import { useState } from "react";
 import {
   CalendarDays,
   CheckCircle2,
@@ -45,26 +42,15 @@ import {
 } from "@/components/ui/table";
 import { Toast } from "@/components/ui/toast";
 import { FormContainer, FormSection } from "@/components/form/form-section";
+import { requireAccessContext } from "@/modules/auth/services/access-context.service";
+import { PERMISSIONS } from "@/modules/auth/constants/permissions";
+import { DesignSystemToastTester } from "./design-system-toast-tester";
 
 const tableRows = Array.from({ length: 8 }).map((_, index) => ({
   id: index + 1,
   selected: index < 4,
   status: index % 3 === 0 ? "inactive" : "active",
 }));
-
-type ToastTestVariant = "success" | "danger" | "warning" | "neutral";
-
-type ToastTestState = {
-  title: string;
-  variant: ToastTestVariant;
-  filled?: boolean;
-};
-
-const defaultToastTest: ToastTestState = {
-  title: "Cadastro salvo com sucesso",
-  variant: "success",
-  filled: false,
-};
 
 function ModalPreview({
   variant = "confirm",
@@ -114,13 +100,12 @@ function ModalPreview({
   );
 }
 
-export default function DesignSystemPage() {
-  const [activeToast, setActiveToast] = useState<ToastTestState | null>(
-    defaultToastTest,
-  );
+export default async function DesignSystemPage() {
+  const context = await requireAccessContext(PERMISSIONS.settingsView);
 
   return (
     <AppShell
+      authContext={context}
       title="Design System"
       subtitle="Componentes visuais base da plataforma"
     >
@@ -135,16 +120,6 @@ export default function DesignSystemPage() {
           </Button>
         }
       />
-
-      {activeToast && (
-        <div className="fixed right-6 top-6 z-[9999] w-[353px] max-w-[calc(100vw-48px)]">
-          <Toast
-            title={activeToast.title}
-            variant={activeToast.variant}
-            filled={activeToast.filled}
-          />
-        </div>
-      )}
 
       <div className="space-y-8">
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -367,108 +342,7 @@ export default function DesignSystemPage() {
             </CardHeader>
 
             <CardContent className="space-y-6">
-              <div className="rounded-[6px] border border-[#EAECF0] bg-[#F9FAFB] p-4">
-                <div className="mb-4">
-                  <h3 className="text-[15px] font-bold text-[var(--text-title)]">
-                    Teste temporário dos Toasts
-                  </h3>
-                  <p className="mt-1 text-[13px] font-medium leading-5 text-[var(--text-body)]">
-                    Clique em uma opção para manter o toast fixo na tela
-                    enquanto ajusta o estilo do componente.
-                  </p>
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      setActiveToast({
-                        title: "Cadastro salvo com sucesso",
-                        variant: "success",
-                      })
-                    }
-                  >
-                    Toast sucesso
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      setActiveToast({
-                        title: "Membro cadastrado com sucesso",
-                        variant: "success",
-                        filled: true,
-                      })
-                    }
-                  >
-                    Sucesso filled
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      setActiveToast({
-                        title: "Não foi possível salvar agora",
-                        variant: "danger",
-                      })
-                    }
-                  >
-                    Toast erro
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      setActiveToast({
-                        title: "Já existe um membro com este CPF",
-                        variant: "danger",
-                        filled: true,
-                      })
-                    }
-                  >
-                    Erro filled
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      setActiveToast({
-                        title: "Revise os campos obrigatórios",
-                        variant: "warning",
-                      })
-                    }
-                  >
-                    Toast alerta
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      setActiveToast({
-                        title: "Salvando cadastro do membro",
-                        variant: "neutral",
-                        filled: true,
-                      })
-                    }
-                  >
-                    Toast neutro
-                  </Button>
-
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => setActiveToast(null)}
-                  >
-                    Ocultar toast
-                  </Button>
-                </div>
-              </div>
+              <DesignSystemToastTester />
 
               <div className="grid gap-4 lg:grid-cols-2">
                 <ModalPreview />

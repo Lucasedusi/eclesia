@@ -57,7 +57,7 @@ export const MobileMenuButton = styled.button`
 
 export const Greeting = styled.p`
   margin: 0;
-  color: #;
+  color: #667085;
   font-size: 14px;
   font-weight: 500;
   line-height: 1;
@@ -213,4 +213,82 @@ export const MobileAvatar = styled(UserAvatar)`
   @media (min-width: 641px) {
     display: none;
   }
+`;
+
+export const UserMenu = styled.details`
+  position: relative;
+
+  > summary { list-style: none; }
+  > summary::-webkit-details-marker { display: none; }
+  &[open] > summary svg:last-child { transform: rotate(180deg); }
+
+  @media (max-width: 640px) { display: none; }
+`;
+
+export const UserDropdown = styled.div`
+  position: absolute;
+  top: calc(100% + 13px);
+  right: 0;
+  z-index: 80;
+  width: 290px;
+  overflow: hidden;
+  border: 1px solid ${({ theme }) => theme.colors.border.soft};
+  border-radius: 14px;
+  background: #fff;
+  padding: 9px;
+  box-shadow: 0 20px 55px rgba(16, 24, 40, 0.16);
+`;
+
+export const DropdownIdentity = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  border-bottom: 1px solid #edf0f4;
+  padding: 9px 9px 14px;
+
+  > div:last-child { min-width: 0; }
+  strong { display: block; overflow: hidden; color: #344054; font-size: 12px; font-weight: 850; text-overflow: ellipsis; white-space: nowrap; }
+  span { display: block; overflow: hidden; margin-top: 3px; color: #98a2b3; font-size: 10px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+`;
+
+export const DropdownItem = styled.a`
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  gap: 10px;
+  border-radius: 9px;
+  color: #475467;
+  padding: 0 10px;
+  font-size: 11px;
+  font-weight: 750;
+
+  &:hover { background: #f6f8fc; color: ${({ theme }) => theme.colors.brand.primary}; }
+`;
+
+export const ChurchList = styled.div`
+  border-top: 1px solid #edf0f4;
+  border-bottom: 1px solid #edf0f4;
+  padding: 9px 0;
+
+  > span { display: flex; align-items: center; gap: 7px; padding: 5px 10px 8px; color: #98a2b3; font-size: 9px; font-weight: 800; text-transform: uppercase; }
+  button { width: 100%; border: 0; border-radius: 8px; background: transparent; color: #475467; padding: 8px 10px; text-align: left; font-size: 10px; font-weight: 750; }
+  button:hover, button[data-active="true"] { background: #eef2ff; color: ${({ theme }) => theme.colors.brand.primary}; }
+`;
+
+export const LogoutButton = styled.button`
+  display: flex;
+  width: 100%;
+  min-height: 42px;
+  align-items: center;
+  gap: 10px;
+  margin-top: 5px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #b5423c;
+  padding: 0 10px;
+  font-size: 11px;
+  font-weight: 800;
+
+  &:hover { background: #fff0ef; }
 `;

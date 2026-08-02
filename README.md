@@ -23,6 +23,45 @@ Criar uma plataforma completa para gestão da igreja, contemplando inicialmente:
 
 O projeto ainda está em fase inicial. A base técnica, layout principal e design system foram configurados. A próxima etapa será iniciar o escopo oficial, modelagem geral e modelagem do módulo de membros.
 
+## Configuração do fluxo de convites
+
+O convite de usuários utiliza um token interno do Eclésias e o Brevo apenas para entregar esse link. O convidado cria a senha diretamente no sistema; não há Magic Link, segundo cadastro ou nova confirmação por e-mail.
+
+Copie `.env.example` para `.env.local` e preencha:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://SEU_PROJETO.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_SUA_CHAVE
+SUPABASE_SECRET_KEY=sb_secret_SUA_CHAVE
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+
+BREVO_API_KEY=xkeysib-SUA_CHAVE_API
+BREVO_SENDER_EMAIL=seu-remetente-verificado@exemplo.com
+BREVO_SENDER_NAME=Eclésias
+```
+
+`BREVO_API_KEY` deve ser uma chave da aba **API Keys** do Brevo, não a chave SMTP. `SUPABASE_SECRET_KEY` e `BREVO_API_KEY` são usadas somente no servidor e nunca devem receber o prefixo `NEXT_PUBLIC_`.
+
+## Cadastro inicial controlado
+
+O cadastro público existe somente enquanto o sistema ainda não possui usuário,
+perfil ou igreja. A primeira conta é confirmada no servidor, entra
+automaticamente e segue para o onboarding. Depois disso, `/cadastro` redireciona
+para o login, o link de criação desaparece e todos os novos usuários entram
+exclusivamente por convite do Administrador.
+
+Fluxo final:
+
+```text
+Administrador cria o convite
+→ Brevo envia o link interno
+→ Nome e e-mail aparecem bloqueados
+→ Convidado cria a senha
+→ Conta e convite são ativados
+→ Login automático
+→ Sistema
+```
+
 ---
 
 ## Stack Principal

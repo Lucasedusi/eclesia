@@ -5,6 +5,7 @@ import type { LucideIcon } from "lucide-react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { mainNavigation, secondaryNavigation } from "@/constants/navigation";
 import { APP_CONFIG } from "@/constants/app";
+import type { AuthContext } from "@/modules/auth/types/auth.types";
 import * as S from "./app-sidebar.styles";
 
 type NavigationItem = {
@@ -13,6 +14,7 @@ type NavigationItem = {
   icon: LucideIcon;
   indicator?: boolean;
   notification?: boolean;
+  requiredPermission?: string;
 };
 
 type AppSidebarProps = {
@@ -20,6 +22,7 @@ type AppSidebarProps = {
   onToggleCollapse?: () => void;
   onNavigate?: () => void;
   mobile?: boolean;
+  authContext: AuthContext;
 };
 
 function EclesiaLogo({ collapsed = false }: { collapsed?: boolean }) {
@@ -51,10 +54,10 @@ function EclesiaLogo({ collapsed = false }: { collapsed?: boolean }) {
   );
 }
 
-function SidebarAvatar() {
+function SidebarAvatar({ initials }: { initials: string }) {
   return (
     <S.Avatar aria-hidden="true">
-      <span>LE</span>
+      <span>{initials}</span>
     </S.Avatar>
   );
 }
@@ -64,9 +67,21 @@ export function AppSidebar({
   onToggleCollapse,
   onNavigate,
   mobile = false,
+  authContext,
 }: AppSidebarProps) {
   const pathname = usePathname();
   const isCollapsed = collapsed && !mobile;
+  const initials = authContext.profile.fullName
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase() || "US";
+
+  function canShow(item: NavigationItem) {
+    return !item.requiredPermission || authContext.permissions.includes(item.requiredPermission);
+  }
 
   function isActive(href: string) {
     if (href === "/") {
@@ -127,28 +142,28 @@ export function AppSidebar({
 
       <S.SidebarScrollArea>
         <S.NavList $collapsed={isCollapsed} aria-label="Menu principal">
-          {mainNavigation.map((item) => renderNavItem(item))}
+          {mainNavigation.filter(canShow).map((item) => renderNavItem(item))}
         </S.NavList>
 
         <S.NavDivider />
 
         <S.NavList $collapsed={isCollapsed} $secondary aria-label="Menu do sistema">
-          {secondaryNavigation.map((item) => renderNavItem(item))}
+          {secondaryNavigation.filter(canShow).map((item) => renderNavItem(item))}
         </S.NavList>
       </S.SidebarScrollArea>
 
       <S.SidebarFooter>
         {isCollapsed ? (
           <S.FooterCollapsed>
-            <SidebarAvatar />
+            <SidebarAvatar initials={initials} />
           </S.FooterCollapsed>
         ) : (
           <S.FooterContent>
-            <SidebarAvatar />
+            <SidebarAvatar initials={initials} />
 
             <S.FooterText>
-              <S.FooterEyebrow>Bem-vindo 👋</S.FooterEyebrow>
-              <S.FooterName>Lucas Eduardo</S.FooterName>
+              <S.FooterEyebrow>{authContext.church.name}</S.FooterEyebrow>
+              <S.FooterName>{authContext.profile.displayName}</S.FooterName>
             </S.FooterText>
 
             <ChevronRight size={19} strokeWidth={1.9} />

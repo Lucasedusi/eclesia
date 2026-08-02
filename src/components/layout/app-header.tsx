@@ -2,18 +2,24 @@
 
 import {
   Bell,
+  Building2,
   ChevronDown,
+  LogOut,
   Menu,
   MessageCircle,
   Moon,
   SunMedium,
+  UserRound,
 } from "lucide-react";
+import { logoutAction, switchChurchAction } from "@/modules/auth/actions/auth.actions";
+import { ROLE_LABELS, type AuthContext } from "@/modules/auth/types/auth.types";
 import * as S from "./app-header.styles";
 
 type AppHeaderProps = {
   title?: string;
   subtitle?: string;
   onOpenSidebar?: () => void;
+  authContext: AuthContext;
 };
 
 function HeaderIconButton({
@@ -33,7 +39,16 @@ function HeaderIconButton({
   );
 }
 
-export function AppHeader({ onOpenSidebar }: AppHeaderProps) {
+export function AppHeader({ onOpenSidebar, authContext }: AppHeaderProps) {
+  const initials =
+    authContext.profile.fullName
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0])
+      .join("")
+      .toUpperCase() || "US";
+
   return (
     <S.HeaderRoot>
       <S.HeaderInner>
@@ -47,7 +62,7 @@ export function AppHeader({ onOpenSidebar }: AppHeaderProps) {
           </S.MobileMenuButton>
 
           <S.Greeting>
-            Paz do Senhor, <strong>Secretário da silva</strong> 👋
+            Paz do Senhor, <strong>{authContext.profile.displayName}</strong> 👋
           </S.Greeting>
         </S.HeaderLeft>
 
@@ -69,17 +84,43 @@ export function AppHeader({ onOpenSidebar }: AppHeaderProps) {
             <Bell size={18} strokeWidth={1.7} />
           </HeaderIconButton>
 
-          <S.UserArea>
-            <S.UserMeta>
-              <S.UserName>Lucas Eduardo</S.UserName>
-              <S.UserRole>Secretário</S.UserRole>
-            </S.UserMeta>
+          <S.UserMenu>
+            <summary>
+              <S.UserArea>
+                <S.UserMeta>
+                  <S.UserName>{authContext.profile.displayName}</S.UserName>
+                  <S.UserRole>{ROLE_LABELS[authContext.access.role]}</S.UserRole>
+                </S.UserMeta>
 
-            <S.UserAvatar>LE</S.UserAvatar>
-            <ChevronDown size={18} strokeWidth={1.8} color="#637381" />
-          </S.UserArea>
+                <S.UserAvatar>{initials}</S.UserAvatar>
+                <ChevronDown size={18} strokeWidth={1.8} color="#637381" />
+              </S.UserArea>
+            </summary>
 
-          <S.MobileAvatar>LE</S.MobileAvatar>
+            <S.UserDropdown>
+              <S.DropdownIdentity>
+                <S.UserAvatar>{initials}</S.UserAvatar>
+                <div><strong>{authContext.profile.fullName}</strong><span>{authContext.profile.email}</span></div>
+              </S.DropdownIdentity>
+              <S.DropdownItem href="/perfil"><UserRound size={16} /> Meu perfil</S.DropdownItem>
+              {authContext.availableChurches.length > 1 ? (
+                <S.ChurchList>
+                  <span><Building2 size={14} /> Trocar igreja</span>
+                  {authContext.availableChurches.map((church) => (
+                    <form key={church.id} action={switchChurchAction}>
+                      <input type="hidden" name="churchId" value={church.id} />
+                      <button type="submit" data-active={church.id === authContext.church.id}>{church.name}</button>
+                    </form>
+                  ))}
+                </S.ChurchList>
+              ) : null}
+              <form action={logoutAction}>
+                <S.LogoutButton type="submit"><LogOut size={16} /> Encerrar sessão</S.LogoutButton>
+              </form>
+            </S.UserDropdown>
+          </S.UserMenu>
+
+          <S.MobileAvatar>{initials}</S.MobileAvatar>
         </S.HeaderActions>
       </S.HeaderInner>
     </S.HeaderRoot>

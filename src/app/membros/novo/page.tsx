@@ -4,12 +4,16 @@ import { AppShell } from "@/components/layout/app-shell";
 import { PageHeader } from "@/components/ui/page-header";
 import { MemberCreateForm } from "@/modules/members/components/member-create-form/member-create-form";
 import { getMemberFormOptions } from "@/modules/members/services/member-form-options.service";
+import { requireAccessContext } from "@/modules/auth/services/access-context.service";
+import { PERMISSIONS } from "@/modules/auth/constants/permissions";
 
 export default async function NewMemberPage() {
-  const options = await getMemberFormOptions();
+  const context = await requireAccessContext(PERMISSIONS.membersCreate);
+  const options = await getMemberFormOptions(context);
 
   return (
     <AppShell
+      authContext={context}
       title="Novo membro"
       subtitle="Cadastro multi etapas do módulo de membros"
     >
