@@ -215,6 +215,12 @@ export async function getOrganizationData(): Promise<OrganizationData> {
       regions: isAdministrator && context.permissions.includes(PERMISSIONS.regionsManage),
       congregations:
         isAdministrator && context.permissions.includes(PERMISSIONS.congregationsManage),
+      congregationDocumentsView:
+        isAdministrator &&
+        context.permissions.includes(PERMISSIONS.congregationDocumentsView),
+      congregationDocumentsManage:
+        isAdministrator &&
+        context.permissions.includes(PERMISSIONS.congregationDocumentsManage),
       positions: isAdministrator && context.permissions.includes(PERMISSIONS.positionsManage),
     },
   };
@@ -247,4 +253,3 @@ export async function getPositionOptions(): Promise<OrganizationOption[]> {
     .filter((item) => item.status === "ACTIVE")
     .map(({ id, name }) => ({ id, name }));
 }
-

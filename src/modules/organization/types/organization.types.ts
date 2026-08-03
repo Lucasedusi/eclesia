@@ -1,5 +1,25 @@
 export type OrganizationStatus = "ACTIVE" | "INACTIVE";
 
+export type CongregationDocumentCategory =
+  | "WATER_BILL"
+  | "ENERGY_BILL"
+  | "DEED"
+  | "CONTRACT"
+  | "TAX_DOCUMENT"
+  | "RECEIPT"
+  | "OTHER";
+
+export type CongregationDocumentItem = {
+  id: string;
+  title: string;
+  category: CongregationDocumentCategory;
+  originalFileName: string;
+  mimeType: string;
+  fileSize: number;
+  uploadedAt: string;
+  updatedAt: string;
+};
+
 export type RegionItem = {
   id: string;
   name: string;
@@ -70,6 +90,8 @@ export type OrganizationStats = {
 export type OrganizationManagement = {
   regions: boolean;
   congregations: boolean;
+  congregationDocumentsView: boolean;
+  congregationDocumentsManage: boolean;
   positions: boolean;
 };
 
@@ -88,10 +110,31 @@ export type OrganizationActionState = {
   fieldErrors?: Record<string, string[]>;
 };
 
+export type CongregationDocumentListState = {
+  status: "success" | "error";
+  message: string;
+  documents: CongregationDocumentItem[];
+};
+
+export type CongregationDocumentUrlState = {
+  status: "success" | "error";
+  message: string;
+  url?: string;
+};
+
+export type CongregationDocumentUploadState = {
+  status: "success" | "error";
+  message: string;
+  fieldErrors?: Record<string, string[]>;
+  documentId?: string;
+  path?: string;
+  token?: string;
+  contentType?: string;
+};
+
 export const INITIAL_ORGANIZATION_ACTION_STATE: OrganizationActionState = {
   status: "idle",
   message: "",
 };
 
 export type OrganizationTab = "regions" | "congregations" | "positions";
-

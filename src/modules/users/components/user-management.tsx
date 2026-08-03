@@ -21,6 +21,8 @@ const ADMIN_ONLY_PERMISSIONS = new Set([
   "regions.manage",
   "congregations.manage",
   "positions.manage",
+  "congregation_documents.view",
+  "congregation_documents.manage",
 ]);
 
 function PermissionEditor({ access, permissions }: { access: UserAccessItem; permissions: PermissionOption[] }) {

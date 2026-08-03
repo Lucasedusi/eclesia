@@ -144,7 +144,7 @@ export const Body = styled.div`
   padding-right: 4px;
 
   &::-webkit-scrollbar {
-    width: 7px;
+    width: 4px;
   }
   &::-webkit-scrollbar-thumb {
     border-radius: 999px;

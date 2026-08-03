@@ -12,6 +12,7 @@ const knownMessages: Array<[string, string]> = [
   ["Selecione uma Regional", "Selecione uma Regional ativa para a Congregação."],
   ["Regional deve estar ativa", "A Regional selecionada não está ativa ou não pertence a esta igreja."],
   ["dependência(s)", "Esta Congregação possui vínculos que precisam ser preservados. Inative-a em vez de excluir."],
+  ["documentos ativos", "Esta Congregação possui documentos anexados. Exclua os documentos ou inative a Congregação."],
   ["vínculos com membros", "Este Cargo já possui vínculo com membros e deve ser apenas inativado."],
   ["exclusiva de Administradores", "Esta ação é exclusiva de Administradores."],
   ["Acesso negado", "Você não possui autorização para realizar esta ação."],
