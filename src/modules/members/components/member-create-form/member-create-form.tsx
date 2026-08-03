@@ -6,7 +6,7 @@ import { AlertCircle, CheckCircle2, Info, ShieldCheck } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import { Toast } from "@/components/ui/toast";
+import { Toast, ToastViewport } from "@/components/ui/toast";
 import {
   brazilianStateOptions,
   educationLevelOptions,
@@ -967,17 +967,14 @@ export function MemberCreateForm({ options }: MemberCreateFormProps) {
       </S.FormCard>
 
       {toast ? (
-        <S.ToastPosition>
+        <ToastViewport>
           <Toast
             title={toast.title}
             description={toast.description}
             variant={toast.variant}
-            filled
-            timeLabel="agora"
-            brandLabel="Eclésia"
             onClose={() => setToast(null)}
           />
-        </S.ToastPosition>
+        </ToastViewport>
       ) : null}
     </S.FormLayout>
   );

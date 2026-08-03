@@ -36,7 +36,7 @@ export function AppShell({ children, title, subtitle, authContext }: AppShellPro
   }
 
   return (
-    <S.ShellRoot>
+    <S.ShellRoot data-app-shell>
       <S.DesktopSidebarSlot>
         <AppSidebar
           collapsed={sidebarCollapsed}

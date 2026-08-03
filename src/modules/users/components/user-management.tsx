@@ -17,7 +17,16 @@ function scopeOptions(scope: AccessScope, data: Pick<UserManagementData,"regions
   return [];
 }
 
+const ADMIN_ONLY_PERMISSIONS = new Set([
+  "regions.manage",
+  "congregations.manage",
+  "positions.manage",
+]);
+
 function PermissionEditor({ access, permissions }: { access: UserAccessItem; permissions: PermissionOption[] }) {
+  const availablePermissions = permissions.filter(
+    (permission) => access.role === "ADMIN" || !ADMIN_ONLY_PERMISSIONS.has(permission.key),
+  );
   const [state, action, pending] = useActionState(setPermissionOverrideAction, INITIAL_ACTION_STATE);
   return <S.PermissionBox>
     <h3>Permissões personalizadas</h3><p>O papel define as permissões herdadas. Use exceções apenas quando necessário.</p>
@@ -26,7 +35,7 @@ function PermissionEditor({ access, permissions }: { access: UserAccessItem; per
     <form action={action}>
       <input type="hidden" name="accessId" value={access.id} />
       <S.FormGrid>
-        <S.Field><span>Permissão</span><S.Select name="permission" defaultValue="">{permissions.map((permission)=><option key={permission.key} value={permission.key}>{permission.module} · {permission.name}</option>)}</S.Select></S.Field>
+        <S.Field><span>Permissão</span><S.Select name="permission" defaultValue="">{availablePermissions.map((permission)=><option key={permission.key} value={permission.key}>{permission.module} · {permission.name}</option>)}</S.Select></S.Field>
         <S.Field><span>Comportamento</span><S.Select name="effect" defaultValue="INHERIT"><option value="INHERIT">Usar regra do papel</option><option value="ALLOW">Permitir individualmente</option><option value="DENY">Negar individualmente</option></S.Select></S.Field>
         <S.Field><span>&nbsp;</span><S.Button type="submit" disabled={pending}>{pending ? <S.Spinner /> : <ShieldCheck size={15}/>} Aplicar permissão</S.Button></S.Field>
       </S.FormGrid>

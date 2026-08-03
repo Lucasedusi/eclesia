@@ -5,6 +5,10 @@ import styled from "styled-components";
 export const ShellRoot = styled.div`
   min-height: 100vh;
   background: ${({ theme }) => theme.colors.surface.background};
+
+  &.modal-background-blur {
+    filter: blur(1px);
+  }
 `;
 
 export const DesktopSidebarSlot = styled.div`
@@ -24,7 +28,9 @@ export const Content = styled.div<{ $collapsed: boolean }>`
 
   @media (min-width: 1024px) {
     padding-left: ${({ $collapsed, theme }) =>
-      $collapsed ? theme.layout.sidebarCollapsed : theme.layout.sidebarExpanded};
+      $collapsed
+        ? theme.layout.sidebarCollapsed
+        : theme.layout.sidebarExpanded};
   }
 `;
 

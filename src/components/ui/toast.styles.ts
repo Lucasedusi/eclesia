@@ -1,6 +1,6 @@
 "use client";
 
-import styled, { css } from "styled-components";
+import styled, { css, keyframes } from "styled-components";
 
 export type StyledToastVariant = "success" | "danger" | "warning" | "neutral";
 
@@ -39,14 +39,65 @@ const iconColor = {
   `,
 };
 
+const iconBackground = {
+  success: css`
+    background: ${({ theme }) => theme.colors.state.successSoft};
+  `,
+  danger: css`
+    background: ${({ theme }) => theme.colors.state.dangerSoft};
+  `,
+  warning: css`
+    background: ${({ theme }) => theme.colors.state.warningSoft};
+  `,
+  neutral: css`
+    background: ${({ theme }) => theme.colors.state.infoSoft};
+  `,
+};
+
+const toastIn = keyframes`
+  from {
+    opacity: 0;
+    transform: translate3d(18px, -4px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+`;
+
+export const Viewport = styled.div`
+  position: fixed;
+  z-index: 1200;
+  top: 20px;
+  right: 20px;
+  display: grid;
+  width: min(400px, calc(100vw - 40px));
+  gap: 12px;
+  pointer-events: none;
+
+  > * {
+    pointer-events: auto;
+  }
+
+  @media (max-width: 640px) {
+    top: 12px;
+    right: 12px;
+    left: 12px;
+    width: auto;
+  }
+`;
+
 export const ToastRoot = styled.div<ToastRootProps>`
   display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
   width: 100%;
-  max-width: 380px;
-  gap: 18px;
-  border-radius: ${({ theme }) => theme.radius.sm};
-  padding: 18px 18px 20px;
-  box-shadow: 0 16px 45px rgba(16, 24, 40, 0.16);
+  gap: 12px;
+  overflow: hidden;
+  border-radius: 13px;
+  padding: 14px;
+  box-shadow: 0 18px 48px rgba(16, 24, 40, 0.18);
+  animation: ${toastIn} 180ms cubic-bezier(0.22, 1, 0.36, 1) both;
 
   ${({ $variant, $filled }) =>
     $filled
@@ -59,57 +110,37 @@ export const ToastRoot = styled.div<ToastRootProps>`
           background: ${({ theme }) => theme.colors.surface.card};
           color: ${({ theme }) => theme.colors.text.title};
         `}
-`;
 
-export const ToastHeader = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-`;
-
-export const ToastBrand = styled.div`
-  display: inline-flex;
-  min-width: 0;
-  align-items: center;
-  gap: 10px;
-`;
-
-export const IconSlot = styled.span<ToastRootProps>`
-  display: inline-flex;
-  flex-shrink: 0;
-  color: ${({ theme, $filled }) =>
-    $filled ? theme.colors.text.inverse : undefined};
-
-  ${({ $filled, $variant }) => !$filled && iconColor[$variant]}
-
-  svg {
-    width: 19px;
-    height: 19px;
-    stroke-width: 1.9;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
   }
 `;
 
-export const BrandText = styled.strong`
-  overflow: hidden;
-  font-size: 13px;
-  font-weight: 800;
-  line-height: 1;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-`;
-
-export const ToastMeta = styled.div`
-  display: inline-flex;
+export const IconSlot = styled.span<ToastRootProps>`
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
   flex-shrink: 0;
-  align-items: center;
-  gap: 10px;
-`;
+  border-radius: 11px;
+  color: ${({ theme, $filled }) =>
+    $filled ? theme.colors.text.inverse : undefined};
 
-export const TimeText = styled.span`
-  font-size: 12px;
-  font-weight: 700;
-  opacity: 0.9;
+  ${({ $filled, $variant }) =>
+    $filled
+      ? css`
+          background: rgba(255, 255, 255, 0.16);
+        `
+      : css`
+          ${iconColor[$variant]}
+          ${iconBackground[$variant]}
+        `}
+
+  svg {
+    width: 20px;
+    height: 20px;
+    stroke-width: 2;
+  }
 `;
 
 export const CloseButton = styled.button`
@@ -121,10 +152,15 @@ export const CloseButton = styled.button`
   color: currentColor;
   cursor: pointer;
   opacity: 0.8;
-  padding: 0;
-  transition: opacity ${({ theme }) => theme.transitions.fast};
+  margin: -4px -4px 0 0;
+  border-radius: 8px;
+  padding: 5px;
+  transition:
+    background ${({ theme }) => theme.transitions.fast},
+    opacity ${({ theme }) => theme.transitions.fast};
 
   &:hover {
+    background: rgba(127, 127, 127, 0.11);
     opacity: 1;
   }
 
@@ -137,23 +173,23 @@ export const CloseButton = styled.button`
 
 export const ToastContent = styled.div`
   display: grid;
-  gap: 6px;
+  min-width: 0;
+  align-self: center;
+  gap: 3px;
 `;
 
 export const ToastTitle = styled.p`
   margin: 0;
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 850;
   letter-spacing: -0.01em;
-  line-height: 1.4;
+  line-height: 1.35;
 `;
 
 export const ToastDescription = styled.p`
   margin: 0;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
-  line-height: 1.5;
-  opacity: 0.9;
+  line-height: 1.45;
+  opacity: 0.82;
 `;
-
-export const CloseIcon = CloseButton;

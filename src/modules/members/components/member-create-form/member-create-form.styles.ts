@@ -326,18 +326,3 @@ export const ReviewValue = styled.dd`
   line-height: 20px;
   word-break: break-word;
 `;
-
-export const ToastPosition = styled.div`
-  position: fixed;
-  top: 24px;
-  right: 24px;
-  z-index: 80;
-  width: min(380px, calc(100vw - 32px));
-
-  @media (max-width: 640px) {
-    top: 16px;
-    right: 16px;
-    left: 16px;
-    width: auto;
-  }
-`;

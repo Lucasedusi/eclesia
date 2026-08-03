@@ -1,13 +1,14 @@
 "use client";
 
-import styled from "styled-components";
+import styled, { keyframes } from "styled-components";
 
-export type StyledModalSize = "sm" | "md" | "lg";
+export type StyledModalSize = "sm" | "md" | "lg" | "xl";
 
 const modalSizes = {
   sm: "560px",
   md: "640px",
   lg: "760px",
+  xl: "980px",
 };
 
 type DialogProps = {
@@ -18,29 +19,65 @@ type ConfirmIconProps = {
   $destructive: boolean;
 };
 
+const overlayIn = keyframes`
+  from { opacity: 0; }
+  to { opacity: 1; }
+`;
+
+const dialogIn = keyframes`
+  from { opacity: 0; transform: translateY(10px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+`;
+
 export const Overlay = styled.div`
   position: fixed;
   inset: 0;
-  z-index: 50;
+  z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(16, 24, 40, 0.4);
-  padding: 16px;
-  backdrop-filter: blur(2px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: rgba(7, 14, 27, 0.48);
+  padding: 20px;
+  animation: ${overlayIn} 180ms ease-out both;
+
+  @media (max-width: 640px) {
+    padding: 12px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 `;
 
 export const Dialog = styled.section<DialogProps>`
+  display: flex;
   width: 100%;
+  max-height: calc(100dvh - 40px);
+  flex-direction: column;
+  overflow: hidden;
   max-width: ${({ $size }) => modalSizes[$size]};
   border-radius: ${({ theme }) => theme.radius.sm};
   background: ${({ theme }) => theme.colors.surface.card};
   padding: 24px;
   box-shadow: ${({ theme }) => theme.shadows.modal};
+  outline: none;
+  animation: ${dialogIn} 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+
+  @media (max-width: 640px) {
+    max-height: calc(100dvh - 24px);
+    padding: 18px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 `;
 
 export const Header = styled.div`
   display: flex;
+  flex: 0 0 auto;
   align-items: flex-start;
   gap: 16px;
 `;
@@ -99,14 +136,25 @@ export const CloseButton = styled.button`
 `;
 
 export const Body = styled.div`
+  min-height: 0;
+  overflow-y: auto;
   margin-top: 24px;
+  padding-right: 4px;
+
+  &::-webkit-scrollbar { width: 7px; }
+  &::-webkit-scrollbar-thumb { border-radius: 999px; background: #d9deea; }
 `;
 
 export const Footer = styled.div`
   display: flex;
+  flex: 0 0 auto;
   justify-content: flex-end;
   gap: 12px;
   margin-top: 24px;
+
+  @media (max-width: 480px) {
+    gap: 8px;
+  }
 `;
 
 export const ConfirmIconOuter = styled.span<ConfirmIconProps>`

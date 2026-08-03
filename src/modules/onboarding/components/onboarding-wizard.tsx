@@ -38,6 +38,7 @@ export function OnboardingWizard({ administratorName }: { administratorName: str
   const [localErrors, setLocalErrors] = useState<Record<string, string>>({});
   const [state, action, pending] = useActionState(completeOnboardingAction, INITIAL_ACTION_STATE);
   const router = useRouter();
+  const isReviewStep = currentStep === steps.length - 1;
 
   useEffect(() => {
     if (state.status === "success" && state.redirectTo) {
@@ -118,7 +119,15 @@ export function OnboardingWizard({ administratorName }: { administratorName: str
             <S.Progress><span style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }} /></S.Progress>
           </S.Top>
 
-          <form action={action}>
+          <form
+            action={isReviewStep ? action : undefined}
+            onSubmit={(event) => {
+              if (!isReviewStep) {
+                event.preventDefault();
+                goNext();
+              }
+            }}
+          >
             {Object.entries(values).map(([name, value]) => <input key={name} type="hidden" name={name} value={value} />)}
             {state.status === "error" ? <S.Alert>{state.message}</S.Alert> : null}
 

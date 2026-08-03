@@ -5,6 +5,7 @@ import {
   FileArchive,
   FileText,
   LayoutDashboard,
+  Network,
   Palette,
   Settings,
   ShieldCheck,
@@ -20,6 +21,12 @@ export const mainNavigation = [
     href: "/",
     icon: LayoutDashboard,
     requiredPermission: PERMISSIONS.dashboardView,
+  },
+  {
+    label: "Estrutura eclesiástica",
+    href: "/estrutura-eclesiastica",
+    icon: Network,
+    requiredPermission: PERMISSIONS.organizationView,
   },
   {
     label: "Membros",
