@@ -70,30 +70,36 @@ export const LogoWrapper = styled.div<{ $collapsed: boolean }>`
 
 export const CollapseButton = styled.button`
   position: absolute;
-  top: 32px;
-  right: -18px;
+  top: 34px;
+  right: 0;
   z-index: 20;
   width: 36px;
   height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #e2e8f0;
-  border-radius: ${({ theme }) => theme.radius.full};
-  color: #ffffff;
-  background: #17233b;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.62);
+  background: transparent;
+  box-shadow: none;
   cursor: pointer;
   transition:
-    background ${({ theme }) => theme.transitions.fast},
-    transform ${({ theme }) => theme.transitions.fast};
+    color ${({ theme }) => theme.transitions.fast},
+    opacity ${({ theme }) => theme.transitions.fast};
 
   &:hover {
-    background: #24314e;
+    color: #ffffff;
   }
 
   &:active {
-    transform: scale(0.96);
+    opacity: 0.72;
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgba(142, 160, 242, 0.8);
+    outline-offset: 2px;
   }
 `;
 

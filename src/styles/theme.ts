@@ -41,6 +41,7 @@ export const theme = {
       dangerSoft: "#FFEFEF",
       info: "#415BA5",
       infoSoft: "rgba(65, 91, 165, 0.10)",
+      infoSolfSecundary: "#eef2ff",
     },
     icon: {
       default: "#A3A7AC",

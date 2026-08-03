@@ -117,6 +117,32 @@ export function CongregationForm({
     setCurrentStep((step) => Math.min(step + 1, steps.length - 1));
   }
 
+  function validateBeforeSave() {
+    const parsed = congregationSchema.safeParse(hiddenFields);
+    const extraError = !isHeadquarters && !values.regionId;
+
+    if (!parsed.success || extraError) {
+      const parsedErrors = parsed.success
+        ? {}
+        : Object.fromEntries(
+            Object.entries(parsed.error.flatten().fieldErrors).map(([key, messages]) => [
+              key,
+              messages[0] ?? "Campo inválido.",
+            ]),
+          );
+
+      setLocalErrors({
+        ...parsedErrors,
+        ...(extraError ? { regionId: "Selecione uma Regional ativa." } : {}),
+      });
+      setCurrentStep(0);
+      return false;
+    }
+
+    setLocalErrors({});
+    return true;
+  }
+
   function formatZipCode(value: string) {
     return value.replace(/\D/g, "").slice(0, 8).replace(/^(\d{5})(\d)/, "$1-$2");
   }
@@ -145,11 +171,16 @@ export function CongregationForm({
           <div>
             <Button variant="outline" onClick={onClose} disabled={pending}>Cancelar</Button>
             {currentStep < steps.length - 1 ? (
-              <Button type="button" onClick={nextStep} disabled={pending}>
+              <Button key="continue" type="button" onClick={nextStep} disabled={pending}>
                 Continuar <ArrowRight size={16} />
               </Button>
             ) : (
-              <Button type="submit" form={formId} loading={pending}>
+              <Button
+                key="save"
+                type="submit"
+                form={formId}
+                loading={pending}
+              >
                 {!pending && <Save size={16} />}
                 {pending ? "Salvando..." : "Salvar Congregação"}
               </Button>
@@ -160,31 +191,10 @@ export function CongregationForm({
     >
       <S.Form
         id={formId}
-        action={isReviewStep ? formAction : undefined}
+        action={formAction}
         onSubmit={(event) => {
-          if (!isReviewStep) {
+          if (!isReviewStep || pending || !validateBeforeSave()) {
             event.preventDefault();
-            nextStep();
-            return;
-          }
-
-          const parsed = congregationSchema.safeParse(hiddenFields);
-          const extraError = !isHeadquarters && !values.regionId;
-          if (!parsed.success || extraError) {
-            event.preventDefault();
-            const parsedErrors = parsed.success
-              ? {}
-              : Object.fromEntries(
-                  Object.entries(parsed.error.flatten().fieldErrors).map(([key, messages]) => [
-                    key,
-                    messages[0] ?? "Campo inválido.",
-                  ]),
-                );
-            setLocalErrors({
-              ...parsedErrors,
-              ...(extraError ? { regionId: "Selecione uma Regional ativa." } : {}),
-            });
-            setCurrentStep(0);
           }
         }}
       >

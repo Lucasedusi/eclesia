@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useState } from "react";
+import { startTransition, useActionState, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Check, Church, ShieldCheck } from "lucide-react";
 import { INITIAL_ACTION_STATE } from "@/modules/auth/types/auth.types";
@@ -88,6 +88,19 @@ export function OnboardingWizard({ administratorName }: { administratorName: str
     setCurrentStep((step) => Math.min(step + 1, steps.length - 1));
   }
 
+  function completeOnboarding() {
+    if (!isReviewStep || pending) return;
+
+    const formData = new FormData();
+    Object.entries(values).forEach(([name, value]) => {
+      formData.set(name, value);
+    });
+
+    startTransition(() => {
+      action(formData);
+    });
+  }
+
   const field = (name: string, label: string, placeholder = "", extra?: React.InputHTMLAttributes<HTMLInputElement>) => (
     <S.Field>
       <span>{label}</span>
@@ -120,12 +133,8 @@ export function OnboardingWizard({ administratorName }: { administratorName: str
           </S.Top>
 
           <form
-            action={isReviewStep ? action : undefined}
             onSubmit={(event) => {
-              if (!isReviewStep) {
-                event.preventDefault();
-                goNext();
-              }
+              event.preventDefault();
             }}
           >
             {Object.entries(values).map(([name, value]) => <input key={name} type="hidden" name={name} value={value} />)}
@@ -168,7 +177,7 @@ export function OnboardingWizard({ administratorName }: { administratorName: str
 
             <S.Footer>
               <S.Button type="button" $secondary disabled={currentStep === 0 || pending} onClick={() => setCurrentStep((step) => Math.max(step - 1, 0))}><ArrowLeft size={17} /> Voltar</S.Button>
-              {currentStep < steps.length - 1 ? <S.Button type="button" onClick={goNext}>Continuar <ArrowRight size={17} /></S.Button> : <S.Button type="submit" disabled={pending}>{pending ? <S.Spinner /> : <ShieldCheck size={17} />}{pending ? "Configurando..." : "Concluir configuração"}</S.Button>}
+              {currentStep < steps.length - 1 ? <S.Button key="continue" type="button" onClick={goNext}>Continuar <ArrowRight size={17} /></S.Button> : <S.Button key="complete" type="button" onClick={completeOnboarding} disabled={pending}>{pending ? <S.Spinner /> : <ShieldCheck size={17} />}{pending ? "Configurando..." : "Concluir configuração"}</S.Button>}
             </S.Footer>
           </form>
         </S.Content>

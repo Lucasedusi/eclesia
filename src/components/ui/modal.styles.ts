@@ -84,6 +84,10 @@ export const Header = styled.div`
 
 export const IconSlot = styled.div`
   flex-shrink: 0;
+  padding: 12px;
+  background: ${({ theme }) => theme.colors.state.infoSolfSecundary};
+  color: ${({ theme }) => theme.colors.brand.primary};
+  border-radius: 10px;
 `;
 
 export const TitleArea = styled.div`
@@ -99,11 +103,9 @@ export const Title = styled.h2`
 `;
 
 export const Description = styled.p`
-  margin-top: 4px;
-  color: ${({ theme }) => theme.colors.text.body};
-  font-size: 14px;
+  color: ${({ theme }) => theme.colors.text.soft};
+  font-size: 13px;
   font-weight: 500;
-  line-height: 24px;
 `;
 
 export const CloseButton = styled.button`
@@ -141,8 +143,13 @@ export const Body = styled.div`
   margin-top: 24px;
   padding-right: 4px;
 
-  &::-webkit-scrollbar { width: 7px; }
-  &::-webkit-scrollbar-thumb { border-radius: 999px; background: #d9deea; }
+  &::-webkit-scrollbar {
+    width: 7px;
+  }
+  &::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: #d9deea;
+  }
 `;
 
 export const Footer = styled.div`
@@ -165,7 +172,9 @@ export const ConfirmIconOuter = styled.span<ConfirmIconProps>`
   justify-content: center;
   border-radius: ${({ theme }) => theme.radius.full};
   background: ${({ theme, $destructive }) =>
-    $destructive ? theme.colors.state.dangerSoft : theme.colors.state.successSoft};
+    $destructive
+      ? theme.colors.state.dangerSoft
+      : theme.colors.state.successSoft};
 `;
 
 export const ConfirmIconInner = styled.span<ConfirmIconProps>`
