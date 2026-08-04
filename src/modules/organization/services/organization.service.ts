@@ -4,10 +4,13 @@ import { createClient } from "@/lib/supabase/server";
 import { PERMISSIONS } from "@/modules/auth/constants/permissions";
 import { requireAccessContext } from "@/modules/auth/services/access-context.service";
 import type {
+  CongregationDetails,
   CongregationItem,
   OrganizationData,
   OrganizationOption,
   PositionItem,
+  RegionCongregationSummary,
+  RegionDetails,
   RegionItem,
 } from "../types/organization.types";
 
@@ -63,6 +66,17 @@ type PositionRow = {
   status: "ACTIVE" | "INACTIVE";
   created_at: string;
   updated_at: string;
+};
+
+type RegionCongregationRow = {
+  id: string;
+  name: string;
+  code: string | null;
+  pastor_name: string | null;
+  city: string | null;
+  state: string | null;
+  is_headquarters: boolean;
+  status: "ACTIVE" | "INACTIVE";
 };
 
 function first<T>(value: T | T[] | null): T | null {
@@ -169,6 +183,136 @@ function mapPosition(row: PositionRow): PositionItem {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
+}
+
+function mapRegionCongregation(row: RegionCongregationRow): RegionCongregationSummary {
+  return {
+    id: row.id,
+    name: row.name,
+    code: row.code,
+    pastorName: row.pastor_name,
+    city: row.city,
+    state: row.state,
+    isHeadquarters: row.is_headquarters,
+    status: row.status,
+  };
+}
+
+export async function getRegionDetails(regionId: string): Promise<RegionDetails | null> {
+  const context = await requireAccessContext(PERMISSIONS.organizationView);
+  const supabase = await createClient();
+
+  const [regionResult, congregationsResult] = await Promise.all([
+    supabase
+      .from("regions")
+      .select(
+        "id, name, description, coordinator_name, coordinator_phone, display_order, status, created_at, updated_at",
+      )
+      .eq("id", regionId)
+      .eq("church_id", context.church.id)
+      .is("deleted_at", null)
+      .maybeSingle(),
+    supabase
+      .from("congregations")
+      .select("id, name, code, pastor_name, city, state, is_headquarters, status")
+      .eq("region_id", regionId)
+      .eq("church_id", context.church.id)
+      .is("deleted_at", null)
+      .order("display_order")
+      .order("name")
+      .order("id"),
+  ]);
+
+  if (regionResult.error || congregationsResult.error) {
+    console.error("[organization] Failed to load Regional details", {
+      region: regionResult.error
+        ? { code: regionResult.error.code, message: regionResult.error.message }
+        : null,
+      congregations: congregationsResult.error
+        ? {
+            code: congregationsResult.error.code,
+            message: congregationsResult.error.message,
+          }
+        : null,
+    });
+    throw new Error("REGION_DETAILS_LOAD_FAILED");
+  }
+
+  const row = regionResult.data as RegionRow | null;
+  if (!row) return null;
+
+  const congregations = (congregationsResult.data ?? []).map((item) =>
+    mapRegionCongregation(item as RegionCongregationRow),
+  );
+
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description,
+    coordinatorName: row.coordinator_name,
+    coordinatorPhone: row.coordinator_phone,
+    displayOrder: row.display_order,
+    status: row.status,
+    congregationCount: congregations.length,
+    activeCongregationCount: congregations.filter((item) => item.status === "ACTIVE").length,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    congregations,
+  };
+}
+
+export async function getCongregationDetails(
+  congregationId: string,
+): Promise<CongregationDetails | null> {
+  const context = await requireAccessContext(PERMISSIONS.organizationView);
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("congregations")
+    .select(
+      "id, region_id, name, code, pastor_name, pastor_spouse_name, phone, whatsapp, email, zip_code, address, number, complement, district, city, state, country, notes, is_headquarters, display_order, status, created_at, updated_at, regions(name)",
+    )
+    .eq("id", congregationId)
+    .eq("church_id", context.church.id)
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  if (error) {
+    console.error("[organization] Failed to load Congregation details", {
+      code: error.code,
+      message: error.message,
+    });
+    throw new Error("CONGREGATION_DETAILS_LOAD_FAILED");
+  }
+
+  const row = data as unknown as CongregationRow | null;
+  if (!row) return null;
+
+  const canViewDocuments =
+    context.access.role === "ADMIN" &&
+    context.access.scope === "CHURCH" &&
+    context.permissions.includes(PERMISSIONS.congregationDocumentsView);
+  let documentCount: number | null = null;
+
+  if (canViewDocuments) {
+    const documentsResult = await supabase
+      .from("congregation_documents")
+      .select("id", { count: "exact", head: true })
+      .eq("church_id", context.church.id)
+      .eq("congregation_id", congregationId)
+      .eq("upload_status", "READY")
+      .is("deleted_at", null);
+
+    if (documentsResult.error) {
+      console.error("[organization] Failed to count Congregation documents", {
+        code: documentsResult.error.code,
+        message: documentsResult.error.message,
+      });
+    } else {
+      documentCount = documentsResult.count ?? 0;
+    }
+  }
+
+  return { ...mapCongregation(row), documentCount };
 }
 
 export async function getOrganizationData(): Promise<OrganizationData> {

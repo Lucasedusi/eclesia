@@ -114,7 +114,10 @@ export const SidebarScrollArea = styled.div`
   }
 `;
 
-export const NavList = styled.nav<{ $collapsed: boolean; $secondary?: boolean }>`
+export const NavList = styled.nav<{
+  $collapsed: boolean;
+  $secondary?: boolean;
+}>`
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -142,7 +145,8 @@ export const NavItem = styled(Link)<{ $active: boolean; $collapsed: boolean }>`
   margin: ${({ $collapsed }) => ($collapsed ? "0 auto" : "0")};
   display: flex;
   align-items: center;
-  justify-content: ${({ $collapsed }) => ($collapsed ? "center" : "flex-start")};
+  justify-content: ${({ $collapsed }) =>
+    $collapsed ? "center" : "flex-start"};
   gap: 16px;
   padding: ${({ $collapsed }) => ($collapsed ? "0" : "0 16px")};
   border-radius: 6px;
@@ -283,28 +287,6 @@ export const Avatar = styled.div`
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
   font-size: 13px;
   font-weight: 900;
-
-  &::before {
-    content: "";
-    position: absolute;
-    top: 4px;
-    left: -4px;
-    width: 32px;
-    height: 28px;
-    border-radius: 999px;
-    background: #ffe24a;
-  }
-
-  &::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    right: -4px;
-    width: 32px;
-    height: 32px;
-    border-radius: 999px;
-    background: #233c8f;
-  }
 
   span {
     position: relative;

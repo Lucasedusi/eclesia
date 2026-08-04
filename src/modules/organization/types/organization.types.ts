@@ -61,6 +61,25 @@ export type CongregationItem = {
   updatedAt: string;
 };
 
+export type RegionCongregationSummary = {
+  id: string;
+  name: string;
+  code: string | null;
+  pastorName: string | null;
+  city: string | null;
+  state: string | null;
+  isHeadquarters: boolean;
+  status: OrganizationStatus;
+};
+
+export type RegionDetails = RegionItem & {
+  congregations: RegionCongregationSummary[];
+};
+
+export type CongregationDetails = CongregationItem & {
+  documentCount: number | null;
+};
+
 export type PositionItem = {
   id: string;
   name: string;
@@ -109,6 +128,10 @@ export type OrganizationActionState = {
   message: string;
   fieldErrors?: Record<string, string[]>;
 };
+
+export type OrganizationDetailsState<T> =
+  | { status: "success"; data: T }
+  | { status: "error"; message: string };
 
 export type CongregationDocumentListState = {
   status: "success" | "error";

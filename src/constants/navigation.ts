@@ -23,7 +23,7 @@ export const mainNavigation = [
     requiredPermission: PERMISSIONS.dashboardView,
   },
   {
-    label: "Estrutura eclesiástica",
+    label: "Organização",
     href: "/estrutura-eclesiastica",
     icon: Network,
     requiredPermission: PERMISSIONS.organizationView,

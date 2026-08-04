@@ -60,15 +60,33 @@ export const BrandMark = styled.span`
   place-items: center;
   border-radius: 15px;
   color: #fff;
-  background: linear-gradient(145deg, #6c82da, ${({ theme }) => theme.colors.brand.primary});
+  background: linear-gradient(
+    145deg,
+    #6c82da,
+    ${({ theme }) => theme.colors.brand.primary}
+  );
   box-shadow: 0 13px 28px rgba(65, 91, 165, 0.25);
 
-  svg { width: 25px; height: 25px; }
+  svg {
+    width: 25px;
+    height: 25px;
+  }
 `;
 
 export const BrandText = styled.div`
-  strong { display: block; color: ${({ theme }) => theme.colors.text.title}; font-size: 18px; font-weight: 850; }
-  span { display: block; margin-top: 2px; color: ${({ theme }) => theme.colors.text.soft}; font-size: 12px; font-weight: 700; }
+  strong {
+    display: block;
+    color: ${({ theme }) => theme.colors.text.title};
+    font-size: 18px;
+    font-weight: 850;
+  }
+  span {
+    display: block;
+    margin-top: 2px;
+    color: ${({ theme }) => theme.colors.text.soft};
+    font-size: 12px;
+    font-weight: 700;
+  }
 `;
 
 export const Eyebrow = styled.p`
@@ -123,7 +141,9 @@ export const FieldLink = styled.a`
   font-size: 12px;
   font-weight: 800;
 
-  &:hover { text-decoration: underline; }
+  &:hover {
+    text-decoration: underline;
+  }
 `;
 
 export const InputWrap = styled.div`
@@ -143,8 +163,13 @@ export const Input = styled.input<{ $invalid?: boolean }>`
   font-weight: 650;
   transition: 160ms ease;
 
-  &::placeholder { color: #a5adbd; font-weight: 550; }
-  &:hover { border-color: #b7c0d5; }
+  &::placeholder {
+    color: #a5adbd;
+    font-weight: 550;
+  }
+  &:hover {
+    border-color: #b7c0d5;
+  }
   &:focus {
     border-color: ${({ theme }) => theme.colors.brand.primary};
     background: #fff;
@@ -165,7 +190,10 @@ export const PasswordButton = styled.button`
   border-radius: 8px;
   background: transparent;
   color: #8c97aa;
-  &:hover { color: ${({ theme }) => theme.colors.brand.primary}; background: rgba(65, 91, 165, 0.08); }
+  &:hover {
+    color: ${({ theme }) => theme.colors.brand.primary};
+    background: rgba(65, 91, 165, 0.08);
+  }
 `;
 
 export const FieldError = styled.p`
@@ -191,8 +219,14 @@ export const Submit = styled.button`
   font-weight: 850;
   transition: 180ms ease;
 
-  &:hover:not(:disabled) { transform: translateY(-1px); background: ${({ theme }) => theme.colors.brand.primaryHover}; }
-  &:disabled { cursor: wait; opacity: 0.7; }
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    background: ${({ theme }) => theme.colors.brand.primaryHover};
+  }
+  &:disabled {
+    cursor: wait;
+    opacity: 0.7;
+  }
 `;
 
 export const Spinner = styled.span`
@@ -203,7 +237,11 @@ export const Spinner = styled.span`
   border-radius: 50%;
   animation: spin 700ms linear infinite;
 
-  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
 `;
 
 export const Alert = styled.div<{ $success?: boolean }>`
@@ -226,8 +264,16 @@ export const CheckRow = styled.label`
   font-weight: 650;
   line-height: 1.55;
 
-  input { width: 16px; height: 16px; margin-top: 1px; accent-color: ${({ theme }) => theme.colors.brand.primary}; }
-  a { color: ${({ theme }) => theme.colors.brand.primary}; font-weight: 800; }
+  input {
+    width: 16px;
+    height: 16px;
+    margin-top: 1px;
+    accent-color: ${({ theme }) => theme.colors.brand.primary};
+  }
+  a {
+    color: ${({ theme }) => theme.colors.brand.primary};
+    font-weight: 800;
+  }
 `;
 
 export const SwitchText = styled.p`
@@ -237,7 +283,10 @@ export const SwitchText = styled.p`
   font-size: 13px;
   font-weight: 600;
 
-  a { color: ${({ theme }) => theme.colors.brand.primary}; font-weight: 850; }
+  a {
+    color: ${({ theme }) => theme.colors.brand.primary};
+    font-weight: 850;
+  }
 `;
 
 export const SecurityNote = styled.p`
@@ -249,7 +298,9 @@ export const SecurityNote = styled.p`
   color: #98a2b3;
   font-size: 11px;
   font-weight: 700;
-  svg { color: #2f9e73; }
+  svg {
+    color: #2f9e73;
+  }
 `;
 
 export const VisualPanel = styled.aside`
@@ -261,24 +312,37 @@ export const VisualPanel = styled.aside`
   justify-content: center;
   border-radius: 24px;
   background:
-    radial-gradient(circle at 86% 18%, rgba(255,255,255,0.16), transparent 28%),
-    radial-gradient(circle at 12% 85%, rgba(4,16,38,0.22), transparent 38%),
+    radial-gradient(
+      circle at 86% 18%,
+      rgba(255, 255, 255, 0.16),
+      transparent 28%
+    ),
+    radial-gradient(circle at 12% 85%, rgba(4, 16, 38, 0.22), transparent 38%),
     linear-gradient(145deg, #354b8e 0%, #415ba5 44%, #6c82da 100%);
   padding: clamp(44px, 6vw, 90px);
   color: #fff;
 
-  &::before, &::after {
+  &::before,
+  &::after {
     content: "";
     position: absolute;
     width: 360px;
     height: 360px;
-    border: 1px solid rgba(255,255,255,0.13);
+    border: 1px solid rgba(255, 255, 255, 0.13);
     border-radius: 50%;
   }
-  &::before { top: -180px; left: -90px; }
-  &::after { right: -170px; bottom: -170px; }
+  &::before {
+    top: -180px;
+    left: -90px;
+  }
+  &::after {
+    right: -170px;
+    bottom: -170px;
+  }
 
-  @media (max-width: 1040px) { display: none; }
+  @media (max-width: 1040px) {
+    display: none;
+  }
 `;
 
 export const VisualContent = styled.div`
@@ -294,13 +358,12 @@ export const VisualBadge = styled.span`
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  border: 1px solid rgba(255,255,255,0.14);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 999px;
-  background: rgba(255,255,255,0.13);
+  background: rgba(255, 255, 255, 0.13);
   padding: 9px 13px;
   font-size: 12px;
   font-weight: 800;
-  backdrop-filter: blur(10px);
 `;
 
 export const VisualTitle = styled.h2`
@@ -313,13 +376,12 @@ export const VisualTitle = styled.h2`
 `;
 
 export const Preview = styled.div`
-  border: 1px solid rgba(255,255,255,0.32);
+  border: 1px solid rgba(255, 255, 255, 0.32);
   border-radius: 20px;
-  background: rgba(255,255,255,0.95);
+  background: rgba(255, 255, 255, 0.95);
   color: #101828;
   padding: clamp(22px, 3vw, 34px);
-  box-shadow: 0 28px 70px rgba(7,20,38,0.22);
-  backdrop-filter: blur(18px);
+  box-shadow: 0 28px 70px rgba(7, 20, 38, 0.22);
 `;
 
 export const PreviewTop = styled.div`
@@ -327,8 +389,16 @@ export const PreviewTop = styled.div`
   align-items: flex-start;
   justify-content: space-between;
   gap: 18px;
-  span { color: #98a2b3; font-size: 11px; font-weight: 800; }
-  strong { display: block; margin-top: 4px; font-size: 16px; }
+  span {
+    color: #98a2b3;
+    font-size: 11px;
+    font-weight: 800;
+  }
+  strong {
+    display: block;
+    margin-top: 4px;
+    font-size: 16px;
+  }
 `;
 
 export const Today = styled.span`
@@ -351,8 +421,17 @@ export const PreviewStat = styled.div`
   gap: 10px;
   align-items: center;
   color: #415ba5;
-  strong { font-size: 15px; color: #101828; }
-  small { display: block; margin-top: 2px; color: #98a2b3; font-size: 10px; font-weight: 650; }
+  strong {
+    font-size: 15px;
+    color: #101828;
+  }
+  small {
+    display: block;
+    margin-top: 2px;
+    color: #98a2b3;
+    font-size: 10px;
+    font-weight: 650;
+  }
 `;
 
 export const Bars = styled.div`
