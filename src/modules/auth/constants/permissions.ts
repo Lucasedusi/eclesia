@@ -23,6 +23,7 @@ export const PERMISSIONS = {
   membersChangeStatus: "members.change_status",
   membersTransfer: "members.transfer",
   membersArchive: "members.archive",
+  membersRestore: "members.restore",
   membersExport: "members.export",
   membersViewSensitiveIdentity: "members.view_sensitive_identity",
   membersManageSensitiveIdentity: "members.manage_sensitive_identity",
@@ -32,6 +33,9 @@ export const PERMISSIONS = {
   membersEditPastoralNotes: "members.edit_pastoral_notes",
   memberRolesView: "member_roles.view",
   memberRolesManage: "member_roles.manage",
+  memberHistoryView: "member_history.view",
+  memberHistoryCreate: "member_history.create",
+  financeView: "finance.view",
   ministriesView: "ministries.view",
   ministriesManage: "ministries.manage",
 } as const;

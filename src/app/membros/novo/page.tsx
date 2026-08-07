@@ -15,11 +15,11 @@ export default async function NewMemberPage() {
     <AppShell
       authContext={context}
       title="Novo membro"
-      subtitle="Cadastro multi etapas do módulo de membros"
+      subtitle="Cadastro multifases do módulo de Membros"
     >
       <PageHeader
         title="Cadastrar Membro"
-        subtitle="Preencha as informações por etapas."
+        subtitle="Preencha a ficha por etapas sem perder os dados ao avançar ou voltar."
         action={
           <Link href="/membros" className="app-button-secondary">
             <ArrowLeft size={18} aria-hidden="true" />

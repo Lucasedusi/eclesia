@@ -1,5 +1,5 @@
-import { OrganizationPage } from "@/modules/organization/components/organization-page";
+import { redirect } from "next/navigation";
 
-export default function PositionsPage() {
-  return <OrganizationPage tab="positions" />;
+export default function LegacyPositionsPage() {
+  redirect("/membros/cargos");
 }

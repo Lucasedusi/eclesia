@@ -18,12 +18,12 @@ export const memberFormSteps: MemberFormStep[] = [
   {
     id: "family",
     title: "Família",
-    description: "Dados familiares e responsável legal",
+    description: "Vínculos familiares do membro.",
   },
   {
-    id: "ministerial",
-    title: "Dados Ministeriais",
-    description: "Congregação, status, tipo de cadastro",
+    id: "bond",
+    title: "Vínculo e Cargo",
+    description: "Congregação, tipo de cadastro e Cargo.",
   },
   {
     id: "ecclesiastical",
@@ -38,13 +38,10 @@ export const memberFormSteps: MemberFormStep[] = [
 ];
 
 export const initialMemberFormData: MemberFormData = {
-  photo_url: "",
   full_name: "",
-  preferred_name: "",
   gender: "",
   birth_date: "",
   marital_status: "",
-  wedding_date: "",
   nationality: "Brasileira",
   natural_city: "",
   natural_state: "",
@@ -53,9 +50,7 @@ export const initialMemberFormData: MemberFormData = {
   issuing_agency: "",
   profession: "",
   education_level: "",
-  physical_file_number: "",
 
-  phone: "",
   whatsapp: "",
   email: "",
   zip_code: "",
@@ -70,33 +65,20 @@ export const initialMemberFormData: MemberFormData = {
   father_name: "",
   mother_name: "",
   spouse_name: "",
-  guardian_name: "",
-  guardian_phone: "",
-
-  church_id: "",
   congregation_id: "",
   member_type: "MEMBER",
-  member_status: "ACTIVE",
   main_role_id: "",
-  ministry_id: "",
-  is_public_worker: false,
-  is_active_in_ministry: false,
-  can_receive_notifications: true,
+  role_start_date: "",
 
-  joined_at: "",
   conversion_date: "",
   baptism_date: "",
   baptism_church: "",
-  child_presentation_date: "",
   has_holy_spirit_baptism: false,
   holy_spirit_baptism_date: "",
   previous_church: "",
   received_by: "",
   received_date: "",
   letter_origin_church: "",
-  letter_destination_church: "",
-  transfer_date: "",
-  inactive_reason: "",
 
   notes: "",
   pastoral_notes: "",
@@ -122,7 +104,6 @@ export const memberStatusOptions: SelectOption[] = [
   { label: "Transferido", value: "TRANSFERRED" },
   { label: "Disciplinado", value: "DISCIPLINED" },
   { label: "Falecido", value: "DECEASED" },
-  { label: "Visitante", value: "VISITOR" },
 ];
 
 export const memberTypeOptions: SelectOption[] = [

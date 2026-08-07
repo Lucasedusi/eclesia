@@ -7,10 +7,10 @@ import { OrganizationTabs } from "@/modules/organization/components/organization
 export default async function EcclesiasticalStructureLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const context = await requireAccessContext(PERMISSIONS.organizationView);
   return (
-    <AppShell authContext={context} title="Estrutura eclesiástica" subtitle="Regionais, congregações e cargos">
+    <AppShell authContext={context} title="Estrutura eclesiástica" subtitle="Regionais e congregações">
       <PageHeader
         title="Estrutura eclesiástica"
-        subtitle="Organize a estrutura territorial da igreja e os cargos atribuídos aos membros."
+        subtitle="Organize a estrutura territorial da igreja por Regionais e Congregações."
         badge="Administração"
       />
       <OrganizationTabs />

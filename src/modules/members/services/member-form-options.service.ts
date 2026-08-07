@@ -1,120 +1,72 @@
+import "server-only";
+
 import { createClient } from "@/lib/supabase/server";
+import { PERMISSIONS, hasPermission } from "@/modules/auth/constants/permissions";
 import type { AuthContext } from "@/modules/auth/types/auth.types";
-import type {
-  MemberFormOptions,
-  SelectOption,
-} from "../types/member-form.types";
+import type { MemberFormOptions, SelectOption } from "../types/member-form.types";
 
-type OptionRow = {
-  id: string;
-  name: string;
-  city?: string | null;
-  state?: string | null;
-  category?: string | null;
-  is_global?: boolean | null;
-};
+type CongregationRow = { id: string; name: string; city: string | null; state: string | null };
+type RoleRow = { id: string; name: string; female_name: string | null; category: string };
 
-function formatLocation(row: Pick<OptionRow, "city" | "state">) {
-  const parts = [row.city, row.state].filter(Boolean);
-  return parts.length > 0 ? parts.join(" - ") : undefined;
-}
-
-function toOption(row: OptionRow): SelectOption {
+function congregationOption(row: CongregationRow): SelectOption {
   return {
-    label: row.name,
     value: row.id,
-    description: row.category ?? formatLocation(row),
+    label: row.name,
+    description: [row.city, row.state].filter(Boolean).join(" - ") || undefined,
   };
 }
 
-function emptyOptions(errorMessage?: string): MemberFormOptions {
+function roleOption(row: RoleRow): SelectOption {
   return {
-    churches: [],
-    congregations: [],
-    roles: [],
-    ministries: [],
-    hasLoadError: Boolean(errorMessage),
-    loadErrorMessage: errorMessage,
+    value: row.id,
+    label: row.female_name ? `${row.name} / ${row.female_name}` : row.name,
+    description: row.category,
   };
 }
 
 export async function getMemberFormOptions(context: AuthContext): Promise<MemberFormOptions> {
-  try {
-    const supabase = await createClient();
+  const supabase = await createClient();
+  let congregationsQuery = supabase
+    .from("congregations")
+    .select("id, name, city, state")
+    .eq("church_id", context.church.id)
+    .eq("status", "ACTIVE")
+    .is("deleted_at", null);
 
-    let congregationsQuery = supabase
-      .from("congregations")
-      .select("id, name, city, state")
+  if (context.access.scope === "REGION" && context.access.regionId) {
+    congregationsQuery = congregationsQuery.eq("region_id", context.access.regionId);
+  }
+  if (context.access.scope === "CONGREGATION" && context.access.congregationId) {
+    congregationsQuery = congregationsQuery.eq("id", context.access.congregationId);
+  }
+
+  const [congregationsResult, rolesResult] = await Promise.all([
+    congregationsQuery.order("name"),
+    supabase
+      .from("roles")
+      .select("id, name, female_name, category")
       .eq("church_id", context.church.id)
       .eq("status", "ACTIVE")
-      .is("deleted_at", null);
+      .is("deleted_at", null)
+      .order("display_order")
+      .order("name"),
+  ]);
 
-    if (context.access.scope === "REGION" && context.access.regionId) {
-      congregationsQuery = congregationsQuery.eq("region_id", context.access.regionId);
-    }
-    if (context.access.scope === "CONGREGATION" && context.access.congregationId) {
-      congregationsQuery = congregationsQuery.eq("id", context.access.congregationId);
-    }
-
-    const [churchesResult, congregationsResult, rolesResult, ministriesResult] =
-      await Promise.all([
-        supabase
-          .from("churches")
-          .select("id, name, city, state")
-          .eq("id", context.church.id)
-          .eq("status", "ACTIVE")
-          .is("deleted_at", null)
-          .order("name", { ascending: true }),
-
-        congregationsQuery.order("name", { ascending: true }),
-
-        supabase
-          .from("roles")
-          .select("id, name, category")
-          .eq("church_id", context.church.id)
-          .eq("status", "ACTIVE")
-          .is("deleted_at", null)
-          .order("level", { ascending: true })
-          .order("name", { ascending: true }),
-
-        supabase
-          .from("ministries")
-          .select("id, name, category, is_global")
-          .eq("church_id", context.church.id)
-          .eq("status", "ACTIVE")
-          .is("deleted_at", null)
-          .order("name", { ascending: true }),
-      ]);
-
-    const errors = [
-      churchesResult.error,
-      congregationsResult.error,
-      rolesResult.error,
-      ministriesResult.error,
-    ].filter(Boolean);
-
-    if (errors.length > 0) {
-      console.error(
-        "Erro ao carregar opções do formulário de membros:",
-        errors.map((error) => error?.message).join(" | "),
-      );
-    }
-
-    return {
-      churches: (churchesResult.data ?? []).map(toOption),
-      congregations: (congregationsResult.data ?? []).map(toOption),
-      roles: (rolesResult.data ?? []).map(toOption),
-      ministries: (ministriesResult.data ?? []).map(toOption),
-      hasLoadError: errors.length > 0,
-      loadErrorMessage:
-        errors.length > 0
-          ? "Algumas opções do formulário não foram carregadas. Verifique as policies/RLS das tabelas auxiliares."
-          : undefined,
-    };
-  } catch (error) {
-    console.error("Falha inesperada ao carregar opções do formulário:", error);
-    return emptyOptions(
-      "Não foi possível carregar os dados auxiliares do formulário.",
-    );
+  const errors = [congregationsResult.error, rolesResult.error].filter(Boolean);
+  if (errors.length) {
+    console.error("Erro ao carregar opções de membros:", errors.map((item) => item?.message).join(" | "));
   }
+
+  return {
+    churchName: context.church.name,
+    congregations: ((congregationsResult.data ?? []) as CongregationRow[]).map(congregationOption),
+    roles: ((rolesResult.data ?? []) as RoleRow[]).map(roleOption),
+    canManageSensitiveIdentity: hasPermission(context.permissions, PERMISSIONS.membersManageSensitiveIdentity),
+    canEditPastoralNotes: hasPermission(context.permissions, PERMISSIONS.membersEditPastoralNotes),
+    canManageRoles: hasPermission(context.permissions, PERMISSIONS.memberRolesManage),
+    hasLoadError: errors.length > 0,
+    loadErrorMessage: errors.length
+      ? "Algumas opções não puderam ser carregadas. Tente atualizar a página."
+      : undefined,
+  };
 }

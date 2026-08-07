@@ -3,6 +3,7 @@ import type {
   MemberFormErrors,
   MemberFormStepId,
 } from "../types/member-form.types";
+import { isValidCpf, normalizeBrazilPhone } from "@/utils/input-masks";
 
 const requiredMessage = "Este campo é obrigatório.";
 
@@ -34,9 +35,15 @@ export function validateMemberFormStep(
       data.full_name,
       "Informe o nome completo do membro.",
     );
+    if (data.cpf && !isValidCpf(data.cpf)) {
+      errors.cpf = "Informe um CPF válido.";
+    }
   }
 
   if (stepId === "contact") {
+    if (data.whatsapp && normalizeBrazilPhone(data.whatsapp).length !== 11) {
+      errors.whatsapp = "Informe o WhatsApp com DDD e 9 dígitos.";
+    }
     addRequiredError(errors, "country", data.country, "Informe o país.");
     addRequiredError(
       errors,
@@ -52,13 +59,7 @@ export function validateMemberFormStep(
     );
   }
 
-  if (stepId === "ministerial") {
-    addRequiredError(
-      errors,
-      "church_id",
-      data.church_id,
-      "Selecione a igreja/campo.",
-    );
+  if (stepId === "bond") {
     addRequiredError(
       errors,
       "congregation_id",
@@ -70,12 +71,6 @@ export function validateMemberFormStep(
       "member_type",
       data.member_type,
       "Selecione o tipo de cadastro.",
-    );
-    addRequiredError(
-      errors,
-      "member_status",
-      data.member_status,
-      "Selecione o status do cadastro.",
     );
   }
 
@@ -92,29 +87,6 @@ export function validateMemberFormStep(
       errors.letter_origin_church = "Informe a igreja de origem da carta.";
     }
 
-    if (data.member_status === "TRANSFERRED") {
-      addRequiredError(
-        errors,
-        "letter_destination_church",
-        data.letter_destination_church,
-        "Informe a igreja de destino da transferência.",
-      );
-      addRequiredError(
-        errors,
-        "transfer_date",
-        data.transfer_date,
-        "Informe a data da transferência.",
-      );
-    }
-
-    if (data.member_status === "INACTIVE") {
-      addRequiredError(
-        errors,
-        "inactive_reason",
-        data.inactive_reason,
-        "Informe o motivo da inativação.",
-      );
-    }
   }
 
   return errors;

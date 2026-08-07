@@ -19,7 +19,7 @@ const stepIcons: Record<MemberFormStepId, LucideIcon> = {
   personal: User,
   contact: MapPin,
   family: Users,
-  ministerial: Church,
+  bond: Church,
   ecclesiastical: BookOpen,
   review: CheckCircle,
 };
