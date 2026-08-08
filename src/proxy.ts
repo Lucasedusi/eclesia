@@ -23,12 +23,13 @@ function matchesPrefix(pathname: string, prefixes: string[]) {
 }
 
 export async function proxy(request: NextRequest) {
-  const { response, user } = await updateSession(request);
+  const startedAt = performance.now();
+  const { response, authenticated } = await updateSession(request);
   const pathname = request.nextUrl.pathname;
   const isPublic = matchesPrefix(pathname, PUBLIC_PATHS);
   const isPreparation = matchesPrefix(pathname, PREPARATION_PATHS);
 
-  if (!user && !isPublic) {
+  if (!authenticated && !isPublic) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("next", `${pathname}${request.nextUrl.search}`);
     return NextResponse.redirect(loginUrl);
@@ -39,11 +40,11 @@ export async function proxy(request: NextRequest) {
     pathname === "/cadastro" ||
     pathname === "/recuperar-senha";
 
-  if (user && isAuthEntry) {
+  if (authenticated && isAuthEntry) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
-  if (!user && isPreparation) {
+  if (!authenticated && isPreparation) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
@@ -53,6 +54,11 @@ export async function proxy(request: NextRequest) {
     "Permissions-Policy",
     "camera=(), microphone=(), geolocation=()",
   );
+  const duration = performance.now() - startedAt;
+  response.headers.set("Server-Timing", `proxy;dur=${duration.toFixed(1)}`);
+  if (process.env.NODE_ENV === "development") {
+    console.info(`[performance] proxy ${pathname}: ${duration.toFixed(1)}ms`);
+  }
 
   return response;
 }

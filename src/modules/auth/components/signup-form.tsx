@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { LockKeyhole } from "lucide-react";
+import { useNavigationFeedback } from "@/components/navigation/navigation-feedback";
 import { signUpAction } from "../actions/auth.actions";
 import { INITIAL_ACTION_STATE } from "../types/auth.types";
 import { AuthBrand } from "./auth-shell/auth-shell";
@@ -16,13 +17,15 @@ export function SignUpForm() {
     INITIAL_ACTION_STATE,
   );
   const router = useRouter();
+  const { startNavigation } = useNavigationFeedback();
 
   useEffect(() => {
     if (state.status === "success" && state.redirectTo) {
+      startNavigation();
       router.replace(state.redirectTo);
       router.refresh();
     }
-  }, [router, state]);
+  }, [router, startNavigation, state]);
 
   return (
     <>

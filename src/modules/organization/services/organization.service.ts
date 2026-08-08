@@ -1,6 +1,8 @@
 import "server-only";
 
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
+import { measureServerOperation } from "@/lib/performance/server-performance";
 import { PERMISSIONS } from "@/modules/auth/constants/permissions";
 import { requireAccessContext } from "@/modules/auth/services/access-context.service";
 import type {
@@ -87,32 +89,36 @@ async function loadOrganizationRows() {
   const context = await requireAccessContext(PERMISSIONS.organizationView);
   const supabase = await createClient();
 
-  const [regionsResult, congregationsResult, positionsResult] = await Promise.all([
-    supabase
-      .from("regions")
-      .select("id, name, description, coordinator_name, coordinator_phone, display_order, status, created_at, updated_at")
-      .eq("church_id", context.church.id)
-      .is("deleted_at", null)
-      .order("display_order")
-      .order("name")
-      .order("id"),
-    supabase
-      .from("congregations")
-      .select("id, region_id, name, code, pastor_name, pastor_spouse_name, phone, whatsapp, email, zip_code, address, number, complement, district, city, state, country, notes, is_headquarters, display_order, status, created_at, updated_at, regions(name)")
-      .eq("church_id", context.church.id)
-      .is("deleted_at", null)
-      .order("display_order")
-      .order("name")
-      .order("id"),
-    supabase
-      .from("roles")
-      .select("id, name, female_name, abbreviation, female_abbreviation, description, display_order, status, created_at, updated_at")
-      .eq("church_id", context.church.id)
-      .is("deleted_at", null)
-      .order("display_order")
-      .order("name")
-      .order("id"),
-  ]);
+  const [regionsResult, congregationsResult, positionsResult] = await measureServerOperation(
+    "organization.catalog",
+    () => Promise.all([
+      supabase
+        .from("regions")
+        .select("id, name, description, coordinator_name, coordinator_phone, display_order, status, created_at, updated_at")
+        .eq("church_id", context.church.id)
+        .is("deleted_at", null)
+        .order("display_order")
+        .order("name")
+        .order("id"),
+      supabase
+        .from("congregations")
+        .select("id, region_id, name, code, pastor_name, pastor_spouse_name, phone, whatsapp, email, zip_code, address, number, complement, district, city, state, country, notes, is_headquarters, display_order, status, created_at, updated_at, regions(name)")
+        .eq("church_id", context.church.id)
+        .is("deleted_at", null)
+        .order("display_order")
+        .order("name")
+        .order("id"),
+      supabase
+        .from("roles")
+        .select("id, name, female_name, abbreviation, female_abbreviation, description, display_order, status, created_at, updated_at")
+        .eq("church_id", context.church.id)
+        .is("deleted_at", null)
+        .order("display_order")
+        .order("name")
+        .order("id"),
+    ]),
+    { supabaseCalls: 3, route: "/estrutura-eclesiastica" },
+  );
 
   const failures = [
     { query: "regions", error: regionsResult.error },
@@ -315,7 +321,7 @@ export async function getCongregationDetails(
   return { ...mapCongregation(row), documentCount };
 }
 
-export async function getOrganizationData(): Promise<OrganizationData> {
+async function loadOrganizationData(): Promise<OrganizationData> {
   const { context, regionRows, congregationRows, positionRows } = await loadOrganizationRows();
   const congregations = congregationRows.map(mapCongregation);
   const positions = positionRows.map(mapPosition);
@@ -369,6 +375,10 @@ export async function getOrganizationData(): Promise<OrganizationData> {
     },
   };
 }
+
+// Deduplica consumidores do catálogo na mesma renderização sem compartilhar
+// dados entre usuários, igrejas ou requisições.
+export const getOrganizationData = cache(loadOrganizationData);
 
 export async function listRegions(): Promise<RegionItem[]> {
   return (await getOrganizationData()).regions;

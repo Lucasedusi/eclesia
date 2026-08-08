@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import type { AuthContext } from "@/modules/auth/types/auth.types";
 import { AppHeader } from "./app-header";
 import { AppSidebar } from "./app-sidebar";
@@ -15,8 +15,10 @@ type AppShellProps = {
 };
 
 const SIDEBAR_STORAGE_KEY = "eclesias-sidebar-collapsed";
+const AppShellContext = createContext(false);
 
 export function AppShell({ children, title, subtitle, authContext }: AppShellProps) {
+  const hasParentShell = useContext(AppShellContext);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
@@ -35,30 +37,36 @@ export function AppShell({ children, title, subtitle, authContext }: AppShellPro
     });
   }
 
+  // Páginas antigas ainda podem declarar AppShell para manter compatibilidade.
+  // O layout autenticado compartilhado é o único responsável pela moldura visual.
+  if (hasParentShell) return <>{children}</>;
+
   return (
-    <S.ShellRoot data-app-shell>
-      <S.DesktopSidebarSlot>
-        <AppSidebar
-          collapsed={sidebarCollapsed}
-          onToggleCollapse={handleToggleSidebar}
-          authContext={authContext}
-        />
-      </S.DesktopSidebarSlot>
+    <AppShellContext.Provider value>
+      <S.ShellRoot data-app-shell>
+        <S.DesktopSidebarSlot>
+          <AppSidebar
+            collapsed={sidebarCollapsed}
+            onToggleCollapse={handleToggleSidebar}
+            authContext={authContext}
+          />
+        </S.DesktopSidebarSlot>
 
-      <MobileSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} authContext={authContext} />
+        <MobileSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} authContext={authContext} />
 
-      <S.Content $collapsed={sidebarCollapsed}>
-        <AppHeader
-          title={title}
-          subtitle={subtitle}
-          onOpenSidebar={() => setSidebarOpen(true)}
-          authContext={authContext}
-        />
+        <S.Content $collapsed={sidebarCollapsed}>
+          <AppHeader
+            title={title}
+            subtitle={subtitle}
+            onOpenSidebar={() => setSidebarOpen(true)}
+            authContext={authContext}
+          />
 
-        <S.Main>
-          <S.MainInner>{children}</S.MainInner>
-        </S.Main>
-      </S.Content>
-    </S.ShellRoot>
+          <S.Main>
+            <S.MainInner>{children}</S.MainInner>
+          </S.Main>
+        </S.Content>
+      </S.ShellRoot>
+    </AppShellContext.Provider>
   );
 }

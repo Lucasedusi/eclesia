@@ -4,6 +4,7 @@ import { cache } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { measureServerOperation } from "@/lib/performance/server-performance";
 import { getInitialRegistrationAvailability } from "./initial-registration.service";
 import type {
   AccessRole,
@@ -41,6 +42,25 @@ type AccessRow = {
     | null;
 };
 
+type RpcAccessRow = Omit<AccessRow, "churches"> & {
+  church: { id: string; name: string; logo_url: string | null } | null;
+};
+
+type AccessContextPayload = {
+  profile: ProfileRow | null;
+  accesses: RpcAccessRow[];
+  selected_access_id: string | null;
+  permissions: unknown[];
+};
+
+type AuthIdentity = {
+  id: string;
+  email: string;
+  fullName: string | null;
+};
+
+type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
+
 export type AccessResolution =
   | { status: "anonymous" }
   | { status: "profile-unavailable" }
@@ -55,23 +75,111 @@ function getChurch(row: AccessRow): ChurchSummary | null {
   return { id: church.id, name: church.name, logoUrl: church.logo_url };
 }
 
+function normalizePermissions(value: unknown[] | null | undefined) {
+  return (value ?? []).map((item) =>
+    typeof item === "string"
+      ? item
+      : String((item as { permission_key?: string }).permission_key ?? ""),
+  ).filter(Boolean);
+}
+
+function getIdentityFromClaims(claims: Record<string, unknown>): AuthIdentity | null {
+  if (typeof claims.sub !== "string" || !claims.sub) return null;
+  const metadata = claims.user_metadata;
+  const fullName = metadata && typeof metadata === "object"
+    ? (metadata as Record<string, unknown>).full_name
+    : null;
+  return {
+    id: claims.sub,
+    email: typeof claims.email === "string" ? claims.email : "",
+    fullName: typeof fullName === "string" ? fullName : null,
+  };
+}
+
+async function loadLegacyContext(
+  supabase: SupabaseServerClient,
+  userId: string,
+  preferredChurchId: string | undefined,
+) {
+  const [profileResult, accessResult] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("id, full_name, display_name, email, avatar_url, status, deleted_at")
+      .eq("id", userId)
+      .maybeSingle(),
+    supabase
+      .from("user_church_access")
+      .select("id, church_id, role, access_scope, status, region_id, congregation_id, ministry_id, churches!inner(id, name, logo_url)")
+      .eq("profile_id", userId)
+      .eq("status", "ACTIVE")
+      .is("deleted_at", null)
+      .order("accepted_at", { ascending: true, nullsFirst: false }),
+  ]);
+
+  const profile = profileResult.data as ProfileRow | null;
+  const rows = (accessResult.data ?? []) as unknown as AccessRow[];
+  const selectedRow = rows.find((row) => row.church_id === preferredChurchId) ?? rows[0];
+  const permissionResult = selectedRow
+    ? await supabase.rpc("get_my_permissions", { p_church_id: selectedRow.church_id })
+    : { data: [] };
+
+  return {
+    profile,
+    rows,
+    selectedAccessId: selectedRow?.id ?? null,
+    permissions: normalizePermissions(permissionResult.data),
+  };
+}
+
 export const resolveAccessContext = cache(async (): Promise<AccessResolution> => {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: claimsData, error: claimsError } = await measureServerOperation(
+    "auth.getClaims",
+    () => supabase.auth.getClaims(),
+  );
+  const identity = !claimsError && claimsData?.claims
+    ? getIdentityFromClaims(claimsData.claims as Record<string, unknown>)
+    : null;
 
-  if (!user) return { status: "anonymous" };
+  if (!identity) return { status: "anonymous" };
 
-  const { data: profileData } = await supabase
-    .from("profiles")
-    .select(
-      "id, full_name, display_name, email, avatar_url, status, deleted_at",
-    )
-    .eq("id", user.id)
-    .maybeSingle();
+  const cookieStore = await cookies();
+  const preferredChurchId = cookieStore.get(CHURCH_CONTEXT_COOKIE)?.value;
+  const { data: payloadData, error: contextError } = await measureServerOperation(
+    "access-context.rpc",
+    () => supabase.rpc(
+      "get_my_access_context",
+      { p_preferred_church_id: preferredChurchId ?? null },
+    ),
+    { supabaseCalls: 1 },
+  );
 
-  const profile = profileData as ProfileRow | null;
+  let profile: ProfileRow | null;
+  let rows: AccessRow[];
+  let selectedAccessId: string | null;
+  let permissions: string[];
+
+  if (!contextError && payloadData) {
+    const payload = payloadData as unknown as AccessContextPayload;
+    profile = payload.profile;
+    rows = (payload.accesses ?? []).map((row) => ({
+      ...row,
+      churches: row.church,
+    }));
+    selectedAccessId = payload.selected_access_id;
+    permissions = normalizePermissions(payload.permissions);
+  } else {
+    if (process.env.NODE_ENV === "development") {
+      console.warn("[access-context] RPC consolidada indisponível; usando fallback seguro.", {
+        code: contextError?.code,
+      });
+    }
+    const legacy = await loadLegacyContext(supabase, identity.id, preferredChurchId);
+    profile = legacy.profile;
+    rows = legacy.rows;
+    selectedAccessId = legacy.selectedAccessId;
+    permissions = legacy.permissions;
+  }
 
   if (
     !profile ||
@@ -82,23 +190,11 @@ export const resolveAccessContext = cache(async (): Promise<AccessResolution> =>
     return { status: "profile-unavailable" };
   }
 
-  const { data: accessData } = await supabase
-    .from("user_church_access")
-    .select(
-      "id, church_id, role, access_scope, status, region_id, congregation_id, ministry_id, churches!inner(id, name, logo_url)",
-    )
-    .eq("profile_id", user.id)
-    .eq("status", "ACTIVE")
-    .is("deleted_at", null)
-    .order("accepted_at", { ascending: true, nullsFirst: false });
-
-  const rows = (accessData ?? []) as unknown as AccessRow[];
-
   if (rows.length === 0) {
     const { count } = await supabase
       .from("church_invitations")
       .select("id", { count: "exact", head: true })
-      .eq("email_normalized", user.email?.trim().toLowerCase() ?? "")
+      .eq("email_normalized", identity.email.trim().toLowerCase())
       .eq("status", "PENDING")
       .gt("expires_at", new Date().toISOString())
       .is("deleted_at", null);
@@ -115,23 +211,13 @@ export const resolveAccessContext = cache(async (): Promise<AccessResolution> =>
     }
   }
 
-  const cookieStore = await cookies();
-  const preferredChurchId = cookieStore.get(CHURCH_CONTEXT_COOKIE)?.value;
   const selectedRow =
-    rows.find((row) => row.church_id === preferredChurchId) ?? rows[0];
+    rows.find((row) => row.id === selectedAccessId) ??
+    rows.find((row) => row.church_id === preferredChurchId) ??
+    rows[0];
   const selectedChurch = getChurch(selectedRow);
 
   if (!selectedChurch) return { status: "profile-unavailable" };
-
-  const { data: permissionData } = await supabase.rpc("get_my_permissions", {
-    p_church_id: selectedRow.church_id,
-  });
-
-  const permissions = (permissionData ?? []).map((item: unknown) =>
-    typeof item === "string"
-      ? item
-      : String((item as { permission_key?: string }).permission_key ?? ""),
-  ).filter(Boolean);
 
   const churchMap = new Map<string, ChurchSummary>();
   rows.forEach((row) => {
@@ -144,13 +230,13 @@ export const resolveAccessContext = cache(async (): Promise<AccessResolution> =>
     context: {
       profile: {
         id: profile.id,
-        fullName: profile.full_name ?? user.user_metadata.full_name ?? "Usuário",
+        fullName: profile.full_name ?? identity.fullName ?? "Usuário",
         displayName:
           profile.display_name ??
           profile.full_name?.split(" ")[0] ??
-          user.user_metadata.full_name?.split(" ")[0] ??
+          identity.fullName?.split(" ")[0] ??
           "Usuário",
-        email: profile.email ?? user.email ?? "",
+        email: profile.email ?? identity.email,
         avatarUrl: profile.avatar_url,
         status: profile.status,
       },

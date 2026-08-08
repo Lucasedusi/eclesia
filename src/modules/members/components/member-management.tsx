@@ -15,11 +15,23 @@ import { memberStatusLabels, memberTypeLabels } from "../utils/member-formatters
 import { MemberDetailsModal } from "./member-details-modal";
 import * as S from "./members.styles";
 
-type Props = { initial: MemberListResult; params: MemberListParams; stats: MemberStats; filters: MemberFilters; capabilities: MemberCapabilities };
+type Props = { initial: MemberListResult; params: MemberListParams; filters: MemberFilters; capabilities: MemberCapabilities };
 type Notice = { title: string; description: string; variant: "success" | "danger" | "warning" };
 function initials(name: string) { return name.split(" ").slice(0, 2).map((part) => part[0]).join("").toUpperCase(); }
 
-export function MemberManagement({ initial, params: initialParams, stats, filters, capabilities }: Props) {
+export function MemberStatsCards({ stats }: { stats: MemberStats }) {
+  return (
+    <S.Stats aria-label="Resumo dos membros">
+      <S.Stat><span><UsersRound size={19} /></span><div><strong>{stats.total}</strong><small>Total visível no escopo</small></div></S.Stat>
+      <S.Stat $tone="success"><span><UserCheck size={19} /></span><div><strong>{stats.active}</strong><small>Ativos</small></div></S.Stat>
+      <S.Stat $tone="warning"><span><UserRoundX size={19} /></span><div><strong>{stats.inactive}</strong><small>Inativos</small></div></S.Stat>
+      <S.Stat><span><CircleUserRound size={19} /></span><div><strong>{stats.visitors}</strong><small>Visitantes</small></div></S.Stat>
+      <S.Stat $tone="danger"><span><Archive size={19} /></span><div><strong>{stats.archived}</strong><small>Arquivados</small></div></S.Stat>
+    </S.Stats>
+  );
+}
+
+export function MemberManagement({ initial, params: initialParams, filters, capabilities }: Props) {
   const router = useRouter();
   const [result, setResult] = useState(initial);
   const [params, setParams] = useState(initialParams);
@@ -51,7 +63,7 @@ export function MemberManagement({ initial, params: initialParams, stats, filter
     if (next.memberType) query.set("type", next.memberType);
     if (next.archived) query.set("archived", "true");
     if (next.sort !== "name_asc") query.set("sort", next.sort);
-    router.replace(query.size ? `/membros?${query}` : "/membros", { scroll: false });
+    window.history.replaceState(null, "", query.size ? `/membros?${query}` : "/membros");
   }
 
   function load(next: MemberListParams) {
@@ -93,8 +105,6 @@ export function MemberManagement({ initial, params: initialParams, stats, filter
   }
 
   async function refresh() {
-    const response = await listMembersAction(params);
-    if (response.success) setResult(response.data);
     router.refresh();
   }
 
@@ -129,13 +139,6 @@ export function MemberManagement({ initial, params: initialParams, stats, filter
 
   return <>
     <S.Module>
-      <S.Stats>
-        <S.Stat><span><UsersRound size={19} /></span><div><strong>{stats.total}</strong><small>Total visível no escopo</small></div></S.Stat>
-        <S.Stat $tone="success"><span><UserCheck size={19} /></span><div><strong>{stats.active}</strong><small>Ativos</small></div></S.Stat>
-        <S.Stat $tone="warning"><span><UserRoundX size={19} /></span><div><strong>{stats.inactive}</strong><small>Inativos</small></div></S.Stat>
-        <S.Stat><span><CircleUserRound size={19} /></span><div><strong>{stats.visitors}</strong><small>Visitantes</small></div></S.Stat>
-        <S.Stat $tone="danger"><span><Archive size={19} /></span><div><strong>{stats.archived}</strong><small>Arquivados</small></div></S.Stat>
-      </S.Stats>
       <S.Panel>
         <S.PanelHeader><div><h2>Relação de membros</h2><p>Paginação, pesquisa, filtros e ordenação executados diretamente no Supabase.</p></div><span>{result.total} registro(s)</span></S.PanelHeader>
         <S.Toolbar>

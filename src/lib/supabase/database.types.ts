@@ -4181,6 +4181,10 @@ export type Database = {
         }[]
       }
       get_member_stats: { Args: { p_church_id: string }; Returns: Json }
+      get_my_access_context: {
+        Args: { p_preferred_church_id?: string | null }
+        Returns: Json
+      }
       get_my_permissions: {
         Args: { p_church_id: string }
         Returns: {

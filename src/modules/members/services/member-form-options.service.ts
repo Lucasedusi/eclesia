@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
+import { measureServerOperation } from "@/lib/performance/server-performance";
 import { PERMISSIONS, hasPermission } from "@/modules/auth/constants/permissions";
 import type { AuthContext } from "@/modules/auth/types/auth.types";
 import type { MemberFormOptions, SelectOption } from "../types/member-form.types";
@@ -40,17 +41,21 @@ export async function getMemberFormOptions(context: AuthContext): Promise<Member
     congregationsQuery = congregationsQuery.eq("id", context.access.congregationId);
   }
 
-  const [congregationsResult, rolesResult] = await Promise.all([
-    congregationsQuery.order("name"),
-    supabase
-      .from("roles")
-      .select("id, name, female_name, category")
-      .eq("church_id", context.church.id)
-      .eq("status", "ACTIVE")
-      .is("deleted_at", null)
-      .order("display_order")
-      .order("name"),
-  ]);
+  const [congregationsResult, rolesResult] = await measureServerOperation(
+    "members.form-options",
+    () => Promise.all([
+      congregationsQuery.order("name"),
+      supabase
+        .from("roles")
+        .select("id, name, female_name, category")
+        .eq("church_id", context.church.id)
+        .eq("status", "ACTIVE")
+        .is("deleted_at", null)
+        .order("display_order")
+        .order("name"),
+    ]),
+    { supabaseCalls: 2, route: "/membros/novo" },
+  );
 
   const errors = [congregationsResult.error, rolesResult.error].filter(Boolean);
   if (errors.length) {

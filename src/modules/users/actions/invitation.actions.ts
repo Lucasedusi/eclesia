@@ -147,11 +147,22 @@ export async function acceptInvitationAction(
   if (error) {
     await supabase.auth.signOut({ scope: "local" });
     if (createdNow) await admin.auth.admin.deleteUser(userId);
+
+    const belongsToAnotherEmail = error.message.includes("outro e-mail");
+    const unavailableInvitation = error.message.includes(
+      "Convite inválido ou expirado",
+    );
+    const unavailableProfile = error.message.includes("Perfil indisponível");
+
     return {
       status: "error",
-      message: error.message.includes("outro e-mail")
+      message: belongsToAnotherEmail
         ? "Este convite pertence a outro e-mail. Entre com a conta correta."
-        : "Este convite é inválido, expirou ou já foi utilizado.",
+        : unavailableInvitation
+          ? "Este convite é inválido, expirou ou já foi utilizado."
+          : unavailableProfile
+            ? "Seu perfil está indisponível. Solicite a liberação ao Administrador."
+            : "Não foi possível concluir a ativação da conta. Tente novamente ou solicite um novo convite ao Administrador.",
     };
   }
 

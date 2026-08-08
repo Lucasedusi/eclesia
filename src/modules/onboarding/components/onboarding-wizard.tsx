@@ -3,6 +3,7 @@
 import { startTransition, useActionState, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Check, Church, ShieldCheck } from "lucide-react";
+import { useNavigationFeedback } from "@/components/navigation/navigation-feedback";
 import { INITIAL_ACTION_STATE } from "@/modules/auth/types/auth.types";
 import { formatBrazilPhone, formatCnpj } from "@/utils/input-masks";
 import { completeOnboardingAction } from "../actions/onboarding.actions";
@@ -38,14 +39,16 @@ export function OnboardingWizard({ administratorName }: { administratorName: str
   const [localErrors, setLocalErrors] = useState<Record<string, string>>({});
   const [state, action, pending] = useActionState(completeOnboardingAction, INITIAL_ACTION_STATE);
   const router = useRouter();
+  const { startNavigation } = useNavigationFeedback();
   const isReviewStep = currentStep === steps.length - 1;
 
   useEffect(() => {
     if (state.status === "success" && state.redirectTo) {
+      startNavigation();
       router.replace(state.redirectTo);
       router.refresh();
     }
-  }, [router, state]);
+  }, [router, startNavigation, state]);
 
   const errors = useMemo(() => {
     const serverErrors = Object.fromEntries(

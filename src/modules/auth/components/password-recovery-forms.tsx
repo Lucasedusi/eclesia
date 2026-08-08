@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useNavigationFeedback } from "@/components/navigation/navigation-feedback";
 import { forgotPasswordAction, updatePasswordAction } from "../actions/auth.actions";
 import { INITIAL_ACTION_STATE } from "../types/auth.types";
 import { AuthBrand } from "./auth-shell/auth-shell";
@@ -27,7 +28,8 @@ export function ForgotPasswordForm() {
 export function ResetPasswordForm() {
   const [state, action, pending] = useActionState(updatePasswordAction, INITIAL_ACTION_STATE);
   const router = useRouter();
-  useEffect(() => { if (state.status === "success" && state.redirectTo) { router.replace(state.redirectTo); router.refresh(); } }, [router, state]);
+  const { startNavigation } = useNavigationFeedback();
+  useEffect(() => { if (state.status === "success" && state.redirectTo) { startNavigation(); router.replace(state.redirectTo); router.refresh(); } }, [router, startNavigation, state]);
   return <>
     <AuthBrand /><S.Eyebrow>Última etapa</S.Eyebrow><S.Title>Defina uma nova senha</S.Title>
     <S.Description>Use ao menos 8 caracteres, incluindo letras e números.</S.Description>

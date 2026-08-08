@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { PageHeader } from "@/components/ui/page-header";
+import { LinkPendingIndicator } from "@/components/navigation/navigation-feedback";
 import { MemberCreateForm } from "@/modules/members/components/member-create-form/member-create-form";
 import { getMemberFormOptions } from "@/modules/members/services/member-form-options.service";
 import { requireAccessContext } from "@/modules/auth/services/access-context.service";
@@ -23,7 +24,7 @@ export default async function NewMemberPage() {
         action={
           <Link href="/membros" className="app-button-secondary">
             <ArrowLeft size={18} aria-hidden="true" />
-            Voltar para membros
+            Voltar para membros <LinkPendingIndicator />
           </Link>
         }
       />

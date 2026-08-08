@@ -5,6 +5,7 @@ import type { LucideIcon } from "lucide-react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { mainNavigation, secondaryNavigation } from "@/constants/navigation";
 import { APP_CONFIG } from "@/constants/app";
+import { LinkPendingIndicator } from "@/components/navigation/navigation-feedback";
 import type { AuthContext } from "@/modules/auth/types/auth.types";
 import * as S from "./app-sidebar.styles";
 
@@ -24,6 +25,16 @@ type AppSidebarProps = {
   mobile?: boolean;
   authContext: AuthContext;
 };
+
+const PREFETCHED_ROUTES = new Set([
+  "/",
+  "/estrutura-eclesiastica",
+  "/membros",
+  "/usuarios",
+  "/auditoria",
+  "/configuracoes",
+  "/design-system",
+]);
 
 function EclesiaLogo({ collapsed = false }: { collapsed?: boolean }) {
   return (
@@ -100,6 +111,7 @@ export function AppSidebar({
       <S.NavItem
         key={item.href}
         href={item.href}
+        prefetch={PREFETCHED_ROUTES.has(item.href) ? null : false}
         onClick={onNavigate}
         title={isCollapsed ? item.label : undefined}
         $active={active}
@@ -111,6 +123,7 @@ export function AppSidebar({
         </S.IconSlot>
 
         {!isCollapsed && <S.NavLabel>{item.label}</S.NavLabel>}
+        {!isCollapsed && <LinkPendingIndicator />}
         {isCollapsed && <S.Tooltip>{item.label}</S.Tooltip>}
       </S.NavItem>
     );

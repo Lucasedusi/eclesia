@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { CircleAlert, Info, Loader2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Toast, ToastViewport } from "@/components/ui/toast";
+import { useNavigationFeedback } from "@/components/navigation/navigation-feedback";
 import { formatBrazilPhone, formatCpf, isValidCpf } from "@/utils/input-masks";
 import { checkMemberCpfAvailabilityAction, createMemberAction, updateMemberAction } from "../../actions/member-form.actions";
 import {
@@ -57,6 +58,7 @@ function ReviewItem({ label, value }: { label: string; value?: string }) {
 
 export function MemberCreateForm({ options, mode = "create", initialData }: Props) {
   const router = useRouter();
+  const { startNavigation } = useNavigationFeedback();
   const [data, setData] = useState<MemberFormData>(initialData ?? initialMemberFormData);
   const [stepIndex, setStepIndex] = useState(0);
   const [errors, setErrors] = useState<MemberFormErrors>({});
@@ -207,7 +209,10 @@ export function MemberCreateForm({ options, mode = "create", initialData }: Prop
     }
     setDirty(false);
     setNotice({ title: mode === "edit" ? "Cadastro atualizado" : "Membro cadastrado", description: result.message, variant: "success" });
-    window.setTimeout(() => router.push("/membros"), 650);
+    window.setTimeout(() => {
+      startNavigation();
+      router.push("/membros");
+    }, 650);
   }
 
   const input = (field: keyof MemberFormData, label: string, type = "text", placeholder?: string) => (
