@@ -21,31 +21,44 @@ export const Stat = styled.article<{ $tone?: string }>`
 `;
 export const Panel = styled.section`overflow: hidden; border: 1px solid ${({ theme }) => theme.colors.border.soft}; border-radius: 19px; background: #fff; box-shadow: ${({ theme }) => theme.shadows.card};`;
 export const PanelHeader = styled.header`
-  display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; border-bottom: 1px solid #edf0f4; padding: 20px 22px;
+  display: flex; align-items: center; justify-content: space-between; gap: 20px; border-bottom: 1px solid #edf0f4; padding: 20px 22px;
   h2 { margin: 0; color: #101828; font-size: 16px; font-weight: 900; }
   p { margin: 5px 0 0; color: #667085; font-size: 11px; font-weight: 600; }
+  @media (max-width: 720px) { align-items: stretch; flex-direction: column; }
+`;
+export const HeaderSearch = styled.div`
+  width: min(380px, 42vw); flex: 0 1 380px;
+  @media (max-width: 720px) { width: 100%; flex-basis: auto; }
 `;
 export const Toolbar = styled.div`
-  display: grid; grid-template-columns: minmax(230px, 1.3fr) repeat(5, minmax(120px, .7fr)); align-items: start; gap: 9px; border-bottom: 1px solid #edf0f4; background: #fbfcfd; padding: 14px 22px;
-  @media (max-width: 1180px) { grid-template-columns: repeat(3, 1fr); }
-  @media (max-width: 650px) { grid-template-columns: 1fr; }
+  display: grid; grid-template-columns: repeat(7, minmax(105px, 1fr)); align-items: start; gap: 9px; border-bottom: 1px solid #edf0f4; background: #fbfcfd; padding: 14px 22px;
+  @media (max-width: 1050px) { grid-template-columns: repeat(4, 1fr); }
+  @media (max-width: 720px) { grid-template-columns: repeat(2, 1fr); }
+  @media (max-width: 440px) { grid-template-columns: 1fr; }
 `;
 export const Search = styled.label`
   position: relative; display: block;
-  svg { position: absolute; top: 50%; left: 13px; width: 16px; color: #98a2b3; transform: translateY(-50%); }
+  > svg { position: absolute; top: 50%; left: 13px; width: 16px; color: #98a2b3; transform: translateY(-50%); }
   input { padding-left: 39px; }
 `;
 export const SearchField = styled.div`min-width: 0;`;
 export const SearchInlineStatus = styled.small`
-  position: absolute; top: 50%; right: 11px; display: inline-flex; max-width: 145px; align-items: center; gap: 5px;
+  position: absolute; top: 50%; right: 42px; display: inline-flex; max-width: 145px; align-items: center; gap: 5px;
   overflow: hidden; color: #8a5d13; font-size: 8px; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; transform: translateY(-50%);
   svg { position: static; width: 12px; height: 12px; flex: 0 0 auto; color: ${({ theme }) => theme.colors.brand.primary}; transform: none; animation: spin 800ms linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 `;
-export const Control = styled.input<{ $withInlineStatus?: boolean }>`
+export const Control = styled.input<{ $withInlineStatus?: boolean; $withClear?: boolean }>`
   width: 100%; min-height: 44px; border: 1px solid #d9deea; border-radius: 10px; outline: 0; background: #f8f9fc; padding: 0 13px; color: #344054; font-size: 12px; font-weight: 650;
-  padding-right: ${({ $withInlineStatus }) => $withInlineStatus ? "154px" : "13px"};
+  padding-right: ${({ $withInlineStatus, $withClear }) => $withInlineStatus ? "190px" : $withClear ? "45px" : "13px"};
   &:focus { border-color: ${({ theme }) => theme.colors.brand.primary}; background: #fff; box-shadow: ${({ theme }) => theme.shadows.focus}; }
+`;
+export const ClearSearchButton = styled.button`
+  position: absolute; top: 50%; right: 8px; display: grid; width: 28px; height: 28px; place-items: center;
+  border: 0; border-radius: 8px; background: transparent; color: #98a2b3; cursor: pointer; transform: translateY(-50%);
+  svg { position: static; width: 14px; height: 14px; transform: none; }
+  &:hover { background: #eef1f5; color: #475467; }
+  &:focus-visible { outline: 0; box-shadow: ${({ theme }) => theme.shadows.focus}; }
 `;
 export const Select = styled.select`
   width: 100%; min-height: 44px; border: 1px solid #d9deea; border-radius: 10px; outline: 0; background: #f8f9fc; padding: 0 12px; color: #344054; font-size: 11px; font-weight: 750;
@@ -61,7 +74,7 @@ export const Table = styled.table`
 export const Person = styled.div`
   display: flex; align-items: center; gap: 10px; min-width: 210px;
   > span { display: grid; width: 36px; height: 36px; flex: 0 0 auto; place-items: center; border-radius: 11px; background: #eef2ff; color: ${({ theme }) => theme.colors.brand.primary}; font-size: 11px; font-weight: 900; }
-  strong { display: block; color: #101828; font-size: 11px; font-weight: 850; } small { display: block; margin-top: 2px; color: #98a2b3; font-size: 9px; }
+  strong { display: block; color: #101828; font-size: 11px; font-weight: 850; text-transform: uppercase; } small { display: block; margin-top: 2px; color: #98a2b3; font-size: 9px; }
 `;
 export const Status = styled.span<{ $status: string }>`
   display: inline-flex; align-items: center; border-radius: 999px; padding: 5px 8px; font-size: 8px; font-weight: 900; text-transform: uppercase;

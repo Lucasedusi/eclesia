@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { BadgeCheck, Plus } from "lucide-react";
+import { FileSpreadsheet, Plus } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { PageHeader } from "@/components/ui/page-header";
 import { PERMISSIONS } from "@/modules/auth/constants/permissions";
@@ -56,6 +56,7 @@ export default async function MembersPage({ searchParams }: { searchParams: Sear
     page: Number(value(query.page)), pageSize: Number(value(query.pageSize)) as 20 | 50 | 100,
     search: value(query.search), congregationId: value(query.congregation), regionId: value(query.region),
     roleId: value(query.role), status: value(query.status), memberType: value(query.type),
+    importBatchId: value(query.importBatch),
     archived: value(query.archived) === "true", sort: value(query.sort) as never,
   });
   const capabilities = getMemberCapabilities(context);
@@ -63,7 +64,7 @@ export default async function MembersPage({ searchParams }: { searchParams: Sear
   const listPromise = Promise.all([listMembers(context, params), getMemberFilters(context)]);
 
   return <AppShell authContext={context} title="Membros" subtitle="Cadastros, vínculos e histórico eclesiástico">
-    <PageHeader title="Membros" subtitle="Gestão completa de membros, congregados, visitantes e crianças." badge="Administração" action={<div className="flex flex-wrap gap-2"><Link href="/membros/cargos" className="app-button-secondary"><BadgeCheck size={17} /> Cargos <LinkPendingIndicator /></Link>{capabilities.create && <Link href="/membros/novo" className="app-button-primary"><Plus size={17} /> Novo membro <LinkPendingIndicator /></Link>}</div>} />
+    <PageHeader title="Membros" subtitle="Gestão completa de membros, congregados, visitantes e crianças." badge="Administração" action={<div className="flex flex-wrap gap-2">{capabilities.import && <Link href="/membros/importar" className="app-button-secondary"><FileSpreadsheet size={17} /> Importar planilha <LinkPendingIndicator /></Link>}{capabilities.create && <Link href="/membros/novo" className="app-button-primary"><Plus size={17} /> Novo membro <LinkPendingIndicator /></Link>}</div>} />
     <div className="grid gap-[18px]">
       <Suspense fallback={<MemberStatsLoading />}><MemberStatsContent promise={statsPromise} /></Suspense>
       <Suspense fallback={<MemberListLoading />}><MemberListContent promise={listPromise} params={params} capabilities={capabilities} /></Suspense>

@@ -31,6 +31,21 @@ export const memberRoleStatusLabels: Record<string, string> = {
   ENDED: "Encerrado",
 };
 
+export function formatMemberHistoryValue(value: string | null) {
+  if (!value) return null;
+  if (value in memberStatusLabels) {
+    return memberStatusLabels[value as MemberStatus];
+  }
+  return value;
+}
+
+export function formatDateOnly(value: string | null | undefined) {
+  if (!value) return "";
+  const isoDate = value.slice(0, 10);
+  const [year, month, day] = isoDate.split("-");
+  return year && month && day ? `${day}/${month}/${year}` : value;
+}
+
 export function formatGender(value: string | null | undefined) {
   if (value === "MALE") return "Masculino";
   if (value === "FEMALE") return "Feminino";
@@ -43,6 +58,7 @@ export function formatMaritalStatus(value: string | null | undefined, gender?: s
     SINGLE: feminine ? "Solteira" : "Solteiro",
     MARRIED: feminine ? "Casada" : "Casado",
     DIVORCED: feminine ? "Divorciada" : "Divorciado",
+    SEPARATED: feminine ? "Separada" : "Separado",
     WIDOWED: feminine ? "Viúva" : "Viúvo",
     STABLE_UNION: "União estável",
     OTHER: "Outro",

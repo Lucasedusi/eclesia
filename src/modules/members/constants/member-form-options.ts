@@ -93,6 +93,7 @@ export const maritalStatusOptions: SelectOption[] = [
   { label: "Solteiro(a)", value: "SINGLE" },
   { label: "Casado(a)", value: "MARRIED" },
   { label: "Divorciado(a)", value: "DIVORCED" },
+  { label: "Separado(a)", value: "SEPARATED" },
   { label: "Viúvo(a)", value: "WIDOWED" },
   { label: "União estável", value: "STABLE_UNION" },
   { label: "Outro", value: "OTHER" },

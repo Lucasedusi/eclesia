@@ -13,6 +13,7 @@ import {
   FolderOpen,
   Image as ImageIcon,
   Loader2,
+  MessageCircle,
   Paperclip,
   Pencil,
   Plus,
@@ -24,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Modal } from "@/components/ui/modal";
 import { Toast, ToastViewport } from "@/components/ui/toast";
+import { createClient } from "@/lib/supabase/client";
 import * as D from "@/modules/organization/components/congregation-documents.styles";
 import {
   addMemberHistoryNoteAction,
@@ -34,11 +36,21 @@ import {
   manageMemberRoleAction,
 } from "../actions/member.actions";
 import {
+  cancelMemberDocumentUploadAction,
   deleteMemberDocumentAction,
+  finalizeMemberDocumentUploadAction,
   getMemberDocumentUrlAction,
+  prepareMemberDocumentUploadAction,
   updateMemberDocumentAction,
-  uploadMemberDocumentAction,
 } from "../actions/member-document.actions";
+import {
+  getMemberDocumentTypeLabel,
+  MEMBER_DOCUMENT_ACCEPT,
+  MEMBER_DOCUMENT_BUCKET,
+  MEMBER_DOCUMENT_MAX_SIZE,
+  MEMBER_DOCUMENT_TYPES,
+  type MemberDocumentType,
+} from "../constants/member-documents";
 import type {
   MemberCapabilities,
   MemberCoreDetails,
@@ -50,6 +62,7 @@ import type {
 } from "../types/member.types";
 import {
   formatGender,
+  formatMemberHistoryValue,
   formatMaritalStatus,
   memberRoleStatusLabels,
   memberStatusLabels,
@@ -69,19 +82,6 @@ type DocumentBusy = {
   id: string;
   kind: "open" | "edit" | "delete";
 } | null;
-
-const documentTypes = [
-  ["PHOTO", "Foto"],
-  ["CPF", "CPF"],
-  ["RG", "RG"],
-  ["BIRTH_CERTIFICATE", "Certidão de nascimento"],
-  ["MARRIAGE_CERTIFICATE", "Certidão de casamento"],
-  ["TRANSFER_LETTER", "Carta de transferência"],
-  ["ADDRESS_PROOF", "Comprovante de endereço"],
-  ["BAPTISM_CERTIFICATE", "Certificado de batismo"],
-  ["MEMBERSHIP_FORM", "Ficha de membro"],
-  ["OTHER", "Outro"],
-] as const;
 
 function date(value: string | null | undefined) {
   return value
@@ -113,7 +113,25 @@ function formatFileSize(value: number | null) {
 }
 
 function documentTypeLabel(value: string) {
-  return documentTypes.find(([key]) => key === value)?.[1] ?? "Outro";
+  return getMemberDocumentTypeLabel(value);
+}
+
+function validateBrowserFile(file: File | null) {
+  if (!file) return "Selecione um arquivo.";
+  if (file.size > MEMBER_DOCUMENT_MAX_SIZE) {
+    return "O documento deve ter no máximo 10 MB.";
+  }
+  if (!/\.(pdf|jpe?g|png|webp)$/i.test(file.name)) {
+    return "Formato não permitido. Envie PDF, JPG, PNG ou WebP.";
+  }
+  return null;
+}
+
+function whatsappUrl(value: string | null | undefined) {
+  const digits = value?.replace(/\D/g, "") ?? "";
+  if (/^55\d{10,11}$/.test(digits)) return `https://wa.me/${digits}`;
+  if (/^\d{10,11}$/.test(digits)) return `https://wa.me/55${digits}`;
+  return null;
 }
 
 function initials(name: string) {
@@ -134,13 +152,40 @@ function Field({ label, value }: { label: string; value?: string | null }) {
   );
 }
 
+function WhatsAppField({ value }: { value?: string | null }) {
+  const url = whatsappUrl(value);
+  return (
+    <S.Field>
+      <dt>WhatsApp</dt>
+      <dd>
+        <S.WhatsAppValue>
+          <span>{value || "Não informado"}</span>
+          {url && (
+            <S.WhatsAppLink
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Abrir conversa no WhatsApp"
+              title="Abrir conversa no WhatsApp"
+            >
+              <MessageCircle /> Abrir WhatsApp
+            </S.WhatsAppLink>
+          )}
+        </S.WhatsAppValue>
+      </dd>
+    </S.Field>
+  );
+}
+
 function HistoryChange({ item }: { item: MemberHistoryItem }) {
   if (!item.oldValue && !item.newValue) return null;
+  const oldValue = formatMemberHistoryValue(item.oldValue);
+  const newValue = formatMemberHistoryValue(item.newValue);
   return (
     <S.HistoryChange>
-      {item.oldValue && <strong>{item.oldValue}</strong>}
-      {item.oldValue && item.newValue && <ArrowRight />}
-      {item.newValue && <strong>{item.newValue}</strong>}
+      {oldValue && <strong>{oldValue}</strong>}
+      {oldValue && newValue && <ArrowRight />}
+      {newValue && <strong>{newValue}</strong>}
     </S.HistoryChange>
   );
 }
@@ -166,6 +211,7 @@ export function MemberDetailsModal({
   onClose,
   onChanged,
 }: Props) {
+  const [supabase] = useState(() => createClient());
   const [details, setDetails] = useState<MemberCoreDetails | null>(null);
   const [loadError, setLoadError] = useState("");
   const [tab, setTab] = useState<Tab>("data");
@@ -188,6 +234,7 @@ export function MemberDetailsModal({
   const [roleId, setRoleId] = useState("");
   const [roleStartDate, setRoleStartDate] = useState("");
   const [roleNotes, setRoleNotes] = useState("");
+  const [roleSaved, setRoleSaved] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -257,13 +304,90 @@ export function MemberDetailsModal({
 
   async function upload(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const fileError = validateBrowserFile(selectedFile);
+    if (fileError || !selectedFile) {
+      setNotice({
+        title: selectedFile?.size && selectedFile.size > MEMBER_DOCUMENT_MAX_SIZE
+          ? "Arquivo muito grande"
+          : "Revise o documento",
+        description: fileError ?? "Selecione um arquivo.",
+        variant: "danger",
+      });
+      return;
+    }
+
     setBusy(true);
     const form = event.currentTarget;
-    const result = await uploadMemberDocumentAction(
+    const formData = new FormData(form);
+    const metadata = {
       memberId,
-      new FormData(form),
-    );
-    setBusy(false);
+      type: String(formData.get("type") ?? "OTHER") as MemberDocumentType,
+      title: String(formData.get("title") ?? ""),
+      description: String(formData.get("description") ?? ""),
+      sensitive: formData.get("sensitive") === "true",
+      originalFileName: selectedFile.name,
+      fileSize: selectedFile.size,
+    };
+    let result: Awaited<ReturnType<typeof finalizeMemberDocumentUploadAction>>;
+    let prepared: Awaited<ReturnType<typeof prepareMemberDocumentUploadAction>> | null = null;
+
+    try {
+      prepared = await prepareMemberDocumentUploadAction(metadata);
+      if (!prepared.success) {
+        result = prepared;
+      } else if (!prepared.data) {
+        result = {
+          success: false,
+          message: "Não foi possível preparar o envio do documento.",
+        };
+      } else {
+        const { error: uploadError } = await supabase.storage
+          .from(MEMBER_DOCUMENT_BUCKET)
+          .uploadToSignedUrl(
+            prepared.data.path,
+            prepared.data.token,
+            selectedFile,
+            {
+              cacheControl: "3600",
+              contentType: prepared.data.contentType,
+            },
+          );
+        if (uploadError) {
+          await cancelMemberDocumentUploadAction({
+            memberId,
+            uploadId: prepared.data.uploadId,
+            path: prepared.data.path,
+            originalFileName: selectedFile.name,
+            fileSize: selectedFile.size,
+          });
+          result = {
+            success: false,
+            message: "Não foi possível enviar o arquivo. Tente novamente.",
+          };
+        } else {
+          result = await finalizeMemberDocumentUploadAction({
+            ...metadata,
+            uploadId: prepared.data.uploadId,
+            path: prepared.data.path,
+          });
+        }
+      }
+    } catch (error) {
+      console.error("[member-documents] browser upload failed", error);
+      if (prepared?.success && prepared.data) {
+        await cancelMemberDocumentUploadAction({
+          memberId,
+          uploadId: prepared.data.uploadId,
+          path: prepared.data.path,
+          originalFileName: selectedFile.name,
+          fileSize: selectedFile.size,
+        });
+      }
+      result = { success: false, message: "Não foi possível anexar o documento." };
+    } finally {
+      setBusy(false);
+    }
+
     setNotice({
       title: result.success ? "Documento enviado" : "Falha no envio",
       description: result.message,
@@ -321,12 +445,99 @@ export function MemberDetailsModal({
   async function updateDocument(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!editDocument) return;
+    const fileError = replacementFile
+      ? validateBrowserFile(replacementFile)
+      : null;
+    if (fileError) {
+      setNotice({
+        title: replacementFile && replacementFile.size > MEMBER_DOCUMENT_MAX_SIZE
+          ? "Arquivo muito grande"
+          : "Revise o documento",
+        description: fileError,
+        variant: "danger",
+      });
+      return;
+    }
+
     setDocumentBusy({ id: editDocument.id, kind: "edit" });
-    const result = await updateMemberDocumentAction(
-      editDocument.id,
-      new FormData(event.currentTarget),
-    );
-    setDocumentBusy(null);
+    const form = new FormData(event.currentTarget);
+    const metadata = {
+      memberId,
+      documentId: editDocument.id,
+      type: String(form.get("type") ?? "OTHER") as MemberDocumentType,
+      title: String(form.get("title") ?? ""),
+      description: String(form.get("description") ?? ""),
+      sensitive: form.get("sensitive") === "true",
+    };
+    let result: Awaited<ReturnType<typeof updateMemberDocumentAction>>;
+    let prepared: Awaited<ReturnType<typeof prepareMemberDocumentUploadAction>> | null = null;
+
+    try {
+      if (!replacementFile) {
+        result = await updateMemberDocumentAction(editDocument.id, metadata);
+      } else {
+        const prepareInput = {
+          ...metadata,
+          originalFileName: replacementFile.name,
+          fileSize: replacementFile.size,
+        };
+        prepared = await prepareMemberDocumentUploadAction(prepareInput);
+        if (!prepared.success) {
+          result = prepared;
+        } else if (!prepared.data) {
+          result = {
+            success: false,
+            message: "Não foi possível preparar o envio do novo arquivo.",
+          };
+        } else {
+          const { error: uploadError } = await supabase.storage
+            .from(MEMBER_DOCUMENT_BUCKET)
+            .uploadToSignedUrl(
+              prepared.data.path,
+              prepared.data.token,
+              replacementFile,
+              {
+                cacheControl: "3600",
+                contentType: prepared.data.contentType,
+              },
+            );
+          if (uploadError) {
+            await cancelMemberDocumentUploadAction({
+              memberId,
+              uploadId: prepared.data.uploadId,
+              path: prepared.data.path,
+              originalFileName: replacementFile.name,
+              fileSize: replacementFile.size,
+            });
+            result = {
+              success: false,
+              message: "Não foi possível enviar o novo arquivo.",
+            };
+          } else {
+            result = await finalizeMemberDocumentUploadAction({
+              ...prepareInput,
+              uploadId: prepared.data.uploadId,
+              path: prepared.data.path,
+            });
+          }
+        }
+      }
+    } catch (error) {
+      console.error("[member-documents] browser update failed", error);
+      if (prepared?.success && prepared.data && replacementFile) {
+        await cancelMemberDocumentUploadAction({
+          memberId,
+          uploadId: prepared.data.uploadId,
+          path: prepared.data.path,
+          originalFileName: replacementFile.name,
+          fileSize: replacementFile.size,
+        });
+      }
+      result = { success: false, message: "Não foi possível atualizar o documento." };
+    } finally {
+      setDocumentBusy(null);
+    }
+
     setNotice({
       title: result.success
         ? "Documento atualizado"
@@ -373,12 +584,14 @@ export function MemberDetailsModal({
       currentRole?.startDate ?? new Date().toISOString().slice(0, 10),
     );
     setRoleNotes(currentRole?.notes ?? "");
+    setRoleSaved(false);
     setShowRoleEditor(true);
   }
 
   function changeSelectedRole(nextRoleId: string) {
     const currentRole = details?.roles.find((role) => role.status === "ACTIVE");
     setRoleId(nextRoleId);
+    setRoleSaved(false);
     if (nextRoleId !== (currentRole?.roleId ?? "")) {
       setRoleStartDate(new Date().toISOString().slice(0, 10));
       setRoleNotes("");
@@ -388,27 +601,37 @@ export function MemberDetailsModal({
   async function saveRole(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
-    const result = await manageMemberRoleAction({
-      memberId,
-      operation: "SET",
-      roleId,
-      startDate: roleStartDate,
-      notes: roleNotes,
-    });
-    setBusy(false);
-    setNotice({
-      title: result.success ? "Cargo atualizado" : "Falha ao atualizar Cargo",
-      description: result.message,
-      variant: result.success ? "success" : "danger",
-    });
-    if (result.success) {
-      setShowRoleEditor(false);
-      await refreshDetails();
-      if (history) {
-        const updatedHistory = await getMemberHistoryAction(memberId);
-        if (updatedHistory.success) setHistory(updatedHistory.data);
+    try {
+      const result = await manageMemberRoleAction({
+        memberId,
+        operation: "SET",
+        roleId,
+        startDate: roleStartDate,
+        notes: roleNotes,
+      });
+      setNotice({
+        title: result.success ? "Cargo atualizado" : "Falha ao atualizar Cargo",
+        description: result.message,
+        variant: result.success ? "success" : "danger",
+      });
+      if (result.success) {
+        await refreshDetails();
+        if (history) {
+          const updatedHistory = await getMemberHistoryAction(memberId);
+          if (updatedHistory.success) setHistory(updatedHistory.data);
+        }
+        setRoleSaved(true);
+        onChanged();
       }
-      onChanged();
+    } catch (error) {
+      console.error("Erro ao atualizar Cargo do membro:", error);
+      setNotice({
+        title: "Falha ao atualizar Cargo",
+        description: "Ocorreu um erro inesperado. Tente novamente.",
+        variant: "danger",
+      });
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -531,7 +754,7 @@ export function MemberDetailsModal({
                 <S.Divider />
                 <h4>Contato, endereço e família</h4>
                 <S.Grid>
-                  <Field label="WhatsApp" value={details.whatsapp} />
+                  <WhatsAppField value={details.whatsapp} />
                   <Field label="E-mail" value={details.email} />
                   <Field label="Endereço" value={details.address} />
                   <Field label="Pai" value={details.fatherName} />
@@ -785,7 +1008,7 @@ export function MemberDetailsModal({
                         <D.Field>
                           <span>Tipo *</span>
                           <D.Select name="type" defaultValue="OTHER" disabled={busy}>
-                            {documentTypes.map(([value, label]) => (
+                            {MEMBER_DOCUMENT_TYPES.map(([value, label]) => (
                               <option key={value} value={value}>
                                 {label}
                               </option>
@@ -797,7 +1020,7 @@ export function MemberDetailsModal({
                         <input
                           name="file"
                           type="file"
-                          accept="application/pdf,image/jpeg,image/png,image/webp"
+                          accept={MEMBER_DOCUMENT_ACCEPT}
                           required
                           disabled={busy}
                           onChange={(event) =>
@@ -955,56 +1178,71 @@ export function MemberDetailsModal({
           busy={busy}
         >
           <S.RoleForm onSubmit={saveRole}>
-            <S.RoleNotice>
-              Ao trocar o Cargo, o vínculo atual será encerrado e permanecerá
-              disponível no Histórico Eclesiástico.
-            </S.RoleNotice>
-            <S.FormField>
-              <span>Cargo</span>
-              <S.SelectControl
-                value={roleId}
-                onChange={(event) => changeSelectedRole(event.target.value)}
-              >
-                <option value="">Sem Cargo</option>
-                {filters.roles.map((role) => (
-                  <option key={role.value} value={role.value}>
-                    {role.label}
-                  </option>
-                ))}
-              </S.SelectControl>
-            </S.FormField>
-            {roleId && (
-              <S.FormField>
-                <span>Data de início</span>
-                <S.FormControl
-                  type="date"
-                  value={roleStartDate}
-                  max={new Date().toISOString().slice(0, 10)}
-                  onChange={(event) => setRoleStartDate(event.target.value)}
-                />
-              </S.FormField>
+            {roleSaved ? (
+              <>
+                <S.RoleSuccess role="status">
+                  Cargo atualizado com sucesso. A ficha e o Histórico Eclesiástico já estão atualizados.
+                </S.RoleSuccess>
+                <S.FormActions>
+                  <Button type="button" onClick={() => setShowRoleEditor(false)}>
+                    Concluir
+                  </Button>
+                </S.FormActions>
+              </>
+            ) : (
+              <>
+                <S.RoleNotice>
+                  Ao trocar o Cargo, o vínculo atual será encerrado e permanecerá
+                  disponível no Histórico Eclesiástico.
+                </S.RoleNotice>
+                <S.FormField>
+                  <span>Cargo</span>
+                  <S.SelectControl
+                    value={roleId}
+                    onChange={(event) => changeSelectedRole(event.target.value)}
+                  >
+                    <option value="">Sem Cargo</option>
+                    {filters.roles.map((role) => (
+                      <option key={role.value} value={role.value}>
+                        {role.label}
+                      </option>
+                    ))}
+                  </S.SelectControl>
+                </S.FormField>
+                {roleId && (
+                  <S.FormField>
+                    <span>Data de início</span>
+                    <S.FormControl
+                      type="date"
+                      value={roleStartDate}
+                      max={new Date().toISOString().slice(0, 10)}
+                      onChange={(event) => setRoleStartDate(event.target.value)}
+                    />
+                  </S.FormField>
+                )}
+                <S.FormField>
+                  <span>Observação</span>
+                  <S.FormControl
+                    value={roleNotes}
+                    onChange={(event) => setRoleNotes(event.target.value)}
+                    placeholder="Observação opcional"
+                  />
+                </S.FormField>
+                <S.FormActions>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => setShowRoleEditor(false)}
+                    disabled={busy}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button type="submit" loading={busy}>
+                    Salvar Cargo
+                  </Button>
+                </S.FormActions>
+              </>
             )}
-            <S.FormField>
-              <span>Observação</span>
-              <S.FormControl
-                value={roleNotes}
-                onChange={(event) => setRoleNotes(event.target.value)}
-                placeholder="Observação opcional"
-              />
-            </S.FormField>
-            <S.FormActions>
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setShowRoleEditor(false)}
-                disabled={busy}
-              >
-                Cancelar
-              </Button>
-              <Button type="submit" loading={busy}>
-                Salvar Cargo
-              </Button>
-            </S.FormActions>
           </S.RoleForm>
         </Modal>
       )}
@@ -1070,7 +1308,7 @@ export function MemberDetailsModal({
                   <D.Field>
                     <span>Tipo *</span>
                     <D.Select name="type" defaultValue={editDocument.type}>
-                      {documentTypes.map(([value, label]) => (
+                      {MEMBER_DOCUMENT_TYPES.map(([value, label]) => (
                         <option key={value} value={value}>
                           {label}
                         </option>
@@ -1082,7 +1320,7 @@ export function MemberDetailsModal({
                   <input
                     name="file"
                     type="file"
-                    accept="application/pdf,image/jpeg,image/png,image/webp"
+                    accept={MEMBER_DOCUMENT_ACCEPT}
                     onChange={(event) =>
                       setReplacementFile(event.target.files?.[0] ?? null)
                     }

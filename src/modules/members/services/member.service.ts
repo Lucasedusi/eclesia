@@ -35,6 +35,7 @@ const DEFAULT_PARAMS: MemberListParams = {
   roleId: "",
   status: "",
   memberType: "",
+  importBatchId: "",
   archived: false,
   sort: "name_asc",
 };
@@ -63,12 +64,14 @@ export function getMemberCapabilities(context: AuthContext): MemberCapabilities 
     editPastoralNotes: can(PERMISSIONS.membersEditPastoralNotes),
     viewHistory: can(PERMISSIONS.memberHistoryView),
     createHistory: can(PERMISSIONS.memberHistoryCreate),
+    viewSensitiveHistory: can(PERMISSIONS.memberHistoryViewSensitive),
     viewFinance: can(PERMISSIONS.financeView),
     viewDocuments: can(PERMISSIONS.membersViewFull),
     manageDocuments: can(PERMISSIONS.membersManageDocuments),
     viewSensitiveDocuments: can(PERMISSIONS.membersViewSensitiveDocuments),
     viewRoles: can(PERMISSIONS.memberRolesView),
     manageRoles: can(PERMISSIONS.memberRolesManage),
+    import: can(PERMISSIONS.membersImport),
   };
 }
 
@@ -92,7 +95,7 @@ export async function listMembers(context: AuthContext, input: Partial<MemberLis
   const roleFilterRelation = params.roleId
     ? ", role_filter:member_roles!member_roles_member_id_fkey!inner(role_id, status, deleted_at)"
     : "";
-  const selectColumns: string = `id, member_code, full_name, gender, member_status, member_type, whatsapp, congregation_id, created_at, updated_at, deleted_at, congregations!inner(id, name, region_id, regions(name)), active_roles:member_roles!member_roles_member_id_fkey(status, deleted_at, role:roles!member_roles_role_id_fkey(name, female_name))${roleFilterRelation}`;
+  const selectColumns: string = `id, member_code, full_name, gender, member_status, member_type, whatsapp, congregation_id, created_at, updated_at, deleted_at, congregations!inner(id, name, region_id, regions(name)), active_roles:member_roles!member_roles_member_id_fkey(status, deleted_at, title_variant, role:roles!member_roles_role_id_fkey(name, female_name))${roleFilterRelation}`;
 
   let query = supabase
     .from("members")
@@ -111,6 +114,7 @@ export async function listMembers(context: AuthContext, input: Partial<MemberLis
   }
   if (params.status) query = query.eq("member_status", params.status);
   if (params.memberType) query = query.eq("member_type", params.memberType);
+  if (params.importBatchId) query = query.eq("source_import_batch_id", params.importBatchId);
 
   const search = safeSearch(params.search);
   if (search.length >= 3) {
@@ -152,8 +156,10 @@ export async function listMembers(context: AuthContext, input: Partial<MemberLis
       (link) => link.status === "ACTIVE" && !link.deleted_at,
     );
     const activeRole = first<AnyRow>(activeRoleLink?.role);
+    const useFemaleTitle = activeRoleLink?.title_variant === "FEMALE"
+      || (activeRoleLink?.title_variant === "AUTO" && row.gender === "FEMALE");
     const roleName = activeRole
-      ? row.gender === "FEMALE" && activeRole.female_name
+      ? useFemaleTitle && activeRole.female_name
         ? activeRole.female_name
         : activeRole.name
       : null;
@@ -249,18 +255,25 @@ export async function getMemberCoreDetails(context: AuthContext, memberId: strin
   const [identity, pastoral, roles] = await Promise.all([
     capabilities.viewSensitiveIdentity ? supabase.from("member_sensitive_identity").select("cpf, rg, issuing_agency").eq("member_id", memberId).is("deleted_at", null).maybeSingle() : Promise.resolve({ data: null }),
     capabilities.viewPastoralNotes ? supabase.from("member_pastoral_notes").select("notes").eq("member_id", memberId).is("deleted_at", null).maybeSingle() : Promise.resolve({ data: null }),
-    capabilities.viewRoles ? supabase.from("member_roles").select("id, role_id, status, start_date, end_date, notes, role:roles!member_roles_role_id_fkey(name, female_name)").eq("member_id", memberId).is("deleted_at", null).order("status", { ascending: true }).order("start_date", { ascending: false }) : Promise.resolve({ data: [] }),
+    capabilities.viewRoles ? supabase.from("member_roles").select("id, role_id, status, start_date, end_date, notes, title_variant, role:roles!member_roles_role_id_fkey(name, female_name)").eq("member_id", memberId).is("deleted_at", null).order("status", { ascending: true }).order("start_date", { ascending: false }) : Promise.resolve({ data: [] }),
   ]);
   const row = data as unknown as AnyRow;
   const congregation = first<AnyRow>(row.congregations) ?? {};
   const region = first<AnyRow>(congregation.regions);
-  const roleItems: MemberRoleItem[] = ((roles.data ?? []) as unknown as AnyRow[]).map((link) => ({
-    id: link.id, roleId: link.role_id,
-    name: row.gender === "FEMALE" && first<AnyRow>(link.role)?.female_name
-      ? first<AnyRow>(link.role)?.female_name
-      : first<AnyRow>(link.role)?.name ?? "Cargo",
-    status: link.status, startDate: link.start_date, endDate: link.end_date, notes: link.notes,
-  }));
+  const roleItems: MemberRoleItem[] = ((roles.data ?? []) as unknown as AnyRow[]).map((link) => {
+    const role = first<AnyRow>(link.role);
+    const useFemaleTitle = link.title_variant === "FEMALE"
+      || (link.title_variant === "AUTO" && row.gender === "FEMALE");
+    return {
+      id: link.id,
+      roleId: link.role_id,
+      name: useFemaleTitle && role?.female_name ? role.female_name : role?.name ?? "Cargo",
+      status: link.status,
+      startDate: link.start_date,
+      endDate: link.end_date,
+      notes: link.notes,
+    };
+  });
   const address = [row.address, row.number, row.complement, row.district, row.city, row.state, row.zip_code].filter(Boolean).join(", ");
   return {
     id: row.id, memberCode: row.member_code, fullName: row.full_name, gender: row.gender,
@@ -285,6 +298,7 @@ export async function getMemberHistory(context: AuthContext, memberId: string, p
   const { data, count, error } = await supabase.from("member_history")
     .select("id, history_type, title, description, old_value, new_value, metadata, event_date, is_sensitive, created_at", { count: "exact" })
     .eq("member_id", memberId).eq("church_id", context.church.id).is("deleted_at", null)
+    .neq("history_type", "MEMBER_CREATED")
     .order("event_date", { ascending: false }).order("created_at", { ascending: false }).range(from, from + pageSize - 1);
   if (error) throw new Error(error.message);
   const rows = (data ?? []) as unknown as AnyRow[];

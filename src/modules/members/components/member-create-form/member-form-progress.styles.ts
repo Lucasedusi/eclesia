@@ -72,19 +72,30 @@ export const StepList = styled.ol`
   margin-top: 20px;
 `;
 
-export const StepItem = styled.li<StepStateProps>`
+export const StepItem = styled.li`
+  min-width: 0;
+`;
+
+export const StepButton = styled.button<StepStateProps>`
   display: grid;
+  width: 100%;
   grid-template-columns: 42px 1fr;
   gap: 12px;
   align-items: flex-start;
+  border: 1px solid ${({ $active }) => ($active ? "rgba(65, 91, 165, 0.18)" : "transparent")};
   border-radius: 8px;
   background: ${({ $active, $completed }) =>
     $active ? "rgba(65, 91, 165, 0.08)" : $completed ? "#F8FAFC" : "#FFFFFF"};
   padding: 12px;
+  text-align: left;
+  cursor: pointer;
   transition:
     background ${({ theme }) => theme.transitions.default},
     border-color ${({ theme }) => theme.transitions.default},
     transform ${({ theme }) => theme.transitions.fast};
+
+  &:hover { border-color: rgba(65, 91, 165, 0.18); background: #f8faff; }
+  &:focus-visible { outline: 0; box-shadow: ${({ theme }) => theme.shadows.focus}; }
 `;
 
 export const StepIcon = styled.span<StepStateProps>`

@@ -9,6 +9,17 @@ export const Tab = styled.button<{ $active: boolean }>`display: inline-flex; min
 export const Section = styled.section`display: grid; gap: 13px; h4 { margin: 2px 0 0; color: #101828; font-size: 12px; font-weight: 900; }`;
 export const Grid = styled.dl`display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 0; @media (max-width: 780px) { grid-template-columns: 1fr 1fr; } @media (max-width: 520px) { grid-template-columns: 1fr; }`;
 export const Field = styled.div`border: 1px solid #e8ebf0; border-radius: 11px; background: #fbfcfd; padding: 11px 12px; dt { color: #98a2b3; font-size: 8px; font-weight: 850; text-transform: uppercase; } dd { margin: 4px 0 0; color: #344054; font-size: 11px; font-weight: 700; line-height: 1.45; word-break: break-word; }`;
+export const WhatsAppValue = styled.span`
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  > span { min-width: 0; }
+`;
+export const WhatsAppLink = styled.a`
+  display: inline-flex; min-height: 27px; align-items: center; gap: 5px; flex: 0 0 auto;
+  border-radius: 8px; background: #e9f8ef; padding: 0 8px; color: #168447;
+  font-size: 8px; font-weight: 850; text-decoration: none;
+  svg { width: 13px; height: 13px; }
+  &:hover { background: #d9f3e4; color: #0c6d38; }
+`;
 export const Divider = styled.hr`width: 100%; height: 1px; border: 0; background: #edf0f4;`;
 export const Timeline = styled.ol`display: grid; gap: 10px; margin: 0; padding: 0; list-style: none;`;
 export const Event = styled.li`display: grid; grid-template-columns: 11px 1fr; gap: 12px; &:before { content: ""; width: 10px; height: 10px; margin-top: 5px; border: 3px solid #dce4ff; border-radius: 50%; background: #415ba5; } article { border: 1px solid #e8ebf0; border-radius: 12px; padding: 12px; } h5 { margin: 0; color: #101828; font-size: 11px; font-weight: 850; } time { color: #98a2b3; font-size: 9px; font-weight: 700; } p { margin: 6px 0 0; color: #667085; font-size: 10px; line-height: 1.55; }`;
@@ -66,6 +77,15 @@ export const RoleNotice = styled.div`
   color: #667085;
   font-size: 10px;
   font-weight: 650;
+  line-height: 1.55;
+`;
+export const RoleSuccess = styled.div`
+  border-radius: 13px;
+  background: #eaf8f1;
+  padding: 13px;
+  color: #227055;
+  font-size: 11px;
+  font-weight: 750;
   line-height: 1.55;
 `;
 export const Empty = styled.div`display: grid; min-height: 180px; place-items: center; color: #667085; font-size: 11px; text-align: center;`;

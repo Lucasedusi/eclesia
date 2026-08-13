@@ -150,10 +150,14 @@ export const CheckGrid = styled.div`
 `;
 
 export const CheckCard = styled.div`
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  margin-top: 19px;
   border: 1px solid ${({ theme }) => theme.colors.border.soft};
-  border-radius: 16px;
+  border-radius: 10px;
   background: ${({ theme }) => theme.colors.surface.soft};
-  padding: 14px;
+  padding: 0 14px;
 `;
 
 export const FieldBlock = styled.div`
@@ -345,6 +349,10 @@ export const InfoBox = styled.div`
     flex-shrink: 0;
     color: ${({ theme }) => theme.colors.brand.primary};
   }
+`;
+
+export const ChurchContextBox = styled(InfoBox)`
+  font-size: 12px;
 `;
 
 export const WarningBox = styled(InfoBox)`

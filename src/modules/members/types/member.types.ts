@@ -13,6 +13,7 @@ export type MemberListParams = {
   roleId: string;
   status: string;
   memberType: string;
+  importBatchId: string;
   archived: boolean;
   sort: MemberSort;
 };
@@ -70,12 +71,14 @@ export type MemberCapabilities = {
   editPastoralNotes: boolean;
   viewHistory: boolean;
   createHistory: boolean;
+  viewSensitiveHistory: boolean;
   viewFinance: boolean;
   viewDocuments: boolean;
   manageDocuments: boolean;
   viewSensitiveDocuments: boolean;
   viewRoles: boolean;
   manageRoles: boolean;
+  import: boolean;
 };
 
 export type MemberCoreDetails = {
@@ -170,12 +173,14 @@ export type PaginatedTab<T> = { items: T[]; total: number; page: number; pageCou
 
 export type MemberLifecycleInput = {
   memberId: string;
-  action: "MOVE_CONGREGATION" | "INACTIVATE" | "REACTIVATE" | "TRANSFER" | "DISCIPLINE" | "DECEASED" | "ARCHIVE" | "RESTORE";
+  action: "MOVE_CONGREGATION" | "INACTIVATE" | "REACTIVATE" | "TRANSFER" | "DISCIPLINE" | "END_DISCIPLINE" | "DECEASED" | "ARCHIVE" | "RESTORE";
   eventDate: string;
   reason: string;
   targetCongregationId?: string;
   destinationChurch?: string;
+  expectedEndDate?: string;
   endRoles?: boolean;
+  reactivateRole?: boolean;
 };
 
 export type MemberActionResponse<T = undefined> =

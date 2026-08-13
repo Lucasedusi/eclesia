@@ -23,6 +23,10 @@ function friendlyError(message: string) {
   if (message.includes("MEMBER_DESTINATION_REQUIRED")) return "Informe a igreja de destino.";
   if (message.includes("MEMBER_CONGREGATION_INVALID")) return "Selecione uma Congregação válida dentro do seu escopo.";
   if (message.includes("MEMBER_EVENT_DATE_INVALID")) return "Informe uma data válida que não esteja no futuro.";
+  if (message.includes("MEMBER_EXPECTED_END_DATE_INVALID")) return "A previsão de encerramento deve ser igual ou posterior ao início da disciplina.";
+  if (message.includes("MEMBER_DISCIPLINE_END_DATE_INVALID")) return "A data de encerramento não pode ser anterior ao início da disciplina.";
+  if (message.includes("MEMBER_STATUS_TRANSITION_INVALID")) return "Esta movimentação não é permitida para a situação atual do membro.";
+  if (message.includes("MEMBER_STATUS_FINAL")) return "Membros transferidos ou falecidos não aceitam novas movimentações de situação.";
   if (message.includes("MEMBER_NOT_FOUND")) return "Membro não encontrado ou fora do seu escopo.";
   return "Não foi possível concluir a operação agora.";
 }
@@ -83,7 +87,7 @@ export async function changeMemberLifecycleAction(input: MemberLifecycleInput): 
   if (!allowed) return { success: false, message: "Seu acesso não permite esta movimentação." };
 
   const supabase = await createClient();
-  const { error } = await supabase.rpc("change_member_lifecycle", {
+  const { data, error } = await supabase.rpc("change_member_lifecycle_v2", {
     p_member_id: input.memberId,
     p_action: input.action,
     p_event_date: input.eventDate || new Date().toISOString().slice(0, 10),
@@ -91,10 +95,23 @@ export async function changeMemberLifecycleAction(input: MemberLifecycleInput): 
     p_target_congregation_id: input.targetCongregationId || null,
     p_destination_church: input.destinationChurch?.trim() || null,
     p_end_roles: input.endRoles ?? true,
-    p_sensitive: input.action === "DISCIPLINE",
+    p_sensitive: ["DISCIPLINE", "END_DISCIPLINE"].includes(input.action),
+    p_expected_end_date: input.expectedEndDate || null,
+    p_reactivate_role: input.reactivateRole ?? true,
   });
   if (error) return { success: false, message: friendlyError(error.message) };
   revalidatePath("/membros");
+  const lifecycleResult = data as { role_reactivated?: boolean; role_ended?: boolean } | null;
+  if (input.action === "END_DISCIPLINE") {
+    return {
+      success: true,
+      message: lifecycleResult?.role_reactivated
+        ? "Disciplina encerrada e Cargo suspenso reativado."
+        : lifecycleResult?.role_ended
+          ? "Disciplina encerrada e Cargo suspenso encerrado."
+          : "Disciplina encerrada e membro reativado.",
+    };
+  }
   return { success: true, message: "Movimentação registrada no histórico do membro." };
 }
 
@@ -107,7 +124,7 @@ export async function addMemberHistoryNoteAction(input: {
 }): Promise<MemberActionResponse> {
   const context = await requireAccessContext(PERMISSIONS.memberHistoryCreate);
   if (!input.title.trim() || !input.eventDate) return { success: false, message: "Informe o título e a data do evento." };
-  if (input.sensitive && !hasPermission(context.permissions, "member_history.view_sensitive")) {
+  if (input.sensitive && !hasPermission(context.permissions, PERMISSIONS.memberHistoryViewSensitive)) {
     return { success: false, message: "Seu acesso não permite criar eventos sensíveis." };
   }
   const supabase = await createClient();

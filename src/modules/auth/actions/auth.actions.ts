@@ -296,7 +296,7 @@ export async function updateProfileAction(
   } = await supabase.auth.getUser();
   if (!user) return { status: "error", message: "Sua sessão expirou." };
 
-  const { error } = await supabase
+  const { data: updatedProfile, error } = await supabase
     .from("profiles")
     .update({
       full_name: parsed.data.fullName,
@@ -306,9 +306,12 @@ export async function updateProfileAction(
       locale: parsed.data.locale,
       timezone: parsed.data.timezone,
     })
-    .eq("id", user.id);
+    .eq("id", user.id)
+    .is("deleted_at", null)
+    .select("id")
+    .maybeSingle();
 
-  if (error)
+  if (error || !updatedProfile)
     return {
       status: "error",
       message: "Não foi possível atualizar seu perfil.",

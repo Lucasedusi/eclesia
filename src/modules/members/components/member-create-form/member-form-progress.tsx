@@ -27,11 +27,13 @@ const stepIcons: Record<MemberFormStepId, LucideIcon> = {
 type MemberFormProgressProps = {
   steps: MemberFormStep[];
   currentStepIndex: number;
+  onStepChange: (stepIndex: number) => void;
 };
 
 export function MemberFormProgress({
   steps,
   currentStepIndex,
+  onStepChange,
 }: MemberFormProgressProps) {
   const currentStep = steps[currentStepIndex];
   const progress = Math.round(((currentStepIndex + 1) / steps.length) * 100);
@@ -60,20 +62,24 @@ export function MemberFormProgress({
           const isCompleted = index < currentStepIndex;
 
           return (
-            <S.StepItem
-              key={step.id}
-              $active={isActive}
-              $completed={isCompleted}
-              title={step.title}
-            >
-              <S.StepIcon $active={isActive} $completed={isCompleted}>
-                <Icon aria-hidden="true" />
-              </S.StepIcon>
+            <S.StepItem key={step.id}>
+              <S.StepButton
+                type="button"
+                $active={isActive}
+                $completed={isCompleted}
+                title={`Ir para ${step.title}`}
+                aria-current={isActive ? "step" : undefined}
+                onClick={() => onStepChange(index)}
+              >
+                <S.StepIcon $active={isActive} $completed={isCompleted}>
+                  <Icon aria-hidden="true" />
+                </S.StepIcon>
 
-              <S.StepContent>
-                <S.StepTitle>{step.title}</S.StepTitle>
-                <S.StepDescription>{step.description}</S.StepDescription>
-              </S.StepContent>
+                <S.StepContent>
+                  <S.StepTitle>{step.title}</S.StepTitle>
+                  <S.StepDescription>{step.description}</S.StepDescription>
+                </S.StepContent>
+              </S.StepButton>
             </S.StepItem>
           );
         })}

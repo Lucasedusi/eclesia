@@ -45,18 +45,6 @@ export function validateMemberFormStep(
       errors.whatsapp = "Informe o WhatsApp com DDD e 9 dígitos.";
     }
     addRequiredError(errors, "country", data.country, "Informe o país.");
-    addRequiredError(
-      errors,
-      "city",
-      data.city,
-      "Informe a cidade para melhorar os relatórios.",
-    );
-    addRequiredError(
-      errors,
-      "state",
-      data.state,
-      "Informe o estado para melhorar os relatórios.",
-    );
   }
 
   if (stepId === "bond") {

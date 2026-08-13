@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.15"
   }
   public: {
     Tables: {
@@ -2698,6 +2698,273 @@ export type Database = {
           },
         ]
       }
+      member_import_batches: {
+        Row: {
+          church_id: string
+          completed_at: string | null
+          confirmed_at: string | null
+          congregation_id: string
+          created_at: string
+          created_by: string
+          deleted_at: string | null
+          error_rows: number
+          failure_code: string | null
+          failure_message: string | null
+          file_sha256: string
+          file_size_bytes: number
+          id: string
+          imported_rows: number
+          normalization_version: number
+          original_filename: string
+          rolled_back_at: string | null
+          rolled_back_by: string | null
+          settings_snapshot: Json
+          skipped_rows: number
+          source_system: string
+          status: string
+          total_rows: number
+          updated_at: string
+          valid_rows: number
+          validated_at: string | null
+          warning_rows: number
+          worksheet_name: string
+        }
+        Insert: {
+          church_id: string
+          completed_at?: string | null
+          confirmed_at?: string | null
+          congregation_id: string
+          created_at?: string
+          created_by: string
+          deleted_at?: string | null
+          error_rows?: number
+          failure_code?: string | null
+          failure_message?: string | null
+          file_sha256: string
+          file_size_bytes: number
+          id?: string
+          imported_rows?: number
+          normalization_version?: number
+          original_filename: string
+          rolled_back_at?: string | null
+          rolled_back_by?: string | null
+          settings_snapshot?: Json
+          skipped_rows?: number
+          source_system?: string
+          status?: string
+          total_rows?: number
+          updated_at?: string
+          valid_rows?: number
+          validated_at?: string | null
+          warning_rows?: number
+          worksheet_name: string
+        }
+        Update: {
+          church_id?: string
+          completed_at?: string | null
+          confirmed_at?: string | null
+          congregation_id?: string
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          error_rows?: number
+          failure_code?: string | null
+          failure_message?: string | null
+          file_sha256?: string
+          file_size_bytes?: number
+          id?: string
+          imported_rows?: number
+          normalization_version?: number
+          original_filename?: string
+          rolled_back_at?: string | null
+          rolled_back_by?: string | null
+          settings_snapshot?: Json
+          skipped_rows?: number
+          source_system?: string
+          status?: string
+          total_rows?: number
+          updated_at?: string
+          valid_rows?: number
+          validated_at?: string | null
+          warning_rows?: number
+          worksheet_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_import_batches_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_import_batches_congregation_same_church_fk"
+            columns: ["church_id", "congregation_id"]
+            isOneToOne: false
+            referencedRelation: "congregations"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "member_import_batches_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_import_batches_rolled_back_by_fkey"
+            columns: ["rolled_back_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      member_import_items: {
+        Row: {
+          baptism_date: string | null
+          batch_id: string
+          birth_date: string | null
+          church_id: string
+          city: string | null
+          classification: string
+          cpf: string | null
+          created_at: string
+          decision: string
+          father_name: string | null
+          full_name: string
+          gender: string | null
+          gender_raw: string | null
+          holy_spirit_baptism_date: string | null
+          id: string
+          imported_at: string | null
+          imported_member_code: string | null
+          imported_member_id: string | null
+          issues: Json
+          marital_status: string | null
+          marital_status_raw: string | null
+          mother_name: string | null
+          natural_city: string | null
+          natural_state: string | null
+          normalized_name_key: string
+          phone_raw: string | null
+          planned_member_id: string
+          received_date: string | null
+          role_id: string | null
+          role_raw: string
+          role_title_variant: string
+          row_number: number
+          source_data: Json
+          state: string | null
+          updated_at: string
+          whatsapp: string | null
+          zip_code: string | null
+          conversion_date: string | null
+        }
+        Insert: {
+          baptism_date?: string | null
+          batch_id: string
+          birth_date?: string | null
+          church_id: string
+          city?: string | null
+          classification: string
+          cpf?: string | null
+          created_at?: string
+          decision?: string
+          father_name?: string | null
+          full_name: string
+          gender?: string | null
+          gender_raw?: string | null
+          holy_spirit_baptism_date?: string | null
+          id?: string
+          imported_at?: string | null
+          imported_member_code?: string | null
+          imported_member_id?: string | null
+          issues?: Json
+          marital_status?: string | null
+          marital_status_raw?: string | null
+          mother_name?: string | null
+          natural_city?: string | null
+          natural_state?: string | null
+          normalized_name_key: string
+          phone_raw?: string | null
+          planned_member_id?: string
+          received_date?: string | null
+          role_id?: string | null
+          role_raw: string
+          role_title_variant?: string
+          row_number: number
+          source_data: Json
+          state?: string | null
+          updated_at?: string
+          whatsapp?: string | null
+          zip_code?: string | null
+          conversion_date?: string | null
+        }
+        Update: {
+          baptism_date?: string | null
+          batch_id?: string
+          birth_date?: string | null
+          church_id?: string
+          city?: string | null
+          classification?: string
+          cpf?: string | null
+          created_at?: string
+          decision?: string
+          father_name?: string | null
+          full_name?: string
+          gender?: string | null
+          gender_raw?: string | null
+          holy_spirit_baptism_date?: string | null
+          id?: string
+          imported_at?: string | null
+          imported_member_code?: string | null
+          imported_member_id?: string | null
+          issues?: Json
+          marital_status?: string | null
+          marital_status_raw?: string | null
+          mother_name?: string | null
+          natural_city?: string | null
+          natural_state?: string | null
+          normalized_name_key?: string
+          phone_raw?: string | null
+          planned_member_id?: string
+          received_date?: string | null
+          role_id?: string | null
+          role_raw?: string
+          role_title_variant?: string
+          row_number?: number
+          source_data?: Json
+          state?: string | null
+          updated_at?: string
+          whatsapp?: string | null
+          zip_code?: string | null
+          conversion_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_import_items_batch_same_church_fk"
+            columns: ["church_id", "batch_id"]
+            isOneToOne: false
+            referencedRelation: "member_import_batches"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "member_import_items_imported_member_id_fkey"
+            columns: ["imported_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_import_items_role_same_church_fk"
+            columns: ["church_id", "role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["church_id", "id"]
+          },
+        ]
+      }
       member_ministries: {
         Row: {
           church_id: string
@@ -2865,6 +3132,7 @@ export type Database = {
           role_id: string
           start_date: string | null
           status: string
+          title_variant: string
           updated_at: string
         }
         Insert: {
@@ -2881,6 +3149,7 @@ export type Database = {
           role_id: string
           start_date?: string | null
           status?: string
+          title_variant?: string
           updated_at?: string
         }
         Update: {
@@ -2897,6 +3166,7 @@ export type Database = {
           role_id?: string
           start_date?: string | null
           status?: string
+          title_variant?: string
           updated_at?: string
         }
         Relationships: [
@@ -3047,6 +3317,9 @@ export type Database = {
           full_name: string
           gender: string | null
           has_holy_spirit_baptism: boolean
+          history_migration_status: string | null
+          history_migration_updated_at: string | null
+          history_migration_updated_by: string | null
           holy_spirit_baptism_date: string | null
           id: string
           inactive_reason: string | null
@@ -3068,6 +3341,7 @@ export type Database = {
           profession: string | null
           received_by: string | null
           received_date: string | null
+          source_import_batch_id: string | null
           spouse_name: string | null
           state: string | null
           transfer_date: string | null
@@ -3095,6 +3369,9 @@ export type Database = {
           full_name: string
           gender?: string | null
           has_holy_spirit_baptism?: boolean
+          history_migration_status?: string | null
+          history_migration_updated_at?: string | null
+          history_migration_updated_by?: string | null
           holy_spirit_baptism_date?: string | null
           id?: string
           inactive_reason?: string | null
@@ -3116,6 +3393,7 @@ export type Database = {
           profession?: string | null
           received_by?: string | null
           received_date?: string | null
+          source_import_batch_id?: string | null
           spouse_name?: string | null
           state?: string | null
           transfer_date?: string | null
@@ -3143,6 +3421,9 @@ export type Database = {
           full_name?: string
           gender?: string | null
           has_holy_spirit_baptism?: boolean
+          history_migration_status?: string | null
+          history_migration_updated_at?: string | null
+          history_migration_updated_by?: string | null
           holy_spirit_baptism_date?: string | null
           id?: string
           inactive_reason?: string | null
@@ -3164,6 +3445,7 @@ export type Database = {
           profession?: string | null
           received_by?: string | null
           received_date?: string | null
+          source_import_batch_id?: string | null
           spouse_name?: string | null
           state?: string | null
           transfer_date?: string | null
@@ -3184,6 +3466,20 @@ export type Database = {
             columns: ["congregation_id"]
             isOneToOne: false
             referencedRelation: "congregations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "members_history_migration_updated_by_fkey"
+            columns: ["history_migration_updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "members_source_import_batch_id_fkey"
+            columns: ["source_import_batch_id"]
+            isOneToOne: false
+            referencedRelation: "member_import_batches"
             referencedColumns: ["id"]
           },
         ]
@@ -4144,6 +4440,7 @@ export type Database = {
         Args: { p_invitation_id: string }
         Returns: undefined
       }
+      cancel_member_import: { Args: { p_batch_id: string }; Returns: Json }
       change_member_lifecycle: {
         Args: {
           p_action: string
@@ -4151,6 +4448,21 @@ export type Database = {
           p_end_roles?: boolean
           p_event_date?: string
           p_member_id: string
+          p_reason?: string
+          p_sensitive?: boolean
+          p_target_congregation_id?: string
+        }
+        Returns: Json
+      }
+      change_member_lifecycle_v2: {
+        Args: {
+          p_action: string
+          p_destination_church?: string
+          p_end_roles?: boolean
+          p_event_date?: string
+          p_expected_end_date?: string
+          p_member_id: string
+          p_reactivate_role?: boolean
           p_reason?: string
           p_sensitive?: boolean
           p_target_congregation_id?: string
@@ -4180,9 +4492,25 @@ export type Database = {
           member_id: string
         }[]
       }
+      execute_member_import: { Args: { p_batch_id: string }; Returns: Json }
+      get_member_import_duplicate_candidates: {
+        Args: { p_candidates: Json; p_church_id: string }
+        Returns: {
+          archived: boolean
+          birth_date: string
+          candidate_key: string
+          congregation_id: string
+          full_name: string
+          member_id: string
+        }[]
+      }
+      get_member_import_history_stats: {
+        Args: { p_church_id: string }
+        Returns: Json
+      }
       get_member_stats: { Args: { p_church_id: string }; Returns: Json }
       get_my_access_context: {
-        Args: { p_preferred_church_id?: string | null }
+        Args: { p_preferred_church_id?: string }
         Returns: Json
       }
       get_my_permissions: {
@@ -4225,10 +4553,40 @@ export type Database = {
         }
         Returns: string
       }
+      normalize_member_import_name: {
+        Args: { p_value: string }
+        Returns: string
+      }
+      prepare_member_import: {
+        Args: { p_items: Json; p_payload: Json }
+        Returns: string
+      }
+      prepare_member_import_official: {
+        Args: { p_items: Json; p_payload: Json }
+        Returns: string
+      }
       renew_church_invitation: {
         Args: { p_invitation_id: string }
         Returns: string
       }
+      resolve_member_import_item: {
+        Args: { p_batch_id: string; p_item_id: string; p_resolution: string }
+        Returns: Json
+      }
+      resolve_member_import_official_item: {
+        Args: { p_batch_id: string; p_item_id: string; p_resolution: string }
+        Returns: Json
+      }
+      resolve_member_import_mapping: {
+        Args: {
+          p_batch_id: string
+          p_kind: string
+          p_raw_value: string
+          p_value: string
+        }
+        Returns: Json
+      }
+      rollback_member_import: { Args: { p_batch_id: string }; Returns: Json }
       safe_uuid: { Args: { p_value: string }; Returns: string }
       set_access_permission_override: {
         Args: {

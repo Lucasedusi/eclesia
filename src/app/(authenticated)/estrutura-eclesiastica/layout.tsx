@@ -14,7 +14,7 @@ async function EcclesiasticalStructureContent() {
     <>
       <PageHeader
         title="Estrutura eclesiástica"
-        subtitle="Organize a estrutura territorial da igreja por Regionais e Congregações."
+        subtitle="Organize Regionais, Congregações e Cargos eclesiásticos."
         badge="Administração"
       />
       <OrganizationTabs />

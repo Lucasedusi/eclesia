@@ -25,7 +25,11 @@ import type {
   MemberFormMode,
   MemberFormOptions,
 } from "../../types/member-form.types";
-import { validateMemberFormStep } from "../../utils/member-form-validation";
+import {
+  validateAllMemberFormSteps,
+  validateMemberFormStep,
+} from "../../utils/member-form-validation";
+import { formatDateOnly } from "../../utils/member-formatters";
 import { MemberFormFooter } from "./member-form-footer";
 import { MemberFormProgress } from "./member-form-progress";
 import * as S from "./member-create-form.styles";
@@ -178,6 +182,45 @@ export function MemberCreateForm({ options, mode = "create", initialData }: Prop
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  function goToStep(targetIndex: number) {
+    if (saving || targetIndex === stepIndex) return;
+    if (targetIndex < stepIndex) {
+      setErrors({});
+      setStepIndex(targetIndex);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
+    if (cpfChecking && targetIndex > 0) {
+      setNotice({
+        title: "Aguarde a verificação",
+        description: "A validação do CPF ainda está em andamento.",
+        variant: "warning",
+      });
+      return;
+    }
+
+    for (let index = 0; index < targetIndex; index += 1) {
+      const stepErrors = validateMemberFormStep(memberFormSteps[index].id, data);
+      if (Object.keys(stepErrors).length) {
+        setErrors(stepErrors);
+        setStepIndex(index);
+        setNotice({
+          title: `Revise a etapa ${memberFormSteps[index].title}`,
+          description:
+            "Preencha os campos obrigatórios antes de avançar para outra etapa.",
+          variant: "warning",
+        });
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
+    }
+
+    setErrors({});
+    setStepIndex(targetIndex);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   async function next() {
     if (saving) return;
     if (currentStep.id === "personal" && cpfChecking) {
@@ -193,6 +236,27 @@ export function MemberCreateForm({ options, mode = "create", initialData }: Prop
     if (stepIndex < memberFormSteps.length - 1) {
       setErrors({});
       setStepIndex((current) => current + 1);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
+    const allErrors = validateAllMemberFormSteps(
+      memberFormSteps.map((step) => step.id),
+      data,
+    );
+    if (Object.keys(allErrors).length) {
+      const firstInvalidIndex = memberFormSteps.findIndex((step) =>
+        Object.keys(validateMemberFormStep(step.id, data)).length,
+      );
+      const safeIndex = Math.max(0, firstInvalidIndex);
+      setErrors(validateMemberFormStep(memberFormSteps[safeIndex].id, data));
+      setStepIndex(safeIndex);
+      setNotice({
+        title: `Revise a etapa ${memberFormSteps[safeIndex].title}`,
+        description:
+          "O cadastro não pode ser salvo enquanto houver campos obrigatórios em branco.",
+        variant: "warning",
+      });
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
@@ -244,7 +308,11 @@ export function MemberCreateForm({ options, mode = "create", initialData }: Prop
   return (
     <>
       <S.FormLayout>
-        <MemberFormProgress steps={memberFormSteps} currentStepIndex={stepIndex} />
+        <MemberFormProgress
+          steps={memberFormSteps}
+          currentStepIndex={stepIndex}
+          onStepChange={goToStep}
+        />
         <S.FormCard onSubmit={(event) => event.preventDefault()}>
           <S.FormHeader>
             <S.HeaderBadge>Cadastro multifases</S.HeaderBadge>
@@ -333,7 +401,7 @@ export function MemberCreateForm({ options, mode = "create", initialData }: Prop
 
             {currentStep.id === "bond" && (
               <S.FieldsGrid>
-                <S.FieldFull><S.InfoBox><Info />Igreja atual: <strong>{options.churchName}</strong>. O cadastro será isolado neste contexto.</S.InfoBox></S.FieldFull>
+                <S.FieldFull><S.ChurchContextBox><Info />Igreja atual: <strong>{options.churchName}</strong>.</S.ChurchContextBox></S.FieldFull>
                 {select("congregation_id", "Congregação *", options.congregations)}
                 {select("member_type", "Tipo de cadastro *", memberTypeOptions)}
                 {options.canManageRoles && mode === "create" && select("main_role_id", "Cargo", options.roles, "Sem Cargo")}
@@ -362,7 +430,7 @@ export function MemberCreateForm({ options, mode = "create", initialData }: Prop
                 <ReviewItem label="Congregação" value={options.congregations.find((item) => item.value === data.congregation_id)?.label} />
                 {mode === "create" && <ReviewItem label="Cargo" value={options.roles.find((item) => item.value === data.main_role_id)?.label} />}
                 <ReviewItem label="WhatsApp" value={data.whatsapp} />
-                <ReviewItem label="Recebimento" value={data.received_date} />
+                <ReviewItem label="Recebimento" value={formatDateOnly(data.received_date)} />
                 <S.FieldFull>
                   <S.FieldBlock><S.FieldLabel htmlFor="notes">Observações gerais</S.FieldLabel><S.Textarea id="notes" value={data.notes} onChange={(event) => update("notes", event.target.value)} /></S.FieldBlock>
                 </S.FieldFull>
