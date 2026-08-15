@@ -42,6 +42,17 @@ BREVO_SENDER_NAME=Eclésias
 
 `BREVO_API_KEY` deve ser uma chave da aba **API Keys** do Brevo, não a chave SMTP. `SUPABASE_SECRET_KEY` e `BREVO_API_KEY` são usadas somente no servidor e nunca devem receber o prefixo `NEXT_PUBLIC_`.
 
+## Módulo de documentos administrativos
+
+A rota `/documentos` oferece uma central privada organizada em
+`Categoria → Pasta/Dossiê → Documento`. O módulo é exclusivo para acessos ativos
+com papel `ADMIN` e escopo `CHURCH`, utiliza o bucket privado
+`administrative-documents` e mantém as operações relevantes na auditoria geral.
+
+Para instalar o banco em um novo ambiente, aplique em ordem as migrations de
+`supabase/migrations`. Os detalhes técnicos e as verificações realizadas estão em
+`RELATORIO_IMPLEMENTACAO_MODULO_DOCUMENTOS.md`.
+
 ## Cadastro inicial controlado
 
 O cadastro público existe somente enquanto o sistema ainda não possui usuário,

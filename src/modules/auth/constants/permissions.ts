@@ -7,6 +7,8 @@ export const PERMISSIONS = {
   congregationsManage: "congregations.manage",
   congregationDocumentsView: "congregation_documents.view",
   congregationDocumentsManage: "congregation_documents.manage",
+  documentsView: "documents.view",
+  documentsManage: "documents.manage",
   positionsManage: "positions.manage",
   settingsView: "settings.view",
   settingsUpdate: "settings.update",

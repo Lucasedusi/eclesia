@@ -49,6 +49,8 @@ export const mainNavigation = [
     label: "Documentos",
     href: "/documentos",
     icon: FileArchive,
+    requiredPermission: PERMISSIONS.documentsView,
+    churchAdminOnly: true,
   },
   {
     label: "Relatórios",

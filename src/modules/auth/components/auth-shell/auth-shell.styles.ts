@@ -8,49 +8,85 @@ const rise = keyframes`
 `;
 
 export const Page = styled.main`
-  min-height: 100svh;
   display: grid;
-  grid-template-columns: minmax(430px, 0.75fr) minmax(620px, 1.25fr);
-  gap: 18px;
-  padding: 20px;
-  background:
-    radial-gradient(circle at 8% 5%, rgba(65, 91, 165, 0.1), transparent 30%),
-    #f3f5fa;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  grid-template-columns: minmax(410px, 42%) minmax(0, 58%);
+  background: #f3f5fa;
+  overscroll-behavior: none;
 
   @media (max-width: 1040px) {
-    grid-template-columns: minmax(360px, 520px);
-    place-content: center;
-    padding: 16px;
+    display: block;
+    background:
+      radial-gradient(circle at 12% 4%, rgba(65, 91, 165, 0.1), transparent 34%),
+      #f3f5fa;
   }
 `;
 
 export const FormPanel = styled.section`
   display: flex;
-  min-height: calc(100svh - 40px);
-  align-items: center;
-  justify-content: center;
-  border: 1px solid rgba(207, 211, 212, 0.75);
-  border-radius: 24px;
-  background: rgba(255, 255, 255, 0.96);
-  padding: clamp(28px, 5vw, 66px);
-  box-shadow: 0 22px 65px rgba(16, 24, 40, 0.06);
+  min-width: 0;
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background: #fbfcfe;
+  padding: clamp(28px, 4.4vw, 68px);
+  overscroll-behavior-y: contain;
 
   @media (max-width: 1040px) {
-    min-height: calc(100svh - 32px);
+    padding:
+      max(28px, env(safe-area-inset-top))
+      max(24px, env(safe-area-inset-right))
+      max(28px, env(safe-area-inset-bottom))
+      max(24px, env(safe-area-inset-left));
   }
+
 `;
 
 export const FormContent = styled.div`
   width: 100%;
-  max-width: 430px;
+  max-width: 410px;
+  margin: auto;
   animation: ${rise} 420ms ease both;
 `;
 
-export const Brand = styled.div`
-  display: inline-flex;
+export const LoginStack = styled.div`
+  display: grid;
+  width: 100%;
+  gap: 22px;
+
+  @media (max-width: 420px) {
+    gap: 18px;
+  }
+`;
+
+export const LoginBrandSlot = styled.div`
+  padding: 0 clamp(28px, 3.2vw, 42px);
+`;
+
+export const LoginCard = styled.div`
+  width: 100%;
+  border-radius: 14px;
+  background: #fff;
+  padding: clamp(28px, 3.2vw, 42px);
+  box-shadow: 0 8px 32px -8px rgb(27 42 74 / 0.18);
+`;
+
+export const Brand = styled.div<{ $alwaysVisible?: boolean }>`
+  display: ${({ $alwaysVisible }) => $alwaysVisible ? "inline-flex" : "none"};
   align-items: center;
   gap: 13px;
-  margin-bottom: 54px;
+
+  @media (max-width: 1040px) {
+    display: inline-flex;
+    margin-bottom: ${({ $alwaysVisible }) => $alwaysVisible ? "0" : "clamp(28px, 5vh, 44px)"};
+  }
+
+  @media (max-width: 520px), (max-height: 720px) {
+    margin-bottom: ${({ $alwaysVisible }) => $alwaysVisible ? "0" : "26px"};
+  }
 `;
 
 export const BrandMark = styled.span`
@@ -99,23 +135,23 @@ export const Eyebrow = styled.p`
 export const Title = styled.h1`
   margin: 0;
   color: ${({ theme }) => theme.colors.text.title};
-  font-size: clamp(30px, 4vw, 42px);
+  font-size: clamp(30px, 3.4vw, 38px);
   font-weight: 900;
   letter-spacing: -0.045em;
-  line-height: 1.06;
+  line-height: 1.08;
 `;
 
 export const Description = styled.p`
-  margin: 13px 0 30px;
+  margin: 12px 0 26px;
   color: ${({ theme }) => theme.colors.text.muted};
   font-size: 14px;
   font-weight: 550;
-  line-height: 1.7;
+  line-height: 1.6;
 `;
 
 export const Form = styled.form`
   display: grid;
-  gap: 18px;
+  gap: 16px;
 `;
 
 export const Field = styled.div`
@@ -277,7 +313,7 @@ export const CheckRow = styled.label`
 `;
 
 export const SwitchText = styled.p`
-  margin: 22px 0 0;
+  margin: 20px 0 0;
   color: ${({ theme }) => theme.colors.text.muted};
   text-align: center;
   font-size: 13px;
@@ -305,12 +341,10 @@ export const SecurityNote = styled.p`
 
 export const VisualPanel = styled.aside`
   position: relative;
-  display: flex;
-  min-height: calc(100svh - 40px);
+  display: block;
+  min-width: 0;
+  height: 100%;
   overflow: hidden;
-  flex-direction: column;
-  justify-content: center;
-  border-radius: 24px;
   background:
     radial-gradient(
       circle at 86% 18%,
@@ -319,7 +353,6 @@ export const VisualPanel = styled.aside`
     ),
     radial-gradient(circle at 12% 85%, rgba(4, 16, 38, 0.22), transparent 38%),
     linear-gradient(145deg, #354b8e 0%, #415ba5 44%, #6c82da 100%);
-  padding: clamp(44px, 6vw, 90px);
   color: #fff;
 
   &::before,
@@ -345,17 +378,83 @@ export const VisualPanel = styled.aside`
   }
 `;
 
-export const VisualContent = styled.div`
+export const VisualFrame = styled.div`
   position: relative;
   z-index: 1;
+  display: flex;
   width: 100%;
-  max-width: 770px;
-  margin: auto;
+  max-width: 900px;
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+  margin: 0 auto;
+  padding: clamp(30px, 4vw, 58px) clamp(34px, 5vw, 76px);
+
+  @media (max-height: 760px) and (min-width: 1041px) {
+    padding-top: 26px;
+    padding-bottom: 26px;
+  }
+`;
+
+export const VisualBrand = styled.div`
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 13px;
+`;
+
+export const VisualBrandMark = styled.span`
+  display: grid;
+  width: 46px;
+  height: 46px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 12px 28px rgba(7, 20, 38, 0.16);
+
+  svg {
+    width: 24px;
+    height: 24px;
+  }
+`;
+
+export const VisualBrandText = styled.div`
+  strong {
+    display: block;
+    color: #fff;
+    font-size: 18px;
+    font-weight: 850;
+  }
+
+  span {
+    display: block;
+    margin-top: 2px;
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 11px;
+    font-weight: 700;
+  }
+`;
+
+export const VisualContent = styled.div`
+  position: relative;
+  display: flex;
+  width: 100%;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  padding: 22px 0 0;
   animation: ${rise} 520ms 80ms ease both;
+
+  @media (max-height: 760px) and (min-width: 1041px) {
+    padding-top: 16px;
+  }
 `;
 
 export const VisualBadge = styled.span`
   display: inline-flex;
+  width: fit-content;
   align-items: center;
   gap: 8px;
   border: 1px solid rgba(255, 255, 255, 0.14);
@@ -368,11 +467,17 @@ export const VisualBadge = styled.span`
 
 export const VisualTitle = styled.h2`
   max-width: 730px;
-  margin: 24px 0 34px;
-  font-size: clamp(38px, 5vw, 64px);
+  margin: 22px 0 30px;
+  font-size: clamp(36px, 4.2vw, 58px);
   font-weight: 900;
   letter-spacing: -0.055em;
-  line-height: 0.98;
+  line-height: 1;
+
+  @media (max-height: 760px) and (min-width: 1041px) {
+    max-width: 620px;
+    margin: 16px 0 20px;
+    font-size: clamp(32px, 4vw, 48px);
+  }
 `;
 
 export const Preview = styled.div`
@@ -380,8 +485,12 @@ export const Preview = styled.div`
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.95);
   color: #101828;
-  padding: clamp(22px, 3vw, 34px);
+  padding: clamp(20px, 2.5vw, 30px);
   box-shadow: 0 28px 70px rgba(7, 20, 38, 0.22);
+
+  @media (max-height: 760px) and (min-width: 1041px) {
+    padding: 18px 22px;
+  }
 `;
 
 export const PreviewTop = styled.div`
@@ -413,6 +522,10 @@ export const PreviewStats = styled.div`
   grid-template-columns: repeat(3, 1fr);
   gap: 15px;
   margin: 26px 0;
+
+  @media (max-height: 760px) and (min-width: 1041px) {
+    margin: 18px 0;
+  }
 `;
 
 export const PreviewStat = styled.div`
@@ -436,12 +549,16 @@ export const PreviewStat = styled.div`
 
 export const Bars = styled.div`
   display: flex;
-  height: 128px;
+  height: clamp(92px, 14vh, 122px);
   align-items: flex-end;
   gap: 12px;
   border-radius: 14px;
   background: #f6f8fc;
   padding: 18px;
+
+  @media (max-height: 760px) and (min-width: 1041px) {
+    height: 86px;
+  }
 `;
 
 export const Bar = styled.span<{ $height: number }>`

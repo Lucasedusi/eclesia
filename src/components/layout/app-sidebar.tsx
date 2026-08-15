@@ -16,6 +16,7 @@ type NavigationItem = {
   indicator?: boolean;
   notification?: boolean;
   requiredPermission?: string;
+  churchAdminOnly?: boolean;
 };
 
 type AppSidebarProps = {
@@ -30,6 +31,7 @@ const PREFETCHED_ROUTES = new Set([
   "/",
   "/estrutura-eclesiastica",
   "/membros",
+  "/documentos",
   "/usuarios",
   "/auditoria",
   "/configuracoes",
@@ -91,7 +93,12 @@ export function AppSidebar({
     .toUpperCase() || "US";
 
   function canShow(item: NavigationItem) {
-    return !item.requiredPermission || authContext.permissions.includes(item.requiredPermission);
+    const hasRequiredPermission =
+      !item.requiredPermission || authContext.permissions.includes(item.requiredPermission);
+    const hasRequiredAdminScope =
+      !item.churchAdminOnly ||
+      (authContext.access.role === "ADMIN" && authContext.access.scope === "CHURCH");
+    return hasRequiredPermission && hasRequiredAdminScope;
   }
 
   function isActive(href: string) {
