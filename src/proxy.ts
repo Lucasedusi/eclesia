@@ -8,6 +8,8 @@ const PUBLIC_PATHS = [
   "/redefinir-senha",
   "/auth/callback",
   "/convite",
+  "/api/cron/documents/cleanup",
+  "/api/telemetry/web-vitals",
 ];
 
 const PREPARATION_PATHS = [
@@ -22,32 +24,21 @@ function matchesPrefix(pathname: string, prefixes: string[]) {
   );
 }
 
-export async function proxy(request: NextRequest) {
-  const startedAt = performance.now();
-  const { response, authenticated } = await updateSession(request);
-  const pathname = request.nextUrl.pathname;
-  const isPublic = matchesPrefix(pathname, PUBLIC_PATHS);
-  const isPreparation = matchesPrefix(pathname, PREPARATION_PATHS);
+function redirectWithSession(url: URL, sessionResponse: NextResponse) {
+  const redirect = NextResponse.redirect(url);
+  sessionResponse.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
+  ["cache-control", "expires", "pragma"].forEach((name) => {
+    const value = sessionResponse.headers.get(name);
+    if (value) redirect.headers.set(name, value);
+  });
+  return redirect;
+}
 
-  if (!authenticated && !isPublic) {
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("next", `${pathname}${request.nextUrl.search}`);
-    return NextResponse.redirect(loginUrl);
-  }
-
-  const isAuthEntry =
-    pathname === "/login" ||
-    pathname === "/cadastro" ||
-    pathname === "/recuperar-senha";
-
-  if (authenticated && isAuthEntry) {
-    return NextResponse.redirect(new URL("/", request.url));
-  }
-
-  if (!authenticated && isPreparation) {
-    return NextResponse.redirect(new URL("/login", request.url));
-  }
-
+function finalizeResponse(
+  response: NextResponse,
+  pathname: string,
+  startedAt: number,
+) {
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   response.headers.set(
@@ -59,8 +50,48 @@ export async function proxy(request: NextRequest) {
   if (process.env.NODE_ENV === "development") {
     console.info(`[performance] proxy ${pathname}: ${duration.toFixed(1)}ms`);
   }
-
   return response;
+}
+
+export async function proxy(request: NextRequest) {
+  const startedAt = performance.now();
+  const { response, authenticated } = await updateSession(request);
+  const pathname = request.nextUrl.pathname;
+  const isPublic = matchesPrefix(pathname, PUBLIC_PATHS);
+  const isPreparation = matchesPrefix(pathname, PREPARATION_PATHS);
+
+  if (!authenticated && !isPublic) {
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("next", `${pathname}${request.nextUrl.search}`);
+    return finalizeResponse(
+      redirectWithSession(loginUrl, response),
+      pathname,
+      startedAt,
+    );
+  }
+
+  const isAuthEntry =
+    pathname === "/login" ||
+    pathname === "/cadastro" ||
+    pathname === "/recuperar-senha";
+
+  if (authenticated && isAuthEntry) {
+    return finalizeResponse(
+      redirectWithSession(new URL("/", request.url), response),
+      pathname,
+      startedAt,
+    );
+  }
+
+  if (!authenticated && isPreparation) {
+    return finalizeResponse(
+      redirectWithSession(new URL("/login", request.url), response),
+      pathname,
+      startedAt,
+    );
+  }
+
+  return finalizeResponse(response, pathname, startedAt);
 }
 
 export const config = {

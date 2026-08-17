@@ -1,7 +1,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { FileSpreadsheet, Plus } from "lucide-react";
-import { AppShell } from "@/components/layout/app-shell";
 import { PageHeader } from "@/components/ui/page-header";
 import { PERMISSIONS } from "@/modules/auth/constants/permissions";
 import { requireAccessContext } from "@/modules/auth/services/access-context.service";
@@ -63,11 +62,11 @@ export default async function MembersPage({ searchParams }: { searchParams: Sear
   const statsPromise = getMemberStats(context);
   const listPromise = Promise.all([listMembers(context, params), getMemberFilters(context)]);
 
-  return <AppShell authContext={context} title="Membros" subtitle="Cadastros, vínculos e histórico eclesiástico">
+  return <>
     <PageHeader title="Membros" subtitle="Gestão completa de membros, congregados, visitantes e crianças." badge="Administração" action={<div className="flex flex-wrap gap-2">{capabilities.import && <Link href="/membros/importar" className="app-button-secondary"><FileSpreadsheet size={17} /> Importar planilha <LinkPendingIndicator /></Link>}{capabilities.create && <Link href="/membros/novo" className="app-button-primary"><Plus size={17} /> Novo membro <LinkPendingIndicator /></Link>}</div>} />
     <div className="grid gap-[18px]">
       <Suspense fallback={<MemberStatsLoading />}><MemberStatsContent promise={statsPromise} /></Suspense>
       <Suspense fallback={<MemberListLoading />}><MemberListContent promise={listPromise} params={params} capabilities={capabilities} /></Suspense>
     </div>
-  </AppShell>;
+  </>;
 }

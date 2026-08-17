@@ -1,6 +1,9 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
+import { cacheTags } from "@/lib/cache-tags";
+import { PERMISSIONS } from "@/modules/auth/constants/permissions";
+import { requireAccessContext } from "@/modules/auth/services/access-context.service";
 import {
   cancelDocumentReplacement,
   cancelDocumentUploads,
@@ -44,7 +47,10 @@ import {
   documentUploadPrepareSchema,
 } from "../validations/document.schemas";
 
-function refreshDocuments() {
+async function refreshDocuments() {
+  const context = await requireAccessContext(PERMISSIONS.documentsView);
+  updateTag(cacheTags.documentReferences(context.church.id));
+  updateTag(cacheTags.documentStats(context.church.id));
   revalidatePath("/documentos");
 }
 
@@ -86,7 +92,7 @@ export async function saveDocumentCategoryAction(input: unknown): Promise<Docume
   try {
     if (parsed.data.id) await updateDocumentCategory({ ...parsed.data, id: parsed.data.id });
     else await createDocumentCategory(parsed.data);
-    refreshDocuments();
+    await refreshDocuments();
     return {
       status: "success",
       message: parsed.data.id ? "Categoria atualizada com sucesso." : "Categoria criada com sucesso.",
@@ -101,7 +107,7 @@ export async function changeDocumentCategoryStateAction(input: unknown): Promise
   if (!parsed.success) return { status: "error", message: "Categoria inválida." };
   try {
     await changeDocumentCategoryState(parsed.data.id, parsed.data.action);
-    refreshDocuments();
+    await refreshDocuments();
     const labels = {
       ARCHIVE: "Categoria arquivada com sucesso.",
       RESTORE: "Categoria restaurada com sucesso.",
@@ -126,7 +132,7 @@ export async function saveDocumentFolderAction(input: unknown): Promise<Document
   try {
     if (parsed.data.id) await updateDocumentFolder({ ...parsed.data, id: parsed.data.id });
     else await createDocumentFolder(parsed.data);
-    refreshDocuments();
+    await refreshDocuments();
     return {
       status: "success",
       message: parsed.data.id ? "Pasta atualizada com sucesso." : "Pasta criada com sucesso.",
@@ -141,7 +147,7 @@ export async function changeDocumentFolderStateAction(input: unknown): Promise<D
   if (!parsed.success) return { status: "error", message: "Pasta inválida." };
   try {
     await changeDocumentFolderState(parsed.data.id, parsed.data.action);
-    refreshDocuments();
+    await refreshDocuments();
     const labels = {
       ARCHIVE: "Pasta arquivada com sucesso.",
       RESTORE: "Pasta restaurada com sucesso.",
@@ -159,7 +165,7 @@ export async function deleteUnusedDocumentTagAction(id: string): Promise<Documen
   if (!parsed.success) return { status: "error", message: "Tag inválida." };
   try {
     await deleteUnusedDocumentTag(parsed.data);
-    refreshDocuments();
+    await refreshDocuments();
     return { status: "success", message: "Tag excluída com sucesso." };
   } catch (error) {
     return toDocumentActionError(error, "Não foi possível excluir a tag.");
@@ -193,7 +199,7 @@ export async function finalizeDocumentUploadsAction(ids: unknown): Promise<
   if (!parsed.success) return { status: "error", message: "Arquivos inválidos." };
   try {
     const files = await finalizeDocumentUploads(parsed.data);
-    refreshDocuments();
+    await refreshDocuments();
     return { status: "success", files };
   } catch (error) {
     return toDocumentActionError(error, "Não foi possível confirmar os arquivos.");
@@ -217,7 +223,7 @@ export async function updateAdministrativeDocumentMetadataAction(input: unknown)
   }
   try {
     await updateAdministrativeDocumentMetadata(parsed.data);
-    refreshDocuments();
+    await refreshDocuments();
     return { status: "success", message: "Documento atualizado com sucesso." };
   } catch (error) {
     return toDocumentActionError(error, "Não foi possível atualizar o documento.");
@@ -244,7 +250,7 @@ export async function finalizeDocumentReplacementAction(id: string): Promise<Doc
   if (!parsed.success) return { status: "error", message: "Documento inválido." };
   try {
     await finalizeDocumentReplacement(parsed.data);
-    refreshDocuments();
+    await refreshDocuments();
     return { status: "success", message: "Arquivo substituído com sucesso." };
   } catch (error) {
     return toDocumentActionError(error, "Não foi possível substituir o arquivo.");
@@ -282,7 +288,7 @@ export async function changeAdministrativeDocumentStateAction(input: unknown): P
     } else {
       await changeAdministrativeDocumentState(parsed.data.id, parsed.data.action);
     }
-    refreshDocuments();
+    await refreshDocuments();
     const labels = {
       ARCHIVE: "Documento arquivado com sucesso.",
       RESTORE: "Documento restaurado com sucesso.",

@@ -1,5 +1,7 @@
 import "server-only";
 
+import { cacheLife, cacheTag } from "next/cache";
+import { cacheTags } from "@/lib/cache-tags";
 import { createClient } from "@/lib/supabase/server";
 import { measureServerOperation } from "@/lib/performance/server-performance";
 import { PERMISSIONS, hasPermission } from "@/modules/auth/constants/permissions";
@@ -39,6 +41,21 @@ const DEFAULT_PARAMS: MemberListParams = {
   archived: false,
   sort: "name_asc",
 };
+
+const MEMBER_EDIT_SELECT = [
+  "id", "updated_at", "full_name", "gender", "birth_date", "marital_status",
+  "nationality", "natural_city", "natural_state", "profession", "education_level",
+  "whatsapp", "email", "zip_code", "address", "number", "complement", "district",
+  "city", "state", "country", "father_name", "mother_name", "spouse_name",
+  "congregation_id", "member_type", "conversion_date", "baptism_date",
+  "baptism_church", "has_holy_spirit_baptism", "holy_spirit_baptism_date",
+  "previous_church", "received_by", "received_date", "letter_origin_church", "notes",
+].join(", ");
+
+const MEMBER_CORE_SELECT = [
+  MEMBER_EDIT_SELECT, "member_code", "member_status", "created_at", "deleted_at",
+  "congregations!inner(name, regions(name))",
+].join(", ");
 
 function first<T>(value: T | T[] | null | undefined): T | null {
   return Array.isArray(value) ? value[0] ?? null : value ?? null;
@@ -200,13 +217,25 @@ export async function getMemberStats(context: AuthContext): Promise<MemberStats>
 }
 
 export async function getMemberFilters(context: AuthContext): Promise<MemberFilters> {
+  return loadMemberFilters(context.church.id);
+}
+
+async function loadMemberFilters(churchId: string): Promise<MemberFilters> {
+  "use cache: private";
+  cacheLife("minutes");
+  cacheTag(
+    cacheTags.memberFilters(churchId),
+    cacheTags.regions(churchId),
+    cacheTags.congregations(churchId),
+    cacheTags.roles(churchId),
+  );
   const supabase = await createClient();
   const [congregations, regions, roles] = await measureServerOperation(
     "members.filters",
     () => Promise.all([
-      supabase.from("congregations").select("id, name").eq("church_id", context.church.id).eq("status", "ACTIVE").is("deleted_at", null).order("name"),
-      supabase.from("regions").select("id, name").eq("church_id", context.church.id).eq("status", "ACTIVE").is("deleted_at", null).order("name"),
-      supabase.from("roles").select("id, name").eq("church_id", context.church.id).eq("status", "ACTIVE").is("deleted_at", null).order("display_order").order("name"),
+      supabase.from("congregations").select("id, name").eq("church_id", churchId).eq("status", "ACTIVE").is("deleted_at", null).order("name"),
+      supabase.from("regions").select("id, name").eq("church_id", churchId).eq("status", "ACTIVE").is("deleted_at", null).order("name"),
+      supabase.from("roles").select("id, name").eq("church_id", churchId).eq("status", "ACTIVE").is("deleted_at", null).order("display_order").order("name"),
     ]),
     { supabaseCalls: 3, route: "/membros" },
   );
@@ -216,7 +245,7 @@ export async function getMemberFilters(context: AuthContext): Promise<MemberFilt
 
 export async function getMemberEditData(context: AuthContext, memberId: string): Promise<MemberFormInitialData | null> {
   const supabase = await createClient();
-  const { data: row } = await supabase.from("members").select("*").eq("id", memberId).eq("church_id", context.church.id).is("deleted_at", null).maybeSingle();
+  const { data: row } = await supabase.from("members").select(MEMBER_EDIT_SELECT).eq("id", memberId).eq("church_id", context.church.id).is("deleted_at", null).maybeSingle();
   if (!row) return null;
   const capabilities = getMemberCapabilities(context);
   const [identity, pastoral, role] = await Promise.all([
@@ -249,7 +278,7 @@ export async function getMemberCoreDetails(context: AuthContext, memberId: strin
   const capabilities = getMemberCapabilities(context);
   const { data } = await supabase
     .from("members")
-    .select("*, congregations!inner(name, regions(name))")
+    .select(MEMBER_CORE_SELECT)
     .eq("id", memberId).eq("church_id", context.church.id).maybeSingle();
   if (!data) return null;
   const [identity, pastoral, roles] = await Promise.all([

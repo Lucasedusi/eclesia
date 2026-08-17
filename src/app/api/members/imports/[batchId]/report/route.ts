@@ -3,8 +3,6 @@ import { requireAccessContext } from "@/modules/auth/services/access-context.ser
 import { getMemberImportReportData } from "@/modules/members/import/services/member-import.service";
 import { generateMemberImportReport } from "@/modules/members/import/services/member-import-workbook.service";
 
-export const dynamic = "force-dynamic";
-
 function safeFilename(value: string) {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9_-]+/g, "-").replace(/^-+|-+$/g, "").toLowerCase();
 }

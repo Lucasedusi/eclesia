@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
+import { measureServerOperation } from "@/lib/performance/server-performance";
 import { requireAccessContext } from "@/modules/auth/services/access-context.service";
 import { PERMISSIONS } from "@/modules/auth/constants/permissions";
 import type { AccessRole, AccessScope, AccessStatus } from "@/modules/auth/types/auth.types";
@@ -17,12 +18,18 @@ type ProfileRelation = {
   email: string | null;
   avatar_url: string | null;
 }[];
+type OverrideRelation = {
+  effect: "ALLOW" | "DENY";
+  deleted_at: string | null;
+  permissions: { key: string } | { key: string }[] | null;
+}[];
 
 type AccessRow = {
   id: string; profile_id: string; role: AccessRole; access_scope: AccessScope; status: AccessStatus;
   region_id: string | null; congregation_id: string | null; ministry_id: string | null;
   invited_at: string | null; accepted_at: string | null; last_access_at: string | null; notes: string | null;
   profiles: ProfileRelation; regions: NamedRelation; congregations: NamedRelation; ministries: NamedRelation;
+  overrides: OverrideRelation;
 };
 
 type InvitationRow = {
@@ -66,9 +73,11 @@ export async function getUserManagementData(): Promise<UserManagementData> {
   const context = await requireAccessContext(PERMISSIONS.usersView);
   const supabase = await createClient();
 
-  const [accessResult, invitationsResult, regionsResult, congregationsResult, ministriesResult, permissionsResult] = await Promise.all([
-    supabase.from("user_church_access").select(
-      "id, profile_id, role, access_scope, status, region_id, congregation_id, ministry_id, invited_at, accepted_at, last_access_at, notes, profiles!user_church_access_profile_id_fkey(full_name, display_name, email, avatar_url), regions(name), congregations(name), ministries(name)",
+  const [accessResult, invitationsResult, regionsResult, congregationsResult, ministriesResult, permissionsResult] = await measureServerOperation(
+    "users.workspace",
+    () => Promise.all([
+      supabase.from("user_church_access").select(
+      "id, profile_id, role, access_scope, status, region_id, congregation_id, ministry_id, invited_at, accepted_at, last_access_at, notes, profiles!user_church_access_profile_id_fkey(full_name, display_name, email, avatar_url), regions(name), congregations(name), ministries(name), overrides:user_permission_overrides!user_permission_overrides_access_id_fkey(effect, deleted_at, permissions!user_permission_overrides_permission_id_fkey(key))",
     ).eq("church_id", context.church.id).is("deleted_at", null).order("created_at", { ascending: true }),
     supabase.from("church_invitations").select(
       "id, invited_name, email, role, access_scope, status, invited_at, expires_at, region_id, congregation_id, ministry_id, regions(name), congregations(name), ministries(name)",
@@ -76,8 +85,10 @@ export async function getUserManagementData(): Promise<UserManagementData> {
     supabase.from("regions").select("id, name").eq("church_id", context.church.id).eq("status", "ACTIVE").is("deleted_at", null).order("name"),
     supabase.from("congregations").select("id, name").eq("church_id", context.church.id).eq("status", "ACTIVE").is("deleted_at", null).order("name"),
     supabase.from("ministries").select("id, name").eq("church_id", context.church.id).eq("status", "ACTIVE").is("deleted_at", null).order("name"),
-    supabase.from("permissions").select("key, name, module, is_sensitive").eq("status", "ACTIVE").is("deleted_at", null).order("module").order("name"),
-  ]);
+      supabase.from("permissions").select("key, name, module, is_sensitive").eq("status", "ACTIVE").is("deleted_at", null).order("module").order("name"),
+    ]),
+    { route: "/usuarios", supabaseCalls: 6 },
+  );
 
   const queryErrors = [
     { query: "accesses", error: accessResult.error },
@@ -101,33 +112,16 @@ export async function getUserManagementData(): Promise<UserManagementData> {
   }
 
   const rows = (accessResult.data ?? []) as unknown as AccessRow[];
-  const accessIds = rows.map((row) => row.id);
-  const overrideResult = accessIds.length
-    ? await supabase.from("user_permission_overrides").select("access_id, effect, permissions!inner(key)").in("access_id", accessIds).is("deleted_at", null)
-    : { data: [], error: null };
-
-  if (overrideResult.error) {
-    console.error("[user-management] Failed to load permission overrides", {
-      code: overrideResult.error.code,
-      message: overrideResult.error.message,
-    });
-    throw new Error("USER_MANAGEMENT_OVERRIDES_LOAD_FAILED");
-  }
-
-  const overridesByAccess = new Map<string, Record<string, "ALLOW" | "DENY">>();
-  for (const raw of overrideResult.data ?? []) {
-    const row = raw as unknown as { access_id: string; effect: "ALLOW" | "DENY"; permissions: { key: string } | { key: string }[] };
-    const permission = first(row.permissions);
-    if (!permission) continue;
-    const current = overridesByAccess.get(row.access_id) ?? {};
-    current[permission.key] = row.effect;
-    overridesByAccess.set(row.access_id, current);
-  }
 
   return {
     accesses: rows.map((row) => {
       const profile = first(row.profiles);
       const target = first(row.regions) ?? first(row.congregations) ?? first(row.ministries);
+      const overrides = (row.overrides ?? []).filter((override) => !override.deleted_at).reduce<Record<string, "ALLOW" | "DENY">>((current, override) => {
+        const permission = first(override.permissions);
+        if (permission) current[permission.key] = override.effect;
+        return current;
+      }, {});
       return {
         id: row.id, profileId: row.profile_id,
         name: profile?.full_name ?? profile?.display_name ?? "Usuário",
@@ -136,7 +130,7 @@ export async function getUserManagementData(): Promise<UserManagementData> {
         targetName: row.access_scope === "CHURCH" ? "Toda a igreja" : target?.name ?? "Escopo indisponível",
         regionId: row.region_id, congregationId: row.congregation_id, ministryId: row.ministry_id,
         invitedAt: row.invited_at, acceptedAt: row.accepted_at, lastAccessAt: row.last_access_at,
-        notes: row.notes, overrides: overridesByAccess.get(row.id) ?? {},
+        notes: row.notes, overrides,
       };
     }),
     invitations: ((invitationsResult.data ?? []) as unknown as InvitationRow[]).map((row) => {

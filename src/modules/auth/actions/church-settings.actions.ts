@@ -1,8 +1,9 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { cacheTags } from "@/lib/cache-tags";
 import { requireAccessContext } from "../services/access-context.service";
 import { PERMISSIONS } from "../constants/permissions";
 import type { ActionState } from "../types/auth.types";
@@ -44,6 +45,8 @@ export async function updateChurchSettingsAction(_previous: ActionState, formDat
     }).eq("church_id", context.church.id).is("deleted_at", null),
   ]);
   if (churchResult.error || settingsResult.error) return { status: "error", message: "Não foi possível salvar todas as configurações." };
+  updateTag(cacheTags.appSettings(context.church.id));
+  updateTag(cacheTags.church(context.church.id));
   revalidatePath("/", "layout");
   return { status: "success", message: "Configurações atualizadas com sucesso." };
 }

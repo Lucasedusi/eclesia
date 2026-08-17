@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import {
   BadgeCheck,
   ChevronLeft,
@@ -19,6 +19,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ModalLoading } from "@/components/ui/modal";
 import { Toast, ToastViewport } from "@/components/ui/toast";
 import {
   changeCongregationStatusAction,
@@ -34,17 +35,44 @@ import type {
   PositionItem,
   RegionItem,
 } from "../types/organization.types";
-import { CongregationForm } from "./congregation-form";
-import { CongregationDocumentsModal } from "./congregation-documents-modal";
-import { DeleteConfirmationModal } from "./delete-confirmation-modal";
-import {
-  CongregationDetailsModal,
-  RegionDetailsModal,
-  type OrganizationDetailsTarget,
-} from "./organization-details-modal";
-import { PositionForm } from "./position-form";
-import { RegionForm } from "./region-form";
+import type { OrganizationDetailsTarget } from "./organization-details-modal";
 import * as S from "./organization.styles";
+
+const CongregationForm = dynamic(
+  () => import("./congregation-form").then((module) => module.CongregationForm),
+  { loading: () => <ModalLoading title="Preparando cadastro de Congregação" /> },
+);
+const CongregationDocumentsModal = dynamic(
+  () => import("./congregation-documents-modal").then((module) => module.CongregationDocumentsModal),
+  {
+    loading: () => (
+      <ModalLoading
+        title="Preparando documentos"
+        description="Carregando o arquivo da Congregação."
+      />
+    ),
+  },
+);
+const DeleteConfirmationModal = dynamic(
+  () => import("./delete-confirmation-modal").then((module) => module.DeleteConfirmationModal),
+  { loading: () => <ModalLoading title="Preparando confirmação" /> },
+);
+const CongregationDetailsModal = dynamic(
+  () => import("./organization-details-modal").then((module) => module.CongregationDetailsModal),
+  { loading: () => <ModalLoading title="Preparando Congregação" /> },
+);
+const RegionDetailsModal = dynamic(
+  () => import("./organization-details-modal").then((module) => module.RegionDetailsModal),
+  { loading: () => <ModalLoading title="Preparando Regional" /> },
+);
+const PositionForm = dynamic(
+  () => import("./position-form").then((module) => module.PositionForm),
+  { loading: () => <ModalLoading title="Preparando cadastro de Cargo" /> },
+);
+const RegionForm = dynamic(
+  () => import("./region-form").then((module) => module.RegionForm),
+  { loading: () => <ModalLoading title="Preparando cadastro de Regional" /> },
+);
 
 type ToastState = { title: string; description?: string; variant: "success" | "danger" };
 type DeleteTarget =
@@ -106,7 +134,6 @@ function OrganizationStats({ data }: { data: OrganizationData }) {
 }
 
 export function OrganizationManagement({ data, activeTab }: { data: OrganizationData; activeTab: OrganizationTab }) {
-  const router = useRouter();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("ALL");
   const [region, setRegion] = useState("ALL");
@@ -135,8 +162,7 @@ export function OrganizationManagement({ data, activeTab }: { data: Organization
       description: state.message,
       variant: state.status === "success" ? "success" : "danger",
     });
-    if (state.status === "success") router.refresh();
-  }, [router]);
+  }, []);
 
   const formError = useCallback((message: string) => {
     setToast({ title: "Não foi possível concluir", description: message, variant: "danger" });

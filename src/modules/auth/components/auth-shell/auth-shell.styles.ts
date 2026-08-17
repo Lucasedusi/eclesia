@@ -7,6 +7,11 @@ const rise = keyframes`
   to { opacity: 1; transform: translateY(0); }
 `;
 
+const skeletonShimmer = keyframes`
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
+`;
+
 export const Page = styled.main`
   display: grid;
   width: 100%;
@@ -72,6 +77,45 @@ export const LoginCard = styled.div`
   background: #fff;
   padding: clamp(28px, 3.2vw, 42px);
   box-shadow: 0 8px 32px -8px rgb(27 42 74 / 0.18);
+`;
+
+export const LoginSkeletonLine = styled.span<{
+  $width: string;
+  $height: string;
+  $marginTop?: string;
+}>`
+  position: relative;
+  display: block;
+  width: ${({ $width }) => $width};
+  height: ${({ $height }) => $height};
+  overflow: hidden;
+  margin-top: ${({ $marginTop }) => $marginTop ?? "0"};
+  border-radius: 10px;
+  background: #e9edf4;
+
+  &::after {
+    position: absolute;
+    inset: 0;
+    content: "";
+    background: linear-gradient(100deg, transparent 20%, rgba(255, 255, 255, 0.8) 50%, transparent 80%);
+    animation: ${skeletonShimmer} 1.35s ease-in-out infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &::after { animation: none; }
+  }
+`;
+
+export const LoginSkeletonForm = styled.div`
+  display: grid;
+  gap: 16px;
+  margin-top: 28px;
+`;
+
+export const LoginSkeletonFieldTop = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 `;
 
 export const Brand = styled.div<{ $alwaysVisible?: boolean }>`

@@ -164,6 +164,32 @@ export const Footer = styled.div`
   }
 `;
 
+export const LoadingContent = styled.div`
+  display: flex;
+  min-height: 150px;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: ${({ theme }) => theme.colors.text.muted};
+  font-size: 13px;
+  font-weight: 750;
+
+  svg {
+    width: 22px;
+    height: 22px;
+    color: ${({ theme }) => theme.colors.brand.primary};
+    animation: modal-loading-spin 720ms linear infinite;
+  }
+
+  @keyframes modal-loading-spin {
+    to { transform: rotate(360deg); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    svg { animation: none; }
+  }
+`;
+
 export const ConfirmIconOuter = styled.span<ConfirmIconProps>`
   display: flex;
   width: 56px;

@@ -27,17 +27,6 @@ type AppSidebarProps = {
   authContext: AuthContext;
 };
 
-const PREFETCHED_ROUTES = new Set([
-  "/",
-  "/estrutura-eclesiastica",
-  "/membros",
-  "/documentos",
-  "/usuarios",
-  "/auditoria",
-  "/configuracoes",
-  "/design-system",
-]);
-
 function EclesiaLogo({ collapsed = false }: { collapsed?: boolean }) {
   return (
     <S.LogoWrapper $collapsed={collapsed} aria-hidden="true">
@@ -118,7 +107,6 @@ export function AppSidebar({
       <S.NavItem
         key={item.href}
         href={item.href}
-        prefetch={PREFETCHED_ROUTES.has(item.href) ? null : false}
         onClick={onNavigate}
         title={isCollapsed ? item.label : undefined}
         $active={active}

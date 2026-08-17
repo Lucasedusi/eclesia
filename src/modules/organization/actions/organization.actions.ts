@@ -1,8 +1,9 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { cacheTags } from "@/lib/cache-tags";
 import { PERMISSIONS } from "@/modules/auth/constants/permissions";
 import { requireAccessContext } from "@/modules/auth/services/access-context.service";
 import type {
@@ -48,7 +49,12 @@ function denied(): OrganizationActionState {
   };
 }
 
-function refreshOrganization() {
+function refreshOrganization(churchId: string) {
+  updateTag(cacheTags.organization(churchId));
+  updateTag(cacheTags.regions(churchId));
+  updateTag(cacheTags.congregations(churchId));
+  updateTag(cacheTags.roles(churchId));
+  updateTag(cacheTags.memberFilters(churchId));
   revalidatePath("/estrutura-eclesiastica", "layout");
 }
 
@@ -97,7 +103,7 @@ export async function createRegionAction(
     );
   }
 
-  refreshOrganization();
+  refreshOrganization(context.church.id);
   return { status: "success", message: "Regional cadastrada com sucesso." };
 }
 
@@ -147,7 +153,7 @@ export async function updateRegionAction(
   }
   if (!updated) return { status: "error", message: "Regional não encontrada." };
 
-  refreshOrganization();
+  refreshOrganization(context.church.id);
   return { status: "success", message: "Regional atualizada com sucesso." };
 }
 
@@ -182,7 +188,7 @@ export async function changeRegionStatusAction(input: {
   }
   if (!updated) return { status: "error", message: "Regional não encontrada." };
 
-  refreshOrganization();
+  refreshOrganization(context.church.id);
   return {
     status: "success",
     message: status.data === "ACTIVE" ? "Regional reativada." : "Regional inativada.",
@@ -214,7 +220,7 @@ export async function archiveRegionAction(idValue: string): Promise<Organization
   }
   if (count !== 1) return { status: "error", message: "Regional não encontrada." };
 
-  refreshOrganization();
+  refreshOrganization(context.church.id);
   return { status: "success", message: "Regional excluída com sucesso." };
 }
 
@@ -290,7 +296,7 @@ export async function createCongregationAction(
     );
   }
 
-  refreshOrganization();
+  refreshOrganization(context.church.id);
   return { status: "success", message: "Congregação cadastrada com sucesso." };
 }
 
@@ -393,7 +399,7 @@ export async function updateCongregationAction(
   }
   if (!updated) return { status: "error", message: "Congregação não encontrada." };
 
-  refreshOrganization();
+  refreshOrganization(context.church.id);
   return { status: "success", message: "Congregação atualizada com sucesso." };
 }
 
@@ -428,7 +434,7 @@ export async function changeCongregationStatusAction(input: {
   }
   if (!updated) return { status: "error", message: "Congregação não encontrada." };
 
-  refreshOrganization();
+  refreshOrganization(context.church.id);
   return {
     status: "success",
     message: status.data === "ACTIVE" ? "Congregação reativada." : "Congregação inativada.",
@@ -466,7 +472,7 @@ export async function archiveCongregationAction(idValue: string): Promise<Organi
     };
   }
 
-  refreshOrganization();
+  refreshOrganization(context.church.id);
   return { status: "success", message: "Congregação excluída com sucesso." };
 }
 
@@ -514,7 +520,7 @@ export async function createPositionAction(
     );
   }
 
-  refreshOrganization();
+  refreshOrganization(context.church.id);
   return { status: "success", message: "Cargo cadastrado com sucesso." };
 }
 
@@ -568,7 +574,7 @@ export async function updatePositionAction(
   }
   if (!updated) return { status: "error", message: "Cargo não encontrado." };
 
-  refreshOrganization();
+  refreshOrganization(context.church.id);
   return { status: "success", message: "Cargo atualizado com sucesso." };
 }
 
@@ -603,7 +609,7 @@ export async function changePositionStatusAction(input: {
   }
   if (!updated) return { status: "error", message: "Cargo não encontrado." };
 
-  refreshOrganization();
+  refreshOrganization(context.church.id);
   return {
     status: "success",
     message: status.data === "ACTIVE" ? "Cargo reativado." : "Cargo inativado.",
@@ -638,6 +644,6 @@ export async function archivePositionAction(idValue: string): Promise<Organizati
   }
   if (count !== 1) return { status: "error", message: "Cargo não encontrado." };
 
-  refreshOrganization();
+  refreshOrganization(context.church.id);
   return { status: "success", message: "Cargo excluído com sucesso." };
 }

@@ -2,6 +2,9 @@ import "server-only";
 
 import { Buffer } from "node:buffer";
 import { randomUUID } from "node:crypto";
+import { cacheLife, cacheTag } from "next/cache";
+import { cacheTags } from "@/lib/cache-tags";
+import { measureServerOperation } from "@/lib/performance/server-performance";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { PERMISSIONS } from "@/modules/auth/constants/permissions";
@@ -335,32 +338,61 @@ async function clearPendingReplacement(access: DocumentAccess, document: Documen
   if (error) logServiceError("clear pending replacement", error);
 }
 
-async function cleanupStaleUploads(access: DocumentAccess) {
-  if (!access.context.permissions.includes(PERMISSIONS.documentsManage)) return;
-  const cutoff = new Date(Date.now() - ADMINISTRATIVE_DOCUMENT_PENDING_TTL_MS).toISOString();
-  const [uploads, replacements] = await Promise.all([
-    access.supabase
-      .from("administrative_documents")
-      .select(DOCUMENT_SELECT)
-      .eq("church_id", access.context.church.id)
-      .eq("upload_status", "PENDING")
-      .is("deleted_at", null)
-      .lt("uploaded_at", cutoff),
-    access.supabase
-      .from("administrative_documents")
-      .select(DOCUMENT_SELECT)
-      .eq("church_id", access.context.church.id)
-      .eq("upload_status", "ACTIVE")
-      .not("pending_storage_path", "is", null)
-      .lt("pending_started_at", cutoff),
-  ]);
+export async function cleanupStaleAdministrativeUploads() {
+  if (process.env.DOCUMENT_CLEANUP_DISABLED === "true") {
+    return { disabled: true, processed: 0, failed: 0 };
+  }
 
-  for (const document of (uploads.data ?? []) as unknown as DocumentRow[]) {
-    await discardPendingDocument(access, document);
+  const configuredMinutes = Number(process.env.DOCUMENT_PENDING_TTL_MINUTES);
+  const ttlMs = Number.isFinite(configuredMinutes) && configuredMinutes >= 15
+    ? configuredMinutes * 60 * 1000
+    : ADMINISTRATIVE_DOCUMENT_PENDING_TTL_MS;
+  const cutoff = new Date(Date.now() - ttlMs).toISOString();
+  const admin = createAdminClient();
+  const { data, error: claimError } = await admin.rpc(
+    "claim_stale_administrative_document_cleanups",
+    { p_cutoff: cutoff, p_limit: 250 },
+  );
+  if (claimError) {
+    logServiceError("scheduled cleanup claim", claimError);
+    throw new Error("DOCUMENT_CLEANUP_CLAIM_FAILED");
   }
-  for (const document of (replacements.data ?? []) as unknown as DocumentRow[]) {
-    await clearPendingReplacement(access, document);
-  }
+
+  let processed = 0;
+  let failed = 0;
+  const queue = (data ?? []) as unknown as Array<{
+    queue_id: string;
+    storage_bucket: string;
+    storage_path: string;
+  }>;
+
+  await Promise.allSettled(queue.map(async (item) => {
+    const { error: storageError } = await admin.storage
+      .from(item.storage_bucket)
+      .remove([item.storage_path]);
+    const errorCode = storageError?.statusCode || storageError?.name || "STORAGE_REMOVE_FAILED";
+    const { error: recordError } = await admin.rpc(
+      "record_administrative_document_cleanup_attempt",
+      {
+        p_queue_id: item.queue_id,
+        p_succeeded: !storageError,
+        p_error_code: storageError ? String(errorCode).slice(0, 80) : null,
+      },
+    );
+    if (recordError) {
+      failed += 1;
+      logServiceError("scheduled cleanup queue update", recordError);
+      return;
+    }
+    if (storageError) {
+      failed += 1;
+      logServiceError("scheduled cleanup storage", storageError);
+      return;
+    }
+    processed += 1;
+  }));
+
+  return { disabled: false, processed, failed };
 }
 
 function mapCategory(row: Record<string, unknown>): DocumentCategoryItem {
@@ -424,7 +456,46 @@ function mapDocument(row: Record<string, unknown>): AdministrativeDocumentItem {
   };
 }
 
+async function loadDocumentReferencePayload(churchId: string) {
+  "use cache: private";
+  cacheLife("minutes");
+  cacheTag(cacheTags.documentReferences(churchId));
+  const supabase = await createClient();
+  const { data: payload, error } = await supabase.rpc(
+    "get_administrative_document_references",
+    { p_church_id: churchId },
+  );
+  return error ? null : payload;
+}
+
 async function listReferenceData(access: DocumentAccess) {
+  const payload = await loadDocumentReferencePayload(access.context.church.id);
+
+  if (payload && typeof payload === "object" && !Array.isArray(payload)) {
+    const referenceData = payload as Record<string, unknown>;
+    const categories = Array.isArray(referenceData.categories) ? referenceData.categories : [];
+    const folders = Array.isArray(referenceData.folders) ? referenceData.folders : [];
+    const tags = Array.isArray(referenceData.tags) ? referenceData.tags : [];
+    const uploaders = Array.isArray(referenceData.uploaders) ? referenceData.uploaders : [];
+    return {
+      categories: categories.map((row) => mapCategory(row as Record<string, unknown>)),
+      folders: folders.map((row) => mapFolder(row as Record<string, unknown>)),
+      tags: tags.map((row) => ({
+        id: String((row as Record<string, unknown>).id),
+        name: String((row as Record<string, unknown>).name),
+      })) as DocumentTagItem[],
+      uploaders: uploaders.map((row) => ({
+        id: String((row as Record<string, unknown>).id),
+        name: String((row as Record<string, unknown>).name),
+      })).sort((a, b) => a.name.localeCompare(b.name, "pt-BR")) as DocumentUploaderItem[],
+    };
+  }
+
+  if (process.env.NODE_ENV === "development") {
+    console.warn("[administrative-documents] RPC de referências indisponível; usando fallback.", {
+      churchId: access.context.church.id,
+    });
+  }
   const [categories, folders, tags, accessRows] = await Promise.all([
     access.supabase
       .from("document_categories")
@@ -531,26 +602,96 @@ async function countState(access: DocumentAccess, state: "ACTIVE" | "ARCHIVED" |
   return first ? Number(first.total_count) : 0;
 }
 
-export async function getDocumentWorkspace(
-  params: DocumentListParams,
-): Promise<DocumentWorkspaceData> {
-  const access = await requireDocumentAccess(false);
-  await cleanupStaleUploads(access);
-  const [references, documents, active, archived, deleted] = await Promise.all([
-    listReferenceData(access),
-    listAdministrativeDocuments(params, access),
+async function getDocumentStats(access: DocumentAccess): Promise<DocumentStats> {
+  const data = await loadDocumentStats(access.context.church.id);
+  const row = Array.isArray(data) ? data[0] as Record<string, unknown> | undefined : undefined;
+  if (row) {
+    return {
+      active: Number(row.active_count ?? 0),
+      archived: Number(row.archived_count ?? 0),
+      deleted: Number(row.deleted_count ?? 0),
+      categories: Number(row.active_category_count ?? 0),
+      folders: Number(row.active_folder_count ?? 0),
+    };
+  }
+
+  if (process.env.NODE_ENV === "development") {
+    console.warn("[administrative-documents] RPC de estatísticas indisponível; usando fallback.", {
+      churchId: access.context.church.id,
+    });
+  }
+  const [active, archived, deleted, categories, folders] = await Promise.all([
     countState(access, "ACTIVE"),
     countState(access, "ARCHIVED"),
     countState(access, "DELETED"),
+    access.supabase
+      .from("document_categories")
+      .select("id", { count: "exact", head: true })
+      .eq("church_id", access.context.church.id)
+      .eq("status", "ACTIVE")
+      .is("deleted_at", null),
+    access.supabase
+      .from("document_folders")
+      .select("id", { count: "exact", head: true })
+      .eq("church_id", access.context.church.id)
+      .eq("status", "ACTIVE")
+      .is("deleted_at", null),
   ]);
-  const stats: DocumentStats = {
+  return {
     active,
     archived,
     deleted,
-    categories: references.categories.filter((item) => !item.deletedAt && item.status === "ACTIVE").length,
-    folders: references.folders.filter((item) => !item.deletedAt && item.status === "ACTIVE").length,
+    categories: categories.count ?? 0,
+    folders: folders.count ?? 0,
   };
-  return { ...references, stats, documents, params };
+}
+
+async function loadDocumentStats(churchId: string) {
+  "use cache: private";
+  cacheLife("minutes");
+  cacheTag(cacheTags.documentStats(churchId));
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc(
+    "get_administrative_document_workspace_stats",
+    { p_church_id: churchId },
+  );
+  return error ? null : data;
+}
+
+export async function getDocumentWorkspace(
+  params: DocumentListParams,
+): Promise<DocumentWorkspaceData> {
+  const [core, stats] = await Promise.all([
+    getDocumentWorkspaceCore(params),
+    getDocumentWorkspaceStats(),
+  ]);
+  return { ...core, stats };
+}
+
+export async function getDocumentWorkspaceCore(
+  params: DocumentListParams,
+): Promise<Omit<DocumentWorkspaceData, "stats">> {
+  const access = await requireDocumentAccess(false);
+  return measureServerOperation(
+    "documents.workspace-core",
+    async () => {
+      const [references, documents] = await Promise.all([
+        listReferenceData(access),
+        listAdministrativeDocuments(params, access),
+      ]);
+      return { ...references, documents, params };
+    },
+    { route: "/documentos", supabaseCalls: 2 },
+  );
+}
+
+export async function getDocumentWorkspaceStats(): Promise<DocumentStats> {
+  const access = await requireDocumentAccess(false);
+  return measureServerOperation(
+    "documents.workspace-stats",
+    () => getDocumentStats(access),
+    { route: "/documentos", supabaseCalls: 1 },
+  );
 }
 
 export async function createDocumentCategory(input: {

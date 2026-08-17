@@ -10,7 +10,6 @@ import {
   Users,
   Wallet,
 } from "lucide-react";
-import { AppShell } from "@/components/layout/app-shell";
 import { APP_CONFIG } from "@/constants/app";
 import { getAppName } from "@/services/app-settings.service";
 import { requireAccessContext } from "@/modules/auth/services/access-context.service";
@@ -107,11 +106,7 @@ export default async function Home() {
   const appNameFromDatabase = await getAppName(context.church.id);
 
   return (
-    <AppShell
-      authContext={context}
-      title="Dashboard"
-      subtitle="Visão geral administrativa da plataforma"
-    >
+    <>
       <div className="space-y-6">
         <section className="overflow-hidden rounded-[24px] border border-[#cfcec9] bg-white shadow-[var(--shadow-card)]">
           <div className="grid gap-0 lg:grid-cols-[1.35fr_0.65fr]">
@@ -384,6 +379,6 @@ export default async function Home() {
           </div>
         </section>
       </div>
-    </AppShell>
+    </>
   );
 }

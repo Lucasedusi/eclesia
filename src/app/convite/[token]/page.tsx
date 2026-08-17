@@ -1,10 +1,11 @@
+import { Suspense } from "react";
 import { InvitationAccept } from "@/modules/users/components/invitation-accept";
 import {
   getInvitationByToken,
   resolveInvitationAccount,
 } from "@/modules/users/services/invitation.service";
 
-export default async function InvitationPage({
+async function InvitationContent({
   params,
 }: {
   params: Promise<{ token: string }>;
@@ -30,4 +31,16 @@ export default async function InvitationPage({
     : null;
 
   return <InvitationAccept token={token} preview={preview} />;
+}
+
+export default function InvitationPage({
+  params,
+}: {
+  params: Promise<{ token: string }>;
+}) {
+  return (
+    <Suspense fallback={<main aria-busy="true">Validando convite...</main>}>
+      <InvitationContent params={params} />
+    </Suspense>
+  );
 }

@@ -1,6 +1,10 @@
 "use client";
 
-import styled from "styled-components";
+import styled, { keyframes } from "styled-components";
+
+const headerActionSpin = keyframes`
+  to { transform: rotate(360deg); }
+`;
 
 export const HeaderRoot = styled.header`
   position: sticky;
@@ -271,8 +275,10 @@ export const ChurchList = styled.div`
   padding: 9px 0;
 
   > span { display: flex; align-items: center; gap: 7px; padding: 5px 10px 8px; color: #98a2b3; font-size: 9px; font-weight: 800; text-transform: uppercase; }
-  button { width: 100%; border: 0; border-radius: 8px; background: transparent; color: #475467; padding: 8px 10px; text-align: left; font-size: 10px; font-weight: 750; }
+  button { display: flex; width: 100%; align-items: center; gap: 7px; border: 0; border-radius: 8px; background: transparent; color: #475467; padding: 8px 10px; text-align: left; font-size: 10px; font-weight: 750; }
   button:hover, button[data-active="true"] { background: #eef2ff; color: ${({ theme }) => theme.colors.brand.primary}; }
+  button:disabled { cursor: wait; opacity: .72; }
+  button[data-loading="true"] svg { width: 13px; height: 13px; animation: ${headerActionSpin} 720ms linear infinite; }
 `;
 
 export const LogoutButton = styled.button`
@@ -291,4 +297,6 @@ export const LogoutButton = styled.button`
   font-weight: 800;
 
   &:hover { background: #fff0ef; }
+  &:disabled { cursor: wait; opacity: .72; }
+  &[data-loading="true"] svg { animation: ${headerActionSpin} 720ms linear infinite; }
 `;

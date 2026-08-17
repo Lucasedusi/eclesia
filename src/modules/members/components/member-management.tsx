@@ -11,7 +11,7 @@ import {
   useTransition,
 } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import {
   Archive,
   ArchiveRestore,
@@ -34,7 +34,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Modal } from "@/components/ui/modal";
+import { Modal, ModalLoading } from "@/components/ui/modal";
 import { Toast, ToastViewport } from "@/components/ui/toast";
 import {
   changeMemberLifecycleAction,
@@ -57,8 +57,19 @@ import {
   memberStatusLabels,
   memberTypeLabels,
 } from "../utils/member-formatters";
-import { MemberDetailsModal } from "./member-details-modal";
 import * as S from "./members.styles";
+
+const MemberDetailsModal = dynamic(() =>
+  import("./member-details-modal").then((module) => module.MemberDetailsModal),
+  {
+    loading: () => (
+      <ModalLoading
+        title="Preparando ficha do membro"
+        description="Carregando os dados completos e o histórico."
+      />
+    ),
+  },
+);
 
 type Props = {
   initial: MemberListResult;
@@ -115,7 +126,6 @@ export function MemberManagement({
   filters,
   capabilities,
 }: Props) {
-  const router = useRouter();
   const [result, setResult] = useState(initial);
   const [params, setParams] = useState(initialParams);
   const [searchInput, setSearchInput] = useState(initialParams.search);
@@ -218,7 +228,7 @@ export function MemberManagement({
   }
 
   function refresh() {
-    router.refresh();
+    load(params);
   }
 
   function beginLifecycle(

@@ -1,6 +1,8 @@
 import "server-only";
 
 import { cache } from "react";
+import { cacheLife, cacheTag } from "next/cache";
+import { cacheTags } from "@/lib/cache-tags";
 import { createClient } from "@/lib/supabase/server";
 import { measureServerOperation } from "@/lib/performance/server-performance";
 import { PERMISSIONS } from "@/modules/auth/constants/permissions";
@@ -85,8 +87,15 @@ function first<T>(value: T | T[] | null): T | null {
   return Array.isArray(value) ? value[0] ?? null : value;
 }
 
-async function loadOrganizationRows() {
-  const context = await requireAccessContext(PERMISSIONS.organizationView);
+async function loadOrganizationRows(churchId: string) {
+  "use cache: private";
+  cacheLife("minutes");
+  cacheTag(
+    cacheTags.organization(churchId),
+    cacheTags.regions(churchId),
+    cacheTags.congregations(churchId),
+    cacheTags.roles(churchId),
+  );
   const supabase = await createClient();
 
   const [regionsResult, congregationsResult, positionsResult] = await measureServerOperation(
@@ -95,7 +104,7 @@ async function loadOrganizationRows() {
       supabase
         .from("regions")
         .select("id, name, description, coordinator_name, coordinator_phone, display_order, status, created_at, updated_at")
-        .eq("church_id", context.church.id)
+        .eq("church_id", churchId)
         .is("deleted_at", null)
         .order("display_order")
         .order("name")
@@ -103,7 +112,7 @@ async function loadOrganizationRows() {
       supabase
         .from("congregations")
         .select("id, region_id, name, code, pastor_name, pastor_spouse_name, phone, whatsapp, email, zip_code, address, number, complement, district, city, state, country, notes, is_headquarters, display_order, status, created_at, updated_at, regions(name)")
-        .eq("church_id", context.church.id)
+        .eq("church_id", churchId)
         .is("deleted_at", null)
         .order("display_order")
         .order("name")
@@ -111,7 +120,7 @@ async function loadOrganizationRows() {
       supabase
         .from("roles")
         .select("id, name, female_name, abbreviation, female_abbreviation, description, display_order, status, created_at, updated_at")
-        .eq("church_id", context.church.id)
+        .eq("church_id", churchId)
         .is("deleted_at", null)
         .order("display_order")
         .order("name")
@@ -139,7 +148,6 @@ async function loadOrganizationRows() {
   }
 
   return {
-    context,
     regionRows: (regionsResult.data ?? []) as RegionRow[],
     congregationRows: (congregationsResult.data ?? []) as unknown as CongregationRow[],
     positionRows: (positionsResult.data ?? []) as PositionRow[],
@@ -322,7 +330,8 @@ export async function getCongregationDetails(
 }
 
 async function loadOrganizationData(): Promise<OrganizationData> {
-  const { context, regionRows, congregationRows, positionRows } = await loadOrganizationRows();
+  const context = await requireAccessContext(PERMISSIONS.organizationView);
+  const { regionRows, congregationRows, positionRows } = await loadOrganizationRows(context.church.id);
   const congregations = congregationRows.map(mapCongregation);
   const positions = positionRows.map(mapPosition);
 

@@ -11,7 +11,7 @@ import {
   Suspense,
 } from "react";
 import { useLinkStatus } from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { LoaderCircle } from "lucide-react";
 
 type NavigationFeedbackContextValue = {
@@ -23,31 +23,14 @@ type NavigationFeedbackContextValue = {
 const NavigationFeedbackContext = createContext<NavigationFeedbackContextValue | null>(null);
 const NAVIGATION_TIMEOUT_MS = 20_000;
 
-function isInternalNavigation(anchor: HTMLAnchorElement) {
-  if (anchor.target && anchor.target !== "_self") return false;
-  if (anchor.hasAttribute("download")) return false;
-
-  const destination = new URL(anchor.href, window.location.href);
-  if (destination.origin !== window.location.origin) return false;
-
-  const current = new URL(window.location.href);
-  const sameDocument =
-    destination.pathname === current.pathname &&
-    destination.search === current.search;
-
-  return !sameDocument;
-}
-
 function NavigationCompletionListener() {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const feedback = useContext(NavigationFeedbackContext);
   const finishNavigation = feedback?.finishNavigation;
-  const routeKey = `${pathname}?${searchParams.toString()}`;
 
   useEffect(() => {
     finishNavigation?.();
-  }, [finishNavigation, routeKey]);
+  }, [finishNavigation, pathname]);
 
   return null;
 }
@@ -72,45 +55,10 @@ export function NavigationFeedbackProvider({ children }: { children: React.React
   }, []);
 
   useEffect(() => {
-    function handleClick(event: MouseEvent) {
-      if (
-        event.defaultPrevented ||
-        event.button !== 0 ||
-        event.metaKey ||
-        event.ctrlKey ||
-        event.shiftKey ||
-        event.altKey
-      ) return;
-
-      const target = event.target;
-      if (!(target instanceof Element)) return;
-      const anchor = target.closest("a");
-      if (!(anchor instanceof HTMLAnchorElement) || !isInternalNavigation(anchor)) return;
-
-      startNavigation();
-    }
-
-    function handleSubmit(event: SubmitEvent) {
-      const form = event.target;
-      if (form instanceof HTMLFormElement && form.dataset.navigationForm === "true") {
-        startNavigation();
-      }
-    }
-
-    function handlePopState() {
-      startNavigation();
-    }
-
-    document.addEventListener("click", handleClick, true);
-    document.addEventListener("submit", handleSubmit, true);
-    window.addEventListener("popstate", handlePopState);
     return () => {
-      document.removeEventListener("click", handleClick, true);
-      document.removeEventListener("submit", handleSubmit, true);
-      window.removeEventListener("popstate", handlePopState);
       if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
     };
-  }, [startNavigation]);
+  }, []);
 
   const value = useMemo(
     () => ({ pending, startNavigation, finishNavigation }),

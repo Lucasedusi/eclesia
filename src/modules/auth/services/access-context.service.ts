@@ -1,6 +1,7 @@
 import "server-only";
 
 import { cache } from "react";
+import { io } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -132,6 +133,11 @@ async function loadLegacyContext(
 }
 
 export const resolveAccessContext = cache(async (): Promise<AccessResolution> => {
+  // getClaims() verifica a validade temporal do JWT internamente. No Next 16
+  // com Cache Components, essa leitura deve acontecer depois do limite de I/O
+  // para não ser capturada durante o prerender da interface autenticada.
+  await io();
+
   const supabase = await createClient();
   const { data: claimsData, error: claimsError } = await measureServerOperation(
     "auth.getClaims",

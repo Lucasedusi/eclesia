@@ -3,6 +3,8 @@
 import {
   type ChangeEvent,
   type FormEvent,
+  Suspense,
+  use,
   useEffect,
   useMemo,
   useRef,
@@ -44,7 +46,6 @@ import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { PageHeader } from "@/components/ui/page-header";
 import { Toast, ToastViewport } from "@/components/ui/toast";
-import { createClient } from "@/lib/supabase/client";
 import {
   cancelDocumentReplacementAction,
   cancelDocumentUploadsAction,
@@ -77,11 +78,15 @@ import type {
   DocumentCategoryItem,
   DocumentFolderItem,
   DocumentListParams,
+  DocumentStats,
   DocumentWorkspaceData,
 } from "../types/document.types";
 import * as S from "./documents.styles";
 
-type Props = { initial: DocumentWorkspaceData };
+type Props = {
+  initial: DocumentWorkspaceData;
+  initialStats: Promise<DocumentStats>;
+};
 
 type Notice = {
   title: string;
@@ -171,9 +176,43 @@ function DocumentIcon({ document }: { document: Pick<AdministrativeDocumentItem,
   );
 }
 
-export function DocumentManagement({ initial }: Props) {
-  const [supabase] = useState(() => createClient());
+type DocumentStatsCardsProps = {
+  stats: DocumentStats;
+  state: DocumentListParams["state"];
+  onStateChange: (state: DocumentListParams["state"]) => void;
+  onOpenCategories: () => void;
+  onOpenFolders: () => void;
+};
+
+function DocumentStatsCards({
+  stats,
+  state,
+  onStateChange,
+  onOpenCategories,
+  onOpenFolders,
+}: DocumentStatsCardsProps) {
+  return (
+    <S.Stats aria-label="Resumo do arquivo administrativo">
+      <S.Stat $active={state === "ACTIVE"} $tone="success" onClick={() => onStateChange("ACTIVE")}><span><FileArchive size={18} /></span><div><strong>{stats.active}</strong><small>Documentos ativos</small></div></S.Stat>
+      <S.Stat $active={state === "ARCHIVED"} $tone="warning" onClick={() => onStateChange("ARCHIVED")}><span><Archive size={18} /></span><div><strong>{stats.archived}</strong><small>Arquivados</small></div></S.Stat>
+      <S.Stat $active={state === "DELETED"} $tone="danger" onClick={() => onStateChange("DELETED")}><span><Trash2 size={18} /></span><div><strong>{stats.deleted}</strong><small>Na lixeira</small></div></S.Stat>
+      <S.Stat onClick={onOpenCategories}><span><FolderOpen size={18} /></span><div><strong>{stats.categories}</strong><small>Categorias ativas</small></div></S.Stat>
+      <S.Stat onClick={onOpenFolders}><span><Folder size={18} /></span><div><strong>{stats.folders}</strong><small>Pastas ativas</small></div></S.Stat>
+    </S.Stats>
+  );
+}
+
+function StreamedDocumentStats({ promise, ...props }: Omit<DocumentStatsCardsProps, "stats"> & { promise: Promise<DocumentStats> }) {
+  return <DocumentStatsCards stats={use(promise)} {...props} />;
+}
+
+function DocumentStatsLoading() {
+  return <div className="app-skeleton-stats" aria-busy="true" aria-label="Carregando resumo dos documentos">{Array.from({ length: 5 }, (_, index) => <span key={index} className="app-skeleton-block app-skeleton-stat" />)}</div>;
+}
+
+export function DocumentManagement({ initial, initialStats }: Props) {
   const [data, setData] = useState(initial);
+  const [useCurrentStats, setUseCurrentStats] = useState(false);
   const [params, setParams] = useState(initial.params);
   const [searchInput, setSearchInput] = useState(initial.params.search);
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -283,6 +322,7 @@ export function DocumentManagement({ initial }: Props) {
     const result = await getDocumentWorkspaceAction(nextParams);
     if (result.status === "success") {
       setData(result.data);
+      setUseCurrentStats(true);
       setParams(result.data.params);
       return true;
     }
@@ -421,6 +461,8 @@ export function DocumentManagement({ initial }: Props) {
       const uploadedIds: string[] = [];
       const failedIds: string[] = [];
       let completed = 0;
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
       await Promise.all(ready.map(async (item) => {
         const entry = uploadFiles.find((file) => file.clientId === item.clientId);
         if (!entry || !item.documentId || !item.path || !item.token || !item.contentType) return;
@@ -532,6 +574,8 @@ export function DocumentManagement({ initial }: Props) {
         setNotice({ title: "Substituição indisponível", description: prepared.message, variant: "danger" });
         return;
       }
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
       const { error } = await supabase.storage
         .from(ADMINISTRATIVE_DOCUMENT_BUCKET)
         .uploadToSignedUrl(prepared.path, prepared.token, replacementFile, {
@@ -613,13 +657,25 @@ export function DocumentManagement({ initial }: Props) {
         }
       />
 
-      <S.Stats aria-label="Resumo do arquivo administrativo">
-        <S.Stat $active={params.state === "ACTIVE"} $tone="success" onClick={() => changeParams({ state: "ACTIVE" })}><span><FileArchive size={18} /></span><div><strong>{data.stats.active}</strong><small>Documentos ativos</small></div></S.Stat>
-        <S.Stat $active={params.state === "ARCHIVED"} $tone="warning" onClick={() => changeParams({ state: "ARCHIVED" })}><span><Archive size={18} /></span><div><strong>{data.stats.archived}</strong><small>Arquivados</small></div></S.Stat>
-        <S.Stat $active={params.state === "DELETED"} $tone="danger" onClick={() => changeParams({ state: "DELETED" })}><span><Trash2 size={18} /></span><div><strong>{data.stats.deleted}</strong><small>Na lixeira</small></div></S.Stat>
-        <S.Stat onClick={() => { setManagerTab("categories"); setCategoryManagerOpen(true); }}><span><FolderOpen size={18} /></span><div><strong>{data.stats.categories}</strong><small>Categorias ativas</small></div></S.Stat>
-        <S.Stat onClick={() => setFolderManagerOpen(true)}><span><Folder size={18} /></span><div><strong>{data.stats.folders}</strong><small>Pastas ativas</small></div></S.Stat>
-      </S.Stats>
+      <Suspense fallback={<DocumentStatsLoading />}>
+        {useCurrentStats ? (
+          <DocumentStatsCards
+            stats={data.stats}
+            state={params.state}
+            onStateChange={(state) => changeParams({ state })}
+            onOpenCategories={() => { setManagerTab("categories"); setCategoryManagerOpen(true); }}
+            onOpenFolders={() => setFolderManagerOpen(true)}
+          />
+        ) : (
+          <StreamedDocumentStats
+            promise={initialStats}
+            state={params.state}
+            onStateChange={(state) => changeParams({ state })}
+            onOpenCategories={() => { setManagerTab("categories"); setCategoryManagerOpen(true); }}
+            onOpenFolders={() => setFolderManagerOpen(true)}
+          />
+        )}
+      </Suspense>
 
       {!activeCategories.length ? (
         <S.Empty>

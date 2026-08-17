@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { APP_CONFIG } from "@/constants/app";
 import { AppProviders } from "@/providers/app-providers";
+import { WebVitals } from "@/components/observability/web-vitals";
 import "./globals.css";
 
 const inter = Inter({
@@ -23,6 +24,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body className={inter.className} suppressHydrationWarning>
+        <WebVitals />
         <AppProviders>{children}</AppProviders>
       </body>
     </html>

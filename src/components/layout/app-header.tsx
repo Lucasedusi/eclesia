@@ -4,6 +4,7 @@ import {
   Bell,
   Building2,
   ChevronDown,
+  LoaderCircle,
   LogOut,
   Menu,
   MessageCircle,
@@ -11,6 +12,7 @@ import {
   SunMedium,
   UserRound,
 } from "lucide-react";
+import { useFormStatus } from "react-dom";
 import { logoutAction, switchChurchAction } from "@/modules/auth/actions/auth.actions";
 import { LinkPendingIndicator } from "@/components/navigation/navigation-feedback";
 import { ROLE_LABELS, type AuthContext } from "@/modules/auth/types/auth.types";
@@ -37,6 +39,39 @@ function HeaderIconButton({
       {children}
       {hasNotification && <S.NotificationDot />}
     </S.IconButton>
+  );
+}
+
+function ChurchSwitchButton({ name, active }: { name: string; active: boolean }) {
+  const { pending } = useFormStatus();
+
+  return (
+    <button
+      type="submit"
+      data-active={active}
+      data-loading={pending}
+      disabled={pending}
+      aria-current={active ? "true" : undefined}
+    >
+      {pending ? <LoaderCircle aria-hidden="true" /> : null}
+      <span>{pending ? `Abrindo ${name}...` : name}</span>
+    </button>
+  );
+}
+
+function LogoutButton() {
+  const { pending } = useFormStatus();
+
+  return (
+    <S.LogoutButton
+      type="submit"
+      data-loading={pending}
+      disabled={pending}
+      aria-busy={pending}
+    >
+      {pending ? <LoaderCircle aria-hidden="true" /> : <LogOut size={16} />}
+      {pending ? "Encerrando sessão..." : "Encerrar sessão"}
+    </S.LogoutButton>
   );
 }
 
@@ -85,7 +120,7 @@ export function AppHeader({ onOpenSidebar, authContext }: AppHeaderProps) {
             <Bell size={18} strokeWidth={1.7} />
           </HeaderIconButton>
 
-          <S.UserMenu>
+          <S.UserMenu ref={(details) => () => details?.removeAttribute("open")}>
             <summary>
               <S.UserArea>
                 <S.UserMeta>
@@ -108,15 +143,18 @@ export function AppHeader({ onOpenSidebar, authContext }: AppHeaderProps) {
                 <S.ChurchList>
                   <span><Building2 size={14} /> Trocar igreja</span>
                   {authContext.availableChurches.map((church) => (
-                    <form key={church.id} action={switchChurchAction} data-navigation-form="true">
+                    <form key={church.id} action={switchChurchAction}>
                       <input type="hidden" name="churchId" value={church.id} />
-                      <button type="submit" data-active={church.id === authContext.church.id}>{church.name}</button>
+                      <ChurchSwitchButton
+                        name={church.name}
+                        active={church.id === authContext.church.id}
+                      />
                     </form>
                   ))}
                 </S.ChurchList>
               ) : null}
-              <form action={logoutAction} data-navigation-form="true">
-                <S.LogoutButton type="submit"><LogOut size={16} /> Encerrar sessão</S.LogoutButton>
+              <form action={logoutAction}>
+                <LogoutButton />
               </form>
             </S.UserDropdown>
           </S.UserMenu>

@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { AppShell } from "@/components/layout/app-shell";
 import { LinkPendingIndicator } from "@/components/navigation/navigation-feedback";
 import { PageHeader } from "@/components/ui/page-header";
 import { PERMISSIONS } from "@/modules/auth/constants/permissions";
@@ -18,11 +17,7 @@ export default async function MemberImportPage({ searchParams }: Props) {
   const workspace = await getMemberImportWorkspace(context, batch);
 
   return (
-    <AppShell
-      authContext={context}
-      title="Importar membros"
-      subtitle="Importação em lote com validação e rastreabilidade"
-    >
+    <>
       <PageHeader
         title="Importar membros por planilha"
         subtitle="Analise, revise e confirme até 500 membros em uma única operação segura."
@@ -35,6 +30,6 @@ export default async function MemberImportPage({ searchParams }: Props) {
         )}
       />
       <MemberImportWorkspace initial={workspace} />
-    </AppShell>
+    </>
   );
 }

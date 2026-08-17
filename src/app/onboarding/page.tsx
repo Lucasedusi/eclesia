@@ -1,8 +1,9 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { OnboardingWizard } from "@/modules/onboarding/components/onboarding-wizard";
 
-export default async function OnboardingPage() {
+async function OnboardingContent() {
   const supabase = await createClient();
   const {
     data: { user },
@@ -25,4 +26,12 @@ export default async function OnboardingPage() {
     "Responsável inicial";
 
   return <OnboardingWizard administratorName={administratorName} />;
+}
+
+export default function OnboardingPage() {
+  return (
+    <Suspense fallback={<main aria-busy="true">Preparando configuração inicial...</main>}>
+      <OnboardingContent />
+    </Suspense>
+  );
 }

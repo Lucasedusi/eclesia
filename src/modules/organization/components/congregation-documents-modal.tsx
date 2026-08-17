@@ -18,7 +18,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
-import { createClient } from "@/lib/supabase/client";
 import {
   archiveCongregationDocumentAction,
   cancelCongregationDocumentUploadAction,
@@ -93,7 +92,6 @@ export function CongregationDocumentsModal({
   onResult,
 }: Props) {
   const formRef = useRef<HTMLFormElement>(null);
-  const [supabase] = useState(() => createClient());
   const [documents, setDocuments] = useState<CongregationDocumentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -186,6 +184,8 @@ export function CongregationDocumentsModal({
       }
 
       preparedDocumentId = prepared.documentId;
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
       const { error: uploadError } = await supabase.storage
         .from(CONGREGATION_DOCUMENT_BUCKET)
         .uploadToSignedUrl(prepared.path, prepared.token, selectedFile, {

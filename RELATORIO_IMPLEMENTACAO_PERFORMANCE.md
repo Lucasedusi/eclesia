@@ -1,222 +1,174 @@
-# EKLESIA — Relatório da implementação de performance e fluidez
+# Eclésia — Relatório da implementação de performance
 
-Data da implementação: 7 de agosto de 2026
+Data da implementação: 15/08/2026  
+Escopo: plano de implementação Next.js 16.3 + Supabase fornecido com o projeto.
 
-## 1. Resultado executivo
+## Resultado executivo
 
-Os upgrades previstos no plano foram implementados sem transformar a aplicação em SPA, sem remover Server Components, sem enfraquecer as validações de permissão e sem desativar RLS.
+A aplicação foi atualizada para Next.js 16.3.1 e passou a usar Cache Components, Partial Prefetching, Partial Prerendering e React Activity. As rotas prioritárias agora são classificadas pelo build como `Partial Prerender`, os modais e o cliente Supabase do navegador saíram dos bundles iniciais onde aplicável, e o carregamento de Documentos caiu de oito para três chamadas lógicas após o contexto de acesso.
 
-Os principais ganhos estruturais são:
+As alterações locais estão concluídas e validadas. A migration foi aplicada no projeto ativo `eclesias_bd_sp`, e as verificações SQL e os Supabase Advisors foram executados antes/depois. Ativação do Cron, E2E autenticado e percentis de produção continuam dependentes do ambiente publicado e estão explicitamente marcados neste relatório.
 
-- Sidebar e Header passaram a pertencer a um layout autenticado persistente.
-- Toda navegação interna recebe feedback global com atraso visual de 120 ms, timeout de segurança e suporte a redução de movimento.
-- As rotas prioritárias possuem skeletons próprios; estatísticas de Membros são entregues por streaming e não bloqueiam a tabela.
-- O proxy e o contexto autenticado usam `getClaims()`; perfil, acessos, igreja ativa e permissões são consolidados em uma RPC.
-- A listagem de Membros retorna o Cargo ativo no mesmo resultado e elimina consultas auxiliares de Regionais/Cargos e a consulta posterior de `member_roles`.
-- Regionais e Congregações compartilham o mesmo conjunto de dados enquanto o layout do módulo permanece montado.
-- Prefetch foi habilitado somente em rotas frequentes e desabilitado nas rotas ainda não implementadas.
-- A instrumentação de desenvolvimento mede etapas e quantidade de chamadas sem registrar tokens ou dados pessoais.
+## Versões e ambiente
 
-## 2. Comparação estrutural
-
-Os números abaixo representam viagens lógicas ao Supabase no caminho autenticado normal, com base no fluxo de código antes e depois. Chamadas independentes executadas em paralelo continuam sendo contadas individualmente.
-
-| Cenário | Antes | Depois | Redução |
-|---|---:|---:|---:|
-| Contexto de acesso da página | 4 | 1 | 75% |
-| `/membros`, sem filtros opcionais | 11 | 6 | 45% |
-| `/membros`, com filtros de Regional e Cargo | até 14 | 6 | 57% |
-| `/membros/novo` | 7 | 3 | 57% |
-| Estrutura Eclesiástica, primeiro acesso | 8 | 4 | 50% |
-| Troca entre Regionais e Congregações já carregadas | 8 | 0 chamadas de dados | 100% |
-
-Observações:
-
-- A verificação `getClaims()` pode ser local quando o projeto usa assinatura assimétrica e as chaves JWKS estão em cache. Se a configuração exigir validação remota, deve-se somar a chamada de Auth à medição do ambiente publicado.
-- A busca de CPF continua isolada e só ocorre quando necessária e autorizada.
-- Filtros e opções de formulário continuam em consultas paralelas, de modo que três consultas independentes representam uma única janela de latência, sem dependência sequencial.
-
-## 3. Implementação por upgrade
-
-### 3.1. Instrumentação
-
-- Criado `src/lib/performance/server-performance.ts` com trace por requisição, tempo da operação, tempo acumulado e contagem declarada de chamadas.
-- Instrumentados: claims, contexto consolidado, catálogo eclesiástico, listagem, estatísticas, filtros e opções de formulário.
-- O proxy envia `Server-Timing: proxy;dur=...` nas respostas normais.
-- Logs detalhados existem apenas em desenvolvimento e não contêm CPF, e-mail, cookie, token ou documentos.
-
-### 3.2. Layout autenticado persistente
-
-- Rotas autenticadas movidas para o route group `src/app/(authenticated)` sem alterar nenhum URL público.
-- O novo layout carrega o contexto mínimo, compartilha `AppShell`, Sidebar e Header e deixa somente a área central variar.
-- `AppShell` mantém compatibilidade com as páginas existentes e evita duplicar o shell quando já está no layout compartilhado.
-- A resolução de contexto usa memoização React limitada à mesma requisição.
-
-### 3.3. Feedback de navegação
-
-- Provider global captura Links internos, histórico voltar/avançar, formulários marcados e navegações programáticas relevantes.
-- Barra superior aparece somente após 120 ms por CSS, não bloqueia a interface e possui timeout de 20 segundos.
-- `useLinkStatus()` fornece spinner no elemento acionado sem alterar sua largura.
-- O indicador termina na mudança de pathname/query e respeita `prefers-reduced-motion`.
-- Login, cadastro inicial, onboarding, redefinição de senha e salvamento de membro iniciam explicitamente o feedback antes de `router.push/replace`.
-
-### 3.4. Skeletons e streaming
-
-- Criado componente reutilizável para skeleton de dashboard, tabela, formulário, detalhes e shell autenticado.
-- Adicionados `loading.tsx` para Membros, novo membro, edição, Cargos, Usuários, Auditoria, Perfil, Configurações e área autenticada.
-- A página de Membros inicia listagem/filtros e estatísticas em paralelo, cada parte com seu próprio `Suspense`.
-- A tabela pode ser exibida antes dos cartões estatísticos.
-
-### 3.5. Proxy e autenticação
-
-- `getUser()` foi substituído por `getClaims()` no proxy e na resolução de contexto.
-- Sessão ausente, claim inválida ou expirada continua sendo tratada como não autenticada.
-- Páginas e operações sensíveis continuam chamando `requireAccessContext`; o proxy não é a única barreira de autorização.
-
-### 3.6. Contexto consolidado
-
-- Aplicada a RPC `public.get_my_access_context(uuid)` no projeto Supabase `eclesias_bd`.
-- A função retorna perfil mínimo, acessos ativos, igreja selecionada e permissões efetivas em uma chamada.
-- A função é `STABLE`, `SECURITY INVOKER`, respeita RLS e só pode ser executada por `authenticated`.
-- Existe fallback seguro para o fluxo anterior caso a RPC ainda não esteja presente em outro ambiente.
-- Não há cache global de permissões; alterações são refletidas na próxima requisição/refresh.
-
-### 3.7. Membros
-
-- Cargo ativo, nomenclatura feminina, Congregação e Regional são retornados por relações embutidas no mesmo select da listagem.
-- Filtro de Regional usa a relação de Congregação; filtro de Cargo usa relação `!inner` com alias.
-- Eliminado o padrão de pré-consultas para resolver IDs e a consulta posterior de Cargos dos membros da página.
-- Paginação, busca, filtros, ordenação e seleção de colunas permanecem no Supabase.
-- A URL dos filtros usa a API nativa de History; isso evita uma segunda navegação Server Component enquanto a server action já carrega a tabela.
-- O resultado local é versionado após mutações, evitando estado obsoleto sem efeito de sincronização com render extra.
-
-### 3.8. Estrutura Eclesiástica
-
-- O layout do módulo carrega Regionais, Congregações e Cargos uma vez e entrega o catálogo a um workspace persistente.
-- As páginas filhas de Regionais e Congregações preservam URLs e histórico, mas não repetem consultas.
-- Acesso direto às URLs continua suportado.
-- As mutações existentes atualizam o layout com `revalidatePath` e `router.refresh()`.
-- O catálogo também é deduplicado por requisição com `cache()`; nenhum valor é compartilhado globalmente entre usuários ou igrejas.
-
-### 3.9. Prefetch controlado
-
-- Prefetch mantido para Dashboard, Estrutura, Membros, Usuários, Auditoria, Configurações e Design System.
-- Novo membro e abas irmãs utilizam o prefetch nativo do Link quando visíveis.
-- Rotas marcadas como “em breve” não são antecipadas.
-
-### 3.10. Cache e invalidação segura
-
-- Contexto de acesso: memoização somente por requisição.
-- Catálogo eclesiástico: mantido no layout do módulo e deduplicado por requisição.
-- Cache de navegação do App Router e prefetch controlado reaproveitam payloads já visitados.
-- Mutações de organização, membros, configurações e permissões continuam chamando `revalidatePath` nos escopos correspondentes.
-- CPF, documentos, permissões e dados completos do membro não foram colocados em cache compartilhado.
-
-### 3.11. Região
-
-- O projeto permanece em Ohio (`us-east-2`), conforme o plano.
-- Não foi feita migração de infraestrutura nesta rodada. A decisão depende de medir a região da hospedagem Next.js e a comunicação servidor–Supabase em homologação.
-
-### 3.12. Desenvolvimento e produção
-
-| Medição local | Antes | Depois |
+| Item | Antes | Depois |
 |---|---:|---:|
-| Build completo | 21,195 s | 21,803 s |
-| Compilação Next.js | 10,1 s | 9,8 s |
-| TypeScript dentro do build | 9,1 s | 9,9 s |
+| Next.js | 16.3.0 | 16.3.1 |
+| eslint-config-next | 16.3.0 | 16.3.1 |
+| React / React DOM | 19.2.4 | 19.2.4 |
+| @supabase/ssr | 0.10.2 com faixa | 0.10.2 fixo |
+| @supabase/supabase-js | 2.105.3 com faixa | 2.105.3 fixo |
+| Node.js | não fixado | preservado sem fixação; Next.js exige Node ≥ 20.9.0 |
 
-A diferença do tempo total é de aproximadamente 2,9% e está dentro da variação normal de uma execução única. O build prova que a nova arquitetura compila e pré-renderiza as rotas compatíveis, mas não substitui medições de TTFB/P50/P95 com sessão real no ambiente publicado.
+`npm ci --ignore-scripts --offline` foi executado com sucesso após a atualização do lockfile. Os avisos de pacotes obsoletos (`inflight`, `rimraf@2`, `glob@7`, `fstream` e `lodash.isequal`) são transitivos da cadeia já existente, principalmente ExcelJS; ExcelJS permanece externo ao servidor e não foi encontrado nos chunks do cliente.
 
-O processo `next start` não pôde ser exercitado neste container porque o runtime bloqueou a leitura de interfaces de rede (`uv_interface_addresses`). A compilação de produção foi concluída normalmente. Testes autenticados ponta a ponta exigem uma sessão de homologação e não foram simulados com credenciais artificiais no banco de produção.
+## Next.js 16.3.1
 
-## 4. Segurança e banco de dados
+- `cacheComponents: true` e `partialPrefetching: true` ativos.
+- Rotas e componentes com dados de runtime foram colocados sob `Suspense`; não foi necessário manter `instant = false` em nenhuma rota.
+- Configurações `dynamic = "force-dynamic"` incompatíveis foram removidas dos Route Handlers de importação.
+- Links voltaram ao prefetch padrão do Next 16.3; não há `prefetch={false}` anulando o App Shell.
+- AppShells redundantes foram removidos de todas as páginas autenticadas. Sidebar e Header são responsabilidade exclusiva do layout autenticado.
+- React Activity preserva formulários, filtros e scroll. Modais e menus transitórios são fechados no cleanup quando uma rota fica oculta.
+- O listener global de cliques e `popstate` foi removido do feedback de navegação. `useLinkStatus()` continua fornecendo feedback local e a barra global fica restrita a formulários/navegações programáticas.
+- `prefers-reduced-motion` permanece respeitado nos indicadores e skeletons.
+- O modo de teste da API Instant Navigation só é exposto quando `E2E_TESTING=true`.
 
-Validações executadas no Supabase:
+## Bundle inicial por rota
 
-- Migração `performance_access_context` registrada e aplicada.
-- RPC executada com formato esperado de perfil, acessos e permissões.
-- `SECURITY DEFINER = false`.
-- `STABLE = true`.
-- `anon EXECUTE = false`.
-- `authenticated EXECUTE = true`.
-- `PUBLIC EXECUTE = false`.
-- RLS ativa em `profiles`, `churches`, `user_church_access`, `regions`, `congregations`, `roles`, `members` e `member_roles`.
-- Nenhum finding dos advisors referencia a nova RPC.
+Medição: união dos chunks iniciais declarados no `page_client-reference-manifest`, gzip por arquivo, após build Turbopack. O script reproduzível é `scripts/measure-route-bundles.mjs`.
 
-Os advisors atuais ainda registram itens anteriores a esta rodada:
+| Rota | Baseline gzip | Final gzip | Redução | Final bruto |
+|---|---:|---:|---:|---:|
+| `/membros` | 335,2 KB | 55,2 KB | 83,5% | 180,0 KB |
+| `/documentos` | 335,3 KB | 66,5 KB | 80,2% | 220,4 KB |
+| `/estrutura-eclesiastica` | 444,9 KB | 56,0 KB | 87,4% | 180,6 KB |
+| `/usuarios` | 245,9 KB | 46,1 KB | 81,3% | 145,8 KB |
 
-| Advisor | Quantidade |
-|---|---:|
-| Funções `SECURITY DEFINER` executáveis por autenticados | 18 |
-| Proteção contra senhas vazadas desabilitada | 1 |
-| Foreign keys sem índice | 17 |
-| Chamadas Auth/RLS sem initplan | 53 |
-| Índices ainda não usados | 318 |
-| Múltiplas policies permissivas | 22 |
+Principais responsáveis pelo ganho:
 
-Esses avisos não foram criados pela migração desta implementação. Alterar em massa as funções e policies anteriores sem uma rodada específica de autorização/regressão poderia mudar regras de negócio e acesso; portanto, foram mantidos como backlog explícito.
+- `MemberDetailsModal` em chunk assíncrono;
+- formulários, detalhes, confirmação e documentos da Estrutura em chunks assíncronos;
+- cliente Supabase do navegador carregado somente ao iniciar upload/substituição;
+- remoção dos AppShells de compatibilidade das páginas;
+- Partial Prefetching transportando apenas o App Shell reutilizável.
 
-Referências de remediação:
+## Supabase e chamadas de dados
 
-- https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable
-- https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection
-- https://supabase.com/docs/guides/database/database-linter?lint=0001_unindexed_foreign_keys
-- https://supabase.com/docs/guides/database/database-linter?lint=0003_auth_rls_initplan
-- https://supabase.com/docs/guides/database/database-linter?lint=0005_unused_index
-- https://supabase.com/docs/guides/database/database-linter?lint=0006_multiple_permissive_policies
+| Fluxo | Antes | Depois em operação normal |
+|---|---:|---:|
+| Contexto de acesso | `getClaims` + RPC consolidada | preservado |
+| Documentos | 8 chamadas + cleanup bloqueante | 3 chamadas paralelas: referências, lista e estatísticas |
+| Filtro/paginação de Documentos | lista/workspace amplo | 1 chamada de lista |
+| Usuários | 6 paralelas + 1 sequencial | 6 paralelas; overrides embutidos com FK explícita |
+| Filtros de Membros | 3 por carregamento frio | cache privado curto; 0 no cache aquecido |
+| Estrutura Eclesiástica | 3 por renderização | cache privado curto; 0 no cache aquecido |
+| Nome/configuração da igreja | 1 por renderização | cache privado curto; 0 no cache aquecido |
 
-## 5. Verificações executadas
+As tags sempre incluem `churchId`. `updateTag` é usado nas mutações que exigem leitura imediata; `revalidatePath` foi preservado apenas para atualização da árvore de rota. AuthContext integral, permissões, CPF, notas pastorais, documentos, convites, tokens e perfis completos não recebem cache compartilhado.
+
+### Migration entregue e aplicada
+
+`supabase/migrations/20260815010000_optimize_administrative_documents_workspace.sql` adiciona:
+
+- `get_administrative_document_workspace_stats(uuid)`, com os cinco contadores;
+- `get_administrative_document_references(uuid)`, com categorias, pastas, tags e uploaders ativos;
+- fila privada durável e RPCs de claim/resultado para o cleanup do Storage;
+- RPCs de leitura com `SECURITY INVOKER`, `search_path` fechado e RLS preservada;
+- RPCs de cleanup com `SECURITY DEFINER` e `EXECUTE` concedido exclusivamente a `service_role`;
+- `EXECUTE` revogado de `PUBLIC`/`anon` e concedido apenas aos papéis necessários.
+
+O arquivo de rollback revisado está em `supabase/rollback/20260815010000_optimize_administrative_documents_workspace.sql`. Nenhuma migration destrutiva ou índice especulativo foi criado.
+
+Aplicação confirmada em 15/08/2026 no projeto `eclesias_bd_sp` (`sa-east-1`), registrada pelo Supabase como migration `20260815223404_optimize_administrative_documents_workspace`. O smoke test da RPC de estatísticas foi aprovado, as quatro funções possuem `search_path` fechado e a fila iniciou sem itens pendentes.
+
+### Cleanup durável
+
+O cleanup não é mais chamado por `getDocumentWorkspace`. O endpoint protegido `POST /api/cron/documents/cleanup` usa credencial administrativa e RPCs restritas a `service_role`. A transição dos metadados e a inclusão do caminho em uma fila privada acontecem atomicamente; só então o arquivo é removido do Storage. Falhas ficam na fila para nova tentativa, leases abandonados são retomados após 15 minutos, cada lote é limitado a 250 itens e logs não registram nomes de arquivo, caminhos ou PII.
+
+Configuração de publicação:
+
+1. Definir `CRON_SECRET` e `SUPABASE_SECRET_KEY`.
+2. Opcionalmente ajustar `DOCUMENT_PENDING_TTL_MINUTES` (padrão: 120; mínimo: 15).
+3. Publicar a aplicação.
+4. Criar no Supabase Cron uma chamada HTTP `POST` periódica para `/api/cron/documents/cleanup` com `Authorization: Bearer <CRON_SECRET>`; sugestão inicial: a cada 15 minutos.
+5. Para rollback imediato do job, definir `DOCUMENT_CLEANUP_DISABLED=true` sem desfazer migrations.
+
+## Segurança e Postgres
+
+- O Proxy continua usando `getClaims()`.
+- `setAll(cookiesToSet, headers)` agora copia `Cache-Control`, `Expires` e `Pragma` para a resposta; redirects preservam cookies e esses cabeçalhos.
+- RLS existente foi preservada; as funções de leitura são invoker e somente as funções operacionais de cleanup são definer, restritas a `service_role`.
+- Relações PostgREST sensíveis usam nomes explícitos das foreign keys.
+- `select("*")` foi removido das consultas de edição e detalhes de Membros.
+- A busca mantém mínimo de três caracteres e limite de 100 IDs para CPF.
+- Os índices trigram existentes não foram alterados sem `EXPLAIN (ANALYZE, BUFFERS)` do ambiente real.
+- `supabase/verification/performance_audit.sql` reúne verificações somente leitura de RLS, grants, funções, FKs e uso de índices.
+
+Os Supabase Advisors foram executados imediatamente antes e depois da migration, sem novo finding relacionado aos objetos adicionados. O Security Advisor mantém 20 avisos preexistentes: 19 funções `SECURITY DEFINER` acessíveis por usuários autenticados e 1 configuração de proteção contra senhas vazadas. O Performance Advisor mantém 434 apontamentos: 17 foreign keys sem índice, 52 avaliações RLS sem initplan, 343 índices sem uso registrado e 22 grupos de policies permissivas múltiplas. Nenhum índice foi removido automaticamente, pois ausência de uso em uma coleta não comprova inutilidade. `EXPLAIN (ANALYZE, BUFFERS)` das buscas reais ainda exige parâmetros e sessão representativos.
+
+## Observabilidade
+
+- Operações críticas em Auth, acesso, Membros, Documentos, Usuários e Estrutura emitem logs estruturados com rota, duração, chamadas lógicas, status e estado frio/aquecido.
+- O Proxy mantém `Server-Timing`.
+- `useReportWebVitals` envia LCP, INP, CLS, TTFB e FCP ao endpoint `/api/telemetry/web-vitals`.
+- O payload não aceita query string nem PII; registra apenas rota, métrica, valor, rating, tipo de navegação e primeira entrada/navegação interna.
+- `PERFORMANCE_TELEMETRY_ENABLED=false` desliga a telemetria de servidor em rollback emergencial.
+
+P50/P75/P95 precisam ser calculados no agregador de logs após tráfego real. A medição local não representa rede, região do banco, cold starts ou concorrência de produção.
+
+## Validação executada
 
 | Verificação | Resultado |
 |---|---|
-| ESLint | Aprovado, sem erros ou avisos do projeto |
-| TypeScript `tsc --noEmit` | Aprovado |
-| Build Next.js 16.2.4 | Aprovado |
-| Manifesto de rotas | 26 rotas geradas; URLs existentes preservados |
-| Migração Supabase | Aplicada |
-| Permissões da nova RPC | Aprovadas |
-| RLS nas tabelas prioritárias | Ativa |
-| Advisors após DDL | Nenhum finding novo para a RPC |
-| Smoke HTTP local | Bloqueado pela restrição de interfaces de rede do container |
-| Login/convite/logout com usuário real | Requer homologação com contas de teste |
+| `npm ci --ignore-scripts --offline` | aprovado |
+| ESLint | aprovado, zero warnings |
+| TypeScript (`tsc --noEmit`) | aprovado |
+| Vitest | 19/19 aprovados em 5 arquivos |
+| Build Next 16.3.1/Turbopack | aprovado |
+| PPR | rotas prioritárias marcadas `◐ Partial Prerender` |
+| ExcelJS no cliente | nenhuma ocorrência nos chunks estáticos |
+| Playwright discovery | 11 testes registrados; os 10 fluxos do plano mais preservação de estado |
+| E2E autenticado | preparado; omitido localmente por ausência de `E2E_STORAGE_STATE` |
+| Migration Supabase | aplicada em `eclesias_bd_sp`; versão `20260815223404` |
+| Verificação SQL | RPCs, grants, fila privada, RLS e índices auditados |
+| Supabase Advisors | executados antes/depois; nenhum novo finding da migration |
 
-## 6. Principais arquivos alterados
+O último build final levou aproximadamente 8,3 s no contêiner local, contra 24,7 s no baseline. A diferença é indicativa; o cache de dependências e a carga do host podem variar.
 
-- `src/app/(authenticated)/**`: layout persistente, rotas movidas e loadings por rota.
-- `src/components/layout/app-shell.tsx`
-- `src/components/layout/app-sidebar.tsx`
-- `src/components/layout/app-header.tsx`
-- `src/components/navigation/navigation-feedback.tsx`
-- `src/components/ui/page-skeleton.tsx`
-- `src/lib/performance/server-performance.ts`
-- `src/lib/supabase/proxy.ts`
-- `src/lib/supabase/database.types.ts`
-- `src/modules/auth/services/access-context.service.ts`
-- `src/modules/members/services/member.service.ts`
-- `src/modules/members/services/member-form-options.service.ts`
-- `src/modules/members/components/member-management.tsx`
-- `src/modules/members/components/member-create-form/member-create-form.tsx`
-- `src/modules/organization/components/organization-tabs.tsx`
-- `src/modules/organization/components/organization-workspace.tsx`
-- `src/modules/organization/services/organization.service.ts`
-- `src/providers/app-providers.tsx`
-- `src/proxy.ts`
-- `src/styles/global-styles.ts`
-- `supabase/migrations/20260807185519_performance_access_context.sql`
+## Checklist de homologação
 
-## 7. Checklist de homologação recomendado
+### Concluído automaticamente
 
-Antes de promover para produção, executar com contas próprias de teste:
+- [x] Atualização coordenada de Next e ESLint config.
+- [x] Cache Components, Partial Prefetching e PPR ativos.
+- [x] Sidebar/Header persistentes e AppShell único.
+- [x] Modais e Supabase browser client sob demanda.
+- [x] Cleanup fora do request e RPCs consolidadas entregues.
+- [x] Overrides de Usuários sem janela sequencial.
+- [x] Cache privado e tags por igreja.
+- [x] Web Vitals e operações de servidor instrumentados sem PII.
+- [x] Lint, tipos, testes e build aprovados.
+- [x] Migration aplicada em `eclesias_bd_sp` e auditoria SQL executada.
+- [x] Supabase Security e Performance Advisors executados antes/depois.
 
-1. Login de administrador e convidado, logout e sessão expirada.
-2. Acesso negado a uma rota sem permissão.
-3. Convite, primeiro acesso e troca de igreja.
-4. Navegação completa da Sidebar, incluindo voltar/avançar.
-5. Listagem, busca, filtros, paginação, cadastro, edição e ficha de Membros.
-6. CRUD de Regionais, Congregações e Cargos, verificando atualização imediata das abas e filtros.
-7. Upload e abertura de documentos privados.
-8. Modais, toasts, desktop e mobile.
-9. Coletar P50, P75 e P95 frios/aquecidos nas rotas prioritárias.
-10. Registrar a região do servidor Next.js antes de decidir qualquer migração do Supabase.
+### Exige ambiente autenticado/publicado
 
-Metas de aceite do plano: feedback até 120 ms quando necessário, skeleton preferencialmente até 300 ms, conteúdo principal preferencialmente abaixo de 800 ms em produção e nenhuma interface aparentemente travada.
+- [ ] Executar `EXPLAIN (ANALYZE, BUFFERS)` das buscas representativas.
+- [ ] Configurar Supabase Cron e validar uma execução com registros acima/abaixo do TTL.
+- [ ] Gerar storage state de Administrador e executar `npm run test:e2e`.
+- [ ] Homologar desktop/mobile, logout/troca de igreja e revogação de permissão.
+- [ ] Validar upload, substituição, preview, download, lixeira e restauração com Storage real.
+- [ ] Coletar P50/P75/P95 frios e aquecidos após publicação.
+
+## Referências oficiais usadas
+
+- https://nextjs.org/docs/app/guides/migrating-to-cache-components
+- https://nextjs.org/docs/app/guides/adopting-partial-prefetching
+- https://nextjs.org/docs/app/guides/instant-navigation
+- https://nextjs.org/docs/app/guides/preserving-ui-state
+- https://nextjs.org/docs/app/guides/lazy-loading
+- https://nextjs.org/docs/app/api-reference/functions/use-report-web-vitals
+- https://supabase.com/docs/guides/auth/server-side/nextjs
+- https://supabase.com/docs/guides/database/postgres/row-level-security
+- https://supabase.com/docs/guides/database/query-optimization

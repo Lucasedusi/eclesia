@@ -1,6 +1,14 @@
+import "server-only";
+
+import { cacheLife, cacheTag } from "next/cache";
+import { cacheTags } from "@/lib/cache-tags";
 import { createClient } from "@/lib/supabase/server";
 
 export async function getAppName(churchId: string): Promise<string | null> {
+  "use cache: private";
+  cacheLife("minutes");
+  cacheTag(cacheTags.appSettings(churchId), cacheTags.church(churchId));
+
   const supabase = await createClient();
 
   const { data, error } = await supabase

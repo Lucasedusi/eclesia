@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { AppShell } from "@/components/layout/app-shell";
 import { PageHeader } from "@/components/ui/page-header";
 import { LinkPendingIndicator } from "@/components/navigation/navigation-feedback";
 import { MemberCreateForm } from "@/modules/members/components/member-create-form/member-create-form";
@@ -13,11 +12,7 @@ export default async function NewMemberPage() {
   const options = await getMemberFormOptions(context);
 
   return (
-    <AppShell
-      authContext={context}
-      title="Novo membro"
-      subtitle="Cadastro multifases do módulo de Membros"
-    >
+    <>
       <PageHeader
         title="Cadastrar Membro"
         subtitle="Preencha a ficha por etapas sem perder os dados ao avançar ou voltar."
@@ -30,6 +25,6 @@ export default async function NewMemberPage() {
       />
 
       <MemberCreateForm options={options} />
-    </AppShell>
+    </>
   );
 }

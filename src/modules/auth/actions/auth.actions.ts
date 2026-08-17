@@ -2,7 +2,8 @@
 
 import { headers, cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
+import { cacheTags } from "@/lib/cache-tags";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -165,6 +166,8 @@ export async function signUpAction(
         "A conta não pôde ser iniciada com segurança. Tente criar o cadastro novamente.",
     };
   }
+
+  updateTag(cacheTags.initialRegistration);
 
   return {
     status: "success",

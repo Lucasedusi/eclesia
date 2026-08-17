@@ -1,14 +1,18 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
-import { AppShell } from "@/components/layout/app-shell";
 import { PERMISSIONS } from "@/modules/auth/constants/permissions";
 import { requireAccessContext } from "@/modules/auth/services/access-context.service";
 import { DocumentManagement } from "@/modules/documents/components/document-management";
-import { getDocumentWorkspace } from "@/modules/documents/services/document.service";
+import {
+  getDocumentWorkspaceCore,
+  getDocumentWorkspaceStats,
+} from "@/modules/documents/services/document.service";
 import {
   DEFAULT_DOCUMENT_LIST_PARAMS,
   type DocumentListParams,
 } from "@/modules/documents/types/document.types";
 import { documentListParamsSchema } from "@/modules/documents/validations/document.schemas";
+import LoadingDocuments from "./loading";
 
 type Search = Promise<Record<string, string | string[] | undefined>>;
 
@@ -34,21 +38,32 @@ function normalizeParams(query: Record<string, string | string[] | undefined>): 
   return parsed.success ? parsed.data : DEFAULT_DOCUMENT_LIST_PARAMS;
 }
 
+async function DocumentsContent({
+  corePromise,
+  statsPromise,
+}: {
+  corePromise: ReturnType<typeof getDocumentWorkspaceCore>;
+  statsPromise: ReturnType<typeof getDocumentWorkspaceStats>;
+}) {
+  const core = await corePromise;
+  return <DocumentManagement initial={{
+    ...core,
+    stats: { active: 0, archived: 0, deleted: 0, categories: 0, folders: 0 },
+  }} initialStats={statsPromise} />;
+}
+
 export default async function DocumentsPage({ searchParams }: { searchParams: Search }) {
   const context = await requireAccessContext(PERMISSIONS.documentsView);
   if (context.access.role !== "ADMIN" || context.access.scope !== "CHURCH") {
     redirect("/acesso-negado");
   }
   const params = normalizeParams(await searchParams);
-  const initial = await getDocumentWorkspace(params);
+  const corePromise = getDocumentWorkspaceCore(params);
+  const statsPromise = getDocumentWorkspaceStats();
 
   return (
-    <AppShell
-      authContext={context}
-      title="Documentos"
-      subtitle="Arquivo digital administrativo"
-    >
-      <DocumentManagement initial={initial} />
-    </AppShell>
+    <Suspense fallback={<LoadingDocuments />}>
+      <DocumentsContent corePromise={corePromise} statsPromise={statsPromise} />
+    </Suspense>
   );
 }

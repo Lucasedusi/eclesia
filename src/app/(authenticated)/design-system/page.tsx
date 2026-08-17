@@ -13,7 +13,6 @@ import {
   Wallet,
   X,
 } from "lucide-react";
-import { AppShell } from "@/components/layout/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -101,14 +100,10 @@ function ModalPreview({
 }
 
 export default async function DesignSystemPage() {
-  const context = await requireAccessContext(PERMISSIONS.settingsView);
+  await requireAccessContext(PERMISSIONS.settingsView);
 
   return (
-    <AppShell
-      authContext={context}
-      title="Design System"
-      subtitle="Componentes visuais base da plataforma"
-    >
+    <>
       <PageHeader
         title="Design System"
         badge="Base visual"
@@ -463,6 +458,6 @@ export default async function DesignSystemPage() {
           </CardContent>
         </Card>
       </div>
-    </AppShell>
+    </>
   );
 }

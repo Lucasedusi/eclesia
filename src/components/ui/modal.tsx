@@ -1,9 +1,10 @@
 "use client";
 
-import { ReactNode, useEffect, useId, useRef, useSyncExternalStore } from "react";
+import { ReactNode, useEffect, useId, useRef } from "react";
 import { createPortal } from "react-dom";
-import { CheckCircle2, Trash2, X } from "lucide-react";
+import { CheckCircle2, LoaderCircle, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useModalPortalRoot } from "@/components/ui/modal-portal";
 import * as S from "./modal.styles";
 
 const FOCUSABLE_ELEMENTS = [
@@ -14,10 +15,6 @@ const FOCUSABLE_ELEMENTS = [
   "textarea:not([disabled])",
   "[tabindex]:not([tabindex='-1'])",
 ].join(",");
-
-const subscribeToClient = () => () => undefined;
-const getClientSnapshot = () => true;
-const getServerSnapshot = () => false;
 
 function getFocusableElements(container: HTMLElement) {
   return Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_ELEMENTS)).filter(
@@ -57,11 +54,7 @@ export function Modal({
   const busyRef = useRef(busy);
   const titleId = useId();
   const descriptionId = useId();
-  const mounted = useSyncExternalStore(
-    subscribeToClient,
-    getClientSnapshot,
-    getServerSnapshot,
-  );
+  const portalRoot = useModalPortalRoot();
 
   useEffect(() => {
     closeHandlerRef.current = onClose;
@@ -69,7 +62,7 @@ export function Modal({
   }, [busy, onClose]);
 
   useEffect(() => {
-    if (!open || !mounted) return;
+    if (!open || !portalRoot) return;
 
     const appShell = document.querySelector<HTMLElement>("[data-app-shell]");
     const currentBlurCount = Number(appShell?.dataset.modalBlurCount ?? "0");
@@ -154,9 +147,9 @@ export function Modal({
 
       if (previouslyFocused?.isConnected) previouslyFocused.focus();
     };
-  }, [mounted, open]);
+  }, [open, portalRoot]);
 
-  if (!open || !mounted) return null;
+  if (!open || !portalRoot) return null;
 
   return createPortal(
     <S.Overlay
@@ -191,7 +184,24 @@ export function Modal({
         {footer && <S.Footer>{footer}</S.Footer>}
       </S.Dialog>
     </S.Overlay>,
-    document.body,
+    portalRoot,
+  );
+}
+
+export function ModalLoading({
+  title = "Preparando informações",
+  description = "O conteúdo será exibido em instantes.",
+}: {
+  title?: string;
+  description?: string;
+}) {
+  return (
+    <Modal open title={title} description={description} busy>
+      <S.LoadingContent role="status" aria-live="polite">
+        <LoaderCircle aria-hidden="true" />
+        <span>Carregando conteúdo...</span>
+      </S.LoadingContent>
+    </Modal>
   );
 }
 

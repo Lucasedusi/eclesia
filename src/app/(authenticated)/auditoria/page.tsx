@@ -1,5 +1,4 @@
 import { Activity, AlertTriangle, ShieldCheck } from "lucide-react";
-import { AppShell } from "@/components/layout/app-shell";
 import { PageHeader } from "@/components/ui/page-header";
 import { requireAccessContext } from "@/modules/auth/services/access-context.service";
 import { PERMISSIONS } from "@/modules/auth/constants/permissions";
@@ -8,11 +7,11 @@ import { getAuditLogs } from "@/modules/audit/services/audit.service";
 const dateFormatter = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short", timeZone: "America/Sao_Paulo" });
 
 export default async function AuditPage() {
-  const [context, logs] = await Promise.all([
+  const [, logs] = await Promise.all([
     requireAccessContext(PERMISSIONS.auditView),
     getAuditLogs(),
   ]);
-  return <AppShell authContext={context} title="Auditoria" subtitle="Rastreabilidade e segurança">
+  return <>
     <PageHeader title="Auditoria" subtitle="Acompanhe ações administrativas e alterações sensíveis realizadas na igreja." badge="Últimos 100 registros" />
     <section className="overflow-hidden rounded-[20px] border border-[#EAECF0] bg-white shadow-[var(--shadow-card)]">
       <div className="grid grid-cols-[1.05fr_.7fr_.8fr_1.3fr_.7fr] gap-4 border-b border-[#EAECF0] bg-[#F9FAFB] px-5 py-3 text-[10px] font-extrabold uppercase tracking-wide text-slate-400 max-lg:hidden">
@@ -26,5 +25,5 @@ export default async function AuditPage() {
         <time className="text-[10px] font-bold text-slate-400">{dateFormatter.format(new Date(log.createdAt))}</time>
       </article>)}</div> : <div className="px-5 py-16 text-center text-sm font-semibold text-slate-400">Nenhuma ação de auditoria registrada.</div>}
     </section>
-  </AppShell>;
+  </>;
 }
