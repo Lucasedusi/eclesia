@@ -3,6 +3,7 @@
 import {
   type ChangeEvent,
   type FormEvent,
+  type MouseEvent as ReactMouseEvent,
   Suspense,
   use,
   useEffect,
@@ -11,6 +12,7 @@ import {
   useState,
   useTransition,
 } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import {
   AlertTriangle,
@@ -31,6 +33,7 @@ import {
   FolderPlus,
   HardDriveUpload,
   Loader2,
+  EllipsisVertical,
   Pencil,
   Plus,
   RefreshCw,
@@ -123,11 +126,27 @@ type Confirmation = {
   run: () => Promise<DocumentActionState>;
 };
 
+type ContainerListState = "ACTIVE" | "ARCHIVED" | "DELETED";
+
+type DocumentActionMenu = {
+  documentId: string;
+  left: number;
+  top: number;
+};
+
 const statusLabels = {
   ACTIVE: "Ativo",
   ARCHIVED: "Arquivado",
   DELETED: "Na lixeira",
 } as const;
+
+function matchesContainerState(
+  item: Pick<DocumentCategoryItem | DocumentFolderItem, "status" | "deletedAt">,
+  state: ContainerListState,
+) {
+  if (state === "DELETED") return Boolean(item.deletedAt);
+  return !item.deletedAt && item.status === state;
+}
 
 function formatBytes(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
@@ -224,8 +243,10 @@ export function DocumentManagement({ initial, initialStats }: Props) {
 
   const [categoryManagerOpen, setCategoryManagerOpen] = useState(false);
   const [managerTab, setManagerTab] = useState<"categories" | "tags">("categories");
+  const [categoryListState, setCategoryListState] = useState<ContainerListState>("ACTIVE");
   const [categoryDraft, setCategoryDraft] = useState<CategoryDraft | null>(null);
   const [folderManagerOpen, setFolderManagerOpen] = useState(false);
+  const [folderListState, setFolderListState] = useState<ContainerListState>("ACTIVE");
   const [folderDraft, setFolderDraft] = useState<FolderDraft | null>(null);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [uploadFolderId, setUploadFolderId] = useState(initial.params.folderId);
@@ -238,6 +259,7 @@ export function DocumentManagement({ initial, initialStats }: Props) {
   const [replacementDocument, setReplacementDocument] = useState<AdministrativeDocumentItem | null>(null);
   const [replacementFile, setReplacementFile] = useState<globalThis.File | null>(null);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
+  const [documentActionMenu, setDocumentActionMenu] = useState<DocumentActionMenu | null>(null);
 
   useEffect(() => () => {
     if (searchTimer.current) clearTimeout(searchTimer.current);
@@ -249,6 +271,24 @@ export function DocumentManagement({ initial, initialStats }: Props) {
     const timer = window.setTimeout(() => setNotice(null), 5500);
     return () => window.clearTimeout(timer);
   }, [notice]);
+
+  useEffect(() => {
+    if (!documentActionMenu) return;
+    const closeFromOutside = (event: PointerEvent) => {
+      const target = event.target instanceof Element ? event.target : null;
+      if (target?.closest("[data-document-action-menu]")) return;
+      setDocumentActionMenu(null);
+    };
+    const closeFromViewportChange = () => setDocumentActionMenu(null);
+    window.document.addEventListener("pointerdown", closeFromOutside);
+    window.addEventListener("resize", closeFromViewportChange);
+    window.addEventListener("scroll", closeFromViewportChange, true);
+    return () => {
+      window.document.removeEventListener("pointerdown", closeFromOutside);
+      window.removeEventListener("resize", closeFromViewportChange);
+      window.removeEventListener("scroll", closeFromViewportChange, true);
+    };
+  }, [documentActionMenu]);
 
   const activeCategories = useMemo(
     () => data.categories.filter((item) => !item.deletedAt && item.status === "ACTIVE"),
@@ -262,11 +302,50 @@ export function DocumentManagement({ initial, initialStats }: Props) {
     ),
     [data.folders, params.categoryId],
   );
+  const visibleCategories = useMemo(
+    () => data.categories.filter((item) => matchesContainerState(item, categoryListState)),
+    [categoryListState, data.categories],
+  );
+  const visibleFolders = useMemo(
+    () => data.folders.filter((item) => matchesContainerState(item, folderListState)),
+    [data.folders, folderListState],
+  );
   const selectedCategory = data.categories.find((item) => item.id === params.categoryId) ?? null;
   const selectedFolder = data.folders.find((item) => item.id === params.folderId) ?? null;
   const hasAdvancedFilters = Boolean(
     params.tagId || params.format || params.dateFrom || params.dateTo || params.uploadedBy,
   );
+  const menuDocument = documentActionMenu
+    ? data.documents.items.find((item) => item.id === documentActionMenu.documentId) ?? null
+    : null;
+
+  function toggleDocumentActionMenu(
+    event: ReactMouseEvent<HTMLButtonElement>,
+    document: AdministrativeDocumentItem,
+  ) {
+    if (documentActionMenu?.documentId === document.id) {
+      setDocumentActionMenu(null);
+      return;
+    }
+    const rect = event.currentTarget.getBoundingClientRect();
+    const menuWidth = 216;
+    const estimatedHeight = document.effectiveStatus === "ACTIVE"
+      ? 258
+      : document.effectiveStatus === "ARCHIVED"
+        ? 184
+        : 146;
+    const openAbove = window.innerHeight - rect.bottom < estimatedHeight + 16;
+    setDocumentActionMenu({
+      documentId: document.id,
+      left: Math.max(12, Math.min(rect.right - menuWidth, window.innerWidth - menuWidth - 12)),
+      top: Math.max(12, openAbove ? rect.top - estimatedHeight - 6 : rect.bottom + 6),
+    });
+  }
+
+  function runDocumentMenuAction(action: () => void) {
+    setDocumentActionMenu(null);
+    action();
+  }
 
   function writeUrl(next: DocumentListParams) {
     const query = new URLSearchParams();
@@ -287,6 +366,7 @@ export function DocumentManagement({ initial, initialStats }: Props) {
 
   function loadDocuments(next: DocumentListParams) {
     const currentRequest = ++requestId.current;
+    setDocumentActionMenu(null);
     setParams(next);
     writeUrl(next);
     startTransition(async () => {
@@ -319,6 +399,7 @@ export function DocumentManagement({ initial, initialStats }: Props) {
   }
 
   async function reloadAll(nextParams = params) {
+    setDocumentActionMenu(null);
     const result = await getDocumentWorkspaceAction(nextParams);
     if (result.status === "success") {
       setData(result.data);
@@ -354,6 +435,7 @@ export function DocumentManagement({ initial, initialStats }: Props) {
   }
 
   function openCategoryForm(category?: DocumentCategoryItem) {
+    if (!category) setCategoryListState("ACTIVE");
     setCategoryDraft({
       id: category?.id,
       name: category?.name ?? "",
@@ -375,6 +457,7 @@ export function DocumentManagement({ initial, initialStats }: Props) {
   }
 
   function openFolderForm(folder?: DocumentFolderItem) {
+    if (!folder) setFolderListState("ACTIVE");
     const categoryId = folder?.categoryId || params.categoryId || activeCategories[0]?.id || "";
     setFolderDraft({
       id: folder?.id,
@@ -663,16 +746,16 @@ export function DocumentManagement({ initial, initialStats }: Props) {
             stats={data.stats}
             state={params.state}
             onStateChange={(state) => changeParams({ state })}
-            onOpenCategories={() => { setManagerTab("categories"); setCategoryManagerOpen(true); }}
-            onOpenFolders={() => setFolderManagerOpen(true)}
+            onOpenCategories={() => { setManagerTab("categories"); setCategoryListState("ACTIVE"); setCategoryManagerOpen(true); }}
+            onOpenFolders={() => { setFolderListState("ACTIVE"); setFolderManagerOpen(true); }}
           />
         ) : (
           <StreamedDocumentStats
             promise={initialStats}
             state={params.state}
             onStateChange={(state) => changeParams({ state })}
-            onOpenCategories={() => { setManagerTab("categories"); setCategoryManagerOpen(true); }}
-            onOpenFolders={() => setFolderManagerOpen(true)}
+            onOpenCategories={() => { setManagerTab("categories"); setCategoryListState("ACTIVE"); setCategoryManagerOpen(true); }}
+            onOpenFolders={() => { setFolderListState("ACTIVE"); setFolderManagerOpen(true); }}
           />
         )}
       </Suspense>
@@ -734,19 +817,23 @@ export function DocumentManagement({ initial, initialStats }: Props) {
                 <S.TableWrap>
                   {pending && <S.BusyOverlay><Loader2 aria-label="Atualizando documentos" /></S.BusyOverlay>}
                   <S.Table>
-                    <thead><tr><th>Documento</th><th>Categoria / pasta</th><th>Tags</th><th>Responsável</th><th>Inclusão</th><th>Tamanho</th><th>Situação</th><th aria-label="Ações" /></tr></thead>
+                    <thead><tr><th>Documento</th><th>Inclusão</th><th>Situação</th><th aria-label="Ações" /></tr></thead>
                     <tbody>{data.documents.items.map((document) => (
                       <tr key={document.id}>
                         <td><S.DocumentCell><DocumentIcon document={document} /><div><strong>{document.title}</strong><small>{document.originalFileName}</small></div></S.DocumentCell></td>
-                        <td><S.PathCell><strong>{document.categoryName}</strong><small>{document.folderName}</small></S.PathCell></td>
-                        <td><S.Tags>{document.tags.slice(0, 2).map((tag) => <S.Tag key={tag.id}>{tag.name}</S.Tag>)}{document.tags.length > 2 && <S.Tag>+{document.tags.length - 2}</S.Tag>}{!document.tags.length && <span>—</span>}</S.Tags></td>
-                        <td>{document.uploadedByName}</td><td>{formatDate(document.uploadedAt, true)}</td><td>{formatBytes(document.fileSize)}</td><td><S.Status $status={document.effectiveStatus}>{statusLabels[document.effectiveStatus]}</S.Status></td>
+                        <td>{formatDate(document.uploadedAt, true)}</td><td><S.Status $status={document.effectiveStatus}>{statusLabels[document.effectiveStatus]}</S.Status></td>
                         <td><S.RowActions>
-                          <S.IconButton type="button" title="Ver detalhes" aria-label={`Ver ${document.title}`} onClick={() => void loadPreview(document)}><Eye /></S.IconButton>
-                          {document.effectiveStatus !== "DELETED" && <S.IconButton type="button" title="Baixar" aria-label={`Baixar ${document.title}`} onClick={() => void downloadDocument(document)}><Download /></S.IconButton>}
-                          {document.effectiveStatus === "ACTIVE" && <><S.IconButton type="button" title="Editar metadados" onClick={() => setEditingDocument(document)}><Pencil /></S.IconButton><S.IconButton type="button" title="Substituir arquivo" onClick={() => { setReplacementDocument(document); setReplacementFile(null); }}><Replace /></S.IconButton><S.IconButton type="button" title="Arquivar" onClick={() => confirmDocumentAction(document, "ARCHIVE")}><Archive /></S.IconButton><S.IconButton type="button" $danger title="Enviar para lixeira" onClick={() => confirmDocumentAction(document, "TRASH")}><Trash2 /></S.IconButton></>}
-                          {document.effectiveStatus === "ARCHIVED" && <><S.IconButton type="button" title="Restaurar" onClick={() => confirmDocumentAction(document, "RESTORE")}><ArchiveRestore /></S.IconButton><S.IconButton type="button" $danger title="Enviar para lixeira" onClick={() => confirmDocumentAction(document, "TRASH")}><Trash2 /></S.IconButton></>}
-                          {document.effectiveStatus === "DELETED" && <><S.IconButton type="button" title="Restaurar da lixeira" onClick={() => confirmDocumentAction(document, "RESTORE_TRASH")}><RefreshCw /></S.IconButton><S.IconButton type="button" $danger title="Excluir definitivamente" onClick={() => confirmDocumentAction(document, "DELETE_PERMANENTLY")}><Trash2 /></S.IconButton></>}
+                          <S.ActionMenuButton
+                            type="button"
+                            data-document-action-menu
+                            aria-label={`Abrir ações de ${document.title}`}
+                            aria-haspopup="menu"
+                            aria-expanded={documentActionMenu?.documentId === document.id}
+                            disabled={busy}
+                            onClick={(event) => toggleDocumentActionMenu(event, document)}
+                          >
+                            <EllipsisVertical />
+                          </S.ActionMenuButton>
                         </S.RowActions></td>
                       </tr>
                     ))}</tbody>
@@ -767,10 +854,41 @@ export function DocumentManagement({ initial, initialStats }: Props) {
             {categoryDraft ? (
               <form onSubmit={submitCategory}><S.ModalContent><S.FormGrid><S.Field><span>Nome *</span><S.Input autoFocus value={categoryDraft.name} onChange={(event) => setCategoryDraft({ ...categoryDraft, name: event.target.value })} placeholder="Ex.: Veículos" required /></S.Field><S.Field><span>Cor de identificação</span><S.ColorGrid>{DOCUMENT_CATEGORY_COLORS.map((color) => <S.ColorButton key={color} type="button" $color={color} $active={categoryDraft.color === color} aria-label={`Usar cor ${color}`} onClick={() => setCategoryDraft({ ...categoryDraft, color })} />)}</S.ColorGrid></S.Field><S.SpanAll><S.Field><span>Descrição</span><S.Textarea value={categoryDraft.description} onChange={(event) => setCategoryDraft({ ...categoryDraft, description: event.target.value })} placeholder="Descreva o tipo de documento desta categoria" /></S.Field></S.SpanAll></S.FormGrid><S.ModalFooter><Button variant="outline" onClick={() => setCategoryDraft(null)}>Voltar</Button><Button type="submit" loading={busy}>{categoryDraft.id ? "Salvar alterações" : "Criar categoria"}</Button></S.ModalFooter></S.ModalContent></form>
             ) : (
-              <><S.ManagerToolbar><S.Segmented><button type="button" data-active={managerTab === "categories"} onClick={() => setManagerTab("categories")}>Categorias</button><button type="button" data-active={managerTab === "tags"} onClick={() => setManagerTab("tags")}>Tags</button></S.Segmented>{managerTab === "categories" && <Button size="sm" onClick={() => openCategoryForm()}><Plus size={14} /> Nova categoria</Button>}</S.ManagerToolbar>
-              <S.ManagerList>{managerTab === "categories" ? data.categories.map((category) => (
-                <S.ManagerItem key={category.id}><S.RailIcon $color={category.color ?? undefined}><FolderOpen /></S.RailIcon><div><strong>{category.name}</strong><p>{category.deletedAt ? "Na lixeira" : category.status === "ARCHIVED" ? "Arquivada" : category.description || "Categoria ativa"}</p></div><S.ManagerActions>{!category.deletedAt && <S.IconButton type="button" title="Editar" onClick={() => openCategoryForm(category)}><Pencil /></S.IconButton>}{!category.deletedAt && category.status === "ACTIVE" && <S.IconButton type="button" title="Arquivar" onClick={() => setConfirmation({ title: "Arquivar categoria?", description: "Suas pastas e documentos deixarão as listagens ativas, sem serem apagados.", confirmLabel: "Arquivar", run: () => changeDocumentCategoryStateAction({ id: category.id, action: "ARCHIVE" }) })}><Archive /></S.IconButton>}{!category.deletedAt && category.status === "ARCHIVED" && <S.IconButton type="button" title="Restaurar" onClick={() => setConfirmation({ title: "Restaurar categoria?", description: "A categoria e seu conteúdo preservado voltarão a ficar disponíveis.", confirmLabel: "Restaurar", run: () => changeDocumentCategoryStateAction({ id: category.id, action: "RESTORE" }) })}><ArchiveRestore /></S.IconButton>}{!category.deletedAt && <S.IconButton type="button" $danger title="Excluir categoria vazia" onClick={() => setConfirmation({ title: "Excluir categoria?", description: "A exclusão só será permitida se não houver nenhuma pasta vinculada.", confirmLabel: "Excluir", danger: true, run: () => changeDocumentCategoryStateAction({ id: category.id, action: "DELETE" }) })}><Trash2 /></S.IconButton>}{category.deletedAt && <S.IconButton type="button" title="Recuperar categoria" onClick={() => setConfirmation({ title: "Recuperar categoria?", description: "A categoria voltará ao catálogo administrativo.", confirmLabel: "Recuperar", run: () => changeDocumentCategoryStateAction({ id: category.id, action: "RESTORE_DELETED" }) })}><RefreshCw /></S.IconButton>}</S.ManagerActions></S.ManagerItem>
-              )) : data.tags.length ? data.tags.map((tag) => <S.ManagerItem key={tag.id}><S.RailIcon><Tags /></S.RailIcon><div><strong>{tag.name}</strong><p>Classificação complementar</p></div><S.ManagerActions><S.IconButton type="button" $danger title="Excluir tag não utilizada" onClick={() => setConfirmation({ title: "Excluir tag?", description: "A exclusão será permitida somente se a tag não estiver associada a nenhum documento.", confirmLabel: "Excluir tag", danger: true, run: () => deleteUnusedDocumentTagAction(tag.id) })}><Trash2 /></S.IconButton></S.ManagerActions></S.ManagerItem>) : <S.RailEmpty>As tags são criadas ao editar os metadados de um documento.</S.RailEmpty>}</S.ManagerList></>
+              <>
+                <S.ManagerToolbar>
+                  <S.Segmented>
+                    <button type="button" data-active={managerTab === "categories"} onClick={() => setManagerTab("categories")}>Categorias</button>
+                    <button type="button" data-active={managerTab === "tags"} onClick={() => setManagerTab("tags")}>Tags</button>
+                  </S.Segmented>
+                  {managerTab === "categories" && <Button size="sm" onClick={() => openCategoryForm()}><Plus size={14} /> Nova categoria</Button>}
+                </S.ManagerToolbar>
+                {managerTab === "categories" && (
+                  <S.ContainerStateTabs aria-label="Filtrar categorias por situação">
+                    {(["ACTIVE", "ARCHIVED", "DELETED"] as const).map((state) => (
+                      <button key={state} type="button" data-active={categoryListState === state} onClick={() => setCategoryListState(state)}>
+                        {state === "ACTIVE" ? "Ativas" : state === "ARCHIVED" ? "Arquivadas" : "Lixeira"}
+                        <span>{data.categories.filter((item) => matchesContainerState(item, state)).length}</span>
+                      </button>
+                    ))}
+                  </S.ContainerStateTabs>
+                )}
+                <S.ManagerList>
+                  {managerTab === "categories" ? visibleCategories.length ? visibleCategories.map((category) => (
+                    <S.ManagerItem key={category.id}>
+                      <S.RailIcon $color={category.color ?? undefined}><FolderOpen /></S.RailIcon>
+                      <div><strong>{category.name}</strong><p>{category.deletedAt ? "Na lixeira" : category.status === "ARCHIVED" ? "Arquivada" : category.description || "Categoria ativa"}</p></div>
+                      <S.ManagerActions>
+                        {!category.deletedAt && <S.IconButton type="button" title="Editar" onClick={() => openCategoryForm(category)}><Pencil /></S.IconButton>}
+                        {!category.deletedAt && category.status === "ACTIVE" && <S.IconButton type="button" title="Arquivar" onClick={() => setConfirmation({ title: "Arquivar categoria?", description: "Suas pastas e documentos deixarão as listagens ativas, sem serem apagados.", confirmLabel: "Arquivar", run: () => changeDocumentCategoryStateAction({ id: category.id, action: "ARCHIVE" }) })}><Archive /></S.IconButton>}
+                        {!category.deletedAt && category.status === "ARCHIVED" && <S.IconButton type="button" title="Restaurar" onClick={() => setConfirmation({ title: "Restaurar categoria?", description: "A categoria e seu conteúdo preservado voltarão a ficar disponíveis.", confirmLabel: "Restaurar", run: () => changeDocumentCategoryStateAction({ id: category.id, action: "RESTORE" }) })}><ArchiveRestore /></S.IconButton>}
+                        {!category.deletedAt && <S.IconButton type="button" $danger title="Enviar categoria para a lixeira" onClick={() => setConfirmation({ title: "Enviar categoria para a lixeira?", description: "A categoria só poderá ser enviada se não houver nenhuma pasta vinculada, inclusive na lixeira.", confirmLabel: "Enviar para a lixeira", danger: true, run: () => changeDocumentCategoryStateAction({ id: category.id, action: "DELETE" }) })}><Trash2 /></S.IconButton>}
+                        {category.deletedAt && <S.IconButton type="button" title="Recuperar categoria" onClick={() => setConfirmation({ title: "Recuperar categoria?", description: "A categoria voltará ao catálogo administrativo.", confirmLabel: "Recuperar", run: () => changeDocumentCategoryStateAction({ id: category.id, action: "RESTORE_DELETED" }) })}><RefreshCw /></S.IconButton>}
+                        {category.deletedAt && <S.IconButton type="button" $danger title="Excluir categoria definitivamente" onClick={() => setConfirmation({ title: "Excluir categoria definitivamente?", description: "Esta ação não poderá ser desfeita. A categoria só será removida se não houver nenhuma pasta vinculada, inclusive na lixeira.", confirmLabel: "Excluir definitivamente", danger: true, run: () => changeDocumentCategoryStateAction({ id: category.id, action: "DELETE_PERMANENTLY" }) })}><Trash2 /></S.IconButton>}
+                      </S.ManagerActions>
+                    </S.ManagerItem>
+                  )) : <S.ManagerEmpty>{categoryListState === "DELETED" ? "A lixeira de categorias está vazia." : categoryListState === "ARCHIVED" ? "Nenhuma categoria arquivada." : "Nenhuma categoria ativa."}</S.ManagerEmpty> : data.tags.length ? data.tags.map((tag) => <S.ManagerItem key={tag.id}><S.RailIcon><Tags /></S.RailIcon><div><strong>{tag.name}</strong><p>Classificação complementar</p></div><S.ManagerActions><S.IconButton type="button" $danger title="Excluir tag não utilizada" onClick={() => setConfirmation({ title: "Excluir tag?", description: "A exclusão será permitida somente se a tag não estiver associada a nenhum documento.", confirmLabel: "Excluir tag", danger: true, run: () => deleteUnusedDocumentTagAction(tag.id) })}><Trash2 /></S.IconButton></S.ManagerActions></S.ManagerItem>) : <S.ManagerEmpty>As tags são criadas ao editar os metadados de um documento.</S.ManagerEmpty>}
+                </S.ManagerList>
+              </>
             )}
           </S.ModalContent>
         </Modal>
@@ -778,7 +896,54 @@ export function DocumentManagement({ initial, initialStats }: Props) {
 
       {folderManagerOpen && (
         <Modal title={folderDraft ? (folderDraft.id ? "Editar pasta ou dossiê" : "Nova pasta ou dossiê") : "Gerenciar pastas e dossiês"} description="Cada pasta pertence a uma única categoria" icon={<Folder />} size="lg" onClose={() => { if (!busy) { setFolderManagerOpen(false); setFolderDraft(null); } }} busy={busy}>
-          <S.ModalContent>{folderDraft ? <form onSubmit={submitFolder}><S.ModalContent><S.FormGrid><S.Field><span>Categoria *</span><S.Select value={folderDraft.categoryId} onChange={(event) => setFolderDraft({ ...folderDraft, categoryId: event.target.value })} required><option value="">Selecione</option>{activeCategories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</S.Select></S.Field><S.Field><span>Nome da pasta *</span><S.Input autoFocus value={folderDraft.name} onChange={(event) => setFolderDraft({ ...folderDraft, name: event.target.value })} placeholder="Ex.: SW4 Preta — Carro Pastoral" required /></S.Field><S.SpanAll><S.Field><span>Descrição</span><S.Textarea value={folderDraft.description} onChange={(event) => setFolderDraft({ ...folderDraft, description: event.target.value })} placeholder="Assunto, bem, processo ou conjunto de documentos" /></S.Field></S.SpanAll><S.SpanAll><S.Field><span>Localização física</span><S.Input value={folderDraft.physicalLocation} onChange={(event) => setFolderDraft({ ...folderDraft, physicalLocation: event.target.value })} placeholder="Ex.: Armário 02 — Gaveta Veículos" /></S.Field></S.SpanAll></S.FormGrid><S.ModalFooter><Button variant="outline" onClick={() => setFolderDraft(null)}>Voltar</Button><Button type="submit" loading={busy}>{folderDraft.id ? "Salvar alterações" : "Criar pasta"}</Button></S.ModalFooter></S.ModalContent></form> : <><S.ManagerToolbar><span /><Button size="sm" onClick={() => openFolderForm()}><Plus size={14} /> Nova pasta</Button></S.ManagerToolbar><S.ManagerList>{data.folders.map((folder) => { const category = data.categories.find((item) => item.id === folder.categoryId); return <S.ManagerItem key={folder.id}><S.RailIcon $color={category?.color ?? undefined}><Folder /></S.RailIcon><div><strong>{folder.name}</strong><p>{category?.name ?? "Categoria indisponível"} · {folder.deletedAt ? "Na lixeira" : folder.status === "ARCHIVED" ? "Arquivada" : folder.physicalLocation || "Pasta ativa"}</p></div><S.ManagerActions>{!folder.deletedAt && <S.IconButton title="Editar" onClick={() => openFolderForm(folder)}><Pencil /></S.IconButton>}{!folder.deletedAt && folder.status === "ACTIVE" && <S.IconButton title="Arquivar" onClick={() => setConfirmation({ title: "Arquivar pasta?", description: "Os documentos continuarão preservados, mas deixarão a listagem ativa.", confirmLabel: "Arquivar", run: () => changeDocumentFolderStateAction({ id: folder.id, action: "ARCHIVE" }) })}><Archive /></S.IconButton>}{!folder.deletedAt && folder.status === "ARCHIVED" && <S.IconButton title="Restaurar" onClick={() => setConfirmation({ title: "Restaurar pasta?", description: "A pasta e seus documentos preservados voltarão a ficar disponíveis.", confirmLabel: "Restaurar", run: () => changeDocumentFolderStateAction({ id: folder.id, action: "RESTORE" }) })}><ArchiveRestore /></S.IconButton>}{!folder.deletedAt && <S.IconButton $danger title="Excluir pasta vazia" onClick={() => setConfirmation({ title: "Excluir pasta?", description: "A exclusão só será permitida se não houver documentos vinculados.", confirmLabel: "Excluir", danger: true, run: () => changeDocumentFolderStateAction({ id: folder.id, action: "DELETE" }) })}><Trash2 /></S.IconButton>}{folder.deletedAt && <S.IconButton title="Recuperar pasta" onClick={() => setConfirmation({ title: "Recuperar pasta?", description: "A pasta voltará ao catálogo administrativo.", confirmLabel: "Recuperar", run: () => changeDocumentFolderStateAction({ id: folder.id, action: "RESTORE_DELETED" }) })}><RefreshCw /></S.IconButton>}</S.ManagerActions></S.ManagerItem>; })}</S.ManagerList></>}</S.ModalContent>
+          <S.ModalContent>
+            {folderDraft ? (
+              <form onSubmit={submitFolder}>
+                <S.ModalContent>
+                  <S.FormGrid>
+                    <S.Field><span>Categoria *</span><S.Select value={folderDraft.categoryId} onChange={(event) => setFolderDraft({ ...folderDraft, categoryId: event.target.value })} required><option value="">Selecione</option>{activeCategories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</S.Select></S.Field>
+                    <S.Field><span>Nome da pasta *</span><S.Input autoFocus value={folderDraft.name} onChange={(event) => setFolderDraft({ ...folderDraft, name: event.target.value })} placeholder="Ex.: SW4 Preta — Carro Pastoral" required /></S.Field>
+                    <S.SpanAll><S.Field><span>Descrição</span><S.Textarea value={folderDraft.description} onChange={(event) => setFolderDraft({ ...folderDraft, description: event.target.value })} placeholder="Assunto, bem, processo ou conjunto de documentos" /></S.Field></S.SpanAll>
+                    <S.SpanAll><S.Field><span>Localização física</span><S.Input value={folderDraft.physicalLocation} onChange={(event) => setFolderDraft({ ...folderDraft, physicalLocation: event.target.value })} placeholder="Ex.: Armário 02 — Gaveta Veículos" /></S.Field></S.SpanAll>
+                  </S.FormGrid>
+                  <S.ModalFooter><Button variant="outline" onClick={() => setFolderDraft(null)}>Voltar</Button><Button type="submit" loading={busy}>{folderDraft.id ? "Salvar alterações" : "Criar pasta"}</Button></S.ModalFooter>
+                </S.ModalContent>
+              </form>
+            ) : (
+              <>
+                <S.ManagerToolbar>
+                  <S.ContainerStateTabs aria-label="Filtrar pastas por situação">
+                    {(["ACTIVE", "ARCHIVED", "DELETED"] as const).map((state) => (
+                      <button key={state} type="button" data-active={folderListState === state} onClick={() => setFolderListState(state)}>
+                        {state === "ACTIVE" ? "Ativas" : state === "ARCHIVED" ? "Arquivadas" : "Lixeira"}
+                        <span>{data.folders.filter((item) => matchesContainerState(item, state)).length}</span>
+                      </button>
+                    ))}
+                  </S.ContainerStateTabs>
+                  <Button size="sm" onClick={() => openFolderForm()}><Plus size={14} /> Nova pasta</Button>
+                </S.ManagerToolbar>
+                <S.ManagerList>
+                  {visibleFolders.length ? visibleFolders.map((folder) => {
+                    const category = data.categories.find((item) => item.id === folder.categoryId);
+                    return (
+                      <S.ManagerItem key={folder.id}>
+                        <S.RailIcon $color={category?.color ?? undefined}><Folder /></S.RailIcon>
+                        <div><strong>{folder.name}</strong><p>{category?.name ?? "Categoria indisponível"} · {folder.deletedAt ? "Na lixeira" : folder.status === "ARCHIVED" ? "Arquivada" : folder.physicalLocation || "Pasta ativa"}</p></div>
+                        <S.ManagerActions>
+                          {!folder.deletedAt && <S.IconButton type="button" title="Editar" onClick={() => openFolderForm(folder)}><Pencil /></S.IconButton>}
+                          {!folder.deletedAt && folder.status === "ACTIVE" && <S.IconButton type="button" title="Arquivar" onClick={() => setConfirmation({ title: "Arquivar pasta?", description: "Os documentos continuarão preservados, mas deixarão a listagem ativa.", confirmLabel: "Arquivar", run: () => changeDocumentFolderStateAction({ id: folder.id, action: "ARCHIVE" }) })}><Archive /></S.IconButton>}
+                          {!folder.deletedAt && folder.status === "ARCHIVED" && <S.IconButton type="button" title="Restaurar" onClick={() => setConfirmation({ title: "Restaurar pasta?", description: "A pasta e seus documentos preservados voltarão a ficar disponíveis.", confirmLabel: "Restaurar", run: () => changeDocumentFolderStateAction({ id: folder.id, action: "RESTORE" }) })}><ArchiveRestore /></S.IconButton>}
+                          {!folder.deletedAt && <S.IconButton type="button" $danger title="Enviar pasta para a lixeira" onClick={() => setConfirmation({ title: "Enviar pasta para a lixeira?", description: "A pasta só poderá ser enviada se não houver documentos vinculados, inclusive na lixeira.", confirmLabel: "Enviar para a lixeira", danger: true, run: () => changeDocumentFolderStateAction({ id: folder.id, action: "DELETE" }) })}><Trash2 /></S.IconButton>}
+                          {folder.deletedAt && <S.IconButton type="button" title="Recuperar pasta" onClick={() => setConfirmation({ title: "Recuperar pasta?", description: "A pasta voltará ao catálogo administrativo.", confirmLabel: "Recuperar", run: () => changeDocumentFolderStateAction({ id: folder.id, action: "RESTORE_DELETED" }) })}><RefreshCw /></S.IconButton>}
+                          {folder.deletedAt && <S.IconButton type="button" $danger title="Excluir pasta definitivamente" onClick={() => setConfirmation({ title: "Excluir pasta definitivamente?", description: "Esta ação não poderá ser desfeita. A pasta só será removida se não houver nenhum documento vinculado, inclusive na lixeira.", confirmLabel: "Excluir definitivamente", danger: true, run: () => changeDocumentFolderStateAction({ id: folder.id, action: "DELETE_PERMANENTLY" }) })}><Trash2 /></S.IconButton>}
+                        </S.ManagerActions>
+                      </S.ManagerItem>
+                    );
+                  }) : <S.ManagerEmpty>{folderListState === "DELETED" ? "A lixeira de pastas e dossiês está vazia." : folderListState === "ARCHIVED" ? "Nenhuma pasta ou dossiê arquivado." : "Nenhuma pasta ou dossiê ativo."}</S.ManagerEmpty>}
+                </S.ManagerList>
+              </>
+            )}
+          </S.ModalContent>
         </Modal>
       )}
 
@@ -810,6 +975,63 @@ export function DocumentManagement({ initial, initialStats }: Props) {
         <Modal title={confirmation.title} icon={<AlertTriangle />} size="sm" onClose={() => { if (!busy) setConfirmation(null); }} busy={busy}>
           <S.ModalContent><S.Confirmation><span><AlertTriangle /></span><p>{confirmation.description}</p></S.Confirmation><S.ModalFooter><Button variant="outline" onClick={() => setConfirmation(null)} disabled={busy}>Cancelar</Button><Button variant={confirmation.danger ? "danger" : "primary"} onClick={() => void executeConfirmation()} loading={busy}>{confirmation.confirmLabel}</Button></S.ModalFooter></S.ModalContent>
         </Modal>
+      )}
+
+      {documentActionMenu && menuDocument && createPortal(
+        <S.ActionMenuPanel
+          data-document-action-menu
+          role="menu"
+          aria-label={`Ações de ${menuDocument.title}`}
+          style={{ left: documentActionMenu.left, top: documentActionMenu.top }}
+        >
+          <S.ActionMenuItem type="button" role="menuitem" onClick={() => runDocumentMenuAction(() => void loadPreview(menuDocument))}>
+            <Eye /> Ver detalhes
+          </S.ActionMenuItem>
+          {menuDocument.effectiveStatus !== "DELETED" && (
+            <S.ActionMenuItem type="button" role="menuitem" onClick={() => runDocumentMenuAction(() => void downloadDocument(menuDocument))}>
+              <Download /> Baixar arquivo
+            </S.ActionMenuItem>
+          )}
+          <S.ActionMenuDivider />
+          {menuDocument.effectiveStatus === "ACTIVE" && (
+            <>
+              <S.ActionMenuItem type="button" role="menuitem" onClick={() => runDocumentMenuAction(() => setEditingDocument(menuDocument))}>
+                <Pencil /> Editar metadados
+              </S.ActionMenuItem>
+              <S.ActionMenuItem type="button" role="menuitem" onClick={() => runDocumentMenuAction(() => { setReplacementDocument(menuDocument); setReplacementFile(null); })}>
+                <Replace /> Substituir arquivo
+              </S.ActionMenuItem>
+              <S.ActionMenuDivider />
+              <S.ActionMenuItem type="button" role="menuitem" onClick={() => runDocumentMenuAction(() => confirmDocumentAction(menuDocument, "ARCHIVE"))}>
+                <Archive /> Arquivar
+              </S.ActionMenuItem>
+              <S.ActionMenuItem type="button" role="menuitem" $danger onClick={() => runDocumentMenuAction(() => confirmDocumentAction(menuDocument, "TRASH"))}>
+                <Trash2 /> Enviar para a lixeira
+              </S.ActionMenuItem>
+            </>
+          )}
+          {menuDocument.effectiveStatus === "ARCHIVED" && (
+            <>
+              <S.ActionMenuItem type="button" role="menuitem" onClick={() => runDocumentMenuAction(() => confirmDocumentAction(menuDocument, "RESTORE"))}>
+                <ArchiveRestore /> Restaurar
+              </S.ActionMenuItem>
+              <S.ActionMenuItem type="button" role="menuitem" $danger onClick={() => runDocumentMenuAction(() => confirmDocumentAction(menuDocument, "TRASH"))}>
+                <Trash2 /> Enviar para a lixeira
+              </S.ActionMenuItem>
+            </>
+          )}
+          {menuDocument.effectiveStatus === "DELETED" && (
+            <>
+              <S.ActionMenuItem type="button" role="menuitem" onClick={() => runDocumentMenuAction(() => confirmDocumentAction(menuDocument, "RESTORE_TRASH"))}>
+                <RefreshCw /> Restaurar da lixeira
+              </S.ActionMenuItem>
+              <S.ActionMenuItem type="button" role="menuitem" $danger onClick={() => runDocumentMenuAction(() => confirmDocumentAction(menuDocument, "DELETE_PERMANENTLY"))}>
+                <Trash2 /> Excluir definitivamente
+              </S.ActionMenuItem>
+            </>
+          )}
+        </S.ActionMenuPanel>,
+        window.document.body,
       )}
 
       {notice && <ToastViewport><Toast title={notice.title} description={notice.description} variant={notice.variant} onClose={() => setNotice(null)} /></ToastViewport>}

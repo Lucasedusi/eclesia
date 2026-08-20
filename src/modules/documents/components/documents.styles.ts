@@ -330,11 +330,14 @@ export const TableWrap = styled.div`
 
 export const Table = styled.table`
   width: 100%;
-  min-width: 780px;
+  min-width: 560px;
   border-collapse: collapse;
 
   th { background: #fafbfc; padding: 10px; color: #98a2b3; font-size: 8px; font-weight: 900; letter-spacing: .03em; text-align: left; text-transform: uppercase; }
   td { border-top: 1px solid #edf0f4; padding: 11px 10px; color: #667085; font-size: 9px; font-weight: 650; vertical-align: middle; }
+  th:nth-child(2), td:nth-child(2) { width: 150px; }
+  th:nth-child(3), td:nth-child(3) { width: 96px; }
+  th:last-child, td:last-child { width: 52px; text-align: right; }
   tbody tr:hover { background: #fcfcfe; }
 `;
 
@@ -399,6 +402,63 @@ export const RowActions = styled.div`
   display: flex;
   justify-content: flex-end;
   gap: 4px;
+`;
+
+export const ActionMenuButton = styled.button`
+  display: grid;
+  width: 31px;
+  height: 31px;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: #667085;
+  cursor: pointer;
+  transition: 140ms ease;
+
+  &:hover, &[aria-expanded="true"] { border-color: #dfe3eb; background: #f6f8fc; color: #344054; }
+  &:focus-visible { outline: 3px solid rgb(65 91 165 / 18%); outline-offset: 1px; }
+  &:disabled { cursor: not-allowed; opacity: .45; }
+  svg { width: 17px; height: 17px; }
+`;
+
+export const ActionMenuPanel = styled.div`
+  position: fixed;
+  z-index: 1300;
+  display: grid;
+  width: 216px;
+  gap: 2px;
+  border: 1px solid #e1e5ec;
+  border-radius: 12px;
+  background: #fff;
+  padding: 6px;
+  box-shadow: 0 16px 40px -14px rgb(27 42 74 / 32%);
+`;
+
+export const ActionMenuItem = styled.button<{ $danger?: boolean }>`
+  display: flex;
+  min-height: 34px;
+  align-items: center;
+  gap: 9px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  padding: 0 10px;
+  color: ${({ $danger }) => ($danger ? "#c84a44" : "#475467")};
+  font-size: 9px;
+  font-weight: 780;
+  cursor: pointer;
+  text-align: left;
+
+  &:hover { background: ${({ $danger }) => ($danger ? "#fff3f2" : "#f5f7fb")}; }
+  &:focus-visible { outline: 2px solid rgb(65 91 165 / 22%); outline-offset: -1px; }
+  svg { width: 14px; height: 14px; flex: 0 0 auto; }
+`;
+
+export const ActionMenuDivider = styled.div`
+  height: 1px;
+  margin: 4px 3px;
+  background: #edf0f4;
 `;
 
 export const IconButton = styled.button<{ $danger?: boolean }>`
@@ -499,11 +559,50 @@ export const Segmented = styled.div`
   button[data-active="true"] { background: #fff; color: #415BA5; box-shadow: 0 2px 7px rgb(27 42 74 / 10%); }
 `;
 
+export const ContainerStateTabs = styled.div`
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 6px;
+
+  > button {
+    display: inline-flex;
+    min-height: 31px;
+    align-items: center;
+    gap: 7px;
+    border: 1px solid #e1e5ec;
+    border-radius: 9px;
+    background: #fff;
+    padding: 0 10px;
+    color: #667085;
+    font-size: 9px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  > button:hover { border-color: #cbd2e4; background: #fafbfe; }
+  > button[data-active="true"] { border-color: #b8c2e5; background: #f1f3ff; color: #415BA5; }
+  > button span { display: grid; min-width: 19px; height: 19px; place-items: center; border-radius: 999px; background: #edf0f5; color: #667085; font-size: 8px; }
+  > button[data-active="true"] span { background: #dfe4fb; color: #415BA5; }
+`;
+
 export const ManagerList = styled.div`
   display: grid;
   max-height: 390px;
   gap: 7px;
   overflow: auto;
+`;
+
+export const ManagerEmpty = styled.div`
+  display: grid;
+  min-height: 132px;
+  place-items: center;
+  border: 1px dashed #dfe3eb;
+  border-radius: 11px;
+  color: #98a2b3;
+  font-size: 9px;
+  font-weight: 750;
+  text-align: center;
 `;
 
 export const ManagerItem = styled.article`

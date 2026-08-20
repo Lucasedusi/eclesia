@@ -38,7 +38,7 @@ export const mainNavigation = [
     label: "Eventos",
     href: "/eventos",
     icon: CalendarDays,
-    notification: true,
+    requiredPermission: PERMISSIONS.eventsView,
   },
   {
     label: "Financeiro",

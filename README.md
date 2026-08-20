@@ -42,6 +42,10 @@ BREVO_SENDER_NAME=Eclésias
 
 `BREVO_API_KEY` deve ser uma chave da aba **API Keys** do Brevo, não a chave SMTP. `SUPABASE_SECRET_KEY` e `BREVO_API_KEY` são usadas somente no servidor e nunca devem receber o prefixo `NEXT_PUBLIC_`.
 
+## Checkout Pix dos eventos
+
+O checkout público multifases e a integração Pix via Mercado Pago estão documentados em [docs/EVENTOS_CHECKOUT_PIX.md](docs/EVENTOS_CHECKOUT_PIX.md). O Access Token e o segredo de Webhook são variáveis exclusivas do servidor.
+
 ## Módulo de documentos administrativos
 
 A rota `/documentos` oferece uma central privada organizada em

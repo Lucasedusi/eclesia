@@ -132,12 +132,12 @@ function translateDatabaseError(error: { code?: string; message?: string }, fall
   }
   if (error.message?.includes("possui pastas vinculadas")) {
     return new DocumentServiceError(
-      "A categoria não pode ser excluída porque possui pastas vinculadas.",
+      "A categoria ainda possui pastas vinculadas, inclusive na lixeira. Exclua ou mova essas pastas primeiro.",
     );
   }
   if (error.message?.includes("possui documentos vinculados")) {
     return new DocumentServiceError(
-      "A pasta não pode ser excluída porque possui documentos vinculados.",
+      "A pasta ainda possui documentos vinculados, inclusive na lixeira. Exclua ou mova esses documentos primeiro.",
     );
   }
   return new DocumentServiceError(fallback);
@@ -766,6 +766,63 @@ export async function changeDocumentCategoryState(
   if (count !== 1) throw new DocumentServiceError("Categoria não encontrada.");
 }
 
+export async function permanentlyDeleteDocumentCategory(id: string) {
+  const access = await requireDocumentAccess(true);
+  const { data: category, error: loadError } = await access.supabase
+    .from("document_categories")
+    .select("id, name, status, deleted_at")
+    .eq("id", id)
+    .eq("church_id", access.context.church.id)
+    .maybeSingle();
+  if (loadError) {
+    logServiceError("load category for permanent deletion", loadError);
+    throw new DocumentServiceError("Não foi possível localizar a categoria.");
+  }
+  if (!category) throw new DocumentServiceError("Categoria não encontrada.");
+  if (!category.deleted_at) {
+    throw new DocumentServiceError(
+      "Envie a categoria para a lixeira antes da exclusão definitiva.",
+    );
+  }
+
+  const admin = createAdminClient();
+  const { count, error: deleteError } = await admin
+    .from("document_categories")
+    .delete({ count: "exact" })
+    .eq("id", category.id)
+    .eq("church_id", access.context.church.id)
+    .not("deleted_at", "is", null);
+  if (deleteError) {
+    logServiceError("permanent category deletion", deleteError);
+    if (deleteError.code === "23503") {
+      throw new DocumentServiceError(
+        "Exclua definitivamente as pastas vinculadas que ainda estão na lixeira.",
+      );
+    }
+    throw new DocumentServiceError("Não foi possível excluir a categoria definitivamente.");
+  }
+  if (count !== 1) throw new DocumentServiceError("Categoria não encontrada na lixeira.");
+
+  const { error: auditError } = await admin.from("audit_logs").insert({
+    church_id: access.context.church.id,
+    actor_profile_id: access.context.profile.id,
+    actor_email: access.context.profile.email,
+    module: "documents",
+    action: "DOCUMENT_CATEGORY_PERMANENTLY_DELETED",
+    entity_type: "document_category",
+    entity_id: category.id,
+    entity_label: category.name,
+    description: "Categoria de documentos excluída definitivamente.",
+    old_values: {
+      name: category.name,
+      status: category.status,
+      deleted_at: category.deleted_at,
+    },
+    severity: "CRITICAL",
+  });
+  if (auditError) logServiceError("audit permanent category deletion", auditError);
+}
+
 export async function createDocumentFolder(input: {
   categoryId: string;
   name: string;
@@ -850,6 +907,64 @@ export async function changeDocumentFolderState(
     throw translateDatabaseError(error, "Não foi possível alterar a situação da pasta.");
   }
   if (count !== 1) throw new DocumentServiceError("Pasta não encontrada.");
+}
+
+export async function permanentlyDeleteDocumentFolder(id: string) {
+  const access = await requireDocumentAccess(true);
+  const { data: folder, error: loadError } = await access.supabase
+    .from("document_folders")
+    .select("id, category_id, name, status, deleted_at")
+    .eq("id", id)
+    .eq("church_id", access.context.church.id)
+    .maybeSingle();
+  if (loadError) {
+    logServiceError("load folder for permanent deletion", loadError);
+    throw new DocumentServiceError("Não foi possível localizar a pasta.");
+  }
+  if (!folder) throw new DocumentServiceError("Pasta não encontrada.");
+  if (!folder.deleted_at) {
+    throw new DocumentServiceError(
+      "Envie a pasta para a lixeira antes da exclusão definitiva.",
+    );
+  }
+
+  const admin = createAdminClient();
+  const { count, error: deleteError } = await admin
+    .from("document_folders")
+    .delete({ count: "exact" })
+    .eq("id", folder.id)
+    .eq("church_id", access.context.church.id)
+    .not("deleted_at", "is", null);
+  if (deleteError) {
+    logServiceError("permanent folder deletion", deleteError);
+    if (deleteError.code === "23503") {
+      throw new DocumentServiceError(
+        "Exclua definitivamente os documentos vinculados que ainda estão na lixeira.",
+      );
+    }
+    throw new DocumentServiceError("Não foi possível excluir a pasta definitivamente.");
+  }
+  if (count !== 1) throw new DocumentServiceError("Pasta não encontrada na lixeira.");
+
+  const { error: auditError } = await admin.from("audit_logs").insert({
+    church_id: access.context.church.id,
+    actor_profile_id: access.context.profile.id,
+    actor_email: access.context.profile.email,
+    module: "documents",
+    action: "DOCUMENT_FOLDER_PERMANENTLY_DELETED",
+    entity_type: "document_folder",
+    entity_id: folder.id,
+    entity_label: folder.name,
+    description: "Pasta ou dossiê excluído definitivamente.",
+    old_values: {
+      category_id: folder.category_id,
+      name: folder.name,
+      status: folder.status,
+      deleted_at: folder.deleted_at,
+    },
+    severity: "CRITICAL",
+  });
+  if (auditError) logServiceError("audit permanent folder deletion", auditError);
 }
 
 export async function deleteUnusedDocumentTag(id: string) {

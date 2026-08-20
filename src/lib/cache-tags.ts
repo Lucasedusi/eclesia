@@ -11,4 +11,11 @@ export const cacheTags = {
   documentReferences: (churchId: string) => scopedTag("document-references", churchId),
   documentStats: (churchId: string) => scopedTag("document-stats", churchId),
   appSettings: (churchId: string) => scopedTag("app-settings", churchId),
+  events: (churchId: string) => scopedTag("events", churchId),
+  event: (churchId: string, eventId: string) => `event:${churchId}:${eventId}`,
+  eventRegistrations: (churchId: string, eventId: string) => `event-registrations:${churchId}:${eventId}`,
+  eventPayments: (churchId: string, eventId: string) => `event-payments:${churchId}:${eventId}`,
+  eventCheckins: (churchId: string, eventId: string) => `event-checkins:${churchId}:${eventId}`,
+  eventDocuments: (churchId: string, eventId: string) => `event-documents:${churchId}:${eventId}`,
+  publicEvent: (publicCode: string) => `public-event:${publicCode}`,
 } as const;

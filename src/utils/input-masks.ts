@@ -29,6 +29,21 @@ export function normalizeBrazilPhone(value: string) {
   return digits.startsWith("55") && digits.length > 11 ? digits.slice(2, 13) : digits.slice(0, 11);
 }
 
+export function formatBrazilCurrencyInput(value: string) {
+  const digits = value.replace(/\D/g, "").slice(0, 13);
+  const amount = Number(digits || "0") / 100;
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    minimumFractionDigits: 2,
+  }).format(amount);
+}
+
+export function parseBrazilCurrencyInput(value: string) {
+  const digits = value.replace(/\D/g, "");
+  return Number(digits || "0") / 100;
+}
+
 export function formatCpf(value: string) {
   const digits = value.replace(/\D/g, "").slice(0, 11);
 

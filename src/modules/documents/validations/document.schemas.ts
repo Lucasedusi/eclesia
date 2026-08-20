@@ -27,7 +27,13 @@ export const documentFolderSchema = z.object({
 
 export const documentContainerActionSchema = z.object({
   id: documentIdSchema,
-  action: z.enum(["ARCHIVE", "RESTORE", "DELETE", "RESTORE_DELETED"]),
+  action: z.enum([
+    "ARCHIVE",
+    "RESTORE",
+    "DELETE",
+    "RESTORE_DELETED",
+    "DELETE_PERMANENTLY",
+  ]),
 });
 
 export const documentListParamsSchema = z.object({

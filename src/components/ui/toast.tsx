@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useSyncExternalStore } from "react";
+import { type ReactNode, useEffect, useRef, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { CheckCircle2, Info, TriangleAlert, X, XCircle } from "lucide-react";
 import * as S from "./toast.styles";
@@ -14,6 +14,7 @@ type ToastProps = {
   filled?: boolean;
   className?: string;
   onClose?: () => void;
+  duration?: number;
 };
 
 type ToastViewportProps = {
@@ -39,8 +40,21 @@ export function Toast({
   filled = false,
   className,
   onClose,
+  duration = 5000,
 }: ToastProps) {
   const Icon = icons[variant];
+  const closeRef = useRef(onClose);
+  const closable = Boolean(onClose);
+
+  useEffect(() => {
+    closeRef.current = onClose;
+  }, [onClose]);
+
+  useEffect(() => {
+    if (!closable || duration <= 0) return;
+    const timer = window.setTimeout(() => closeRef.current?.(), duration);
+    return () => window.clearTimeout(timer);
+  }, [closable, duration]);
 
   return (
     <S.ToastRoot

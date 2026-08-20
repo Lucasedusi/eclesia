@@ -8,7 +8,10 @@ const PUBLIC_PATHS = [
   "/redefinir-senha",
   "/auth/callback",
   "/convite",
+  "/inscricoes",
+  "/api/public/events",
   "/api/cron/documents/cleanup",
+  "/api/cron/events/cleanup",
   "/api/telemetry/web-vitals",
 ];
 
@@ -43,7 +46,9 @@ function finalizeResponse(
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   response.headers.set(
     "Permissions-Policy",
-    "camera=(), microphone=(), geolocation=()",
+    /^\/eventos\/[^/]+\/check-in(?:\/|$)/.test(pathname)
+      ? "camera=(self), microphone=(), geolocation=()"
+      : "camera=(), microphone=(), geolocation=()",
   );
   const duration = performance.now() - startedAt;
   response.headers.set("Server-Timing", `proxy;dur=${duration.toFixed(1)}`);

@@ -1,0 +1,4 @@
+import { NextResponse, type NextRequest } from "next/server";
+import { generateEventReport, isEventReportType } from "@/modules/events/services/event-report.service";
+
+export async function GET(request:NextRequest,{params}:{params:Promise<{eventId:string;report:string}>}){const{eventId,report}=await params;if(!isEventReportType(report))return NextResponse.json({message:"Relatório inválido."},{status:404});const format=request.nextUrl.searchParams.get("format")==="csv"?"csv":"xlsx";try{const output=await generateEventReport(eventId,report,format,request.nextUrl.searchParams.get("status")??undefined);return new NextResponse(new Uint8Array(output.body),{headers:{"content-type":output.contentType,"content-disposition":`attachment; filename="${output.fileName}"`,"cache-control":"private, no-store"}});}catch{return NextResponse.json({message:"Não foi possível gerar o relatório."},{status:403});}}

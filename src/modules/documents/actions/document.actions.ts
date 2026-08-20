@@ -18,6 +18,8 @@ import {
   finalizeDocumentUploads,
   getDocumentWorkspace,
   listAdministrativeDocuments,
+  permanentlyDeleteDocumentCategory,
+  permanentlyDeleteDocumentFolder,
   permanentlyDeleteAdministrativeDocument,
   prepareDocumentReplacement,
   prepareDocumentUploads,
@@ -106,13 +108,18 @@ export async function changeDocumentCategoryStateAction(input: unknown): Promise
   const parsed = documentContainerActionSchema.safeParse(input);
   if (!parsed.success) return { status: "error", message: "Categoria inválida." };
   try {
-    await changeDocumentCategoryState(parsed.data.id, parsed.data.action);
+    if (parsed.data.action === "DELETE_PERMANENTLY") {
+      await permanentlyDeleteDocumentCategory(parsed.data.id);
+    } else {
+      await changeDocumentCategoryState(parsed.data.id, parsed.data.action);
+    }
     await refreshDocuments();
     const labels = {
       ARCHIVE: "Categoria arquivada com sucesso.",
       RESTORE: "Categoria restaurada com sucesso.",
       DELETE: "Categoria enviada para a lixeira.",
       RESTORE_DELETED: "Categoria recuperada com sucesso.",
+      DELETE_PERMANENTLY: "Categoria excluída definitivamente.",
     };
     return { status: "success", message: labels[parsed.data.action] };
   } catch (error) {
@@ -146,13 +153,18 @@ export async function changeDocumentFolderStateAction(input: unknown): Promise<D
   const parsed = documentContainerActionSchema.safeParse(input);
   if (!parsed.success) return { status: "error", message: "Pasta inválida." };
   try {
-    await changeDocumentFolderState(parsed.data.id, parsed.data.action);
+    if (parsed.data.action === "DELETE_PERMANENTLY") {
+      await permanentlyDeleteDocumentFolder(parsed.data.id);
+    } else {
+      await changeDocumentFolderState(parsed.data.id, parsed.data.action);
+    }
     await refreshDocuments();
     const labels = {
       ARCHIVE: "Pasta arquivada com sucesso.",
       RESTORE: "Pasta restaurada com sucesso.",
       DELETE: "Pasta enviada para a lixeira.",
       RESTORE_DELETED: "Pasta recuperada com sucesso.",
+      DELETE_PERMANENTLY: "Pasta excluída definitivamente.",
     };
     return { status: "success", message: labels[parsed.data.action] };
   } catch (error) {

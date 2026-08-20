@@ -42,6 +42,17 @@ export const PERMISSIONS = {
   financeView: "finance.view",
   ministriesView: "ministries.view",
   ministriesManage: "ministries.manage",
+  eventsView: "events.view",
+  eventsManage: "events.manage",
+  eventsPublish: "events.publish",
+  eventRegistrationsView: "events.registrations.view",
+  eventRegistrationsManage: "events.registrations.manage",
+  eventPaymentsView: "events.payments.view",
+  eventPaymentsManage: "events.payments.manage",
+  eventCheckin: "events.checkin",
+  eventDocumentsView: "events.documents.view",
+  eventDocumentsManage: "events.documents.manage",
+  eventReportsExport: "events.reports.export",
 } as const;
 
 export type PermissionKey = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
