@@ -4,6 +4,7 @@ import { createHash, createHmac, randomUUID } from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { PublicCheckoutItem, PublicCheckoutStatus } from "../types/event.types";
 import type { z } from "zod";
+import { resolveEventRoleSnapshot } from "./event.service";
 import type { publicRegistrationSchema } from "../validations/event.schemas";
 import { ensureEventCredential } from "./event-credential.service";
 import {
@@ -153,12 +154,13 @@ export async function startPublicCheckout(
   idempotencyKey: string,
 ) {
   const admin = createAdminClient();
-  const eventResult = await admin.from("events").select("id").eq("id", input.eventId).eq("public_code", publicCode).eq("slug", slug).eq("visibility", "PUBLIC").is("deleted_at", null).maybeSingle();
+  const eventResult = await admin.from("events").select("id,church_id").eq("id", input.eventId).eq("public_code", publicCode).eq("slug", slug).eq("visibility", "PUBLIC").is("deleted_at", null).maybeSingle();
   if (eventResult.error || !eventResult.data) throw new PublicCheckoutError("Evento público indisponível.");
+  const role = await resolveEventRoleSnapshot(String(eventResult.data.church_id), input.participantRoleId, input.participantGender);
   const checkoutToken = createCheckoutToken(input.eventId, idempotencyKey);
   const result = await admin.rpc("start_event_public_checkout", {
     p_event_id: input.eventId,
-    p_payload: { ...input, registrationSource: "PUBLIC", consentAccepted: true },
+    p_payload: { ...input, registrationSource: "PUBLIC", consentAccepted: true, metadata: role ? { participantRoleId: role.id, participantRoleName: role.name } : {} },
     p_idempotency_key: idempotencyKey,
     p_access_token_hash: tokenHash(checkoutToken),
   });
@@ -169,7 +171,8 @@ export async function startPublicCheckout(
     if (message.includes("EVENT_REGISTRATION_CLOSED")) throw new PublicCheckoutError("As inscrições deste evento estão encerradas.");
     throw new PublicCheckoutError("Não foi possível iniciar a inscrição.");
   }
-  return { checkoutToken, checkout: result.data as AnyRow };
+  const checkout = await getPublicCheckoutStatus(publicCode, slug, checkoutToken, false);
+  return { checkoutToken, checkout };
 }
 
 export async function createPublicPixPayment(input: {
@@ -376,7 +379,12 @@ export async function finishMercadoPagoWebhookEvent(eventId: string, status: "PR
 
 export async function cleanupExpiredPublicEventCheckouts() {
   const admin = createAdminClient();
-  const expired = await admin.from("event_public_checkouts").select("id,registration_id").in("status", ["AWAITING_PAYMENT", "PROCESSING"]).lt("expires_at", new Date().toISOString()).limit(100);
+  const now=new Date().toISOString();
+  const drafts=await admin.from("event_public_checkouts").select("id").eq("checkout_type","CARAVAN").eq("status","DRAFT").lt("expires_at",now).limit(100);
+  if(drafts.error)throw new PublicCheckoutError("Não foi possível localizar checkouts de caravana expirados.");
+  const draftIds=(drafts.data??[]).map((checkout)=>checkout.id);
+  if(draftIds.length){const expiredDrafts=await admin.from("event_public_checkouts").update({status:"EXPIRED",draft_payload:{},updated_at:now}).in("id",draftIds).eq("status","DRAFT");if(expiredDrafts.error)throw new PublicCheckoutError("Não foi possível expirar checkouts de caravana.");}
+  const expired = await admin.from("event_public_checkouts").select("id,registration_id").eq("checkout_type","INDIVIDUAL").in("status", ["AWAITING_PAYMENT", "PROCESSING"]).lt("expires_at", now).limit(100);
   if (expired.error) throw new PublicCheckoutError("Não foi possível localizar checkouts expirados.");
   let reconciled = 0;
   for (const checkout of expired.data ?? []) {
@@ -397,5 +405,5 @@ export async function cleanupExpiredPublicEventCheckouts() {
     await applyProviderPayment({ ...remote, date_of_expiration: remote.date_of_expiration ?? new Date(0).toISOString() });
     reconciled += 1;
   }
-  return { examined: expired.data?.length ?? 0, reconciled };
+  return { examined: expired.data?.length ?? 0, reconciled,expiredCaravanDrafts:draftIds.length };
 }

@@ -47,11 +47,16 @@ export const PERMISSIONS = {
   eventsPublish: "events.publish",
   eventRegistrationsView: "events.registrations.view",
   eventRegistrationsManage: "events.registrations.manage",
+  eventGroupsView: "events.groups.view",
+  eventGroupsManage: "events.groups.manage",
   eventPaymentsView: "events.payments.view",
   eventPaymentsManage: "events.payments.manage",
+  eventPaymentsApprove: "events.payments.approve",
   eventCheckin: "events.checkin",
   eventDocumentsView: "events.documents.view",
   eventDocumentsManage: "events.documents.manage",
+  eventExpensesView: "events.expenses.view",
+  eventExpensesManage: "events.expenses.manage",
   eventReportsExport: "events.reports.export",
 } as const;
 

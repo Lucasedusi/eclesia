@@ -8,7 +8,7 @@ async function Content({ params }: { params: Promise<{ publicCode: string; slug:
   const { publicCode, slug } = await params;
   const data = await getPublicEvent(publicCode, slug);
   if (!data) notFound();
-  return <PublicRegistration event={data.event} items={data.items as never[]} congregations={data.congregations} isRegistrationOpen={data.isRegistrationOpen} />;
+  return <PublicRegistration event={data.event} items={data.items as never[]} congregations={data.congregations} roles={data.roles} fields={data.fields} isRegistrationOpen={data.isRegistrationOpen} />;
 }
 
 export default function PublicEventPage({ params }: { params: Promise<{ publicCode: string; slug: string }> }) {

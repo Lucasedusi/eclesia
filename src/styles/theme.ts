@@ -51,7 +51,7 @@ export const theme = {
     },
   },
   font: {
-    family: "'Inter', sans-serif",
+    family: "'Nunito_Sans', sans-serif",
   },
   radius: {
     xs: "4px",

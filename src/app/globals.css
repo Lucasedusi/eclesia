@@ -67,7 +67,20 @@ button,
 input,
 select,
 textarea {
-  font: inherit;
+  /* font: inherit; */
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):user-invalid,
+select:user-invalid,
+textarea:user-invalid,
+form[data-submit-attempted="true"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):required:invalid,
+form[data-submit-attempted="true"] select:required:invalid,
+form[data-submit-attempted="true"] textarea:required:invalid,
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"])[aria-invalid="true"],
+select[aria-invalid="true"],
+textarea[aria-invalid="true"] {
+  border-color: var(--danger) !important;
+  box-shadow: none !important;
 }
 
 button {

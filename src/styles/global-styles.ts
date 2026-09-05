@@ -62,10 +62,36 @@ export const GlobalStyles = createGlobalStyle`
   }
 
   button,
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+  select,
+  textarea {
+    //font: inherit;
+  }
+
   input,
   select,
   textarea {
-    font: inherit;
+    border-radius: 6px !important;
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):focus,
+  select:focus,
+  textarea:focus {
+    border-color: ${({ theme }) => theme.colors.brand.primary} !important;
+    box-shadow: none !important;
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):user-invalid,
+  select:user-invalid,
+  textarea:user-invalid,
+  form[data-submit-attempted="true"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):required:invalid,
+  form[data-submit-attempted="true"] select:required:invalid,
+  form[data-submit-attempted="true"] textarea:required:invalid,
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"])[aria-invalid="true"],
+  select[aria-invalid="true"],
+  textarea[aria-invalid="true"] {
+    border-color: ${({ theme }) => theme.colors.state.danger} !important;
+    box-shadow: none !important;
   }
 
   button {

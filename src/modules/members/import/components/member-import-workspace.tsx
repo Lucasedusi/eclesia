@@ -13,7 +13,6 @@ import {
   AlertTriangle,
   ArrowLeft,
   ArrowRight,
-  Check,
   CheckCircle2,
   Download,
   FileCheck2,
@@ -54,6 +53,7 @@ import type {
   MemberImportReviewParams,
   MemberImportWorkspaceData,
 } from "../types/member-import.types";
+import * as P from "../../components/member-create-form/member-form-progress.styles";
 import * as S from "./member-import.styles";
 
 type Props = { initial: MemberImportWorkspaceData };
@@ -71,6 +71,12 @@ type Resolution =
 
 const CLASSIFICATION_FILTERS = ["", "VALID", "WARNING", "ERROR", "SKIPPED", "IMPORTED"] as const;
 const TERMINAL_STATUSES = ["COMPLETED", "ROLLED_BACK", "CANCELLED"];
+const IMPORT_STEP_ICONS = {
+  1: UploadCloud,
+  2: FileCheck2,
+  3: Search,
+  4: ShieldCheck,
+} as const;
 
 function initialStep(data: MemberImportWorkspaceData) {
   if (!data.batch) return 1;
@@ -432,9 +438,10 @@ export function MemberImportWorkspace({ initial }: Props) {
 
       {tab === "history" ? (
         <HistoryView workspace={workspace} busy={busy} onOpen={loadBatch} onNew={newImport} />
-      ) : (
-        <>
-          {step <= 4 && <Progress current={step} />}
+      ) : step <= 4 ? (
+        <S.WorkflowLayout>
+          <ImportProgress current={step} />
+          <S.WorkflowContent>
           {step === 1 && (
             <S.Card>
               <S.CardHeader>
@@ -521,19 +528,18 @@ export function MemberImportWorkspace({ initial }: Props) {
               onConfirm={confirmImport}
             />
           )}
-
-          {step === 5 && batch && (
-            <ResultStep
-              workspace={workspace}
-              busy={busy}
-              onNew={newImport}
-              onHistory={() => setTab("history")}
-              onReport={() => download(`/api/members/imports/${batch.id}/report`, "report")}
-              onRollback={() => { setRollbackBlockers([]); setRollbackOpen(true); }}
-            />
-          )}
-        </>
-      )}
+          </S.WorkflowContent>
+        </S.WorkflowLayout>
+      ) : batch ? (
+        <ResultStep
+          workspace={workspace}
+          busy={busy}
+          onNew={newImport}
+          onHistory={() => setTab("history")}
+          onReport={() => download(`/api/members/imports/${batch.id}/report`, "report")}
+          onRollback={() => { setRollbackBlockers([]); setRollbackOpen(true); }}
+        />
+      ) : null}
 
       <Modal
         open={rollbackOpen}
@@ -567,16 +573,47 @@ export function MemberImportWorkspace({ initial }: Props) {
   );
 }
 
-function Progress({ current }: { current: number }) {
+function ImportProgress({ current }: { current: number }) {
+  const currentStep = MEMBER_IMPORT_STEPS.find((item) => item.id === current) ?? MEMBER_IMPORT_STEPS[0];
+  const progress = Math.round((current / MEMBER_IMPORT_STEPS.length) * 100);
+
   return (
-    <S.Progress aria-label={`Etapa ${current} de 4`}>
-      {MEMBER_IMPORT_STEPS.map((item) => (
-        <S.ProgressItem key={item.id} $active={current === item.id} $done={current > item.id}>
-          <span>{current > item.id ? <Check size={15} /> : item.id}</span>
-          <div><strong>{item.title}</strong><small>{item.description}</small></div>
-        </S.ProgressItem>
-      ))}
-    </S.Progress>
+    <P.ProgressRoot aria-label={`Etapa ${current} de ${MEMBER_IMPORT_STEPS.length}`}>
+      <P.ProgressSummary>
+        <div>
+          <P.ProgressLabel>Etapa {current} de {MEMBER_IMPORT_STEPS.length}</P.ProgressLabel>
+          <P.ProgressTitle>{currentStep.title}</P.ProgressTitle>
+        </div>
+        <P.ProgressPercent>{progress}%</P.ProgressPercent>
+      </P.ProgressSummary>
+      <P.ProgressTrack aria-hidden="true">
+        <P.ProgressBar $progress={progress} />
+      </P.ProgressTrack>
+      <P.StepList aria-label="Etapas da importação de membros">
+        {MEMBER_IMPORT_STEPS.map((item) => {
+          const Icon = IMPORT_STEP_ICONS[item.id];
+
+          return (
+            <P.StepItem key={item.id}>
+              <S.StepIndicator
+                as="div"
+                $active={current === item.id}
+                $completed={current > item.id}
+                aria-current={current === item.id ? "step" : undefined}
+              >
+                <P.StepIcon $active={current === item.id} $completed={current > item.id}>
+                  <Icon aria-hidden="true" />
+                </P.StepIcon>
+                <P.StepContent>
+                  <P.StepTitle>{item.title}</P.StepTitle>
+                  <P.StepDescription>{item.description}</P.StepDescription>
+                </P.StepContent>
+              </S.StepIndicator>
+            </P.StepItem>
+          );
+        })}
+      </P.StepList>
+    </P.ProgressRoot>
   );
 }
 

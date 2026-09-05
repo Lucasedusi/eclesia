@@ -1,10 +1,7 @@
 import { Suspense } from "react";
-import Link from "next/link";
-import { FileSpreadsheet, Plus } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { PERMISSIONS } from "@/modules/auth/constants/permissions";
 import { requireAccessContext } from "@/modules/auth/services/access-context.service";
-import { LinkPendingIndicator } from "@/components/navigation/navigation-feedback";
 import { MemberManagement, MemberStatsCards } from "@/modules/members/components/member-management";
 import type { MemberFilters, MemberListResult } from "@/modules/members/types/member.types";
 import {
@@ -63,7 +60,7 @@ export default async function MembersPage({ searchParams }: { searchParams: Sear
   const listPromise = Promise.all([listMembers(context, params), getMemberFilters(context)]);
 
   return <>
-    <PageHeader title="Membros" subtitle="Gestão completa de membros, congregados, visitantes e crianças." badge="Administração" action={<div className="flex flex-wrap gap-2">{capabilities.import && <Link href="/membros/importar" className="app-button-secondary"><FileSpreadsheet size={17} /> Importar planilha <LinkPendingIndicator /></Link>}{capabilities.create && <Link href="/membros/novo" className="app-button-primary"><Plus size={17} /> Novo membro <LinkPendingIndicator /></Link>}</div>} />
+    <PageHeader title="Membros" subtitle="Gestão completa de membros, congregados, visitantes e crianças." badge="Administração" />
     <div className="grid gap-[18px]">
       <Suspense fallback={<MemberStatsLoading />}><MemberStatsContent promise={statsPromise} /></Suspense>
       <Suspense fallback={<MemberListLoading />}><MemberListContent promise={listPromise} params={params} capabilities={capabilities} /></Suspense>

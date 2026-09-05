@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.15"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -1715,86 +1715,241 @@ export type Database = {
           },
         ]
       }
-      event_groups: {
+      event_expenses: {
         Row: {
+          amount: number
           church_id: string
           created_at: string
           created_by: string | null
           deleted_at: string | null
           deleted_by: string | null
           event_id: string
-          female_count: number
+          expense_date: string
           id: string
-          idempotency_key: string | null
-          male_count: number
+          name: string
           notes: string | null
-          origin_church_name: string | null
-          origin_city: string
-          origin_field_name: string | null
-          origin_state: string
-          pastor_name: string | null
-          pastor_phone: string | null
-          responsible_email: string | null
-          responsible_name: string
-          responsible_phone: string | null
-          status: string
-          total_registrations: number
+          receipt_file_name: string | null
+          receipt_file_size: number | null
+          receipt_mime_type: string | null
+          receipt_storage_bucket: string | null
+          receipt_storage_path: string | null
           updated_at: string
           updated_by: string | null
+          upload_status: string
         }
         Insert: {
+          amount: number
           church_id: string
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
           event_id: string
-          female_count?: number
+          expense_date: string
           id?: string
-          idempotency_key?: string | null
-          male_count?: number
+          name: string
           notes?: string | null
-          origin_church_name?: string | null
-          origin_city: string
-          origin_field_name?: string | null
-          origin_state?: string
-          pastor_name?: string | null
-          pastor_phone?: string | null
-          responsible_email?: string | null
-          responsible_name: string
-          responsible_phone?: string | null
-          status?: string
-          total_registrations?: number
+          receipt_file_name?: string | null
+          receipt_file_size?: number | null
+          receipt_mime_type?: string | null
+          receipt_storage_bucket?: string | null
+          receipt_storage_path?: string | null
           updated_at?: string
           updated_by?: string | null
+          upload_status?: string
         }
         Update: {
+          amount?: number
           church_id?: string
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
           event_id?: string
+          expense_date?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          receipt_file_name?: string | null
+          receipt_file_size?: number | null
+          receipt_mime_type?: string | null
+          receipt_storage_bucket?: string | null
+          receipt_storage_path?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          upload_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_expenses_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_expenses_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_expenses_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_expenses_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_expenses_event_tenant_fkey"
+            columns: ["church_id", "event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "event_expenses_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_groups: {
+        Row: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          church_id: string
+          confirmed_at: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          event_id: string
+          female_count: number
+          group_number: string | null
+          id: string
+          idempotency_key: string | null
+          male_count: number
+          metadata: Json
+          notes: string | null
+          origin_church_name: string | null
+          origin_city: string
+          origin_field_name: string | null
+          origin_state: string
+          paid_amount: number
+          pastor_name: string | null
+          pastor_phone: string | null
+          payment_status: string
+          responsible_email: string | null
+          responsible_name: string
+          responsible_phone: string | null
+          source: string
+          status: string
+          total_amount: number
+          total_registrations: number
+          unspecified_count: number
+          updated_at: string
+          updated_by: string | null
+          verification_token_hash: string | null
+          verification_token_last4: string | null
+        }
+        Insert: {
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          church_id: string
+          confirmed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          event_id: string
           female_count?: number
+          group_number?: string | null
           id?: string
           idempotency_key?: string | null
           male_count?: number
+          metadata?: Json
+          notes?: string | null
+          origin_church_name?: string | null
+          origin_city: string
+          origin_field_name?: string | null
+          origin_state?: string
+          paid_amount?: number
+          pastor_name?: string | null
+          pastor_phone?: string | null
+          payment_status?: string
+          responsible_email?: string | null
+          responsible_name: string
+          responsible_phone?: string | null
+          source?: string
+          status?: string
+          total_amount?: number
+          total_registrations?: number
+          unspecified_count?: number
+          updated_at?: string
+          updated_by?: string | null
+          verification_token_hash?: string | null
+          verification_token_last4?: string | null
+        }
+        Update: {
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          church_id?: string
+          confirmed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          event_id?: string
+          female_count?: number
+          group_number?: string | null
+          id?: string
+          idempotency_key?: string | null
+          male_count?: number
+          metadata?: Json
           notes?: string | null
           origin_church_name?: string | null
           origin_city?: string
           origin_field_name?: string | null
           origin_state?: string
+          paid_amount?: number
           pastor_name?: string | null
           pastor_phone?: string | null
+          payment_status?: string
           responsible_email?: string | null
           responsible_name?: string
           responsible_phone?: string | null
+          source?: string
           status?: string
+          total_amount?: number
           total_registrations?: number
+          unspecified_count?: number
           updated_at?: string
           updated_by?: string | null
+          verification_token_hash?: string | null
+          verification_token_last4?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "event_groups_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "event_groups_church_id_fkey"
             columns: ["church_id"]
@@ -1960,6 +2115,182 @@ export type Database = {
           },
         ]
       }
+      event_payment_settings: {
+        Row: {
+          allow_participant_list: boolean
+          allowed_file_types: string[]
+          caravan_registration_item_id: string | null
+          cash_enabled: boolean
+          church_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          event_id: string
+          id: string
+          max_file_size: number
+          payment_instructions: string | null
+          pix_enabled: boolean
+          pix_holder_name: string | null
+          pix_key: string | null
+          pix_qr_file_name: string | null
+          pix_qr_storage_bucket: string | null
+          pix_qr_storage_path: string | null
+          updated_at: string
+          updated_by: string | null
+          whatsapp_number: string | null
+        }
+        Insert: {
+          allow_participant_list?: boolean
+          allowed_file_types?: string[]
+          caravan_registration_item_id?: string | null
+          cash_enabled?: boolean
+          church_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          event_id: string
+          id?: string
+          max_file_size?: number
+          payment_instructions?: string | null
+          pix_enabled?: boolean
+          pix_holder_name?: string | null
+          pix_key?: string | null
+          pix_qr_file_name?: string | null
+          pix_qr_storage_bucket?: string | null
+          pix_qr_storage_path?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          whatsapp_number?: string | null
+        }
+        Update: {
+          allow_participant_list?: boolean
+          allowed_file_types?: string[]
+          caravan_registration_item_id?: string | null
+          cash_enabled?: boolean
+          church_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          event_id?: string
+          id?: string
+          max_file_size?: number
+          payment_instructions?: string | null
+          pix_enabled?: boolean
+          pix_holder_name?: string | null
+          pix_key?: string | null
+          pix_qr_file_name?: string | null
+          pix_qr_storage_bucket?: string | null
+          pix_qr_storage_path?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          whatsapp_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_payment_settings_caravan_registration_item_id_fkey"
+            columns: ["caravan_registration_item_id"]
+            isOneToOne: false
+            referencedRelation: "event_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_payment_settings_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_payment_settings_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_payment_settings_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_payment_settings_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: true
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_payment_settings_event_tenant_fkey"
+            columns: ["church_id", "event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "event_payment_settings_item_tenant_fkey"
+            columns: ["church_id", "event_id", "caravan_registration_item_id"]
+            isOneToOne: false
+            referencedRelation: "event_items"
+            referencedColumns: ["church_id", "event_id", "id"]
+          },
+          {
+            foreignKeyName: "event_payment_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_payment_webhook_events: {
+        Row: {
+          event_id: string | null
+          id: string
+          payload: Json
+          processed_at: string | null
+          processing_status: string
+          provider: string
+          provider_event_id: string
+          provider_payment_id: string | null
+          received_at: string
+        }
+        Insert: {
+          event_id?: string | null
+          id?: string
+          payload?: Json
+          processed_at?: string | null
+          processing_status?: string
+          provider?: string
+          provider_event_id: string
+          provider_payment_id?: string | null
+          received_at?: string
+        }
+        Update: {
+          event_id?: string | null
+          id?: string
+          payload?: Json
+          processed_at?: string | null
+          processing_status?: string
+          provider?: string
+          provider_event_id?: string
+          provider_payment_id?: string | null
+          received_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_payment_webhook_events_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_payments: {
         Row: {
           amount: number
@@ -1976,6 +2307,8 @@ export type Database = {
           event_group_id: string | null
           event_id: string
           event_registration_id: string | null
+          expires_at: string | null
+          external_reference: string | null
           failed_at: string | null
           failed_by: string | null
           failure_reason: string | null
@@ -1989,9 +2322,14 @@ export type Database = {
           paid_at: string | null
           payer_document: string | null
           payer_name: string | null
+          payment_channel: string
           payment_method: string
           payment_number: string | null
           payment_status: string
+          provider: string
+          provider_payment_id: string | null
+          provider_status: string | null
+          provider_status_updated_at: string | null
           receipt_file_name: string | null
           receipt_file_size: number | null
           receipt_file_url: string | null
@@ -2019,6 +2357,8 @@ export type Database = {
           event_group_id?: string | null
           event_id: string
           event_registration_id?: string | null
+          expires_at?: string | null
+          external_reference?: string | null
           failed_at?: string | null
           failed_by?: string | null
           failure_reason?: string | null
@@ -2032,9 +2372,14 @@ export type Database = {
           paid_at?: string | null
           payer_document?: string | null
           payer_name?: string | null
+          payment_channel?: string
           payment_method?: string
           payment_number?: string | null
           payment_status?: string
+          provider?: string
+          provider_payment_id?: string | null
+          provider_status?: string | null
+          provider_status_updated_at?: string | null
           receipt_file_name?: string | null
           receipt_file_size?: number | null
           receipt_file_url?: string | null
@@ -2062,6 +2407,8 @@ export type Database = {
           event_group_id?: string | null
           event_id?: string
           event_registration_id?: string | null
+          expires_at?: string | null
+          external_reference?: string | null
           failed_at?: string | null
           failed_by?: string | null
           failure_reason?: string | null
@@ -2075,9 +2422,14 @@ export type Database = {
           paid_at?: string | null
           payer_document?: string | null
           payer_name?: string | null
+          payment_channel?: string
           payment_method?: string
           payment_number?: string | null
           payment_status?: string
+          provider?: string
+          provider_payment_id?: string | null
+          provider_status?: string | null
+          provider_status_updated_at?: string | null
           receipt_file_name?: string | null
           receipt_file_size?: number | null
           receipt_file_url?: string | null
@@ -2191,6 +2543,89 @@ export type Database = {
           },
         ]
       }
+      event_public_checkouts: {
+        Row: {
+          access_token_hash: string
+          checkout_type: string
+          church_id: string
+          completed_at: string | null
+          created_at: string
+          draft_payload: Json
+          event_id: string
+          expires_at: string | null
+          group_id: string | null
+          id: string
+          idempotency_key: string
+          payment_method: string
+          registration_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          access_token_hash: string
+          checkout_type?: string
+          church_id: string
+          completed_at?: string | null
+          created_at?: string
+          draft_payload?: Json
+          event_id: string
+          expires_at?: string | null
+          group_id?: string | null
+          id?: string
+          idempotency_key: string
+          payment_method: string
+          registration_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          access_token_hash?: string
+          checkout_type?: string
+          church_id?: string
+          completed_at?: string | null
+          created_at?: string
+          draft_payload?: Json
+          event_id?: string
+          expires_at?: string | null
+          group_id?: string | null
+          id?: string
+          idempotency_key?: string
+          payment_method?: string
+          registration_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_public_checkouts_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_public_checkouts_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_public_checkouts_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: true
+            referencedRelation: "event_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_public_checkouts_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: true
+            referencedRelation: "event_registrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_registration_batches: {
         Row: {
           capacity: number | null
@@ -2287,6 +2722,233 @@ export type Database = {
           },
           {
             foreignKeyName: "event_registration_batches_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_registration_field_values: {
+        Row: {
+          church_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          event_id: string
+          event_registration_field_id: string
+          event_registration_id: string
+          field_key_snapshot: string
+          field_type_snapshot: string
+          id: string
+          label_snapshot: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          church_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          event_id: string
+          event_registration_field_id: string
+          event_registration_id: string
+          field_key_snapshot: string
+          field_type_snapshot: string
+          id?: string
+          label_snapshot: string
+          updated_at?: string
+          updated_by?: string | null
+          value: Json
+        }
+        Update: {
+          church_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          event_id?: string
+          event_registration_field_id?: string
+          event_registration_id?: string
+          field_key_snapshot?: string
+          field_type_snapshot?: string
+          id?: string
+          label_snapshot?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_registration_field_value_event_registration_field_id_fkey"
+            columns: ["event_registration_field_id"]
+            isOneToOne: false
+            referencedRelation: "event_registration_fields"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_registration_field_values_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_registration_field_values_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_registration_field_values_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_registration_field_values_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_registration_field_values_event_registration_id_fkey"
+            columns: ["event_registration_id"]
+            isOneToOne: false
+            referencedRelation: "event_registrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_registration_field_values_field_tenant_fkey"
+            columns: ["church_id", "event_id", "event_registration_field_id"]
+            isOneToOne: false
+            referencedRelation: "event_registration_fields"
+            referencedColumns: ["church_id", "event_id", "id"]
+          },
+          {
+            foreignKeyName: "event_registration_field_values_registration_tenant_fkey"
+            columns: ["church_id", "event_id", "event_registration_id"]
+            isOneToOne: false
+            referencedRelation: "event_registrations"
+            referencedColumns: ["church_id", "event_id", "id"]
+          },
+          {
+            foreignKeyName: "event_registration_field_values_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_registration_fields: {
+        Row: {
+          church_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          event_id: string
+          field_key: string
+          field_kind: string
+          field_type: string
+          help_text: string | null
+          id: string
+          is_active: boolean
+          label: string
+          options: Json
+          sort_order: number
+          system_locked: boolean
+          updated_at: string
+          updated_by: string | null
+          visibility: string
+        }
+        Insert: {
+          church_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          event_id: string
+          field_key: string
+          field_kind?: string
+          field_type?: string
+          help_text?: string | null
+          id?: string
+          is_active?: boolean
+          label: string
+          options?: Json
+          sort_order?: number
+          system_locked?: boolean
+          updated_at?: string
+          updated_by?: string | null
+          visibility?: string
+        }
+        Update: {
+          church_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          event_id?: string
+          field_key?: string
+          field_kind?: string
+          field_type?: string
+          help_text?: string | null
+          id?: string
+          is_active?: boolean
+          label?: string
+          options?: Json
+          sort_order?: number
+          system_locked?: boolean
+          updated_at?: string
+          updated_by?: string | null
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_registration_fields_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_registration_fields_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_registration_fields_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_registration_fields_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_registration_fields_event_tenant_fkey"
+            columns: ["church_id", "event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "event_registration_fields_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -2470,6 +3132,7 @@ export type Database = {
           consent_version: string | null
           created_at: string
           created_by: string | null
+          credential_version: number
           deleted_at: string | null
           deleted_by: string | null
           event_group_id: string | null
@@ -2520,6 +3183,7 @@ export type Database = {
           consent_version?: string | null
           created_at?: string
           created_by?: string | null
+          credential_version?: number
           deleted_at?: string | null
           deleted_by?: string | null
           event_group_id?: string | null
@@ -2570,6 +3234,7 @@ export type Database = {
           consent_version?: string | null
           created_at?: string
           created_by?: string | null
+          credential_version?: number
           deleted_at?: string | null
           deleted_by?: string | null
           event_group_id?: string | null
@@ -2736,6 +3401,7 @@ export type Database = {
           cancelled_at: string | null
           cancelled_by: string | null
           capacity: number | null
+          caravan_sequence: number
           church_id: string
           city: string | null
           complement: string | null
@@ -2770,6 +3436,11 @@ export type Database = {
           registration_mode: string
           registration_sequence: number
           registration_starts_at: string | null
+          registration_status: string
+          registrations_closed_at: string | null
+          registrations_closed_by: string | null
+          registrations_opened_at: string | null
+          registrations_opened_by: string | null
           requires_gender_totals: boolean
           requires_group_responsible: boolean
           requires_pastor_info: boolean
@@ -2797,6 +3468,7 @@ export type Database = {
           cancelled_at?: string | null
           cancelled_by?: string | null
           capacity?: number | null
+          caravan_sequence?: number
           church_id: string
           city?: string | null
           complement?: string | null
@@ -2831,6 +3503,11 @@ export type Database = {
           registration_mode?: string
           registration_sequence?: number
           registration_starts_at?: string | null
+          registration_status?: string
+          registrations_closed_at?: string | null
+          registrations_closed_by?: string | null
+          registrations_opened_at?: string | null
+          registrations_opened_by?: string | null
           requires_gender_totals?: boolean
           requires_group_responsible?: boolean
           requires_pastor_info?: boolean
@@ -2858,6 +3535,7 @@ export type Database = {
           cancelled_at?: string | null
           cancelled_by?: string | null
           capacity?: number | null
+          caravan_sequence?: number
           church_id?: string
           city?: string | null
           complement?: string | null
@@ -2892,6 +3570,11 @@ export type Database = {
           registration_mode?: string
           registration_sequence?: number
           registration_starts_at?: string | null
+          registration_status?: string
+          registrations_closed_at?: string | null
+          registrations_closed_by?: string | null
+          registrations_opened_at?: string | null
+          registrations_opened_by?: string | null
           requires_gender_totals?: boolean
           requires_group_responsible?: boolean
           requires_pastor_info?: boolean
@@ -2992,6 +3675,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "regions"
             referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "events_registrations_closed_by_fkey"
+            columns: ["registrations_closed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_registrations_opened_by_fkey"
+            columns: ["registrations_opened_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "events_updated_by_fkey"
@@ -5658,6 +6355,83 @@ export type Database = {
     }
     Functions: {
       accept_church_invitation: { Args: { p_token: string }; Returns: string }
+      apply_event_provider_payment: {
+        Args: {
+          p_metadata?: Json
+          p_normalized_status: string
+          p_paid_at?: string
+          p_provider_payment_id: string
+          p_provider_status: string
+        }
+        Returns: Json
+      }
+      attach_event_pix_payment: {
+        Args: {
+          p_amount: number
+          p_checkout_id: string
+          p_expires_at: string
+          p_external_reference: string
+          p_idempotency_key: string
+          p_provider_payment_id: string
+          p_provider_status: string
+        }
+        Returns: {
+          amount: number
+          cancel_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          church_id: string
+          confirmed_by: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          due_date: string | null
+          event_group_id: string | null
+          event_id: string
+          event_registration_id: string | null
+          expires_at: string | null
+          external_reference: string | null
+          failed_at: string | null
+          failed_by: string | null
+          failure_reason: string | null
+          financial_transaction_id: string | null
+          id: string
+          idempotency_key: string | null
+          installment_number: number
+          installments_total: number
+          metadata: Json
+          notes: string | null
+          paid_at: string | null
+          payer_document: string | null
+          payer_name: string | null
+          payment_channel: string
+          payment_method: string
+          payment_number: string | null
+          payment_status: string
+          provider: string
+          provider_payment_id: string | null
+          provider_status: string | null
+          provider_status_updated_at: string | null
+          receipt_file_name: string | null
+          receipt_file_size: number | null
+          receipt_file_url: string | null
+          receipt_mime_type: string | null
+          receipt_storage_path: string | null
+          refund_reason: string | null
+          refunded_at: string | null
+          refunded_by: string | null
+          transaction_reference: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "event_payments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       can_access_church: { Args: { p_church_id: string }; Returns: boolean }
       can_access_congregation: {
         Args: { p_church_id: string; p_congregation_id: string }
@@ -5679,33 +6453,94 @@ export type Database = {
         Args: { p_invitation_id: string }
         Returns: undefined
       }
-      cancel_event_group: {
-        Args: { p_group_id: string; p_reason: string }
+      cancel_event_caravan: {
+        Args: { p_event_id: string; p_group_id: string; p_reason: string }
         Returns: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
           church_id: string
+          confirmed_at: string | null
           created_at: string
           created_by: string | null
           deleted_at: string | null
           deleted_by: string | null
           event_id: string
           female_count: number
+          group_number: string | null
           id: string
           idempotency_key: string | null
           male_count: number
+          metadata: Json
           notes: string | null
           origin_church_name: string | null
           origin_city: string
           origin_field_name: string | null
           origin_state: string
+          paid_amount: number
           pastor_name: string | null
           pastor_phone: string | null
+          payment_status: string
           responsible_email: string | null
           responsible_name: string
           responsible_phone: string | null
+          source: string
           status: string
+          total_amount: number
           total_registrations: number
+          unspecified_count: number
           updated_at: string
           updated_by: string | null
+          verification_token_hash: string | null
+          verification_token_last4: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "event_groups"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      cancel_event_group: {
+        Args: { p_group_id: string; p_reason: string }
+        Returns: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          church_id: string
+          confirmed_at: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          event_id: string
+          female_count: number
+          group_number: string | null
+          id: string
+          idempotency_key: string | null
+          male_count: number
+          metadata: Json
+          notes: string | null
+          origin_church_name: string | null
+          origin_city: string
+          origin_field_name: string | null
+          origin_state: string
+          paid_amount: number
+          pastor_name: string | null
+          pastor_phone: string | null
+          payment_status: string
+          responsible_email: string | null
+          responsible_name: string
+          responsible_phone: string | null
+          source: string
+          status: string
+          total_amount: number
+          total_registrations: number
+          unspecified_count: number
+          updated_at: string
+          updated_by: string | null
+          verification_token_hash: string | null
+          verification_token_last4: string | null
         }
         SetofOptions: {
           from: "*"
@@ -5727,6 +6562,7 @@ export type Database = {
           consent_version: string | null
           created_at: string
           created_by: string | null
+          credential_version: number
           deleted_at: string | null
           deleted_by: string | null
           event_group_id: string | null
@@ -5749,6 +6585,7 @@ export type Database = {
           participant_state: string | null
           participant_type: string
           payment_status: string
+          preferred_payment_method: string | null
           qr_code_value: string | null
           qr_token_hash: string | null
           qr_token_last4: string | null
@@ -5786,6 +6623,7 @@ export type Database = {
           cancelled_at: string | null
           cancelled_by: string | null
           capacity: number | null
+          caravan_sequence: number
           church_id: string
           city: string | null
           complement: string | null
@@ -5820,6 +6658,11 @@ export type Database = {
           registration_mode: string
           registration_sequence: number
           registration_starts_at: string | null
+          registration_status: string
+          registrations_closed_at: string | null
+          registrations_closed_by: string | null
+          registrations_opened_at: string | null
+          registrations_opened_by: string | null
           requires_gender_totals: boolean
           requires_group_responsible: boolean
           requires_pastor_info: boolean
@@ -5856,6 +6699,7 @@ export type Database = {
           cancelled_at: string | null
           cancelled_by: string | null
           capacity: number | null
+          caravan_sequence: number
           church_id: string
           city: string | null
           complement: string | null
@@ -5890,6 +6734,11 @@ export type Database = {
           registration_mode: string
           registration_sequence: number
           registration_starts_at: string | null
+          registration_status: string
+          registrations_closed_at: string | null
+          registrations_closed_by: string | null
+          registrations_opened_at: string | null
+          registrations_opened_by: string | null
           requires_gender_totals: boolean
           requires_group_responsible: boolean
           requires_pastor_info: boolean
@@ -5930,6 +6779,8 @@ export type Database = {
           event_group_id: string | null
           event_id: string
           event_registration_id: string | null
+          expires_at: string | null
+          external_reference: string | null
           failed_at: string | null
           failed_by: string | null
           failure_reason: string | null
@@ -5943,10 +6794,18 @@ export type Database = {
           paid_at: string | null
           payer_document: string | null
           payer_name: string | null
+          payment_channel: string
           payment_method: string
           payment_number: string | null
           payment_status: string
+          provider: string
+          provider_payment_id: string | null
+          provider_status: string | null
+          provider_status_updated_at: string | null
+          receipt_file_name: string | null
+          receipt_file_size: number | null
           receipt_file_url: string | null
+          receipt_mime_type: string | null
           receipt_storage_path: string | null
           refund_reason: string | null
           refunded_at: string | null
@@ -5999,6 +6858,16 @@ export type Database = {
         }[]
       }
       complete_church_onboarding: { Args: { p_payload: Json }; Returns: string }
+      complete_event_public_caravan: {
+        Args: {
+          p_event_id: string
+          p_idempotency_key: string
+          p_items: Json
+          p_payload: Json
+          p_session_token_hash: string
+        }
+        Returns: Json
+      }
       consume_event_public_limit: {
         Args: {
           p_event_id: string
@@ -6023,6 +6892,15 @@ export type Database = {
         }
         Returns: string
       }
+      create_event_caravan: {
+        Args: {
+          p_event_id: string
+          p_idempotency_key?: string
+          p_items: Json
+          p_payload: Json
+        }
+        Returns: Json
+      }
       create_event_group: {
         Args: {
           p_event_id: string
@@ -6040,12 +6918,32 @@ export type Database = {
         }
         Returns: Json
       }
+      create_event_registration_v3: {
+        Args: {
+          p_event_id: string
+          p_idempotency_key?: string
+          p_payload: Json
+        }
+        Returns: Json
+      }
+      create_event_registration_v3_unvalidated: {
+        Args: {
+          p_event_id: string
+          p_idempotency_key?: string
+          p_payload: Json
+        }
+        Returns: Json
+      }
       create_member_atomic: {
         Args: { p_church_id: string; p_payload: Json }
         Returns: {
           member_code: string
           member_id: string
         }[]
+      }
+      delete_event_payment: {
+        Args: { p_event_id: string; p_payment_id: string }
+        Returns: string
       }
       execute_member_import: { Args: { p_batch_id: string }; Returns: Json }
       expire_event_reservations: {
@@ -6152,6 +7050,7 @@ export type Database = {
           consent_version: string | null
           created_at: string
           created_by: string | null
+          credential_version: number
           deleted_at: string | null
           deleted_by: string | null
           event_group_id: string | null
@@ -6174,6 +7073,7 @@ export type Database = {
           participant_state: string | null
           participant_type: string
           payment_status: string
+          preferred_payment_method: string | null
           qr_code_value: string | null
           qr_token_hash: string | null
           qr_token_last4: string | null
@@ -6209,6 +7109,70 @@ export type Database = {
         }
         Returns: undefined
       }
+      record_event_caravan_payment: {
+        Args: {
+          p_event_id: string
+          p_group_id: string
+          p_idempotency_key?: string
+          p_payload: Json
+        }
+        Returns: {
+          amount: number
+          cancel_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          church_id: string
+          confirmed_by: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          due_date: string | null
+          event_group_id: string | null
+          event_id: string
+          event_registration_id: string | null
+          expires_at: string | null
+          external_reference: string | null
+          failed_at: string | null
+          failed_by: string | null
+          failure_reason: string | null
+          financial_transaction_id: string | null
+          id: string
+          idempotency_key: string | null
+          installment_number: number
+          installments_total: number
+          metadata: Json
+          notes: string | null
+          paid_at: string | null
+          payer_document: string | null
+          payer_name: string | null
+          payment_channel: string
+          payment_method: string
+          payment_number: string | null
+          payment_status: string
+          provider: string
+          provider_payment_id: string | null
+          provider_status: string | null
+          provider_status_updated_at: string | null
+          receipt_file_name: string | null
+          receipt_file_size: number | null
+          receipt_file_url: string | null
+          receipt_mime_type: string | null
+          receipt_storage_path: string | null
+          refund_reason: string | null
+          refunded_at: string | null
+          refunded_by: string | null
+          transaction_reference: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "event_payments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       record_event_payment: {
         Args: {
           p_event_id: string
@@ -6232,6 +7196,8 @@ export type Database = {
           event_group_id: string | null
           event_id: string
           event_registration_id: string | null
+          expires_at: string | null
+          external_reference: string | null
           failed_at: string | null
           failed_by: string | null
           failure_reason: string | null
@@ -6245,10 +7211,18 @@ export type Database = {
           paid_at: string | null
           payer_document: string | null
           payer_name: string | null
+          payment_channel: string
           payment_method: string
           payment_number: string | null
           payment_status: string
+          provider: string
+          provider_payment_id: string | null
+          provider_status: string | null
+          provider_status_updated_at: string | null
+          receipt_file_name: string | null
+          receipt_file_size: number | null
           receipt_file_url: string | null
+          receipt_mime_type: string | null
           receipt_storage_path: string | null
           refund_reason: string | null
           refunded_at: string | null
@@ -6286,6 +7260,8 @@ export type Database = {
           event_group_id: string | null
           event_id: string
           event_registration_id: string | null
+          expires_at: string | null
+          external_reference: string | null
           failed_at: string | null
           failed_by: string | null
           failure_reason: string | null
@@ -6299,9 +7275,14 @@ export type Database = {
           paid_at: string | null
           payer_document: string | null
           payer_name: string | null
+          payment_channel: string
           payment_method: string
           payment_number: string | null
           payment_status: string
+          provider: string
+          provider_payment_id: string | null
+          provider_status: string | null
+          provider_status_updated_at: string | null
           receipt_file_name: string | null
           receipt_file_size: number | null
           receipt_file_url: string | null
@@ -6359,6 +7340,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      reissue_event_caravan_verification: {
+        Args: { p_event_id: string; p_group_id: string }
+        Returns: string
+      }
       reissue_event_registration_qr: {
         Args: { p_registration_id: string }
         Returns: Json
@@ -6415,6 +7400,70 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      review_event_caravan_payment: {
+        Args: {
+          p_amount: number
+          p_payment_id: string
+          p_reason?: string
+          p_status: string
+        }
+        Returns: {
+          amount: number
+          cancel_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          church_id: string
+          confirmed_by: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          due_date: string | null
+          event_group_id: string | null
+          event_id: string
+          event_registration_id: string | null
+          expires_at: string | null
+          external_reference: string | null
+          failed_at: string | null
+          failed_by: string | null
+          failure_reason: string | null
+          financial_transaction_id: string | null
+          id: string
+          idempotency_key: string | null
+          installment_number: number
+          installments_total: number
+          metadata: Json
+          notes: string | null
+          paid_at: string | null
+          payer_document: string | null
+          payer_name: string | null
+          payment_channel: string
+          payment_method: string
+          payment_number: string | null
+          payment_status: string
+          provider: string
+          provider_payment_id: string | null
+          provider_status: string | null
+          provider_status_updated_at: string | null
+          receipt_file_name: string | null
+          receipt_file_size: number | null
+          receipt_file_url: string | null
+          receipt_mime_type: string | null
+          receipt_storage_path: string | null
+          refund_reason: string | null
+          refunded_at: string | null
+          refunded_by: string | null
+          transaction_reference: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "event_payments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       rollback_member_import: { Args: { p_batch_id: string }; Returns: Json }
       safe_uuid: { Args: { p_value: string }; Returns: string }
       search_administrative_documents: {
@@ -6467,6 +7516,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      start_event_public_checkout: {
+        Args: {
+          p_access_token_hash: string
+          p_event_id: string
+          p_idempotency_key: string
+          p_payload: Json
+        }
+        Returns: Json
+      }
       update_administrative_document_metadata: {
         Args: {
           p_description?: string
@@ -6493,6 +7551,34 @@ export type Database = {
         }
         Returns: undefined
       }
+      update_event_caravan: {
+        Args: {
+          p_event_id: string
+          p_expected_updated_at: string
+          p_group_id: string
+          p_items: Json
+          p_payload: Json
+        }
+        Returns: Json
+      }
+      update_event_registration: {
+        Args: {
+          p_event_id: string
+          p_expected_updated_at: string
+          p_payload: Json
+          p_registration_id: string
+        }
+        Returns: Json
+      }
+      update_event_registration_unvalidated: {
+        Args: {
+          p_event_id: string
+          p_expected_updated_at: string
+          p_payload: Json
+          p_registration_id: string
+        }
+        Returns: Json
+      }
       update_member_atomic: {
         Args: {
           p_expected_updated_at: string
@@ -6501,6 +7587,11 @@ export type Database = {
         }
         Returns: string
       }
+      validate_event_caravan_draft: {
+        Args: { p_event_id: string; p_items: Json; p_payload: Json }
+        Returns: Json
+      }
+      verify_event_caravan: { Args: { p_token: string }; Returns: Json }
     }
     Enums: {
       [_ in never]: never

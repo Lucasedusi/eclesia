@@ -5,5 +5,14 @@ import { EventCheckin } from "@/modules/events/components/event-checkin";
 import { getEventWorkspace } from "@/modules/events/services/event.service";
 import LoadingEvent from "../loading";
 
-async function Content({eventId}:{eventId:string}){await requireAccessContext(PERMISSIONS.eventCheckin);return <EventCheckin data={await getEventWorkspace(eventId)}/>;}
-export default async function CheckinPage({params}:{params:Promise<{eventId:string}>}){const{eventId}=await params;return <Suspense fallback={<LoadingEvent/>}><Content eventId={eventId}/></Suspense>;}
+type CheckinParams = Promise<{ eventId: string }>;
+
+async function Content({ params }: { params: CheckinParams }) {
+  const { eventId } = await params;
+  await requireAccessContext(PERMISSIONS.eventCheckin);
+  return <EventCheckin data={await getEventWorkspace(eventId)} />;
+}
+
+export default function CheckinPage({ params }: { params: CheckinParams }) {
+  return <Suspense fallback={<LoadingEvent />}><Content params={params} /></Suspense>;
+}

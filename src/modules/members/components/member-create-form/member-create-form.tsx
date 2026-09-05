@@ -314,13 +314,6 @@ export function MemberCreateForm({ options, mode = "create", initialData }: Prop
           onStepChange={goToStep}
         />
         <S.FormCard onSubmit={(event) => event.preventDefault()}>
-          <S.FormHeader>
-            <S.HeaderBadge>Cadastro multifases</S.HeaderBadge>
-            <S.FormTitle>{mode === "edit" ? "Editar membro" : "Ficha cadastral"}</S.FormTitle>
-            <S.FormDescription>
-              Etapa {stepIndex + 1} de {memberFormSteps.length}. Os dados permanecem preenchidos ao avançar ou voltar.
-            </S.FormDescription>
-          </S.FormHeader>
           <S.FormBody>
             <S.StepHeader>
               <S.StepEyebrow>{currentStep.title}</S.StepEyebrow>

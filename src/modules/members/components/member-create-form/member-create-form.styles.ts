@@ -20,57 +20,6 @@ export const FormCard = styled.form`
   box-shadow: ${({ theme }) => theme.shadows.card};
 `;
 
-export const FormHeader = styled.header`
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border.soft};
-  background: #ffffff;
-  padding: 26px;
-
-  @media (min-width: 768px) {
-    padding: 26px;
-  }
-`;
-
-export const HeaderBadge = styled.span`
-  display: inline-flex;
-  width: fit-content;
-  align-items: center;
-  gap: 8px;
-  border-radius: ${({ theme }) => theme.radius.sm};
-  background: ${({ theme }) => theme.colors.brand.primarySoft};
-  color: ${({ theme }) => theme.colors.brand.primary};
-  padding: 8px 12px;
-  font-size: 12px;
-  font-weight: 800;
-
-  svg {
-    width: 15px;
-    height: 15px;
-    stroke-width: 2;
-  }
-`;
-
-export const FormTitle = styled.h1`
-  color: ${({ theme }) => theme.colors.text.title};
-  font-size: 24px;
-  font-weight: 700;
-  letter-spacing: -0.04em;
-
-  @media (min-width: 768px) {
-    font-size: 24px;
-  }
-`;
-
-export const FormDescription = styled.p`
-  max-width: 760px;
-  color: ${({ theme }) => theme.colors.text.muted};
-  font-size: 13px;
-  font-weight: 500;
-  line-height: 24px;
-`;
-
 export const FormBody = styled.div`
   padding: 24px;
 
@@ -158,6 +107,10 @@ export const CheckCard = styled.div`
   border-radius: 10px;
   background: ${({ theme }) => theme.colors.surface.soft};
   padding: 0 14px;
+
+  label {
+    font-size: 11px;
+  }
 `;
 
 export const FieldBlock = styled.div`
@@ -168,7 +121,7 @@ export const FieldBlock = styled.div`
 
 export const FieldLabel = styled.label`
   color: #475467;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 850;
 `;
 
@@ -178,7 +131,7 @@ export const Field = styled.label`
 
   > span:first-child {
     color: #475467;
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 850;
   }
 `;
@@ -193,7 +146,7 @@ export const FieldHeader = styled.span`
 
   > span:first-child, > label:first-child {
     color: #475467;
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 850;
   }
 `;

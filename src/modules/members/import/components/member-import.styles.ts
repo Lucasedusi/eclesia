@@ -1,6 +1,7 @@
 "use client";
 
 import styled, { keyframes } from "styled-components";
+import * as P from "../../components/member-create-form/member-form-progress.styles";
 
 const enter = keyframes`
   from { opacity: 0; transform: translateY(6px); }
@@ -40,59 +41,23 @@ export const Tab = styled.button<{ $active?: boolean }>`
   &:focus-visible { outline: 0; box-shadow: ${({ theme }) => theme.shadows.focus}; }
 `;
 
-export const Progress = styled.ol`
+export const WorkflowLayout = styled.div`
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0;
-  margin: 0;
-  border-radius: 14px;
-  background: #fff;
-  padding: 14px 16px;
-  list-style: none;
-  box-shadow: ${({ theme }) => theme.shadows.card};
-  @media (max-width: 780px) { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-  @media (max-width: 480px) { grid-template-columns: 1fr; }
+  gap: 20px;
+
+  @media (min-width: 1180px) {
+    grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+    align-items: flex-start;
+  }
 `;
 
-export const ProgressItem = styled.li<{ $active?: boolean; $done?: boolean }>`
-  position: relative;
-  display: flex;
+export const WorkflowContent = styled.div`
   min-width: 0;
-  align-items: center;
-  gap: 10px;
-  padding: 4px 18px 4px 0;
-  &:not(:last-child)::after {
-    position: absolute;
-    top: 20px;
-    right: 0;
-    left: 34px;
-    z-index: 0;
-    height: 2px;
-    background: ${({ $done, theme }) => $done ? theme.colors.brand.primary : "#e5e9f0"};
-    content: "";
-  }
-  > span {
-    position: relative;
-    z-index: 1;
-    display: grid;
-    width: 34px;
-    height: 34px;
-    flex: 0 0 auto;
-    place-items: center;
-    border: 2px solid ${({ $active, $done, theme }) => $active || $done ? theme.colors.brand.primary : "#d6dce7"};
-    border-radius: 50%;
-    background: ${({ $done, theme }) => $done ? theme.colors.brand.primary : "#fff"};
-    color: ${({ $active, $done, theme }) => $done ? "#fff" : $active ? theme.colors.brand.primary : "#98a2b3"};
-    font-size: 11px;
-    font-weight: 900;
-  }
-  > div { position: relative; z-index: 1; min-width: 0; background: #fff; padding: 0 10px 0 0; }
-  strong { display: block; color: ${({ $active, $done }) => $active || $done ? "#101828" : "#667085"}; font-size: 10px; }
-  small { display: block; overflow: hidden; margin-top: 2px; color: #98a2b3; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
-  @media (max-width: 780px) {
-    padding-right: 0;
-    &:not(:last-child)::after { display: none; }
-  }
+`;
+
+export const StepIndicator = styled(P.StepButton)`
+  cursor: default;
+  pointer-events: none;
 `;
 
 export const Card = styled.section`

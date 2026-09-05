@@ -104,7 +104,7 @@ export const Title = styled.h2`
 
 export const Description = styled.p`
   color: ${({ theme }) => theme.colors.text.soft};
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
 `;
 
@@ -141,14 +141,12 @@ export const Body = styled.div`
   min-height: 0;
   overflow-y: auto;
   margin-top: 24px;
-  padding-right: 4px;
+  padding-right: 0;
+  scrollbar-width: none;
 
   &::-webkit-scrollbar {
-    width: 4px;
-  }
-  &::-webkit-scrollbar-thumb {
-    border-radius: 999px;
-    background: #d9deea;
+    width: 0;
+    height: 0;
   }
 `;
 

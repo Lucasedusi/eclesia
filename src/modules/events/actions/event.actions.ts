@@ -6,6 +6,8 @@ import { PERMISSIONS } from "@/modules/auth/constants/permissions";
 import { requireAccessContext } from "@/modules/auth/services/access-context.service";
 import {
   archiveConfiguration,
+  approveRegistrationPayment,
+  approveCaravanPayment,
   cancelGroup,
   cancelRegistration,
   changeDeletionState,
@@ -13,22 +15,33 @@ import {
   changePaymentStatus,
   createGroup,
   createRegistration,
+  updateRegistration,
   deletePayment,
   deleteEventDocument,
+  deleteEventExpense,
+  discardPreparedEventExpenseReceipt,
   finalizeEventBanner,
+  finalizeEventPixQr,
   finalizeEventDocument,
   getEventDocumentUrl,
+  getEventExpenseReceiptUrl,
   getPaymentReceiptUrl,
   prepareEventBanner,
+  prepareEventPixQr,
   prepareEventDocument,
+  prepareEventExpenseReceipt,
   preparePaymentReceipt,
+  prepareCaravanParticipantList,
   permanentlyDeleteEvent,
   recordPayment,
+  recordCaravanPayment,
   registerCheckin,
   reissueQr,
   removeEventBanner,
+  removeEventPixQr,
   reverseCheckin,
   saveEvent,
+  saveEventExpense,
   saveItem,
   saveQuota,
   searchEventMembers,
@@ -38,6 +51,8 @@ import {
   cancelRegistrationSchema,
   checkinSchema,
   eventFormSchema,
+  expenseSchema,
+  caravanPaymentSchema,
   groupSchema,
   itemSchema,
   lifecycleSchema,
@@ -45,6 +60,7 @@ import {
   paymentStatusSchema,
   quotaSchema,
   registrationSchema,
+  updateRegistrationSchema,
   reverseCheckinSchema,
 } from "../validations/event.schemas";
 
@@ -82,7 +98,16 @@ export async function saveEventAction(input: unknown): Promise<ActionResult<{ id
 export async function changeEventLifecycleAction(input: unknown): Promise<ActionResult> {
   const parsed = lifecycleSchema.safeParse(input);
   if (!parsed.success) return { status: "error", message: "Ação inválida." };
-  try { await changeLifecycle(parsed.data.eventId, parsed.data.action, parsed.data.reason); await refresh(parsed.data.eventId); return { status: "success", message: "Situação do evento atualizada." }; }
+  try {
+    await changeLifecycle(parsed.data.eventId, parsed.data.action, parsed.data.reason);
+    await refresh(parsed.data.eventId);
+    const messages: Record<string, string> = {
+      OPEN_REGISTRATION: "Inscrições abertas com sucesso.",
+      REOPEN_REGISTRATION: "Inscrições reabertas com sucesso.",
+      CLOSE_REGISTRATION: "Inscrições encerradas com sucesso.",
+    };
+    return { status: "success", message: messages[parsed.data.action] ?? "Situação do evento atualizada." };
+  }
   catch (error) { return errorResult(error, "Não foi possível alterar o evento."); }
 }
 
@@ -108,6 +133,13 @@ export async function createRegistrationAction(input: unknown): Promise<ActionRe
   catch (error) { return errorResult(error, "Não foi possível criar a inscrição.") as ActionResult<Record<string, unknown>>; }
 }
 
+export async function updateRegistrationAction(input: unknown): Promise<ActionResult<Record<string, unknown>>> {
+  const parsed = updateRegistrationSchema.safeParse(input);
+  if (!parsed.success) return { status: "error", message: "Revise os dados da inscrição.", fieldErrors: parsed.error.flatten().fieldErrors as Record<string, string[]> };
+  try { const data = await updateRegistration(parsed.data); await refresh(parsed.data.eventId); return { status: "success", message: "Inscrição atualizada com sucesso.", data }; }
+  catch (error) { return errorResult(error, "Não foi possível atualizar a inscrição.") as ActionResult<Record<string, unknown>>; }
+}
+
 export async function searchEventMembersAction(query: string): Promise<ActionResult<EventMemberReference[]>> {
   if (query.trim().length < 2) return { status: "success", message: "Digite ao menos dois caracteres.", data: [] };
   try { return { status: "success", message: "Busca concluída.", data: await searchEventMembers(query) }; }
@@ -116,15 +148,15 @@ export async function searchEventMembersAction(query: string): Promise<ActionRes
 
 export async function createEventGroupAction(input: unknown): Promise<ActionResult<Record<string, unknown>>> {
   const parsed = groupSchema.safeParse(input);
-  if (!parsed.success) return { status: "error", message: "Revise os dados do grupo e seus participantes.", fieldErrors: parsed.error.flatten().fieldErrors as Record<string, string[]> };
-  try { const data = await createGroup(parsed.data); await refresh(parsed.data.eventId); return { status: "success", message: "Grupo e inscrições criados com sucesso.", data }; }
-  catch (error) { return errorResult(error, "Não foi possível criar o grupo.") as ActionResult<Record<string, unknown>>; }
+  if (!parsed.success) return { status: "error", message: parsed.error.issues[0]?.message??"Revise os dados da caravana.", fieldErrors: parsed.error.flatten().fieldErrors as Record<string, string[]> };
+  try { const data = await createGroup(parsed.data); await refresh(parsed.data.eventId); return { status: "success", message: parsed.data.groupId?"Caravana atualizada com sucesso.":"Caravana cadastrada com sucesso.", data }; }
+  catch (error) { return errorResult(error, "Não foi possível salvar a caravana.") as ActionResult<Record<string, unknown>>; }
 }
 
 export async function cancelEventGroupAction(groupId: string, eventId: string, reason: string): Promise<ActionResult> {
   if (reason.trim().length < 3) return { status: "error", message: "Informe o motivo do cancelamento." };
-  try { await cancelGroup(groupId, reason); await refresh(eventId); return { status: "success", message: "Grupo e inscrições ativas cancelados." }; }
-  catch (error) { return errorResult(error, "Não foi possível cancelar o grupo."); }
+  try { await cancelGroup(eventId,groupId, reason); await refresh(eventId); return { status: "success", message: "Caravana cancelada. Vagas e itens foram liberados." }; }
+  catch (error) { return errorResult(error, "Não foi possível cancelar a caravana."); }
 }
 
 export async function cancelRegistrationAction(input: unknown, eventId: string): Promise<ActionResult> {
@@ -146,6 +178,29 @@ export async function recordPaymentAction(input: unknown): Promise<ActionResult>
   if (!parsed.success) return { status: "error", message: "Revise os dados do pagamento.", fieldErrors: parsed.error.flatten().fieldErrors as Record<string, string[]> };
   try { await recordPayment(parsed.data); await refresh(parsed.data.eventId); return { status: "success", message: "Pagamento registrado com sucesso." }; }
   catch (error) { return errorResult(error, "Não foi possível registrar o pagamento."); }
+}
+
+export async function recordCaravanPaymentAction(input:unknown):Promise<ActionResult>{
+  const parsed=caravanPaymentSchema.safeParse(input);if(!parsed.success)return{status:"error",message:parsed.error.issues[0]?.message??"Revise os dados do pagamento.",fieldErrors:parsed.error.flatten().fieldErrors as Record<string,string[]>};
+  try{await recordCaravanPayment(parsed.data);await refresh(parsed.data.eventId);return{status:"success",message:"Pagamento da caravana registrado com sucesso."};}catch(error){return errorResult(error,"Não foi possível registrar o pagamento da caravana.");}
+}
+
+export async function approveCaravanPaymentAction(eventId:string,paymentId:string,status:"CONFIRMED"|"FAILED",reason="",amount=0):Promise<ActionResult>{
+  try{await approveCaravanPayment(eventId,paymentId,status,reason,amount);await refresh(eventId);return{status:"success",message:status==="CONFIRMED"?"Pagamento aprovado com sucesso.":"Pagamento rejeitado."};}catch(error){return errorResult(error,"Não foi possível analisar o pagamento.");}
+}
+
+export async function prepareCaravanParticipantListAction(eventId:string,groupId:string,file:{name:string;type:string;size:number}):Promise<ActionResult<{id:string;path:string;token:string}>>{
+  try{return{status:"success",message:"Upload preparado.",data:await prepareCaravanParticipantList(eventId,groupId,{fileName:file.name,mimeType:file.type,fileSize:file.size})};}catch(error){return errorResult(error,"Não foi possível preparar a lista.") as ActionResult<{id:string;path:string;token:string}>;}
+}
+
+export async function approveRegistrationPaymentAction(eventId: string, registrationId: string): Promise<ActionResult> {
+  try {
+    await approveRegistrationPayment(eventId, registrationId);
+    await refresh(eventId);
+    return { status: "success", message: "Pagamento aprovado manualmente com sucesso." };
+  } catch (error) {
+    return errorResult(error, "Não foi possível aprovar o pagamento.");
+  }
 }
 
 export async function getPaymentReceiptUrlAction(eventId: string, paymentId: string): Promise<ActionResult<{ url: string }>> {
@@ -213,6 +268,38 @@ export async function prepareEventDocumentAction(input: { eventId: string; title
 export async function finalizeEventDocumentAction(eventId: string, documentId: string): Promise<ActionResult> { try { await finalizeEventDocument(eventId, documentId); await refresh(eventId); return { status: "success", message: "Documento enviado com sucesso." }; } catch (error) { return errorResult(error, "Não foi possível confirmar o documento."); } }
 export async function getEventDocumentUrlAction(eventId: string, documentId: string): Promise<ActionResult<{ url: string }>> { try { return { status: "success", message: "Link gerado.", data: { url: await getEventDocumentUrl(eventId, documentId) } }; } catch (error) { return errorResult(error, "Não foi possível abrir o documento.") as ActionResult<{ url: string }>; } }
 export async function deleteEventDocumentAction(eventId: string, documentId: string): Promise<ActionResult> { try { await deleteEventDocument(eventId, documentId); await refresh(eventId); return { status: "success", message: "Documento excluído." }; } catch (error) { return errorResult(error, "Não foi possível excluir o documento."); } }
+
+export async function prepareEventExpenseReceiptAction(eventId: string, file: { name: string; type: string; size: number }): Promise<ActionResult<{ path: string; token: string }>> {
+  if (!["application/pdf", "image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size <= 0 || file.size > 10 * 1024 * 1024) return { status: "error", message: "Envie um comprovante PDF, JPG, PNG ou WEBP de até 10 MB." };
+  try { return { status: "success", message: "Upload preparado.", data: await prepareEventExpenseReceipt(eventId, file.name, file.type) }; }
+  catch (error) { return errorResult(error, "Não foi possível preparar o comprovante.") as ActionResult<{ path: string; token: string }>; }
+}
+
+export async function saveEventExpenseAction(input: unknown): Promise<ActionResult> {
+  const parsed = expenseSchema.safeParse(input);
+  if (!parsed.success) {
+    const candidate = input && typeof input === "object" ? input as Record<string, unknown> : {};
+    if (typeof candidate.eventId === "string" && /^[0-9a-f-]{36}$/i.test(candidate.eventId) && typeof candidate.receiptPath === "string" && candidate.receiptPath) {
+      try { await discardPreparedEventExpenseReceipt(candidate.eventId, candidate.receiptPath); } catch { /* A resposta de validação continua sendo a prioridade. */ }
+    }
+    return { status: "error", message: "Revise os dados da despesa.", fieldErrors: parsed.error.flatten().fieldErrors as Record<string, string[]> };
+  }
+  try { await saveEventExpense(parsed.data); await refresh(parsed.data.eventId); return { status: "success", message: parsed.data.id ? "Despesa atualizada com sucesso." : "Despesa cadastrada com sucesso." }; }
+  catch (error) { return errorResult(error, "Não foi possível salvar a despesa."); }
+}
+
+export async function getEventExpenseReceiptUrlAction(eventId: string, expenseId: string): Promise<ActionResult<{ url: string }>> {
+  try { return { status: "success", message: "Link gerado.", data: { url: await getEventExpenseReceiptUrl(eventId, expenseId) } }; }
+  catch (error) { return errorResult(error, "Não foi possível abrir o comprovante.") as ActionResult<{ url: string }>; }
+}
+
+export async function deleteEventExpenseAction(eventId: string, expenseId: string): Promise<ActionResult> {
+  try { await deleteEventExpense(eventId, expenseId); await refresh(eventId); return { status: "success", message: "Despesa excluída com sucesso." }; }
+  catch (error) { return errorResult(error, "Não foi possível excluir a despesa."); }
+}
 export async function prepareEventBannerAction(eventId: string, file: { name: string; type: string; size: number }): Promise<ActionResult<{ path: string; token: string; fileName: string }>> { if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size <= 0 || file.size > 5 * 1024 * 1024) return { status: "error", message: "Envie uma imagem JPG, PNG ou WEBP de até 5 MB." }; try { return { status: "success", message: "Banner preparado.", data: await prepareEventBanner(eventId, file.name, file.type) }; } catch (error) { return errorResult(error, "Não foi possível preparar o banner.") as ActionResult<{ path: string; token: string; fileName: string }>; } }
 export async function finalizeEventBannerAction(eventId: string, path: string): Promise<ActionResult<{ url: string }>> { try { const url = await finalizeEventBanner(eventId, path); await refresh(eventId); return { status: "success", message: "Banner atualizado.", data: { url } }; } catch (error) { return errorResult(error, "Não foi possível confirmar o banner.") as ActionResult<{ url: string }>; } }
 export async function removeEventBannerAction(eventId: string): Promise<ActionResult> { try { await removeEventBanner(eventId); await refresh(eventId); return { status: "success", message: "Banner removido." }; } catch (error) { return errorResult(error, "Não foi possível remover o banner."); } }
+export async function prepareEventPixQrAction(eventId:string,file:{name:string;type:string;size:number}):Promise<ActionResult<{path:string;token:string;fileName:string}>>{if(!["image/jpeg","image/png","image/webp"].includes(file.type)||file.size<=0||file.size>2*1024*1024)return{status:"error",message:"Envie um QR Code JPG, PNG ou WEBP de até 2 MB."};try{return{status:"success",message:"QR Code preparado.",data:await prepareEventPixQr(eventId,file.name,file.type)};}catch(error){return errorResult(error,"Não foi possível preparar o QR Code Pix.") as ActionResult<{path:string;token:string;fileName:string}>;}}
+export async function finalizeEventPixQrAction(eventId:string,path:string,fileName:string):Promise<ActionResult<{url:string}>>{try{const url=await finalizeEventPixQr(eventId,path,fileName);await refresh(eventId);return{status:"success",message:"QR Code Pix atualizado.",data:{url}};}catch(error){return errorResult(error,"Não foi possível confirmar o QR Code Pix.") as ActionResult<{url:string}>;}}
+export async function removeEventPixQrAction(eventId:string):Promise<ActionResult>{try{await removeEventPixQr(eventId);await refresh(eventId);return{status:"success",message:"QR Code Pix removido."};}catch(error){return errorResult(error,"Não foi possível remover o QR Code Pix.");}}

@@ -7,9 +7,10 @@ export const EVENT_TYPES = [
 
 export const EVENT_STATUSES = [
   ["DRAFT", "Rascunho"], ["PUBLISHED", "Publicado"],
-  ["REGISTRATION_OPEN", "Inscrições abertas"], ["REGISTRATION_CLOSED", "Inscrições encerradas"],
   ["IN_PROGRESS", "Em andamento"], ["FINISHED", "Finalizado"], ["CANCELLED", "Cancelado"],
 ] as const;
+
+export const EVENT_REGISTRATION_STATUSES = [["OPEN", "Inscrições abertas"], ["CLOSED", "Inscrições encerradas"]] as const;
 
 export const EVENT_VISIBILITIES = [
   ["INTERNAL", "Interno"], ["PUBLIC", "Público"], ["PRIVATE", "Privado"],
@@ -21,7 +22,7 @@ export const EVENT_SCOPES = [
 ] as const;
 
 export const REGISTRATION_MODES = [
-  ["INDIVIDUAL", "Individual"], ["GROUP", "Grupo/caravana"], ["MIXED", "Misto"],
+  ["INDIVIDUAL", "Somente individual"], ["MIXED", "Individual e caravana"],
 ] as const;
 
 export const PARTICIPANT_TYPES = [
@@ -39,9 +40,28 @@ export const REGISTRATION_STATUSES = [
   ["CANCELLED", "Cancelada"], ["EXPIRED", "Expirada"], ["NO_SHOW", "Não compareceu"],
 ] as const;
 
+export const GROUP_STATUSES = [
+  ["CONFIRMED", "Confirmada"], ["CANCELLED", "Cancelada"],
+] as const;
+
 export const PAYMENT_STATUSES = [
   ["NOT_REQUIRED", "Não necessário"], ["PENDING", "Pendente"], ["PARTIAL", "Parcial"],
   ["PAID", "Pago"], ["FAILED", "Falhou"], ["CANCELLED", "Cancelado"], ["REFUNDED", "Estornado"],
+] as const;
+
+export const PAYMENT_TRANSACTION_STATUSES = [
+  ["PENDING", "Pendente"], ["CONFIRMED", "Confirmado"], ["FAILED", "Falhou"],
+  ["CANCELLED", "Cancelado"], ["REFUNDED", "Estornado"],
+] as const;
+
+export const CHECKIN_METHODS = [
+  ["QR_CODE", "QR Code"], ["SEARCH", "Busca manual"], ["MANUAL", "Manual"],
+  ["IMPORT", "Importação"], ["OTHER", "Outro"],
+] as const;
+
+export const CHECKIN_STATUSES = [
+  ["PENDING", "Pendente"], ["CHECKED_IN", "Check-in realizado"],
+  ["CANCELLED", "Cancelado"], ["INVALID", "Inválido"],
 ] as const;
 
 export const EVENT_DOCUMENT_ACCEPT = ".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx";
@@ -53,5 +73,15 @@ export function options<T extends readonly (readonly [string, string])[]>(values
 }
 
 export function eventLabel(values: readonly (readonly [string, string])[], value: string) {
-  return values.find(([key]) => key === value)?.[1] ?? value;
+  const label = values.find(([key]) => key === value)?.[1];
+  if (label) return label;
+  console.warn("[events] enum value without a mapped label", { value });
+  return value.toLocaleLowerCase("pt-BR").split("_").filter(Boolean).map((part) => `${part.charAt(0).toLocaleUpperCase("pt-BR")}${part.slice(1)}`).join(" ");
+}
+
+export function eventBadgeTone(status: string): "success" | "warning" | "danger" | "neutral" {
+  if (["CONFIRMED", "PAID", "CHECKED_IN", "ACTIVE"].includes(status)) return "success";
+  if (status === "PARTIAL") return "warning";
+  if (["PENDING", "CANCELLED", "FAILED", "EXPIRED"].includes(status)) return "danger";
+  return "neutral";
 }

@@ -21,12 +21,16 @@ import {
   Church,
   CircleUserRound,
   Eye,
+  FileSpreadsheet,
   Loader2,
   MoreHorizontal,
   Pencil,
+  Plus,
   Search,
   ShieldAlert,
   ShieldCheck,
+  RotateCcw,
+  SlidersHorizontal,
   UserCheck,
   UserRoundX,
   UsersRound,
@@ -35,6 +39,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Modal, ModalLoading } from "@/components/ui/modal";
+import { LinkPendingIndicator } from "@/components/navigation/navigation-feedback";
 import { Toast, ToastViewport } from "@/components/ui/toast";
 import {
   changeMemberLifecycleAction,
@@ -59,8 +64,11 @@ import {
 } from "../utils/member-formatters";
 import * as S from "./members.styles";
 
-const MemberDetailsModal = dynamic(() =>
-  import("./member-details-modal").then((module) => module.MemberDetailsModal),
+const MemberDetailsModal = dynamic(
+  () =>
+    import("./member-details-modal").then(
+      (module) => module.MemberDetailsModal,
+    ),
   {
     loading: () => (
       <ModalLoading
@@ -97,24 +105,49 @@ export function MemberStatsCards({ stats }: { stats: MemberStats }) {
   return (
     <S.Stats aria-label="Resumo dos membros">
       <S.Stat>
-        <span><UsersRound size={19} /></span>
-        <div><strong>{stats.total}</strong><small>Total visível no escopo</small></div>
+        <span>
+          <UsersRound size={19} />
+        </span>
+        <div>
+          <strong>{stats.total}</strong>
+          <small>Total visível no escopo</small>
+        </div>
       </S.Stat>
       <S.Stat $tone="success">
-        <span><UserCheck size={19} /></span>
-        <div><strong>{stats.active}</strong><small>Ativos</small></div>
+        <span>
+          <UserCheck size={19} />
+        </span>
+        <div>
+          <strong>{stats.active}</strong>
+          <small>Ativos</small>
+        </div>
       </S.Stat>
       <S.Stat $tone="warning">
-        <span><UserRoundX size={19} /></span>
-        <div><strong>{stats.inactive}</strong><small>Inativos</small></div>
+        <span>
+          <UserRoundX size={19} />
+        </span>
+        <div>
+          <strong>{stats.inactive}</strong>
+          <small>Inativos</small>
+        </div>
       </S.Stat>
       <S.Stat>
-        <span><CircleUserRound size={19} /></span>
-        <div><strong>{stats.visitors}</strong><small>Visitantes</small></div>
+        <span>
+          <CircleUserRound size={19} />
+        </span>
+        <div>
+          <strong>{stats.visitors}</strong>
+          <small>Visitantes</small>
+        </div>
       </S.Stat>
       <S.Stat $tone="danger">
-        <span><Archive size={19} /></span>
-        <div><strong>{stats.archived}</strong><small>Arquivados</small></div>
+        <span>
+          <Archive size={19} />
+        </span>
+        <div>
+          <strong>{stats.archived}</strong>
+          <small>Arquivados</small>
+        </div>
       </S.Stat>
     </S.Stats>
   );
@@ -129,6 +162,14 @@ export function MemberManagement({
   const [result, setResult] = useState(initial);
   const [params, setParams] = useState(initialParams);
   const [searchInput, setSearchInput] = useState(initialParams.search);
+  const [advancedFiltersOpen, setAdvancedFiltersOpen] = useState(
+    Boolean(
+      initialParams.status ||
+      initialParams.memberType ||
+      initialParams.archived ||
+      initialParams.sort !== "name_asc",
+    ),
+  );
   const [pending, startTransition] = useTransition();
   const [detailsId, setDetailsId] = useState<string | null>(null);
   const [menuMember, setMenuMember] = useState<MemberListItem | null>(null);
@@ -295,9 +336,9 @@ export function MemberManagement({
 
   const requiresReason = Boolean(
     lifecycle &&
-      ["MOVE_CONGREGATION", "INACTIVATE", "DISCIPLINE"].includes(
-        lifecycle.action,
-      ),
+    ["MOVE_CONGREGATION", "INACTIVATE", "DISCIPLINE"].includes(
+      lifecycle.action,
+    ),
   );
   const title = lifecycle
     ? {
@@ -337,6 +378,42 @@ export function MemberManagement({
   const shortSearch =
     searchInput.trim().length > 0 && searchInput.trim().length < 3;
 
+  const hasActiveFilters = Boolean(
+    searchInput.trim() ||
+    params.regionId ||
+    params.congregationId ||
+    params.roleId ||
+    params.status ||
+    params.memberType ||
+    params.importBatchId ||
+    params.archived ||
+    params.sort !== "name_asc",
+  );
+
+  function resetFilters() {
+    if (searchTimer.current) {
+      clearTimeout(searchTimer.current);
+      searchTimer.current = null;
+    }
+
+    setSearchInput("");
+    setAdvancedFiltersOpen(false);
+
+    load({
+      ...params,
+      page: 1,
+      search: "",
+      regionId: "",
+      congregationId: "",
+      roleId: "",
+      status: "",
+      memberType: "",
+      importBatchId: "",
+      archived: false,
+      sort: "name_asc",
+    });
+  }
+
   return (
     <>
       <S.Module>
@@ -344,9 +421,35 @@ export function MemberManagement({
           <S.PanelHeader>
             <div>
               <h2>Relação de membros</h2>
-              <p>Paginação, pesquisa, filtros e ordenação executados diretamente no Supabase.</p>
+              <p>
+                Paginação, pesquisa, filtros e ordenação executados diretamente
+                no Supabase.
+              </p>
             </div>
-            <S.HeaderSearch>
+            <S.HeaderActions>
+              {capabilities.import && (
+                <S.HeaderActionLink
+                  href="/membros/importar"
+                  $iconOnly
+                  title="Importar planilha"
+                  aria-label="Importar planilha"
+                >
+                  <FileSpreadsheet aria-hidden="true" />
+                  <LinkPendingIndicator />
+                </S.HeaderActionLink>
+              )}
+              {capabilities.create && (
+                <S.HeaderActionLink href="/membros/novo" $primary>
+                  <Plus aria-hidden="true" />
+                  <span>Novo membro</span>
+                  <LinkPendingIndicator />
+                </S.HeaderActionLink>
+              )}
+            </S.HeaderActions>
+          </S.PanelHeader>
+
+          <S.Toolbar>
+            <S.SearchField>
               <S.Search>
                 <Search aria-hidden="true" />
                 <S.Control
@@ -386,45 +489,118 @@ export function MemberManagement({
                   </S.ClearSearchButton>
                 )}
               </S.Search>
-            </S.HeaderSearch>
-          </S.PanelHeader>
-
-          <S.Toolbar>
-            <S.Select value={params.regionId} onChange={(event) => changeFilter("regionId", event.target.value)}>
+            </S.SearchField>
+            <S.Select
+              value={params.regionId}
+              onChange={(event) => changeFilter("regionId", event.target.value)}
+            >
               <option value="">Todas as Regionais</option>
-              {filters.regions.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+              {filters.regions.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
             </S.Select>
-            <S.Select value={params.congregationId} onChange={(event) => changeFilter("congregationId", event.target.value)}>
+            <S.Select
+              value={params.congregationId}
+              onChange={(event) =>
+                changeFilter("congregationId", event.target.value)
+              }
+            >
               <option value="">Todas as Congregações</option>
-              {filters.congregations.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+              {filters.congregations.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
             </S.Select>
-            <S.Select value={params.roleId} onChange={(event) => changeFilter("roleId", event.target.value)}>
+            <S.Select
+              value={params.roleId}
+              onChange={(event) => changeFilter("roleId", event.target.value)}
+            >
               <option value="">Todos os Cargos</option>
-              {filters.roles.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+              {filters.roles.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
             </S.Select>
-            <S.Select value={params.status} onChange={(event) => changeFilter("status", event.target.value)}>
-              <option value="">Todas as situações</option>
-              {memberStatusOptions.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-            </S.Select>
-            <S.Select value={params.memberType} onChange={(event) => changeFilter("memberType", event.target.value)}>
-              <option value="">Todos os tipos</option>
-              {memberTypeOptions.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-            </S.Select>
-            <S.Select value={params.archived ? "archived" : "current"} onChange={(event) => changeFilter("archived", event.target.value === "archived")}>
-              <option value="current">Cadastros atuais</option>
-              <option value="archived">Arquivados</option>
-            </S.Select>
-            <S.Select value={params.sort} onChange={(event) => changeFilter("sort", event.target.value)}>
-              <option value="name_asc">Nome A–Z</option>
-              <option value="name_desc">Nome Z–A</option>
-              <option value="recent">Mais recentes</option>
-              <option value="oldest">Mais antigos</option>
-              <option value="code">Código</option>
-            </S.Select>
+            <S.AdvancedFiltersButton
+              type="button"
+              $open={advancedFiltersOpen}
+              aria-expanded={advancedFiltersOpen}
+              aria-controls="member-advanced-filters"
+              onClick={() => setAdvancedFiltersOpen((open) => !open)}
+            >
+              <SlidersHorizontal aria-hidden="true" />
+              Filtros avançados
+            </S.AdvancedFiltersButton>
+
+            <S.ResetFiltersButton
+              type="button"
+              title="Limpar filtros"
+              aria-label="Limpar filtros da listagem de membros"
+              disabled={!hasActiveFilters}
+              onClick={resetFilters}
+            >
+              <RotateCcw aria-hidden="true" />
+            </S.ResetFiltersButton>
+
+            {advancedFiltersOpen && (
+              <S.AdvancedFilters id="member-advanced-filters">
+                <S.Select
+                  value={params.status}
+                  onChange={(event) =>
+                    changeFilter("status", event.target.value)
+                  }
+                >
+                  <option value="">Todas as situações</option>
+                  {memberStatusOptions.map((item) => (
+                    <option key={item.value} value={item.value}>
+                      {item.label}
+                    </option>
+                  ))}
+                </S.Select>
+                <S.Select
+                  value={params.memberType}
+                  onChange={(event) =>
+                    changeFilter("memberType", event.target.value)
+                  }
+                >
+                  <option value="">Todos os tipos</option>
+                  {memberTypeOptions.map((item) => (
+                    <option key={item.value} value={item.value}>
+                      {item.label}
+                    </option>
+                  ))}
+                </S.Select>
+                <S.Select
+                  value={params.archived ? "archived" : "current"}
+                  onChange={(event) =>
+                    changeFilter("archived", event.target.value === "archived")
+                  }
+                >
+                  <option value="current">Cadastros atuais</option>
+                  <option value="archived">Arquivados</option>
+                </S.Select>
+                <S.Select
+                  value={params.sort}
+                  onChange={(event) => changeFilter("sort", event.target.value)}
+                >
+                  <option value="name_asc">Nome A–Z</option>
+                  <option value="name_desc">Nome Z–A</option>
+                  <option value="recent">Mais recentes</option>
+                  <option value="oldest">Mais antigos</option>
+                  <option value="code">Código</option>
+                </S.Select>
+              </S.AdvancedFilters>
+            )}
           </S.Toolbar>
 
           {pending ? (
-            <S.Loading><Loader2 /></S.Loading>
+            <S.Loading>
+              <Loader2 />
+            </S.Loading>
           ) : result.items.length === 0 ? (
             <S.Empty>
               <div>
@@ -438,7 +614,14 @@ export function MemberManagement({
               <S.TableWrap>
                 <S.Table>
                   <thead>
-                    <tr><th>Membro</th><th>Congregação</th><th>Cargo</th><th>Tipo</th><th>Situação</th><th /></tr>
+                    <tr>
+                      <th>Membro</th>
+                      <th>Congregação</th>
+                      <th>Cargo</th>
+                      <th>Tipo</th>
+                      <th>Situação</th>
+                      <th />
+                    </tr>
                   </thead>
                   <tbody>
                     {result.items.map((member) => (
@@ -446,20 +629,51 @@ export function MemberManagement({
                         <td>
                           <S.Person>
                             <span>{initials(member.fullName)}</span>
-                            <div><strong>{member.fullName}</strong><small>{member.memberCode || "Sem código"}</small></div>
+                            <div>
+                              <strong>{member.fullName}</strong>
+                              <small>{member.memberCode || "Sem código"}</small>
+                            </div>
                           </S.Person>
                         </td>
-                        <td>{member.congregationName}<br /><small>{member.regionName}</small></td>
+                        <td>
+                          {member.congregationName}
+                          <br />
+                          <small>{member.regionName}</small>
+                        </td>
                         <td>{member.role || "—"}</td>
                         <td>{memberTypeLabels[member.memberType]}</td>
-                        <td><S.Status $status={member.memberStatus}>{member.archived ? "Arquivado" : memberStatusLabels[member.memberStatus]}</S.Status></td>
+                        <td>
+                          <S.Status $status={member.memberStatus}>
+                            {member.archived
+                              ? "Arquivado"
+                              : memberStatusLabels[member.memberStatus]}
+                          </S.Status>
+                        </td>
                         <td>
                           <S.Actions>
-                            <S.IconButton title="Ver ficha" onClick={() => setDetailsId(member.id)}><Eye /></S.IconButton>
+                            <S.IconButton
+                              title="Ver ficha"
+                              onClick={() => setDetailsId(member.id)}
+                            >
+                              <Eye />
+                            </S.IconButton>
                             {capabilities.update && !member.archived && (
-                              <Link href={`/membros/${member.id}/editar`}><S.IconButton as="span" title="Editar"><Pencil /></S.IconButton></Link>
+                              <Link
+                                href={`/membros/${member.id}/editar`}
+                                aria-label={`Editar ${member.fullName}`}
+                              >
+                                <S.IconButton as="span" title="Editar">
+                                  <Pencil />
+                                  <LinkPendingIndicator />
+                                </S.IconButton>
+                              </Link>
                             )}
-                            <S.IconButton title="Outras ações" onClick={() => setMenuMember(member)}><MoreHorizontal /></S.IconButton>
+                            <S.IconButton
+                              title="Outras ações"
+                              onClick={() => setMenuMember(member)}
+                            >
+                              <MoreHorizontal />
+                            </S.IconButton>
                           </S.Actions>
                         </td>
                       </tr>
@@ -472,18 +686,39 @@ export function MemberManagement({
                   <S.MobileCard key={member.id}>
                     <S.Person>
                       <span>{initials(member.fullName)}</span>
-                      <div><strong>{member.fullName}</strong><small>{member.memberCode || "Sem código"}</small></div>
+                      <div>
+                        <strong>{member.fullName}</strong>
+                        <small>{member.memberCode || "Sem código"}</small>
+                      </div>
                     </S.Person>
                     <S.MobileMeta>
-                      <div><span>Congregação</span><strong>{member.congregationName}</strong></div>
-                      <div><span>Cargo</span><strong>{member.role || "—"}</strong></div>
+                      <div>
+                        <span>Congregação</span>
+                        <strong>{member.congregationName}</strong>
+                      </div>
+                      <div>
+                        <span>Cargo</span>
+                        <strong>{member.role || "—"}</strong>
+                      </div>
                     </S.MobileMeta>
                     <S.Actions>
-                      <S.IconButton onClick={() => setDetailsId(member.id)}><Eye /></S.IconButton>
+                      <S.IconButton onClick={() => setDetailsId(member.id)}>
+                        <Eye />
+                      </S.IconButton>
                       {capabilities.update && !member.archived && (
-                        <Link href={`/membros/${member.id}/editar`}><S.IconButton as="span"><Pencil /></S.IconButton></Link>
+                        <Link
+                          href={`/membros/${member.id}/editar`}
+                          aria-label={`Editar ${member.fullName}`}
+                        >
+                          <S.IconButton as="span" title="Editar">
+                            <Pencil />
+                            <LinkPendingIndicator />
+                          </S.IconButton>
+                        </Link>
                       )}
-                      <S.IconButton onClick={() => setMenuMember(member)}><MoreHorizontal /></S.IconButton>
+                      <S.IconButton onClick={() => setMenuMember(member)}>
+                        <MoreHorizontal />
+                      </S.IconButton>
                     </S.Actions>
                   </S.MobileCard>
                 ))}
@@ -492,17 +727,35 @@ export function MemberManagement({
           )}
 
           <S.Pagination>
-            <span>Página {result.page} de {Math.max(1, result.pageCount)} · {result.total} registro(s)</span>
+            <span>
+              Página {result.page} de {Math.max(1, result.pageCount)} ·{" "}
+              {result.total} registro(s)
+            </span>
             <div>
-              <S.Select value={params.pageSize} onChange={(event) => changeFilter("pageSize", Number(event.target.value))}>
+              <S.Select
+                value={params.pageSize}
+                onChange={(event) =>
+                  changeFilter("pageSize", Number(event.target.value))
+                }
+              >
                 <option value={20}>20 por página</option>
                 <option value={50}>50 por página</option>
                 <option value={100}>100 por página</option>
               </S.Select>
-              <Button size="sm" variant="secondary" disabled={result.page <= 1 || pending} onClick={() => load({ ...params, page: params.page - 1 })}>
+              <Button
+                size="sm"
+                variant="secondary"
+                disabled={result.page <= 1 || pending}
+                onClick={() => load({ ...params, page: params.page - 1 })}
+              >
                 <ArrowLeft size={14} /> Anterior
               </Button>
-              <Button size="sm" variant="secondary" disabled={result.page >= result.pageCount || pending} onClick={() => load({ ...params, page: params.page + 1 })}>
+              <Button
+                size="sm"
+                variant="secondary"
+                disabled={result.page >= result.pageCount || pending}
+                onClick={() => load({ ...params, page: params.page + 1 })}
+              >
                 Próxima <ArrowRight size={14} />
               </Button>
             </div>
@@ -532,33 +785,82 @@ export function MemberManagement({
           <S.Menu>
             {menuMember.archived ? (
               capabilities.restore && (
-                <S.MenuButton onClick={() => beginLifecycle(menuMember, "RESTORE")}><ArchiveRestore /> Restaurar cadastro</S.MenuButton>
+                <S.MenuButton
+                  onClick={() => beginLifecycle(menuMember, "RESTORE")}
+                >
+                  <ArchiveRestore /> Restaurar cadastro
+                </S.MenuButton>
               )
             ) : (
               <>
-                {menuMember.memberStatus === "ACTIVE" && capabilities.transfer && (
-                  <S.MenuButton onClick={() => beginLifecycle(menuMember, "MOVE_CONGREGATION")}><Building2 /> Mudar Congregação</S.MenuButton>
-                )}
-                {menuMember.memberStatus === "ACTIVE" && capabilities.changeStatus && (
-                  <S.MenuButton onClick={() => beginLifecycle(menuMember, "INACTIVATE")}><UserRoundX /> Inativar</S.MenuButton>
-                )}
-                {menuMember.memberStatus === "INACTIVE" && capabilities.changeStatus && (
-                  <S.MenuButton onClick={() => beginLifecycle(menuMember, "REACTIVATE")}><UserCheck /> Reativar</S.MenuButton>
-                )}
-                {menuMember.memberStatus === "ACTIVE" && capabilities.transfer && (
-                  <S.MenuButton onClick={() => beginLifecycle(menuMember, "TRANSFER")}><Church /> Transferir para outra igreja</S.MenuButton>
-                )}
-                {menuMember.memberStatus === "ACTIVE" && capabilities.changeStatus && capabilities.viewSensitiveHistory && (
-                  <S.MenuButton onClick={() => beginLifecycle(menuMember, "DISCIPLINE")}><ShieldAlert /> Registrar disciplina</S.MenuButton>
-                )}
-                {menuMember.memberStatus === "DISCIPLINED" && capabilities.changeStatus && capabilities.viewSensitiveHistory && (
-                  <S.MenuButton onClick={() => beginLifecycle(menuMember, "END_DISCIPLINE")}><ShieldCheck /> Encerrar disciplina</S.MenuButton>
-                )}
-                {menuMember.memberStatus === "ACTIVE" && capabilities.changeStatus && (
-                  <S.MenuButton onClick={() => beginLifecycle(menuMember, "DECEASED")}><UserRoundX /> Falecimento</S.MenuButton>
-                )}
+                {menuMember.memberStatus === "ACTIVE" &&
+                  capabilities.transfer && (
+                    <S.MenuButton
+                      onClick={() =>
+                        beginLifecycle(menuMember, "MOVE_CONGREGATION")
+                      }
+                    >
+                      <Building2 /> Mudar Congregação
+                    </S.MenuButton>
+                  )}
+                {menuMember.memberStatus === "ACTIVE" &&
+                  capabilities.changeStatus && (
+                    <S.MenuButton
+                      onClick={() => beginLifecycle(menuMember, "INACTIVATE")}
+                    >
+                      <UserRoundX /> Inativar
+                    </S.MenuButton>
+                  )}
+                {menuMember.memberStatus === "INACTIVE" &&
+                  capabilities.changeStatus && (
+                    <S.MenuButton
+                      onClick={() => beginLifecycle(menuMember, "REACTIVATE")}
+                    >
+                      <UserCheck /> Reativar
+                    </S.MenuButton>
+                  )}
+                {menuMember.memberStatus === "ACTIVE" &&
+                  capabilities.transfer && (
+                    <S.MenuButton
+                      onClick={() => beginLifecycle(menuMember, "TRANSFER")}
+                    >
+                      <Church /> Transferir para outra igreja
+                    </S.MenuButton>
+                  )}
+                {menuMember.memberStatus === "ACTIVE" &&
+                  capabilities.changeStatus &&
+                  capabilities.viewSensitiveHistory && (
+                    <S.MenuButton
+                      onClick={() => beginLifecycle(menuMember, "DISCIPLINE")}
+                    >
+                      <ShieldAlert /> Registrar disciplina
+                    </S.MenuButton>
+                  )}
+                {menuMember.memberStatus === "DISCIPLINED" &&
+                  capabilities.changeStatus &&
+                  capabilities.viewSensitiveHistory && (
+                    <S.MenuButton
+                      onClick={() =>
+                        beginLifecycle(menuMember, "END_DISCIPLINE")
+                      }
+                    >
+                      <ShieldCheck /> Encerrar disciplina
+                    </S.MenuButton>
+                  )}
+                {menuMember.memberStatus === "ACTIVE" &&
+                  capabilities.changeStatus && (
+                    <S.MenuButton
+                      onClick={() => beginLifecycle(menuMember, "DECEASED")}
+                    >
+                      <UserRoundX /> Falecimento
+                    </S.MenuButton>
+                  )}
                 {capabilities.archive && (
-                  <S.MenuButton onClick={() => beginLifecycle(menuMember, "ARCHIVE")}><Archive /> Arquivar</S.MenuButton>
+                  <S.MenuButton
+                    onClick={() => beginLifecycle(menuMember, "ARCHIVE")}
+                  >
+                    <Archive /> Arquivar
+                  </S.MenuButton>
                 )}
               </>
             )}
@@ -571,7 +873,9 @@ export function MemberManagement({
           open
           title={title}
           description="A operação será registrada no histórico eclesiástico."
-          icon={lifecycle.action === "END_DISCIPLINE" ? <ShieldCheck /> : <Church />}
+          icon={
+            lifecycle.action === "END_DISCIPLINE" ? <ShieldCheck /> : <Church />
+          }
           size="lg"
           onClose={() => setLifecycle(null)}
           busy={busy}
@@ -579,8 +883,20 @@ export function MemberManagement({
             <S.ModalFooter>
               <span />
               <div>
-                <Button variant="outline" onClick={() => setLifecycle(null)} disabled={busy}>Cancelar</Button>
-                <Button type="submit" form={lifecycleFormId} loading={busy}>{busy ? "Salvando..." : lifecycle.action === "END_DISCIPLINE" ? "Encerrar disciplina" : "Confirmar movimentação"}</Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setLifecycle(null)}
+                  disabled={busy}
+                >
+                  Cancelar
+                </Button>
+                <Button type="submit" form={lifecycleFormId} loading={busy}>
+                  {busy
+                    ? "Salvando..."
+                    : lifecycle.action === "END_DISCIPLINE"
+                      ? "Encerrar disciplina"
+                      : "Confirmar movimentação"}
+                </Button>
               </div>
             </S.ModalFooter>
           }
@@ -596,7 +912,13 @@ export function MemberManagement({
                   required
                   value={lifecycle.eventDate}
                   max={new Date().toISOString().slice(0, 10)}
-                  onChange={(event) => setLifecycle((current) => current ? { ...current, eventDate: event.target.value } : current)}
+                  onChange={(event) =>
+                    setLifecycle((current) =>
+                      current
+                        ? { ...current, eventDate: event.target.value }
+                        : current,
+                    )
+                  }
                 />
               </S.Field>
               {lifecycle.action === "DISCIPLINE" && (
@@ -607,39 +929,84 @@ export function MemberManagement({
                     type="date"
                     min={lifecycle.eventDate}
                     value={lifecycle.expectedEndDate ?? ""}
-                    onChange={(event) => setLifecycle((current) => current ? { ...current, expectedEndDate: event.target.value } : current)}
+                    onChange={(event) =>
+                      setLifecycle((current) =>
+                        current
+                          ? { ...current, expectedEndDate: event.target.value }
+                          : current,
+                      )
+                    }
                   />
                 </S.Field>
               )}
               {lifecycle.action === "MOVE_CONGREGATION" && (
                 <S.Field>
                   <span>Nova Congregação *</span>
-                  <S.Select name="targetCongregationId" required defaultValue="">
+                  <S.Select
+                    name="targetCongregationId"
+                    required
+                    defaultValue=""
+                  >
                     <option value="">Selecione</option>
-                    {filters.congregations.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+                    {filters.congregations.map((item) => (
+                      <option key={item.value} value={item.value}>
+                        {item.label}
+                      </option>
+                    ))}
                   </S.Select>
                 </S.Field>
               )}
               {lifecycle.action === "TRANSFER" && (
                 <S.Field>
                   <span>Igreja de destino *</span>
-                  <S.Control name="destinationChurch" required placeholder="Nome da igreja de destino" />
+                  <S.Control
+                    name="destinationChurch"
+                    required
+                    placeholder="Nome da igreja de destino"
+                  />
                 </S.Field>
               )}
-              {!['ARCHIVE', 'RESTORE'].includes(lifecycle.action) && (
+              {!["ARCHIVE", "RESTORE"].includes(lifecycle.action) && (
                 <S.Field $span={2}>
-                  <span>{lifecycle.action === "END_DISCIPLINE" ? "Observação" : "Motivo ou observação"}{requiresReason ? " *" : ""}</span>
-                  <S.Textarea name="reason" required={requiresReason} placeholder={lifecycle.action === "END_DISCIPLINE" ? "Observação opcional sobre o encerramento" : "Descreva o motivo desta movimentação"} />
+                  <span>
+                    {lifecycle.action === "END_DISCIPLINE"
+                      ? "Observação"
+                      : "Motivo ou observação"}
+                    {requiresReason ? " *" : ""}
+                  </span>
+                  <S.Textarea
+                    name="reason"
+                    required={requiresReason}
+                    placeholder={
+                      lifecycle.action === "END_DISCIPLINE"
+                        ? "Observação opcional sobre o encerramento"
+                        : "Descreva o motivo desta movimentação"
+                    }
+                  />
                 </S.Field>
               )}
               {["TRANSFER", "DISCIPLINE"].includes(lifecycle.action) && (
                 <S.CheckField $span={2}>
-                  <Checkbox id="endRoles" name="endRoles" defaultChecked label={lifecycle.action === "DISCIPLINE" ? "Suspender Cargo atual" : "Encerrar Cargo atual"} />
+                  <Checkbox
+                    id="endRoles"
+                    name="endRoles"
+                    defaultChecked
+                    label={
+                      lifecycle.action === "DISCIPLINE"
+                        ? "Suspender Cargo atual"
+                        : "Encerrar Cargo atual"
+                    }
+                  />
                 </S.CheckField>
               )}
               {lifecycle.action === "END_DISCIPLINE" && (
                 <S.CheckField $span={2}>
-                  <Checkbox id="reactivateRole" name="reactivateRole" defaultChecked label="Reativar o Cargo suspenso" />
+                  <Checkbox
+                    id="reactivateRole"
+                    name="reactivateRole"
+                    defaultChecked
+                    label="Reativar o Cargo suspenso"
+                  />
                 </S.CheckField>
               )}
             </S.FieldGrid>

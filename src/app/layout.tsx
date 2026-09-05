@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Nunito_Sans } from "next/font/google";
 import { APP_CONFIG } from "@/constants/app";
 import { AppProviders } from "@/providers/app-providers";
 import { WebVitals } from "@/components/observability/web-vitals";
 import "./globals.css";
 
-const inter = Inter({
+const appFont = Nunito_Sans({
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-inter",
+  variable: "--font-app",
 });
 
 export const metadata: Metadata = {
@@ -23,7 +23,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
-      <body className={inter.className} suppressHydrationWarning>
+      <body className={appFont.variable} suppressHydrationWarning>
         <WebVitals />
         <AppProviders>{children}</AppProviders>
       </body>

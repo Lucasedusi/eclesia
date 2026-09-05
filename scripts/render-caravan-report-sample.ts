@@ -1,0 +1,8 @@
+import {mkdir,writeFile} from "node:fs/promises";
+import {createEventCaravanReportPdf} from "../src/modules/events/services/event-caravan-report-pdf.service";
+import type {EventCaravanReportPreview} from "../src/modules/events/types/event.types";
+
+const config={filters:{city:"",state:"",source:"" as const,paymentStatus:"",registeredFrom:"",registeredTo:""},columns:{index:true,originChurch:true,responsible:true},organization:"HIGHEST_REGISTRATIONS" as const,showAppliedFilters:true,showIssuedAt:true};
+const report:EventCaravanReportPreview={event:{id:"sample",name:"Congresso Estadual de Missões 2027",publicCode:"CONGRE"},churchName:"Assembleia de Deus de Porangatu",issuedAt:new Date().toISOString(),orientation:"portrait",totalCaravans:32,totalRegistrations:1488,cityCount:24,selectedColumnCount:6,activeFilterCount:1,appliedFilters:[{label:"Situação",value:"Caravanas confirmadas"}],config,caravans:Array.from({length:45},(_,index)=>({id:String(index+1),index:index+1,city:["Goiânia","Anápolis","Uruaçu","Gurupi","Palmas"][index%5],state:index%5>2?"TO":"GO",cityAndState:`${["GOIÂNIA/GO","ANÁPOLIS/GO","URUAÇU/GO","GURUPI/TO","PALMAS/TO"][index%5]}`,originChurch:`Assembleia de Deus — Campo ${index+1}`,pastorName:`Pr. Responsável ${index+1}`,responsibleName:`Líder da caravana ${index+1}`,totalRegistrations:80-index,source:index%2?"PUBLIC":"INTERNAL",paymentStatus:index%3?"PARTIAL":"PAID",registeredAt:"2026-08-31T12:00:00Z"}))};
+await mkdir("/workspace/scratch/6edfdec14102/output",{recursive:true});
+await writeFile("/workspace/scratch/6edfdec14102/output/caravan-report-sample.pdf",await createEventCaravanReportPdf(report));

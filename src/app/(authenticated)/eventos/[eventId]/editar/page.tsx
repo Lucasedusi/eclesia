@@ -5,7 +5,7 @@ import LoadingEvents from "../../loading";
 
 async function Content({ params }: { params: Promise<{ eventId: string }> }) {
   const { eventId } = await params;
-  const [event, options] = await Promise.all([getEvent(eventId), getEventFormOptions()]);
+  const [event, options] = await Promise.all([getEvent(eventId), getEventFormOptions(eventId)]);
   return <EventForm initial={event} options={options} />;
 }
 

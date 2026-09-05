@@ -120,7 +120,7 @@ export const NavList = styled.nav<{
 }>`
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 18px;
   padding: ${({ $collapsed }) => ($collapsed ? "16px 0 0" : "0 24px")};
 
   ${({ $secondary, $collapsed }) =>

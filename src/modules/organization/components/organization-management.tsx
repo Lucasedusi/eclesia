@@ -14,6 +14,7 @@ import {
   Pencil,
   Plus,
   Power,
+  RotateCcw,
   Search,
   ShieldCheck,
   Trash2,
@@ -226,6 +227,22 @@ export function OrganizationManagement({ data, activeTab }: { data: Organization
     else setPositionForm("new");
   }
 
+  const hasActiveFilters =
+    Boolean(search) ||
+    status !== "ALL" ||
+    region !== "ALL" ||
+    congregationType !== "ALL" ||
+    sort !== "ORDER";
+
+  function resetFilters() {
+    setSearch("");
+    setStatus("ALL");
+    setRegion("ALL");
+    setCongregationType("ALL");
+    setSort("ORDER");
+    setPage(1);
+  }
+
   return (
     <S.Module>
       <OrganizationStats data={data} />
@@ -257,7 +274,16 @@ export function OrganizationManagement({ data, activeTab }: { data: Organization
             <S.SelectControl aria-label="Ordenar resultados" value={sort} onChange={(event) => { setSort(event.target.value); setPage(1); }}>
               <option value="ORDER">Ordem de exibição</option><option value="NAME">Nome (A–Z)</option><option value="REGION">Regional</option><option value="CREATED">Mais recentes</option>
             </S.SelectControl>
-          ) : <span aria-hidden="true" />}
+          ) : null}
+          <S.ResetFiltersButton
+            type="button"
+            title="Limpar filtros"
+            aria-label={`Limpar filtros de ${descriptions[activeTab].title}`}
+            disabled={!hasActiveFilters}
+            onClick={resetFilters}
+          >
+            <RotateCcw aria-hidden="true" />
+          </S.ResetFiltersButton>
         </S.Toolbar>
 
         {pagedItems.length === 0 ? (
