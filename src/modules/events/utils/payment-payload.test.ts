@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildRegistrationPaymentPayload, canShowPublicCashWhatsapp, parsePublicCaravanPaymentAmount } from "./payment-payload";
+import { buildPublicCaravanPaymentPayload, buildRegistrationPaymentPayload, canShowPublicCashWhatsapp, parsePublicCaravanPaymentAmount } from "./payment-payload";
 
 describe("buildRegistrationPaymentPayload", () => {
   it("omite todos os metadados quando não existe comprovante", () => {
@@ -46,5 +46,35 @@ describe("pagamento público de caravana", () => {
     expect(canShowPublicCashWhatsapp({ completed: true, paymentMethod: "CASH", hasWhatsappNumber: true })).toBe(true);
     expect(canShowPublicCashWhatsapp({ completed: true, paymentMethod: "PIX", hasWhatsappNumber: true })).toBe(false);
     expect(canShowPublicCashWhatsapp({ completed: true, paymentMethod: "CASH", hasWhatsappNumber: false })).toBe(false);
+  });
+
+  it("remove valor e comprovante quando a forma selecionada é dinheiro", () => {
+    expect(buildPublicCaravanPaymentPayload({
+      paymentMethod: "CASH",
+      amountValue: "R$ 2.500,00",
+      receipt: { path: "tenant/comprovante.pdf", fileName: "comprovante.pdf", mimeType: "application/pdf", fileSize: 2048 },
+    })).toEqual({
+      paymentMethod: "CASH",
+      paymentAmount: 0,
+      paymentReceiptPath: "",
+      paymentReceiptFileName: "",
+      paymentReceiptMimeType: "",
+      paymentReceiptFileSize: 0,
+    });
+  });
+
+  it("mantém valor e metadados do comprovante no Pix coletivo", () => {
+    expect(buildPublicCaravanPaymentPayload({
+      paymentMethod: "PIX",
+      amountValue: "R$ 2.500,00",
+      receipt: { path: "tenant/comprovante.pdf", fileName: "comprovante.pdf", mimeType: "application/pdf", fileSize: 2048 },
+    })).toEqual({
+      paymentMethod: "PIX",
+      paymentAmount: 2500,
+      paymentReceiptPath: "tenant/comprovante.pdf",
+      paymentReceiptFileName: "comprovante.pdf",
+      paymentReceiptMimeType: "application/pdf",
+      paymentReceiptFileSize: 2048,
+    });
   });
 });

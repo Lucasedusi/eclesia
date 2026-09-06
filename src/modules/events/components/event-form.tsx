@@ -370,7 +370,10 @@ export function EventForm({ initial, options }: Props) {
                   <S.Wide><S.Field><span>Instruções de pagamento</span><textarea name="paymentInstructions" maxLength={1500} defaultValue={initial?.paymentSettings.paymentInstructions??""}/></S.Field></S.Wide>
                 </S.FieldGrid>
                 {!options.items.length?<S.InfoBox><Info/><div><strong>Item principal</strong><p>Salve o evento, cadastre os itens no workspace e volte à edição para escolher qual item acompanhará automaticamente o total da caravana.</p></div></S.InfoBox>:null}
-              </>:<S.InfoBox><Users/><div><strong>Evento somente individual</strong><p>O fluxo individual permanece inalterado. Selecione “Individual e caravana” na etapa anterior para ativar a configuração coletiva.</p></div></S.InfoBox>}
+              </>:<>
+                <S.InfoBox><Users/><div><strong>Evento somente individual</strong><p>Informe o contato que será exibido depois da inscrição para combinar pagamentos presenciais.</p></div></S.InfoBox>
+                <S.FieldGrid><S.Field><span>WhatsApp do evento{requiresPayment?" *":""}</span><input name="whatsappNumber" inputMode="tel" required={requiresPayment} defaultValue={initial?.paymentSettings.whatsappNumber??""}/></S.Field></S.FieldGrid>
+              </>}
               <input type="hidden" name="requiresGroupResponsible" value={registrationMode==="MIXED"?"true":"false"}/><input type="hidden" name="requiresPastorInfo" value={registrationMode==="MIXED"?"true":"false"}/><input type="hidden" name="requiresGenderTotals" value={registrationMode==="MIXED"?"true":"false"}/>
             </S.StepPanel>
 

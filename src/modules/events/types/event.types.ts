@@ -576,6 +576,7 @@ export type PublicCheckoutStatus = {
   registrationNumber: string;
   participantName: string;
   congregationName: string | null;
+  regionName: string | null;
   registeredAt: string;
   confirmedAt: string | null;
   registrationStatus: string;
@@ -597,3 +598,34 @@ export type PublicCheckoutStatus = {
     isSimulated: boolean;
   } | null;
 };
+
+export type PublicCaravanTrackingStatus = {
+  eventId: string;
+  eventName: string;
+  eventStartsAt: string;
+  eventLocation: string | null;
+  groupId: string;
+  groupNumber: string;
+  originChurchName: string;
+  originCity: string;
+  originState: string;
+  responsibleName: string;
+  responsiblePhone: string;
+  pastorName: string;
+  totalRegistrations: number;
+  maleCount: number;
+  femaleCount: number;
+  registrationStatus: string;
+  paymentStatus: string;
+  paymentMethod: "PIX" | "CASH" | "NOT_APPLICABLE";
+  totalAmount: number;
+  paidAmount: number;
+  remainingAmount: number;
+  registeredAt: string;
+  updatedAt: string;
+  items: PublicCheckoutItem[];
+};
+
+export type PublicTrackingStatus =
+  | { kind: "INDIVIDUAL"; status: string; data: PublicCheckoutStatus }
+  | { kind: "CARAVAN"; status: string; data: PublicCaravanTrackingStatus };

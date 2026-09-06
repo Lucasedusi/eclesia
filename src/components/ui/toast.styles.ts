@@ -50,7 +50,8 @@ export const Viewport = styled.div`
   }
 
   @media (max-width: 640px) {
-    top: 12px;
+    top: auto;
+    bottom: calc(12px + env(safe-area-inset-bottom));
     right: 12px;
     left: 12px;
     width: auto;
@@ -74,6 +75,18 @@ export const ToastRoot = styled.div<ToastRootProps>`
   box-shadow: 0 18px 48px rgba(16, 24, 40, 0.2);
   ${({ $variant }) => toastBackground[$variant]}
   animation: ${toastIn} 180ms cubic-bezier(0.22, 1, 0.36, 1) both;
+
+  @media (max-width: 640px) {
+    grid-template-columns: 18px minmax(0, 1fr) 24px;
+    align-items: center;
+    column-gap: 8px;
+    border: 1px solid ${({ theme, $variant }) => $variant === "danger" ? theme.colors.state.danger : $variant === "warning" ? theme.colors.state.warning : theme.colors.state.success};
+    border-radius: 8px;
+    background: ${({ theme }) => theme.colors.surface.card};
+    padding: 10px 11px;
+    color: ${({ theme, $variant }) => $variant === "danger" ? theme.colors.state.danger : $variant === "warning" ? theme.colors.text.title : theme.colors.state.success};
+    box-shadow: 0 10px 28px rgba(16, 24, 40, 0.16);
+  }
 
   @media (prefers-reduced-motion: reduce) {
     animation: none;
@@ -144,6 +157,10 @@ export const ToastTitle = styled.p`
   font-weight: 800;
   letter-spacing: -0.01em;
   line-height: 1.35;
+
+  @media (max-width: 640px) {
+    font-size: 12px;
+  }
 `;
 
 export const ToastDescription = styled.p`
@@ -156,4 +173,16 @@ export const ToastDescription = styled.p`
   font-weight: 600;
   line-height: 1.5;
   opacity: 0.94;
+
+  @media (max-width: 640px) {
+    grid-column: 2;
+    grid-row: 2;
+    margin: 2px 0 0;
+    border-top: 0;
+    padding: 0;
+    color: ${({ theme }) => theme.colors.text.body};
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1.35;
+  }
 `;

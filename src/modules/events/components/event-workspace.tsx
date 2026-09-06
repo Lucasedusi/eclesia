@@ -22,6 +22,7 @@ import {
   Gift,
   LoaderCircle,
   Plus,
+  Printer,
   QrCode as QrCodeIcon,
   ReceiptText,
   RotateCcw,
@@ -486,6 +487,7 @@ export function EventWorkspace({ initial }: { initial: EventWorkspaceData }) {
         menuRef={menuRef}
         style={{ left: menu.left, top: menu.top }}
         registration={initial.registrations.find((item) => item.id === menu.registrationId)!}
+        eventId={event.id}
         canManage={can(PERMISSIONS.eventRegistrationsManage)}
         canPay={can(PERMISSIONS.eventPaymentsManage)}
         onClose={() => setMenu(null)}
@@ -540,8 +542,8 @@ export function EventWorkspace({ initial }: { initial: EventWorkspaceData }) {
   );
 }
 
-const RegistrationMenu = ({ registration, canManage, canPay, onClose, onDetails, onEdit, onPayment, onApprovePayment, onQr, onCancel, menuRef, ...props }: {
-  registration: RegistrationRow; canManage: boolean; canPay: boolean; onClose: () => void;
+const RegistrationMenu = ({ registration, eventId, canManage, canPay, onClose, onDetails, onEdit, onPayment, onApprovePayment, onQr, onCancel, menuRef, ...props }: {
+  registration: RegistrationRow; eventId: string; canManage: boolean; canPay: boolean; onClose: () => void;
   onDetails: (registration: RegistrationRow) => void; onPayment: (registration: RegistrationRow) => void;
   onEdit: (registration: RegistrationRow) => void;
   onApprovePayment: (registration: RegistrationRow) => void;
@@ -552,6 +554,8 @@ const RegistrationMenu = ({ registration, canManage, canPay, onClose, onDetails,
   {canManage && registration.status !== "CANCELLED" ? <button role="menuitem" onClick={() => { onEdit(registration); onClose(); }}><Pencil />Editar inscrição</button> : null}
   {canPay && registration.remainingAmount > 0 && !["CANCELLED", "EXPIRED"].includes(registration.status) ? <button role="menuitem" onClick={() => { onApprovePayment(registration); onClose(); }}><BadgeDollarSign />Aprovar pagamento</button> : null}
   {canPay && registration.remainingAmount > 0 && !["CANCELLED", "EXPIRED"].includes(registration.status) ? <button role="menuitem" onClick={() => { onPayment(registration); onClose(); }}><CreditCard />Registrar pagamento</button> : null}
+  {canManage ? <a role="menuitem" href={`/api/events/${eventId}/registrations/${registration.id}/receipt`} target="_blank" rel="noreferrer" onClick={onClose}><Download />Comprovante de inscrição</a> : null}
+  {canManage ? <a role="menuitem" href={`/api/events/${eventId}/registrations/${registration.id}/thermal`} target="_blank" rel="noreferrer" onClick={onClose}><Printer />Imprimir em térmica</a> : null}
   {canManage && registration.status === "CONFIRMED" ? <button role="menuitem" onClick={() => { onQr(registration); onClose(); }}><QrCodeIcon />Reemitir QR Code</button> : null}
   {canManage && !["CANCELLED", "EXPIRED"].includes(registration.status) ? <button role="menuitem" data-danger onClick={() => { onCancel(registration); onClose(); }}><Trash2 />Cancelar inscrição</button> : null}
 </S.Menu>;
@@ -565,6 +569,7 @@ const CaravanMenu = ({group,eventId,canManage,canPay,onClose,onDetails,onEdit,on
   {canManage&&group.status==="CONFIRMED"?<button role="menuitem" onClick={()=>{onEdit(group);onClose();}}><Pencil/>Editar caravana</button>:null}
   {canPay&&group.remainingAmount>0&&group.status==="CONFIRMED"?<button role="menuitem" onClick={()=>{onPayment(group);onClose();}}><CreditCard/>Registrar pagamento</button>:null}
   <a role="menuitem" href={`/api/events/${eventId}/caravans/${group.id}/receipt`} target="_blank" rel="noreferrer" onClick={onClose}><Download/>Comprovante de inscrição</a>
+  <a role="menuitem" href={`/api/events/${eventId}/caravans/${group.id}/thermal`} target="_blank" rel="noreferrer" onClick={onClose}><Printer/>Imprimir em térmica</a>
   {canManage&&group.status==="CONFIRMED"?<button role="menuitem" data-danger onClick={()=>{onCancel(group);onClose();}}><Trash2/>Excluir caravana</button>:null}
 </S.Menu>;
 

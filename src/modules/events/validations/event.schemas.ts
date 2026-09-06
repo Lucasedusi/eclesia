@@ -81,6 +81,9 @@ export const eventFormSchema = z.object({
     if (!data.caravanSettings.pixKey) ctx.addIssue({ code: "custom", path: ["caravanSettings", "pixKey"], message: "Informe a chave Pix do evento." });
     if (!data.caravanSettings.pixHolderName) ctx.addIssue({ code: "custom", path: ["caravanSettings", "pixHolderName"], message: "Informe o titular da chave Pix." });
   }
+  if ((data.caravanSettings.cashEnabled || (data.registrationMode === "INDIVIDUAL" && data.requiresPayment)) && !data.caravanSettings.whatsappNumber.replace(/\D/g, "")) {
+    ctx.addIssue({ code: "custom", path: ["caravanSettings", "whatsappNumber"], message: "Informe o WhatsApp da organização para pagamentos em dinheiro." });
+  }
 });
 
 const registrationBaseSchema = z.object({
@@ -139,6 +142,11 @@ export const expenseSchema = z.object({
 
 export const publicCheckoutTokenSchema = z.object({
   checkoutToken: z.string().trim().min(40).max(120).regex(/^[A-Za-z0-9_-]+$/),
+  refreshProvider: z.coerce.boolean().default(false),
+});
+
+export const publicTrackingSchema = z.object({
+  token: z.string().trim().min(40).max(120).regex(/^[A-Za-z0-9_-]+$/),
   refreshProvider: z.coerce.boolean().default(false),
 });
 

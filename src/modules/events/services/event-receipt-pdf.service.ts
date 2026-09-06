@@ -21,8 +21,9 @@ function paymentMethod(value: PublicCheckoutStatus["paymentMethod"]) {
   return { PIX: "Pix", CASH: "Dinheiro", DEBIT_CARD: "Cartão de débito", CREDIT_CARD: "Cartão de crédito", NOT_APPLICABLE: "Não necessário" }[value];
 }
 
-export async function createEventReceiptPdf(checkout: PublicCheckoutStatus) {
-  if (!checkout.credentialToken || checkout.registrationStatus !== "CONFIRMED") throw new Error("EVENT_RECEIPT_NOT_AVAILABLE");
+export async function createEventReceiptPdf(checkout: PublicCheckoutStatus, options: { allowPending?: boolean } = {}) {
+  const confirmed = ["CONFIRMED", "CHECKED_IN"].includes(checkout.registrationStatus);
+  if ((!checkout.credentialToken || !confirmed) && !options.allowPending) throw new Error("EVENT_RECEIPT_NOT_AVAILABLE");
   const document = await PDFDocument.create();
   const regular = await document.embedFont(StandardFonts.Helvetica);
   const bold = await document.embedFont(StandardFonts.HelveticaBold);
@@ -42,19 +43,27 @@ export async function createEventReceiptPdf(checkout: PublicCheckoutStatus) {
   };
   row("Participante", checkout.participantName);
   row("Número da inscrição", checkout.registrationNumber);
+  row("Congregação", checkout.congregationName ?? "Não informada");
+  row("Regional", checkout.regionName ?? "Não informada");
   row("Data da inscrição", date(checkout.registeredAt));
   row("Confirmação", date(checkout.confirmedAt));
   row("Forma de pagamento", paymentMethod(checkout.paymentMethod));
-  row("Situação", checkout.paymentStatus === "NOT_REQUIRED" ? "Pagamento não necessário" : "Pagamento confirmado");
+  row("Situação", confirmed ? (checkout.paymentStatus === "NOT_REQUIRED" ? "Pagamento não necessário" : "Pagamento confirmado") : "Inscrição pendente");
   if (checkout.providerPaymentId) row("Referência do pagamento", checkout.providerPaymentId);
   page.drawLine({ start: { x: 44, y: y + 9 }, end: { x: 551, y: y + 9 }, thickness: 1, color: line });
 
   page.drawText("Itens da inscrição", { x: 44, y: y - 13, size: 12, font: bold, color: ink });
   y -= 42;
-  for (const item of checkout.items.slice(0, 10)) {
+  const availableRows = Math.max(1, Math.floor((y - 318) / 23));
+  const visibleItemCount = checkout.items.length > availableRows ? Math.max(1, availableRows - 1) : availableRows;
+  for (const item of checkout.items.slice(0, visibleItemCount)) {
     page.drawText(`${item.quantity}x  ${item.name}`.slice(0, 58), { x: 44, y, size: 9, font: regular, color: ink });
     const price = money(item.totalPrice);
     page.drawText(price, { x: 551 - bold.widthOfTextAtSize(price, 9), y, size: 9, font: bold, color: ink });
+    y -= 23;
+  }
+  if (checkout.items.length > visibleItemCount) {
+    page.drawText(`+ ${checkout.items.length - visibleItemCount} outro(s) item(ns)`, { x: 44, y, size: 8, font: regular, color: muted });
     y -= 23;
   }
   page.drawLine({ start: { x: 44, y: y + 7 }, end: { x: 551, y: y + 7 }, thickness: 1, color: line });
@@ -70,22 +79,21 @@ export async function createEventReceiptPdf(checkout: PublicCheckoutStatus) {
   page.drawText("Apresente esta credencial na entrada.", { x: 65, y: credentialY + 66, size: 9, font: regular, color: muted });
   page.drawText("Este comprovante não substitui documento pessoal.", { x: 65, y: credentialY + 46, size: 8, font: regular, color: muted });
 
-  const matrix = createQrMatrix(checkout.credentialToken);
-  const qrSize = 145;
-  const quiet = 4;
-  const moduleSize = qrSize / (matrix.length + quiet * 2);
-  const qrX = 386;
-  const qrY = credentialY + 29;
-  page.drawRectangle({ x: qrX, y: qrY, width: qrSize, height: qrSize, color: rgb(1, 1, 1) });
-  matrix.forEach((modules, rowIndex) => modules.forEach((dark, columnIndex) => {
-    if (dark) page.drawRectangle({
-      x: qrX + (columnIndex + quiet) * moduleSize,
-      y: qrY + qrSize - (rowIndex + quiet + 1) * moduleSize,
-      width: moduleSize + 0.05,
-      height: moduleSize + 0.05,
-      color: ink,
-    });
-  }));
+  if (checkout.credentialToken) {
+    const matrix = createQrMatrix(checkout.credentialToken);
+    const qrSize = 145;
+    const quiet = 4;
+    const moduleSize = qrSize / (matrix.length + quiet * 2);
+    const qrX = 386;
+    const qrY = credentialY + 29;
+    page.drawRectangle({ x: qrX, y: qrY, width: qrSize, height: qrSize, color: rgb(1, 1, 1) });
+    matrix.forEach((modules, rowIndex) => modules.forEach((dark, columnIndex) => {
+      if (dark) page.drawRectangle({ x: qrX + (columnIndex + quiet) * moduleSize, y: qrY + qrSize - (rowIndex + quiet + 1) * moduleSize, width: moduleSize + 0.05, height: moduleSize + 0.05, color: ink });
+    }));
+  } else {
+    page.drawText("CREDENCIAL AGUARDANDO LIBERAÇÃO", { x: 305, y: credentialY + 118, size: 10, font: bold, color: muted });
+    page.drawText("Disponível após a confirmação do pagamento.", { x: 305, y: credentialY + 94, size: 8, font: regular, color: muted });
+  }
 
   page.drawText(`Gerado em ${date(new Date().toISOString())}`, { x: 44, y: 48, size: 8, font: regular, color: muted });
   page.drawText("EKLESIA", { x: 551 - bold.widthOfTextAtSize("EKLESIA", 8), y: 48, size: 8, font: bold, color: blue });

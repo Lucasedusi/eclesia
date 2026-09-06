@@ -26,6 +26,30 @@ export function parsePublicCaravanPaymentAmount(value: string, hasReceipt: boole
   return hasReceipt ? parseBrazilCurrencyInput(value) : 0;
 }
 
+export function buildPublicCaravanPaymentPayload(input: {
+  paymentMethod: "PIX" | "CASH" | "NOT_APPLICABLE";
+  amountValue: string;
+  receipt?: { path: string; fileName: string; mimeType: string; fileSize: number } | null;
+}) {
+  const emptyReceipt = {
+    paymentReceiptPath: "",
+    paymentReceiptFileName: "",
+    paymentReceiptMimeType: "",
+    paymentReceiptFileSize: 0,
+  };
+  if (input.paymentMethod !== "PIX" || !input.receipt?.path) {
+    return { paymentMethod: input.paymentMethod, paymentAmount: 0, ...emptyReceipt };
+  }
+  return {
+    paymentMethod: "PIX" as const,
+    paymentAmount: parseBrazilCurrencyInput(input.amountValue),
+    paymentReceiptPath: input.receipt.path,
+    paymentReceiptFileName: input.receipt.fileName,
+    paymentReceiptMimeType: input.receipt.mimeType,
+    paymentReceiptFileSize: input.receipt.fileSize,
+  };
+}
+
 export function canShowPublicCashWhatsapp(input: {
   completed: boolean;
   paymentMethod: string;

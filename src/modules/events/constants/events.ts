@@ -81,7 +81,7 @@ export function eventLabel(values: readonly (readonly [string, string])[], value
 
 export function eventBadgeTone(status: string): "success" | "warning" | "danger" | "neutral" {
   if (["CONFIRMED", "PAID", "CHECKED_IN", "ACTIVE"].includes(status)) return "success";
-  if (status === "PARTIAL") return "warning";
-  if (["PENDING", "CANCELLED", "FAILED", "EXPIRED"].includes(status)) return "danger";
+  if (["PENDING", "PARTIAL", "AWAITING_PAYMENT", "PROCESSING"].includes(status)) return "warning";
+  if (["CANCELLED", "FAILED", "EXPIRED", "REJECTED", "NO_SHOW"].includes(status)) return "danger";
   return "neutral";
 }

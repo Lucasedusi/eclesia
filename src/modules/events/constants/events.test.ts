@@ -16,7 +16,9 @@ describe("eventLabel", () => {
 
   it("aplica o padrão visual dos status financeiros", () => {
     expect(eventBadgeTone("PARTIAL")).toBe("warning");
-    expect(eventBadgeTone("PENDING")).toBe("danger");
+    expect(eventBadgeTone("PENDING")).toBe("warning");
+    expect(eventBadgeTone("FAILED")).toBe("danger");
+    expect(eventBadgeTone("NO_SHOW")).toBe("danger");
     expect(eventBadgeTone("CONFIRMED")).toBe("success");
   });
 });

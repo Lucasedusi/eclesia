@@ -2,7 +2,7 @@ import "server-only";
 
 import { createHash, createHmac, randomUUID } from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { PublicCheckoutItem, PublicCheckoutStatus } from "../types/event.types";
+import type { PublicCaravanTrackingStatus, PublicCheckoutItem, PublicCheckoutStatus, PublicTrackingStatus } from "../types/event.types";
 import type { z } from "zod";
 import { resolveEventRoleSnapshot } from "./event.service";
 import type { publicRegistrationSchema } from "../validations/event.schemas";
@@ -108,7 +108,7 @@ async function checkoutRows(checkoutToken: string, publicCode: string, slug: str
   if (checkoutResult.error || !checkoutResult.data) throw new PublicCheckoutError("Sessão de inscrição não encontrada.");
   const [eventResult, registrationResult, itemResult, paymentResult] = await Promise.all([
     admin.from("events").select("id,name,public_code,slug,starts_at,location_name,city,state").eq("id", checkoutResult.data.event_id).eq("public_code", publicCode).eq("slug", slug).eq("visibility", "PUBLIC").is("deleted_at", null).maybeSingle(),
-    admin.from("event_registrations").select("id,registration_number,participant_name,congregation_id,status,payment_status,total_amount,registered_at,confirmed_at,credential_version,congregations!event_registrations_congregation_tenant_fkey(name)").eq("id", checkoutResult.data.registration_id).is("deleted_at", null).maybeSingle(),
+    admin.from("event_registrations").select("id,registration_number,participant_name,congregation_id,status,payment_status,total_amount,registered_at,confirmed_at,credential_version,congregations!event_registrations_congregation_tenant_fkey(name,regions(name))").eq("id", checkoutResult.data.registration_id).is("deleted_at", null).maybeSingle(),
     admin.from("event_registration_items").select("event_item_id,item_name,quantity,unit_price,total_price").eq("event_registration_id", checkoutResult.data.registration_id).is("deleted_at", null).order("created_at"),
     admin.from("event_payments").select("id,provider_payment_id,provider_status,payment_status,amount,external_reference,expires_at,created_at,paid_at").eq("event_registration_id", checkoutResult.data.registration_id).eq("provider", "MERCADO_PAGO").is("deleted_at", null).order("created_at", { ascending: false }).limit(1).maybeSingle(),
   ]);
@@ -316,6 +316,8 @@ export async function getPublicCheckoutStatus(
   const eventLocation = [rows.event.location_name, rows.event.city, rows.event.state].filter(Boolean).join(" · ") || null;
   const congregationRelation = rows.registration.congregations as AnyRow | AnyRow[] | null | undefined;
   const congregation = Array.isArray(congregationRelation) ? congregationRelation[0] : congregationRelation;
+  const regionRelation = congregation?.regions as AnyRow | AnyRow[] | null | undefined;
+  const region = Array.isArray(regionRelation) ? regionRelation[0] : regionRelation;
   const items: PublicCheckoutItem[] = rows.items.map((item) => ({
     id: String(item.event_item_id),
     name: String(item.item_name),
@@ -333,6 +335,7 @@ export async function getPublicCheckoutStatus(
     registrationNumber: String(rows.registration.registration_number),
     participantName: String(rows.registration.participant_name),
     congregationName: congregation?.name ? String(congregation.name) : null,
+    regionName: region?.name ? String(region.name) : null,
     registeredAt: String(rows.registration.registered_at),
     confirmedAt: rows.registration.confirmed_at ? String(rows.registration.confirmed_at) : null,
     registrationStatus: String(rows.registration.status),
@@ -354,6 +357,62 @@ export async function getPublicCheckoutStatus(
       isSimulated: simulatedPayment,
     } : null,
   };
+}
+
+export async function getPublicTrackingStatus(
+  publicCode: string,
+  slug: string,
+  token: string,
+  refreshProvider = false,
+): Promise<PublicTrackingStatus> {
+  if (!validCheckoutToken(token)) throw new PublicCheckoutError("Link de acompanhamento inválido.");
+  const admin = createAdminClient();
+  const checkout = await admin.from("event_public_checkouts")
+    .select("id,event_id,registration_id,group_id,checkout_type,status,payment_method")
+    .eq("access_token_hash", tokenHash(token)).maybeSingle();
+  if (checkout.error || !checkout.data) throw new PublicCheckoutError("Inscrição não encontrada.");
+
+  const event = await admin.from("events").select("id,name,starts_at,location_name,city,state")
+    .eq("id", checkout.data.event_id).eq("public_code", publicCode).eq("slug", slug)
+    .eq("visibility", "PUBLIC").is("deleted_at", null).maybeSingle();
+  if (event.error || !event.data) throw new PublicCheckoutError("Inscrição não encontrada.");
+
+  if (checkout.data.checkout_type !== "CARAVAN") {
+    const data = await getPublicCheckoutStatus(publicCode, slug, token, refreshProvider);
+    return { kind: "INDIVIDUAL", status: data.registrationStatus, data };
+  }
+  if (!checkout.data.group_id) throw new PublicCheckoutError("A caravana ainda não foi concluída.");
+
+  const [group, itemResult] = await Promise.all([
+    admin.from("event_groups")
+      .select("id,group_number,origin_church_name,origin_city,origin_state,responsible_name,responsible_phone,pastor_name,total_registrations,male_count,female_count,status,payment_status,total_amount,paid_amount,created_at,updated_at")
+      .eq("id", checkout.data.group_id).eq("event_id", checkout.data.event_id).is("deleted_at", null).maybeSingle(),
+    admin.from("event_registration_items").select("event_item_id,item_name,quantity,unit_price,total_price")
+      .eq("event_group_id", checkout.data.group_id).is("deleted_at", null).order("created_at"),
+  ]);
+  if (group.error || !group.data) throw new PublicCheckoutError("Esta caravana não está mais disponível.");
+  const groupStatus = String(group.data.status);
+  const paymentStatus = String(group.data.payment_status);
+  const status = ["CANCELLED", "EXPIRED", "FAILED"].includes(groupStatus)
+    ? groupStatus
+    : ["PAID", "NOT_REQUIRED"].includes(paymentStatus) ? "CONFIRMED" : "PENDING";
+  const eventLocation = [event.data.location_name, event.data.city, event.data.state].filter(Boolean).join(" · ") || null;
+  const totalAmount = number(group.data.total_amount);
+  const paidAmount = number(group.data.paid_amount);
+  const data: PublicCaravanTrackingStatus = {
+    eventId: String(event.data.id), eventName: String(event.data.name), eventStartsAt: String(event.data.starts_at), eventLocation,
+    groupId: String(group.data.id), groupNumber: String(group.data.group_number), originChurchName: String(group.data.origin_church_name),
+    originCity: String(group.data.origin_city), originState: String(group.data.origin_state), responsibleName: String(group.data.responsible_name),
+    responsiblePhone: String(group.data.responsible_phone), pastorName: String(group.data.pastor_name), totalRegistrations: number(group.data.total_registrations),
+    maleCount: number(group.data.male_count), femaleCount: number(group.data.female_count), registrationStatus: groupStatus, paymentStatus,
+    paymentMethod: String(checkout.data.payment_method) as PublicCaravanTrackingStatus["paymentMethod"], totalAmount, paidAmount,
+    remainingAmount: Math.max(totalAmount - paidAmount, 0), registeredAt: String(group.data.created_at), updatedAt: String(group.data.updated_at),
+    items: ((itemResult.data ?? []) as AnyRow[]).map((item) => ({
+      id: String(item.event_item_id), name: String(item.item_name), quantity: number(item.quantity),
+      unitPrice: number(item.unit_price), totalPrice: number(item.total_price) || number(item.unit_price) * number(item.quantity),
+    })),
+  };
+  return { kind: "CARAVAN", status, data };
 }
 
 export async function reconcileMercadoPagoPayment(providerPaymentId: string) {

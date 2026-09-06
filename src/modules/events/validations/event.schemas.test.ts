@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { eventFinancialReportConfigSchema, eventFormSchema, eventGeneralReportConfigSchema, eventListSchema, eventParticipantReportConfigSchema, expenseSchema, groupSchema, paymentStatusSchema, publicCaravanSchema, publicPixPaymentSchema, publicRegistrationSchema, registrationFieldSchema, registrationSchema } from "./event.schemas";
+import { eventFinancialReportConfigSchema, eventFormSchema, eventGeneralReportConfigSchema, eventListSchema, eventParticipantReportConfigSchema, expenseSchema, groupSchema, paymentStatusSchema, publicCaravanSchema, publicPixPaymentSchema, publicRegistrationSchema, publicTrackingSchema, registrationFieldSchema, registrationSchema } from "./event.schemas";
 
 const baseEvent = { id:"",name:"Congresso 2027",slug:"congresso-2027",description:"",eventType:"CONGRESS",visibility:"PUBLIC",eventScope:"CHURCH",regionId:"",congregationId:"",ministryId:"",startsAt:"2027-08-20T19:00",endsAt:"2027-08-22T18:00",timezone:"America/Sao_Paulo",registrationMode:"MIXED",capacity:500,requiresPayment:false,requiresGroupResponsible:false,requiresPastorInfo:false,requiresGenderTotals:false,locationName:"",zipCode:"",address:"",number:"",complement:"",district:"",city:"Porangatu",state:"GO",country:"Brasil",notes:"" };
 
@@ -12,6 +12,9 @@ describe("eventFormSchema",()=>{
   it("aceita um rascunho coerente",()=>{expect(eventFormSchema.safeParse(baseEvent).success).toBe(true);});
   it("rejeita término anterior ao início",()=>{const result=eventFormSchema.safeParse({...baseEvent,endsAt:"2027-08-19T18:00"});expect(result.success).toBe(false);});
   it("exige alvo para escopo regional",()=>{const result=eventFormSchema.safeParse({...baseEvent,eventScope:"REGION",regionId:""});expect(result.success).toBe(false);});
+  it("exige WhatsApp quando o pagamento em dinheiro de caravanas está ativo",()=>{const result=eventFormSchema.safeParse({...baseEvent,caravanSettings:{cashEnabled:true,whatsappNumber:"",allowParticipantList:true,pixEnabled:false,pixKey:"",pixHolderName:"",caravanRegistrationItemId:"",paymentInstructions:""}});expect(result.success).toBe(false);});
+  it("exige WhatsApp também no pagamento em dinheiro da inscrição individual",()=>{const result=eventFormSchema.safeParse({...baseEvent,registrationMode:"INDIVIDUAL",caravanSettings:{cashEnabled:true,whatsappNumber:"",allowParticipantList:true,pixEnabled:false,pixKey:"",pixHolderName:"",caravanRegistrationItemId:"",paymentInstructions:""}});expect(result.success).toBe(false);});
+  it("exige WhatsApp em evento individual pago para orientar pagamentos presenciais",()=>{const result=eventFormSchema.safeParse({...baseEvent,registrationMode:"INDIVIDUAL",requiresPayment:true,caravanSettings:{cashEnabled:false,whatsappNumber:"",allowParticipantList:true,pixEnabled:false,pixKey:"",pixHolderName:"",caravanRegistrationItemId:"",paymentInstructions:""}});expect(result.success).toBe(false);});
 });
 
 describe("registrationSchema",()=>{
@@ -56,6 +59,11 @@ describe("publicPixPaymentSchema",()=>{
   const checkoutToken="a".repeat(48);
   it("aceita e normaliza CPF válido",()=>{const result=publicPixPaymentSchema.safeParse({checkoutToken,payerEmail:"pagador@exemplo.com",payerCpf:"529.982.247-25"});expect(result.success).toBe(true);if(result.success)expect(result.data.payerCpf).toBe("52998224725");});
   it("rejeita CPF ou e-mail inválidos",()=>expect(publicPixPaymentSchema.safeParse({checkoutToken,payerEmail:"inválido",payerCpf:"111.111.111-11"}).success).toBe(false));
+});
+
+describe("publicTrackingSchema",()=>{
+  it("aceita token opaco e opção de atualizar o provedor",()=>expect(publicTrackingSchema.safeParse({token:"a".repeat(48),refreshProvider:true}).success).toBe(true));
+  it("rejeita token curto ou com caracteres inseguros",()=>{expect(publicTrackingSchema.safeParse({token:"curto"}).success).toBe(false);expect(publicTrackingSchema.safeParse({token:`${"a".repeat(47)}?`}).success).toBe(false);});
 });
 
 const baseReportConfig = {

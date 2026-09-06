@@ -17,8 +17,12 @@ export function createEventCredentialToken(registrationId: string, credentialVer
   return `ek1_${signature}`;
 }
 
+export function canIssueEventCredential(status: string) {
+  return ["CONFIRMED", "CHECKED_IN"].includes(status);
+}
+
 export async function ensureEventCredential(registration: { id: string; credentialVersion: number; status: string }) {
-  if (registration.status !== "CONFIRMED") return null;
+  if (!canIssueEventCredential(registration.status)) return null;
   const token = createEventCredentialToken(registration.id, registration.credentialVersion);
   const hash = createHash("sha256").update(token).digest("hex");
   const admin = createAdminClient();
@@ -26,7 +30,7 @@ export async function ensureEventCredential(registration: { id: string; credenti
     qr_token_hash: hash,
     qr_token_last4: token.slice(-4),
     updated_at: new Date().toISOString(),
-  }).eq("id", registration.id).eq("status", "CONFIRMED");
+  }).eq("id", registration.id).in("status", ["CONFIRMED", "CHECKED_IN"]);
   if (error) throw new Error("EVENT_CREDENTIAL_PERSIST_FAILED");
   return token;
 }
