@@ -87,7 +87,7 @@ export const IconSlot = styled.div`
   padding: 12px;
   background: ${({ theme }) => theme.colors.state.infoSolfSecundary};
   color: ${({ theme }) => theme.colors.brand.primary};
-  border-radius: 10px;
+  border-radius: 6px;
 `;
 
 export const TitleArea = styled.div`

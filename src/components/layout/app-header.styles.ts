@@ -237,7 +237,7 @@ export const UserDropdown = styled.div`
   width: 290px;
   overflow: hidden;
   border: 1px solid ${({ theme }) => theme.colors.border.soft};
-  border-radius: 14px;
+  border-radius: 6px;
   background: #fff;
   padding: 9px;
   box-shadow: 0 20px 55px rgba(16, 24, 40, 0.16);
@@ -260,7 +260,7 @@ export const DropdownItem = styled.a`
   min-height: 42px;
   align-items: center;
   gap: 10px;
-  border-radius: 9px;
+  border-radius: 6px;
   color: #475467;
   padding: 0 10px;
   font-size: 11px;
@@ -275,7 +275,7 @@ export const ChurchList = styled.div`
   padding: 9px 0;
 
   > span { display: flex; align-items: center; gap: 7px; padding: 5px 10px 8px; color: #98a2b3; font-size: 9px; font-weight: 800; text-transform: uppercase; }
-  button { display: flex; width: 100%; align-items: center; gap: 7px; border: 0; border-radius: 8px; background: transparent; color: #475467; padding: 8px 10px; text-align: left; font-size: 10px; font-weight: 750; }
+  button { display: flex; width: 100%; align-items: center; gap: 7px; border: 0; border-radius: 6px; background: transparent; color: #475467; padding: 8px 10px; text-align: left; font-size: 10px; font-weight: 750; }
   button:hover, button[data-active="true"] { background: #eef2ff; color: ${({ theme }) => theme.colors.brand.primary}; }
   button:disabled { cursor: wait; opacity: .72; }
   button[data-loading="true"] svg { width: 13px; height: 13px; animation: ${headerActionSpin} 720ms linear infinite; }
@@ -289,7 +289,7 @@ export const LogoutButton = styled.button`
   gap: 10px;
   margin-top: 5px;
   border: 0;
-  border-radius: 9px;
+  border-radius: 6px;
   background: transparent;
   color: #b5423c;
   padding: 0 10px;

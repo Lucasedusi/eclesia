@@ -30,7 +30,7 @@ function TestSection({
               background: "#f4f4f4",
               color: "#111",
               padding: "16px",
-              borderRadius: "8px",
+              borderRadius: "6px",
               overflow: "auto",
               maxHeight: "280px",
             }}

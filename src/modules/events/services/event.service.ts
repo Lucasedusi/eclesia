@@ -38,7 +38,7 @@ import type {
   registrationSchema,
   updateRegistrationSchema,
 } from "../validations/event.schemas";
-import { buildRegistrationPaymentPayload } from "../utils/payment-payload";
+import { buildRegistrationPaymentPayload, retryPublicCaravanStorageRead } from "../utils/payment-payload";
 
 type RecordValue = Record<string, unknown>;
 type EventForm = z.infer<typeof eventFormSchema>;
@@ -813,7 +813,7 @@ export async function upsertPublicCaravanCheckout(publicCode:string,slug:string,
 
 async function validatePublicCaravanFile(admin:ReturnType<typeof createAdminClient>,path:string,mimeType:string,fileSize:number,allowed:Set<string>){
   if(!allowed.has(mimeType)||fileSize<=0||fileSize>10*1024*1024)throw new EventServiceError("Arquivo inválido.");
-  const downloaded=await admin.storage.from("event-documents").download(path);if(downloaded.error||!downloaded.data)fail(downloaded.error,"Não foi possível validar o arquivo enviado.");
+  const downloaded=await retryPublicCaravanStorageRead(()=>admin.storage.from("event-documents").download(path));if(downloaded.error||!downloaded.data)fail(downloaded.error,"Não foi possível validar o arquivo enviado. Aguarde alguns segundos e tente novamente.");
   const buffer=Buffer.from(await downloaded.data.arrayBuffer());if(buffer.length!==fileSize||!validUploadContent(buffer,mimeType)){await admin.storage.from("event-documents").remove([path]);throw new EventServiceError("O conteúdo do arquivo não corresponde ao formato informado.");}
 }
 
@@ -830,7 +830,11 @@ export async function completePublicCaravan(publicCode:string,slug:string,input:
   if(input.paymentReceiptPath)await validatePublicCaravanFile(admin,input.paymentReceiptPath,input.paymentReceiptMimeType,input.paymentReceiptFileSize,caravanReceiptTypes);
   const sessionHash=createHash("sha256").update(input.sessionKey).digest("hex");
   const completed=await admin.rpc("complete_event_public_caravan",{p_event_id:input.eventId,p_payload:input,p_items:input.items,p_idempotency_key:idempotencyKey,p_session_token_hash:sessionHash});
-  if(completed.error)fail(completed.error,"Não foi possível concluir a inscrição da caravana.");
+  if(completed.error){
+    const internalCode=completed.error.message.match(/EVENT_[A-Z_]+/)?.[0]??"UNMAPPED_DATABASE_ERROR";
+    console.error("[events] public caravan completion failed",{eventId:input.eventId,code:completed.error.code,internalCode,paymentMethod:input.paymentMethod,hasReceipt:Boolean(input.paymentReceiptPath),hasList:Boolean(input.listPath)});
+    fail(completed.error,"Não foi possível concluir a inscrição da caravana.");
+  }
   return{...(completed.data as RecordValue),accessToken:input.sessionKey};
 }
 export async function consumePublicRegistrationRateLimit(eventId: string, keyHash: string) { const admin = createAdminClient(); const { data, error } = await admin.rpc("consume_event_public_limit", { p_event_id: eventId, p_key_hash: keyHash, p_limit: 8, p_window_seconds: 600 }); if (error) fail(error, "Não foi possível validar a tentativa."); return data === true; }

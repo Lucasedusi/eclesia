@@ -23,7 +23,7 @@ export const Shell = styled.div`
   overflow: hidden;
   margin: 0 auto;
   border: 1px solid ${({ theme }) => theme.colors.border.soft};
-  border-radius: 26px;
+  border-radius: 6px;
   background: #fff;
   box-shadow: 0 28px 80px rgba(16, 24, 40, 0.11);
 
@@ -54,7 +54,7 @@ export const Brand = styled.div`
 
 export const BrandMark = styled.span`
   display: grid; width: 46px; height: 46px; place-items: center;
-  border-radius: 14px; background: rgba(255,255,255,.13); color: #fff;
+  border-radius: 6px; background: rgba(255,255,255,.13); color: #fff;
 `;
 
 export const AsideTitle = styled.h1`
@@ -74,11 +74,11 @@ export const Steps = styled.ol`
 export const Step = styled.li<{ $active: boolean; $complete: boolean }>`
   display: grid; grid-template-columns: 34px 1fr; align-items: center; gap: 12px;
   border: 1px solid ${({ $active }) => $active ? "rgba(255,255,255,.25)" : "transparent"};
-  border-radius: 13px; background: ${({ $active }) => $active ? "rgba(255,255,255,.10)" : "transparent"};
+  border-radius: 6px; background: ${({ $active }) => $active ? "rgba(255,255,255,.10)" : "transparent"};
   padding: 10px;
   opacity: ${({ $active, $complete }) => $active || $complete ? 1 : .54};
   span {
-    display: grid; width: 32px; height: 32px; place-items: center; border-radius: 10px;
+    display: grid; width: 32px; height: 32px; place-items: center; border-radius: 6px;
     background: ${({ $active, $complete }) => $active || $complete ? "#fff" : "rgba(255,255,255,.12)"};
     color: ${({ $active, $complete }) => $active || $complete ? "#415ba5" : "#fff"};
     font-size: 12px; font-weight: 900;
@@ -134,7 +134,7 @@ export const Field = styled.label`
 
 export const Input = styled.input<{ $invalid?: boolean }>`
   width: 100%; min-height: 51px; border: 1px solid ${({ $invalid }) => $invalid ? "#f57e77" : "#d9deea"};
-  border-radius: 11px; outline: 0; background: #f8f9fc; padding: 0 15px;
+  border-radius: 6px; outline: 0; background: #f8f9fc; padding: 0 15px;
   color: ${({ theme }) => theme.colors.text.title}; font-size: 13px; font-weight: 650; transition: 160ms ease;
   &:focus { border-color: ${({ theme }) => theme.colors.brand.primary}; background: #fff; box-shadow: ${({ theme }) => theme.shadows.focus}; }
 `;
@@ -144,7 +144,7 @@ export const FieldError = styled.small`
 `;
 
 export const Alert = styled.div`
-  margin-bottom: 20px; border: 1px solid #ffd0ce; border-radius: 11px; background: #fff4f3;
+  margin-bottom: 20px; border: 1px solid #ffd0ce; border-radius: 6px; background: #fff4f3;
   color: #a9413c; padding: 12px 14px; font-size: 12px; font-weight: 700; line-height: 1.55;
 `;
 
@@ -154,7 +154,7 @@ export const Review = styled.div`
 `;
 
 export const ReviewCard = styled.article`
-  border: 1px solid ${({ theme }) => theme.colors.border.soft}; border-radius: 15px; background: #fafbfc; padding: 18px;
+  border: 1px solid ${({ theme }) => theme.colors.border.soft}; border-radius: 6px; background: #fafbfc; padding: 18px;
   strong { display: block; color: ${({ theme }) => theme.colors.text.title}; font-size: 13px; font-weight: 850; }
   p { margin: 7px 0 0; color: ${({ theme }) => theme.colors.text.muted}; font-size: 12px; font-weight: 600; line-height: 1.6; }
 `;
@@ -165,7 +165,7 @@ export const Footer = styled.div`
 
 export const Button = styled.button<{ $secondary?: boolean }>`
   display: inline-flex; min-height: 48px; align-items: center; justify-content: center; gap: 9px;
-  border: 1px solid ${({ $secondary }) => $secondary ? "#d9deea" : "transparent"}; border-radius: 10px;
+  border: 1px solid ${({ $secondary }) => $secondary ? "#d9deea" : "transparent"}; border-radius: 6px;
   background: ${({ $secondary, theme }) => $secondary ? "#fff" : theme.colors.brand.primary};
   color: ${({ $secondary, theme }) => $secondary ? theme.colors.text.body : "#fff"}; padding: 0 21px;
   font-size: 13px; font-weight: 850; transition: 170ms ease;

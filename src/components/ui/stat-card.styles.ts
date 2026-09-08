@@ -75,7 +75,7 @@ export const Description = styled.p`
 `;
 
 export const Variation = styled.span`
-  border-radius: ${({ theme }) => theme.radius.full};
+  border-radius: ${({ theme }) => theme.radius.sm};
   background: ${({ theme }) => theme.colors.surface.muted};
   color: ${({ theme }) => theme.colors.text.muted};
   padding: 4px 10px;

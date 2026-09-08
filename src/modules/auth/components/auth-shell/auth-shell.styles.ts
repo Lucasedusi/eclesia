@@ -73,7 +73,7 @@ export const LoginBrandSlot = styled.div`
 
 export const LoginCard = styled.div`
   width: 100%;
-  border-radius: 14px;
+  border-radius: 6px;
   background: #fff;
   padding: clamp(28px, 3.2vw, 42px);
   box-shadow: 0 8px 32px -8px rgb(27 42 74 / 0.18);
@@ -90,7 +90,7 @@ export const LoginSkeletonLine = styled.span<{
   height: ${({ $height }) => $height};
   overflow: hidden;
   margin-top: ${({ $marginTop }) => $marginTop ?? "0"};
-  border-radius: 10px;
+  border-radius: 6px;
   background: #e9edf4;
 
   &::after {
@@ -138,7 +138,7 @@ export const BrandMark = styled.span`
   width: 48px;
   height: 48px;
   place-items: center;
-  border-radius: 15px;
+  border-radius: 6px;
   color: #fff;
   background: linear-gradient(
     145deg,
@@ -234,7 +234,7 @@ export const Input = styled.input<{ $invalid?: boolean }>`
   width: 100%;
   min-height: 54px;
   border: 1px solid ${({ $invalid }) => ($invalid ? "#f57e77" : "#d9deea")};
-  border-radius: 12px;
+  border-radius: 6px;
   outline: none;
   background: #f6f8fc;
   color: ${({ theme }) => theme.colors.text.title};
@@ -267,7 +267,7 @@ export const PasswordButton = styled.button`
   transform: translateY(-50%);
   place-items: center;
   border: 0;
-  border-radius: 8px;
+  border-radius: 6px;
   background: transparent;
   color: #8c97aa;
   &:hover {
@@ -291,7 +291,7 @@ export const Submit = styled.button`
   gap: 10px;
   margin-top: 4px;
   border: 0;
-  border-radius: 12px;
+  border-radius: 6px;
   color: #fff;
   background: ${({ theme }) => theme.colors.brand.primary};
   box-shadow: 0 14px 28px rgba(65, 91, 165, 0.22);
@@ -326,7 +326,7 @@ export const Spinner = styled.span`
 
 export const Alert = styled.div<{ $success?: boolean }>`
   border: 1px solid ${({ $success }) => ($success ? "#bfe8d4" : "#ffd0ce")};
-  border-radius: 11px;
+  border-radius: 6px;
   background: ${({ $success }) => ($success ? "#edf9f3" : "#fff4f3")};
   color: ${({ $success }) => ($success ? "#267c5b" : "#b5423c")};
   padding: 12px 14px;
@@ -453,7 +453,7 @@ export const VisualBrandMark = styled.span`
   height: 46px;
   place-items: center;
   border: 1px solid rgba(255, 255, 255, 0.26);
-  border-radius: 14px;
+  border-radius: 6px;
   background: rgba(255, 255, 255, 0.15);
   box-shadow: 0 12px 28px rgba(7, 20, 38, 0.16);
 
@@ -502,7 +502,7 @@ export const VisualBadge = styled.span`
   align-items: center;
   gap: 8px;
   border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 999px;
+  border-radius: 6px;
   background: rgba(255, 255, 255, 0.13);
   padding: 9px 13px;
   font-size: 12px;
@@ -526,7 +526,7 @@ export const VisualTitle = styled.h2`
 
 export const Preview = styled.div`
   border: 1px solid rgba(255, 255, 255, 0.32);
-  border-radius: 20px;
+  border-radius: 6px;
   background: rgba(255, 255, 255, 0.95);
   color: #101828;
   padding: clamp(20px, 2.5vw, 30px);
@@ -555,7 +555,7 @@ export const PreviewTop = styled.div`
 `;
 
 export const Today = styled.span`
-  border-radius: 999px;
+  border-radius: 6px;
   background: #eef2ff;
   color: #415ba5 !important;
   padding: 7px 10px;
@@ -596,7 +596,7 @@ export const Bars = styled.div`
   height: clamp(92px, 14vh, 122px);
   align-items: flex-end;
   gap: 12px;
-  border-radius: 14px;
+  border-radius: 6px;
   background: #f6f8fc;
   padding: 18px;
 

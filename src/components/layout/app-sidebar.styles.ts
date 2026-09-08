@@ -211,7 +211,7 @@ export const Tooltip = styled.span`
   left: calc(100% + 14px);
   z-index: 50;
   padding: 8px 12px;
-  border-radius: 10px;
+  border-radius: 6px;
   color: #ffffff;
   background: #020617;
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.28);

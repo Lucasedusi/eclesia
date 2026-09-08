@@ -8,9 +8,9 @@ import { Button } from "@/components/ui/button";
 import { formatBrazilPhone, formatCpf } from "@/utils/input-masks";
 import type { EventDetail, EventRegistrationFieldRow, PublicCheckoutStatus } from "../types/event.types";
 import { visibleRegistrationFields } from "../utils/registration-fields";
-import { buildTrackingHash, isPublicManualPaymentMethod, shouldShowPublicSummary } from "../utils/public-registration-flow";
+import { buildTrackingHash, isPublicManualPaymentMethod, PUBLIC_BACK_LABEL, PUBLIC_MANUAL_PAYMENT_SUBTITLE, publicRefreshNotice, publicRegistrationIntent, publicResumeDestination, shouldShowPublicSummary } from "../utils/public-registration-flow";
 import * as S from "./events.styles";
-import { PublicCollapsibleSummary, PublicEventHeroMeta, PublicFlowToast } from "./public-event-mobile";
+import { PublicCollapsibleSummary, PublicEventHeroMeta, PublicFlowToast, type PublicFlowNotice } from "./public-event-mobile";
 import { QrCode } from "./qr-code";
 
 type Item = { id: string; name: string; description: string | null; item_type: string; price: number; is_required: boolean; allow_quantity: boolean; min_quantity: number; max_quantity: number | null; available_quantity: number | null };
@@ -48,7 +48,7 @@ export function PublicRegistration({ event, items, congregations, roles, fields,
   const [pending, startTransition] = useTransition();
   const [step, setStep] = useState<Step>(1);
   const [flowSelected,setFlowSelected]=useState(event.registrationMode!=="MIXED");
-  const [notice, setNotice] = useState<{ message: string; danger?: boolean } | null>(null);
+  const [notice, setNotice] = useState<PublicFlowNotice | null>(null);
   const [checkoutToken, setCheckoutToken] = useState("");
   const [checkout, setCheckout] = useState<PublicCheckoutStatus | null>(null);
   const [pix, setPix] = useState<PixData | null>(null);
@@ -119,9 +119,15 @@ export function PublicRegistration({ event, items, congregations, roles, fields,
   }
 
   useEffect(() => {
+    const intent = publicRegistrationIntent(window.location.search);
+    if (intent === "START_NEW") {
+      sessionStorage.removeItem(checkoutKey);
+      window.history.replaceState(null, "", window.location.pathname);
+      return;
+    }
     const saved = sessionStorage.getItem(checkoutKey);
     if (!saved) return;
-    if (!new URLSearchParams(window.location.search).has("retomar")) {
+    if (intent === "TRACK_SAVED") {
       window.location.replace(`${trackingPath}${buildTrackingHash("INDIVIDUAL", saved)}`);
       return;
     }
@@ -130,7 +136,9 @@ export function PublicRegistration({ event, items, congregations, roles, fields,
       startTransition(async () => {
         try {
           const status = await queryStatus(saved, true);
-          if (status.registrationStatus === "CONFIRMED") setStep(3); else if (status.paymentMethod === "PIX") setStep(2); else setStep(3);
+          const destination = publicResumeDestination(status);
+          if (destination === "TRACKING") window.location.replace(`${trackingPath}${buildTrackingHash("INDIVIDUAL", saved)}`);
+          else setStep(destination);
         } catch { sessionStorage.removeItem(checkoutKey); setCheckoutToken(""); }
       });
     });
@@ -187,7 +195,7 @@ export function PublicRegistration({ event, items, congregations, roles, fields,
     });
   }
 
-  function refreshStatus() { startTransition(async () => { try { await queryStatus(checkoutToken, true); } catch (error) { setNotice({ message: error instanceof Error ? error.message : "Não foi possível verificar agora.", danger: true }); } }); }
+  function refreshStatus() { startTransition(async () => { try { const status = await queryStatus(checkoutToken, true); setNotice(publicRefreshNotice(status.registrationStatus)); } catch (error) { setNotice({ message: error instanceof Error ? error.message : "Não foi possível verificar agora.", danger: true }); } }); }
   function approveSimulatedPayment() { startTransition(async () => { try { const response = await fetch(`/api/public/events/${event.publicCode}/${event.slug}/payments/pix/simulate`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ checkoutToken }) }); const body = await readJson(response); if (!response.ok || !body.data) throw new Error(body.message ?? "Não foi possível aprovar o pagamento de teste."); const status = body.data as PublicCheckoutStatus; setCheckout(status); if (status.pix) setPix({ ...status.pix, expiresAt: status.expiresAt, paymentStatus: status.paymentStatus }); setStep(3); setNotice({ message: "Pagamento de teste aprovado. Comprovante e credencial liberados." }); window.scrollTo({ top: 0, behavior: "smooth" }); } catch (error) { setNotice({ message: error instanceof Error ? error.message : "Não foi possível aprovar o pagamento de teste.", danger: true }); } }); }
   async function copyPix() { if (!pix?.qrCode) return; await navigator.clipboard.writeText(pix.qrCode); setPixCopied(true); setNotice({ message: "Código Pix copiado." }); window.setTimeout(() => setPixCopied(false), 2600); }
   function downloadReceipt() { startTransition(async () => { const response = await fetch(`/api/public/events/${event.publicCode}/${event.slug}/receipt`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ checkoutToken }) }); if (!response.ok) { const body = await readJson(response); setNotice({ message: body.message ?? "Comprovante indisponível.", danger: true }); return; } const blobUrl = URL.createObjectURL(await response.blob()); const anchor = document.createElement("a"); anchor.href = blobUrl; anchor.download = `comprovante-evento-${checkout?.registrationNumber ?? "inscricao"}.pdf`; anchor.click(); window.setTimeout(() => URL.revokeObjectURL(blobUrl), 1000); }); }
@@ -199,28 +207,35 @@ export function PublicRegistration({ event, items, congregations, roles, fields,
     : "";
   const summaryState = shouldShowPublicSummary({ step, completed: step === 3 && Boolean(checkout) });
   const openTracking = () => checkoutToken && router.push(`${trackingPath}${buildTrackingHash("INDIVIDUAL", checkoutToken)}`);
+  const showBack = flowSelected && !(step === 3 && complete);
+  function goBack() {
+    if (step === 3) setStep(2);
+    else if (step === 2) setStep(1);
+    else if (event.registrationMode === "MIXED") setFlowSelected(false);
+    else router.back();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 
   return <S.PublicShell><S.PublicCard>
     <S.PublicHero $image={event.bannerUrl}><div><span>{isRegistrationOpen ? "Inscrições abertas" : "Inscrições encerradas"}</span><h1>{event.name}</h1>{event.description ? <p>{event.description}</p> : null}<PublicEventHeroMeta startsAt={event.startsAt} location={[event.location, event.city, event.state].filter(Boolean).join(" · ")} /></div></S.PublicHero>
     {flowSelected?<S.CheckoutStepper aria-label={`Etapa ${step} de 3`}>{[{ id: 1, label: "Dados e itens", icon: Ticket }, { id: 2, label: "Pagamento", icon: Smartphone }, { id: 3, label: "Comprovante", icon: CheckCircle2 }].map((item) => { const Icon = item.icon; const done = item.id < step || (item.id === 2 && selectedTotal <= 0 && step === 3); return <div key={item.id} aria-current={step === item.id ? "step" : undefined} data-done={done}><span>{done ? <Check /> : <Icon />}</span><div><small>Etapa {item.id}</small><strong>{item.label}</strong></div></div>; })}</S.CheckoutStepper>:null}
     <S.PublicContent><section>
+      {showBack ? <S.PublicBackRow aria-label="Navegação de retorno"><S.PublicBackButton type="button" onClick={goBack}><ArrowLeft />{PUBLIC_BACK_LABEL}</S.PublicBackButton></S.PublicBackRow> : null}
       {!flowSelected?<S.PublicModePanel><S.PublicStepHeading><small>TIPO DE INSCRIÇÃO</small><h2>Como você deseja se inscrever?</h2><p>As inscrições individuais e as caravanas possuem dados e pagamentos independentes.</p></S.PublicStepHeading><S.PublicModeGrid><S.PublicModeCard type="button" onClick={()=>setFlowSelected(true)}><span><Ticket/></span><strong>Inscrição individual</strong><small>Para uma única pessoa, com os campos personalizados e itens do evento.</small></S.PublicModeCard><S.PublicModeLink href={`/inscricoes/${event.publicCode}/${event.slug}/caravana`}><span><Bus/></span><strong>Inscrição por caravana</strong><small>Para igrejas e grupos, com quantidade de participantes, lista opcional e pagamento coletivo.</small></S.PublicModeLink></S.PublicModeGrid></S.PublicModePanel>:null}
-      {step === 1&&flowSelected ? <S.CheckoutPanel><S.PublicStepHeading><small>ETAPA 1 DE 3</small><h2>Seus dados e escolhas</h2><p>Preencha os dados do participante e selecione o que deseja incluir.</p>{event.registrationMode==="MIXED"?<Button type="button" size="sm" variant="outline" onClick={()=>setFlowSelected(false)}><ArrowLeft size={14}/>Alterar tipo de inscrição</Button>:null}</S.PublicStepHeading>
+      {step === 1&&flowSelected ? <S.CheckoutPanel><S.PublicStepHeading><small>ETAPA 1 DE 3</small><h2>Seus dados e escolhas</h2><p>Preencha os dados do participante e selecione o que deseja incluir.</p></S.PublicStepHeading>
         {isRegistrationOpen ? <form id={registrationFormId} onSubmit={submitRegistration}><div aria-hidden="true" style={{ position: "absolute", left: "-10000px" }}><label>Não preencha<input name="website" tabIndex={-1} autoComplete="off" /></label></div><S.FieldGrid>
           {orderedFields.map((field) => <Fragment key={field.id || field.key}>{renderRegistrationField(field)}</Fragment>)}
         </S.FieldGrid></form> : <S.Notice $danger>As inscrições deste evento estão encerradas.</S.Notice>}
       </S.CheckoutPanel> : null}
 
       {step === 2 ? <S.CheckoutPanel>
-        <S.PublicStepHeading>
+        {activeMethod === "PIX" ? <S.PublicStepHeading>
           <small>ETAPA 2 DE 3</small>
-          <h2>{activeMethod === "PIX" ? "Pagamento por Pix" : "Pagamento presencial"}</h2>
-          <p>{activeMethod === "PIX"
-            ? checkout?.paymentSimulationEnabled
-              ? "Teste o fluxo completo com um Pix simulado, sem cobrança real."
-              : "Gere o Pix e acompanhe a confirmação sem sair desta página."
-            : "Sua escolha foi registrada e será confirmada pela organização."}</p>
-        </S.PublicStepHeading>
+          <h2>Pagamento por Pix</h2>
+          <p>{checkout?.paymentSimulationEnabled
+            ? "Teste o fluxo completo com um Pix simulado, sem cobrança real."
+            : "Gere o Pix e acompanhe a confirmação sem sair desta página."}</p>
+        </S.PublicStepHeading> : null}
         {activeMethod === "PIX" && checkout?.paymentSimulationEnabled ? <S.SimulationNotice role="status">
           <span><ShieldCheck /></span>
           <div><strong>Ambiente de simulação</strong><p>Nenhuma cobrança será enviada ao Mercado Pago ou a um banco. Os dados e o comprovante serão criados apenas para testar o módulo.</p></div>
@@ -231,7 +246,7 @@ export function PublicRegistration({ event, items, congregations, roles, fields,
             <S.Field><span>E-mail do pagador *</span><input type="email" value={payerEmail} onChange={(change) => setPayerEmail(change.target.value)} autoComplete="email" required aria-invalid={Boolean(fieldErrors.payerEmail)} placeholder="voce@exemplo.com" />{fieldErrors.payerEmail?.map((error) => <S.ErrorText key={error}>{error}</S.ErrorText>)}</S.Field>
             <S.Field><span>CPF do pagador *</span><input value={payerCpf} onChange={(change) => setPayerCpf(formatCpf(change.target.value))} inputMode="numeric" autoComplete="off" required minLength={14} aria-invalid={Boolean(fieldErrors.payerCpf)} placeholder="000.000.000-00" />{fieldErrors.payerCpf?.map((error) => <S.ErrorText key={error}>{error}</S.ErrorText>)}</S.Field>
           </S.FieldGrid>
-          <S.PublicActions><Button type="button" variant="outline" onClick={() => setStep(1)} disabled={pending}><ArrowLeft size={16} />Voltar</Button><Button type="submit" loading={pending}><QrCodeIcon size={16} />{checkout?.paymentSimulationEnabled ? "Gerar Pix de teste" : "Gerar Pix"}</Button></S.PublicActions>
+          <S.PublicPrimaryActions><Button type="submit" loading={pending}><QrCodeIcon size={16} />{checkout?.paymentSimulationEnabled ? "Gerar Pix de teste" : "Gerar Pix"}</Button></S.PublicPrimaryActions>
         </form> : <S.PixLayout><S.PixCodePanel>
           <S.PixStatus><span><Clock3 /></span><div><small>SITUAÇÃO</small><strong>{pix.isSimulated ? "Aguardando aprovação de teste" : "Aguardando pagamento"}</strong></div><time>{timerLabel}</time></S.PixStatus>
           {pix.qrCodeBase64 ? <Image unoptimized width={180} height={180} src={`data:image/png;base64,${pix.qrCodeBase64}`} alt="QR Code para pagamento Pix" /> : pix.isSimulated && pix.qrCode ? <S.SimulatedQr><QrCode value={pix.qrCode} size={160} /></S.SimulatedQr> : null}
@@ -241,10 +256,10 @@ export function PublicRegistration({ event, items, congregations, roles, fields,
           <S.PixHelp>{pix.isSimulated ? <><b>1</b><span>Confira o QR Code e o código fictícios</span><b>2</b><span>Use a opção de copiar para testar a interação</span><b>3</b><span>Clique em seguir para simular a aprovação</span></> : <><b>1</b><span>Abra o app do banco</span><b>2</b><span>Escolha pagar com Pix</span><b>3</b><span>Confirme o valor e conclua</span></>}</S.PixHelp>
           {secondsLeft <= 0 ? <S.Notice $danger>Este Pix expirou. Gere uma nova cobrança para continuar.</S.Notice> : null}
           <Button type="button" fullWidth loading={pending} onClick={secondsLeft <= 0 ? () => { setPix(null); pixIdempotency.current = `pix_${crypto.randomUUID()}`; } : pix.isSimulated ? approveSimulatedPayment : refreshStatus}>{secondsLeft <= 0 ? <><QrCodeIcon size={16}/>Gerar novo Pix</> : pix.isSimulated ? <><CheckCircle2 size={16}/>Seguir e aprovar pagamento de teste</> : <><RefreshCw size={16}/>Já paguei — verificar novamente</>}</Button>
-        </S.PixCodePanel></S.PixLayout> : <S.ManualPayment><span><Banknote /></span><h3>Inscrição recebida</h3><p>{activeMethod === "CASH" ? "Ao avançar, use o WhatsApp do evento para combinar o pagamento em dinheiro com a organização." : `Ao avançar, use o WhatsApp do evento para combinar o pagamento presencial por ${methodLabel(activeMethod).toLocaleLowerCase("pt-BR")} com a organização.`}</p><S.ManualPaymentHint><LockKeyhole /><span>A credencial será liberada após a confirmação do pagamento.</span></S.ManualPaymentHint><Button onClick={openTracking}>Ver protocolo da inscrição<ArrowRight size={16} /></Button></S.ManualPayment>}
+        </S.PixCodePanel></S.PixLayout> : <><S.ManualPayment><span><Banknote /></span><h3>Pagamento presencial</h3><p>{PUBLIC_MANUAL_PAYMENT_SUBTITLE}</p><S.ManualPaymentHint><LockKeyhole /><span>Nenhum comprovante é necessário. A credencial será liberada após a confirmação do pagamento.</span></S.ManualPaymentHint></S.ManualPayment><S.PublicPrimaryActions><Button onClick={openTracking}><CheckCircle2 size={16} />Concluir inscrição</Button></S.PublicPrimaryActions></>}
       </S.CheckoutPanel> : null}
 
-      {step === 3 && checkout ? <S.ConfirmationPanel><S.ConfirmationHeader data-pending={!complete}><span>{complete ? <CheckCircle2 /> : <Clock3 />}</span><div><small>{complete ? "INSCRIÇÃO CONFIRMADA" : "INSCRIÇÃO RECEBIDA"}</small><h2>{complete ? "Tudo certo!" : "Aguardando confirmação"}</h2><p>{complete ? "Guarde seu comprovante e apresente a credencial na entrada." : "Seu protocolo foi gerado. A credencial será liberada após o pagamento."}</p></div></S.ConfirmationHeader><S.ReceiptGrid><S.ReceiptCard><header><div><small>COMPROVANTE DE INSCRIÇÃO</small><strong>{checkout.eventName}</strong></div><Ticket /></header><dl><div><dt>Participante</dt><dd>{checkout.participantName}</dd></div><div><dt>Número</dt><dd>{checkout.registrationNumber}</dd></div><div><dt>Pagamento</dt><dd>{methodLabel(checkout.paymentMethod)}</dd></div><div><dt>Situação</dt><dd>{complete ? "Confirmada" : "Pendente"}</dd></div></dl><footer><span>Total</span><strong>{money(checkout.totalAmount)}</strong></footer></S.ReceiptCard><S.CredentialCard data-locked={!checkout.credentialToken}><header><small>CREDENCIAL DO EVENTO</small><strong>{checkout.eventName}</strong></header>{checkout.credentialToken ? <><QrCode value={checkout.credentialToken} size={176} /><h3>{checkout.participantName}</h3><p>{checkout.registrationNumber}{checkout.congregationName ? ` · ${checkout.congregationName}` : ""}</p><footer>Apresente esta credencial na entrada</footer></> : <S.CredentialLocked><span><LockKeyhole /></span><h3>Credencial bloqueada</h3><p>Ela ficará disponível assim que o pagamento for confirmado.</p></S.CredentialLocked>}</S.CredentialCard></S.ReceiptGrid><S.PublicActions>{!complete && checkout.paymentMethod === "PIX" ? <Button variant="outline" onClick={() => setStep(2)}><ArrowLeft size={16} />Voltar ao Pix</Button> : <span />}{complete ? <div><Button variant="outline" onClick={() => window.print()}><Printer size={16} />Imprimir</Button><Button onClick={downloadReceipt} loading={pending}><Download size={16} />Baixar comprovante em PDF</Button></div> : <div>{manualWhatsapp?<S.PublicWhatsappLink href={manualWhatsapp} target="_blank" rel="noreferrer"><MessageCircle/>Combinar pelo WhatsApp</S.PublicWhatsappLink>:null}<Button onClick={refreshStatus} loading={pending}><RefreshCw size={16}/>Atualizar situação</Button></div>}</S.PublicActions></S.ConfirmationPanel> : null}
+      {step === 3 && checkout ? <S.ConfirmationPanel><S.ConfirmationHeader data-pending={!complete}><span>{complete ? <CheckCircle2 /> : <Clock3 />}</span><div><small>{complete ? "INSCRIÇÃO CONFIRMADA" : "INSCRIÇÃO RECEBIDA"}</small><h2>{complete ? "Tudo certo!" : "Aguardando confirmação"}</h2><p>{complete ? "Guarde seu comprovante e apresente a credencial na entrada." : "Seu protocolo foi gerado. A credencial será liberada após o pagamento."}</p></div></S.ConfirmationHeader><S.ReceiptGrid><S.ReceiptCard><header><div><small>COMPROVANTE DE INSCRIÇÃO</small><strong>{checkout.eventName}</strong></div><Ticket /></header><dl><div><dt>Participante</dt><dd>{checkout.participantName}</dd></div><div><dt>Número</dt><dd>{checkout.registrationNumber}</dd></div><div><dt>Pagamento</dt><dd>{methodLabel(checkout.paymentMethod)}</dd></div><div><dt>Situação</dt><dd>{complete ? "Confirmada" : "Pendente"}</dd></div></dl><footer><span>Total</span><strong>{money(checkout.totalAmount)}</strong></footer></S.ReceiptCard><S.CredentialCard data-locked={!checkout.credentialToken}><header><small>CREDENCIAL DO EVENTO</small><strong>{checkout.eventName}</strong></header>{checkout.credentialToken ? <><QrCode value={checkout.credentialToken} size={176} /><h3>{checkout.participantName}</h3><p>{checkout.registrationNumber}{checkout.congregationName ? ` · ${checkout.congregationName}` : ""}</p><footer>Apresente esta credencial na entrada</footer></> : <S.CredentialLocked><span><LockKeyhole /></span><h3>Credencial aguardando liberação</h3><p>Ela ficará disponível assim que o pagamento for confirmado.</p></S.CredentialLocked>}</S.CredentialCard></S.ReceiptGrid><S.PublicPrimaryActions>{complete ? <div><Button variant="outline" onClick={() => window.print()}><Printer size={16} />Imprimir</Button><Button onClick={downloadReceipt} loading={pending}><Download size={16} />Baixar comprovante em PDF</Button></div> : <div>{manualWhatsapp?<S.PublicWhatsappLink href={manualWhatsapp} target="_blank" rel="noreferrer"><MessageCircle/>Combinar pelo WhatsApp</S.PublicWhatsappLink>:null}<Button onClick={refreshStatus} loading={pending}><RefreshCw size={16}/>Atualizar situação</Button></div>}</S.PublicPrimaryActions></S.ConfirmationPanel> : null}
     </section><S.PublicAside><S.EventInfoCard><h3>Informações do evento</h3><p><CalendarDays /><span>{date(event.startsAt)}</span></p><p><MapPin /><span>{[event.location, event.city, event.state].filter(Boolean).join(" · ") || "Local a definir"}</span></p><p><ShieldCheck /><span>Ambiente seguro para sua inscrição.</span></p></S.EventInfoCard>{flowSelected&&summaryState.visible?<><PublicCollapsibleSummary key={`summary-${step}`} title="Resumo da inscrição" total={money(checkout?.totalAmount ?? selectedTotal)} collapsible={summaryState.collapsible} defaultOpen={summaryState.defaultOpen}><S.CartSummary aria-live="polite"><h3>Resumo da inscrição</h3>{selectedItems.length ? <ul>{selectedItems.map((item) => <li key={item.id}><span>{item.quantity > 1 ? `${item.quantity}× ` : ""}{item.name}</span><strong>{money(item.price * item.quantity)}</strong></li>)}</ul> : checkout?.items.length ? <ul>{checkout.items.map((item) => <li key={item.id}><span>{item.quantity > 1 ? `${item.quantity}× ` : ""}{item.name}</span><strong>{money(item.totalPrice)}</strong></li>)}</ul> : <p>Nenhum item selecionado.</p>}<footer><span>Total</span><strong>{money(checkout?.totalAmount ?? selectedTotal)}</strong></footer>{(checkout || step > 1) ? <S.SummaryMeta><span>Forma de pagamento</span><strong>{methodLabel(activeMethod)}</strong>{checkout ? <><span>Situação</span><strong>{complete ? "Confirmada" : "Pendente"}</strong></> : null}</S.SummaryMeta> : null}</S.CartSummary></PublicCollapsibleSummary>{step === 1 && isRegistrationOpen ? <S.SummaryAction><Button type="submit" form={registrationFormId} loading={pending} fullWidth>{selectedTotal <= 0 ? "Concluir inscrição" : "Continuar para pagamento"}<ArrowRight size={16} /></Button></S.SummaryAction> : null}</>:null}</S.PublicAside></S.PublicContent>
   </S.PublicCard><PublicFlowToast notice={notice} onClose={()=>setNotice(null)}/>{pending ? <S.ScreenReaderStatus role="status"><LoaderCircle />Processando</S.ScreenReaderStatus> : null}</S.PublicShell>;
 }

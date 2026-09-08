@@ -55,7 +55,7 @@ export const BadgeRoot = styled.span<BadgeProps>`
   align-items: center;
   justify-content: center;
   gap: 6px;
-  border-radius: ${({ theme }) => theme.radius.full};
+  border-radius: ${({ theme }) => theme.radius.sm};
   padding: 0 10px;
   font-size: 12px;
   font-weight: 600;

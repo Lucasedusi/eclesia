@@ -620,7 +620,7 @@ export function MemberManagement({
                       <th>Cargo</th>
                       <th>Tipo</th>
                       <th>Situação</th>
-                      <th />
+                      <th>Ações</th>
                     </tr>
                   </thead>
                   <tbody>

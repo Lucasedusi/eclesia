@@ -3,7 +3,15 @@
 import { type ReactNode, useState } from "react";
 import { CalendarDays, ChevronDown, MapPin, ShoppingCart } from "lucide-react";
 import { Toast, ToastViewport } from "@/components/ui/toast";
+import type { PublicStatusTone } from "../utils/public-registration-flow";
 import * as S from "./events.styles";
+
+export type PublicFlowNotice = {
+  message: string;
+  title?: string;
+  danger?: boolean;
+  tone?: PublicStatusTone;
+};
 
 function eventDate(value: string) {
   return new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Sao_Paulo" }).format(new Date(value));
@@ -17,17 +25,26 @@ export function PublicEventHeroMeta({ startsAt, location }: { startsAt: string; 
 }
 
 export function PublicFlowToast({ notice, onClose }: {
-  notice: { message: string; danger?: boolean } | null;
+  notice: PublicFlowNotice | null;
   onClose: () => void;
 }) {
   if (!notice) return null;
+  const variant = notice.tone ?? (notice.danger ? "danger" : "success");
+  const defaultTitle = variant === "danger"
+    ? "Não foi possível concluir"
+    : variant === "warning"
+      ? "Atenção"
+      : variant === "neutral"
+        ? "Informação"
+        : "Tudo certo";
+
   return <ToastViewport className="public-flow-toast-viewport">
     <Toast
       className="public-flow-toast"
-      title={notice.danger ? "Não foi possível concluir" : "Tudo certo"}
+      title={notice.title ?? defaultTitle}
       description={notice.message}
-      variant={notice.danger ? "danger" : "success"}
-      duration={notice.danger ? 6000 : 3200}
+      variant={variant}
+      duration={variant === "danger" ? 6000 : variant === "warning" ? 4500 : 3200}
       onClose={onClose}
     />
   </ToastViewport>;

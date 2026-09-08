@@ -19,7 +19,7 @@ export const Tabs = styled.div`
   width: fit-content;
   gap: 4px;
   border: 1px solid #e4e8ef;
-  border-radius: 12px;
+  border-radius: 6px;
   background: #fff;
   padding: 4px;
 `;
@@ -30,7 +30,7 @@ export const Tab = styled.button<{ $active?: boolean }>`
   align-items: center;
   gap: 8px;
   border: 0;
-  border-radius: 9px;
+  border-radius: 6px;
   background: ${({ $active, theme }) => $active ? theme.colors.brand.primary : "transparent"};
   padding: 0 14px;
   color: ${({ $active }) => $active ? "#fff" : "#667085"};
@@ -63,7 +63,7 @@ export const StepIndicator = styled(P.StepButton)`
 export const Card = styled.section`
   overflow: hidden;
   border: 1px solid ${({ theme }) => theme.colors.border.soft};
-  border-radius: 18px;
+  border-radius: 6px;
   background: #fff;
   box-shadow: ${({ theme }) => theme.shadows.card};
 `;
@@ -98,7 +98,7 @@ export const Select = styled.select`
   width: 100%;
   min-height: 44px;
   border: 1px solid #d7dde8;
-  border-radius: 10px;
+  border-radius: 6px;
   outline: 0;
   background: #f8f9fc;
   padding: 0 12px;
@@ -113,7 +113,7 @@ export const Dropzone = styled.label<{ $dragging?: boolean }>`
   min-height: 220px;
   place-items: center;
   border: 2px dashed ${({ $dragging, theme }) => $dragging ? theme.colors.brand.primary : "#cfd6e2"};
-  border-radius: 16px;
+  border-radius: 6px;
   background: ${({ $dragging }) => $dragging ? "#f2f5ff" : "#fafbfc"};
   padding: 30px;
   text-align: center;
@@ -134,7 +134,7 @@ export const FileSelected = styled.div`
   justify-content: space-between;
   gap: 12px;
   border: 1px solid #dce2eb;
-  border-radius: 12px;
+  border-radius: 6px;
   background: #fff;
   padding: 12px 14px;
   > div { display: flex; min-width: 0; align-items: center; gap: 10px; }
@@ -172,7 +172,7 @@ export const Stats = styled.div`
 `;
 
 export const Stat = styled.article<{ $tone?: "success" | "warning" | "danger" | "muted" }>`
-  border-radius: 13px;
+  border-radius: 6px;
   background: #fff;
   padding: 13px;
   box-shadow: 0 5px 18px rgba(16, 24, 40, 0.07);
@@ -189,7 +189,7 @@ export const InfoGrid = styled.div`
 
 export const InfoBox = styled.div<{ $tone?: "info" | "warning" | "danger" | "success" }>`
   border: 1px solid ${({ $tone }) => $tone === "danger" ? "#f1c5c2" : $tone === "warning" ? "#eed9b9" : $tone === "success" ? "#bfe2d2" : "#d9e0ee"};
-  border-radius: 13px;
+  border-radius: 6px;
   background: ${({ $tone }) => $tone === "danger" ? "#fff7f6" : $tone === "warning" ? "#fffbf4" : $tone === "success" ? "#f4fbf8" : "#f8faff"};
   padding: 14px;
   color: #475467;
@@ -210,7 +210,7 @@ export const Mapping = styled.div`
   align-items: center;
   gap: 12px;
   border: 1px solid #e8ebf0;
-  border-radius: 11px;
+  border-radius: 6px;
   padding: 11px 12px;
   strong { display: block; color: #344054; font-size: 10px; }
   small { display: block; margin-top: 3px; color: #98a2b3; font-size: 8px; }
@@ -222,7 +222,7 @@ export const Status = styled.span<{ $status: string }>`
   width: fit-content;
   align-items: center;
   gap: 5px;
-  border-radius: 999px;
+  border-radius: 6px;
   background: ${({ $status }) => ["VALID", "READY", "COMPLETED", "IMPORTED"].includes($status) ? "#eaf8f1" : ["WARNING", "REVIEW", "FAILED"].includes($status) ? "#fff4df" : $status === "ERROR" ? "#fff0ef" : "#f0f2f5"};
   padding: 5px 8px;
   color: ${({ $status }) => ["VALID", "READY", "COMPLETED", "IMPORTED"].includes($status) ? "#237458" : ["WARNING", "REVIEW", "FAILED"].includes($status) ? "#9c5c18" : $status === "ERROR" ? "#b6423e" : "#667085"};
@@ -249,7 +249,7 @@ export const Search = styled.label`
     width: 100%;
     min-height: 44px;
     border: 1px solid #d7dde8;
-    border-radius: 10px;
+    border-radius: 6px;
     outline: 0;
     background: #fff;
     padding: 0 12px 0 38px;
@@ -280,7 +280,7 @@ export const RowActions = styled.div`
 export const SmallButton = styled.button`
   min-height: 29px;
   border: 1px solid #dbe1ea;
-  border-radius: 8px;
+  border-radius: 6px;
   background: #fff;
   padding: 0 8px;
   color: #526074;
@@ -296,7 +296,7 @@ export const MobileRow = styled.article`
   display: grid;
   gap: 11px;
   border: 1px solid #e6eaf0;
-  border-radius: 13px;
+  border-radius: 6px;
   padding: 14px;
   header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
   h3 { margin: 0; color: #101828; font-size: 11px; }
@@ -362,7 +362,7 @@ export const HistoryItem = styled.article`
   align-items: center;
   gap: 13px;
   border: 1px solid #e7eaf0;
-  border-radius: 13px;
+  border-radius: 6px;
   padding: 13px 14px;
   strong { display: block; overflow: hidden; color: #101828; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
   small { display: block; margin-top: 3px; color: #98a2b3; font-size: 8px; }

@@ -9,7 +9,7 @@ type StepStateProps = {
 
 export const ProgressRoot = styled.aside`
   border: 1px solid ${({ theme }) => theme.colors.border.soft};
-  border-radius: 8px;
+  border-radius: 6px;
   background: ${({ theme }) => theme.colors.surface.card};
   padding: 26px;
   box-shadow: ${({ theme }) => theme.shadows.card};
@@ -83,7 +83,7 @@ export const StepButton = styled.button<StepStateProps>`
   gap: 12px;
   align-items: flex-start;
   border: 1px solid ${({ $active }) => ($active ? "rgba(65, 91, 165, 0.18)" : "transparent")};
-  border-radius: 8px;
+  border-radius: 6px;
   background: ${({ $active, $completed }) =>
     $active ? "rgba(65, 91, 165, 0.08)" : $completed ? "#F8FAFC" : "#FFFFFF"};
   padding: 12px;
@@ -104,7 +104,7 @@ export const StepIcon = styled.span<StepStateProps>`
   height: 42px;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
+  border-radius: 6px;
   background: ${({ theme, $active, $completed }) =>
     $active || $completed
       ? theme.colors.brand.primary

@@ -15,7 +15,7 @@ export const FormLayout = styled.div`
 export const FormCard = styled.form`
   overflow: hidden;
   border: 1px solid ${({ theme }) => theme.colors.border.soft};
-  border-radius: 19px;
+  border-radius: 6px;
   background: ${({ theme }) => theme.colors.surface.card};
   box-shadow: ${({ theme }) => theme.shadows.card};
 `;
@@ -104,7 +104,7 @@ export const CheckCard = styled.div`
   align-items: center;
   margin-top: 19px;
   border: 1px solid ${({ theme }) => theme.colors.border.soft};
-  border-radius: 10px;
+  border-radius: 6px;
   background: ${({ theme }) => theme.colors.surface.soft};
   padding: 0 14px;
 
@@ -198,7 +198,7 @@ export const Control = styled.input<{ $invalid?: boolean; $withInlineStatus?: bo
   width: 100%;
   min-height: 44px;
   border: 1px solid ${({ $invalid }) => ($invalid ? "#ef7770" : "#d9deea")};
-  border-radius: 10px;
+  border-radius: 6px;
   outline: 0;
   background: #f8f9fc;
   padding: 0 ${({ $withInlineStatus }) => ($withInlineStatus ? "150px" : "13px")} 0 13px;
@@ -220,7 +220,7 @@ export const SelectControl = styled.select<{ $invalid?: boolean }>`
   width: 100%;
   min-height: 44px;
   border: 1px solid ${({ $invalid }) => ($invalid ? "#ef7770" : "#d9deea")};
-  border-radius: 10px;
+  border-radius: 6px;
   outline: 0;
   background: #f8f9fc;
   padding: 0 12px;
@@ -243,7 +243,7 @@ export const Textarea = styled.textarea<{ $hasError?: boolean }>`
   border: 1px solid
     ${({ theme, $hasError }) =>
       $hasError ? theme.colors.state.danger : theme.colors.border.default};
-  border-radius: 10px;
+  border-radius: 6px;
   background: #f8f9fc;
   padding: 12px 13px;
   color: #344054;
@@ -288,7 +288,7 @@ export const InfoBox = styled.div`
   display: flex;
   gap: 12px;
   border: 1px solid rgba(65, 91, 165, 0.18);
-  border-radius: 18px;
+  border-radius: 6px;
   background: rgba(65, 91, 165, 0.07);
   padding: 16px;
   color: ${({ theme }) => theme.colors.text.body};
@@ -368,7 +368,7 @@ export const ReviewGrid = styled.div`
 
 export const ReviewCard = styled.article`
   border: 1px solid ${({ theme }) => theme.colors.border.soft};
-  border-radius: 18px;
+  border-radius: 6px;
   background: ${({ theme }) => theme.colors.surface.soft};
   padding: 18px;
 `;
@@ -390,7 +390,7 @@ export const ReviewItem = styled.div`
   display: grid;
   gap: 5px;
   border: 1px solid ${({ theme }) => theme.colors.border.soft};
-  border-radius: 12px;
+  border-radius: 6px;
   background: ${({ theme }) => theme.colors.surface.soft};
   padding: 14px;
 

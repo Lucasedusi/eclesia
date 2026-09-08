@@ -817,7 +817,7 @@ export function DocumentManagement({ initial, initialStats }: Props) {
                 <S.TableWrap>
                   {pending && <S.BusyOverlay><Loader2 aria-label="Atualizando documentos" /></S.BusyOverlay>}
                   <S.Table>
-                    <thead><tr><th>Documento</th><th>Inclusão</th><th>Situação</th><th aria-label="Ações" /></tr></thead>
+                    <thead><tr><th>Documento</th><th>Inclusão</th><th>Situação</th><th>Ações</th></tr></thead>
                     <tbody>{data.documents.items.map((document) => (
                       <tr key={document.id}>
                         <td><S.DocumentCell><DocumentIcon document={document} /><div><strong>{document.title}</strong><small>{document.originalFileName}</small></div></S.DocumentCell></td>

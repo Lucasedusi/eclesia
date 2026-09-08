@@ -3,7 +3,13 @@ import {
   buildTrackingHash,
   isPublicManualPaymentMethod,
   isTerminalPublicStatus,
+  PUBLIC_BACK_LABEL,
+  PUBLIC_MANUAL_PAYMENT_SUBTITLE,
+  publicRefreshNotice,
+  publicRegistrationIntent,
+  publicResumeDestination,
   publicStatusTone,
+  publicTrackingState,
   readTrackingHash,
   shouldPollPublicStatus,
   shouldShowTrackingPix,
@@ -63,5 +69,60 @@ describe("public registration flow", () => {
     expect(isPublicManualPaymentMethod("CREDIT_CARD")).toBe(true);
     expect(isPublicManualPaymentMethod("PIX")).toBe(false);
     expect(isPublicManualPaymentMethod("NOT_APPLICABLE")).toBe(false);
+  });
+
+  it("padroniza o retorno e a orientação do pagamento presencial", () => {
+    expect(PUBLIC_BACK_LABEL).toBe("Voltar");
+    expect(PUBLIC_MANUAL_PAYMENT_SUBTITLE).toBe(
+      "Finalize sua inscrição pelo WhatsApp com a organização do evento.",
+    );
+  });
+
+  it("usa aviso amarelo quando a atualização permanece pendente", () => {
+    expect(publicRefreshNotice("PENDING")).toEqual({
+      title: "Aguardando confirmação",
+      message: "A inscrição ainda está pendente e aguarda confirmação da organização.",
+      tone: "warning",
+    });
+    expect(publicRefreshNotice("PARTIAL")).toEqual({
+      title: "Aguardando confirmação",
+      message: "A inscrição ainda está pendente e aguarda confirmação da organização.",
+      tone: "warning",
+    });
+  });
+
+  it("mantém o retorno positivo quando a atualização confirma a inscrição", () => {
+    expect(publicRefreshNotice("CONFIRMED")).toEqual({
+      title: "Situação atualizada",
+      message: "A inscrição foi confirmada.",
+      tone: "success",
+    });
+  });
+
+  it("distingue nova inscrição, retomada e acompanhamento salvo", () => {
+    expect(publicRegistrationIntent("?nova=1")).toBe("START_NEW");
+    expect(publicRegistrationIntent("?retomar=1")).toBe("RESUME");
+    expect(publicRegistrationIntent("")).toBe("TRACK_SAVED");
+  });
+
+  it("não apresenta estados terminais de erro como pendência", () => {
+    expect(publicTrackingState("CANCELLED")).toEqual({
+      tone: "danger",
+      complete: false,
+      failed: true,
+      pending: false,
+    });
+    expect(publicTrackingState("EXPIRED").failed).toBe(true);
+    expect(publicTrackingState("FAILED").failed).toBe(true);
+    expect(publicTrackingState("PENDING").pending).toBe(true);
+    expect(publicTrackingState("CONFIRMED").complete).toBe(true);
+  });
+
+  it("envia estados terminais retomados para o acompanhamento", () => {
+    expect(publicResumeDestination({ registrationStatus: "CANCELLED", paymentMethod: "CASH" })).toBe("TRACKING");
+    expect(publicResumeDestination({ registrationStatus: "EXPIRED", paymentMethod: "PIX" })).toBe("TRACKING");
+    expect(publicResumeDestination({ registrationStatus: "CONFIRMED", paymentMethod: "PIX" })).toBe("TRACKING");
+    expect(publicResumeDestination({ registrationStatus: "PENDING", paymentMethod: "PIX" })).toBe(2);
+    expect(publicResumeDestination({ registrationStatus: "PENDING", paymentMethod: "CASH" })).toBe(3);
   });
 });

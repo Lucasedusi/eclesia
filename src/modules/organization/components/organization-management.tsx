@@ -1,12 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import dynamic from "next/dynamic";
 import {
   BadgeCheck,
   ChevronLeft,
   ChevronRight,
   Church,
+  EllipsisVertical,
   Eye,
   MapPin,
   Network,
@@ -20,7 +22,8 @@ import {
   Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ModalLoading } from "@/components/ui/modal";
+import { positionAnchoredMenu } from "@/components/ui/menu-position";
+import { Modal, ModalLoading } from "@/components/ui/modal";
 import { Toast, ToastViewport } from "@/components/ui/toast";
 import {
   changeCongregationStatusAction,
@@ -37,6 +40,7 @@ import type {
   RegionItem,
 } from "../types/organization.types";
 import type { OrganizationDetailsTarget } from "./organization-details-modal";
+import { getOrganizationActionLayout } from "../utils/organization-action-policy";
 import * as S from "./organization.styles";
 
 const CongregationForm = dynamic(
@@ -76,6 +80,14 @@ const RegionForm = dynamic(
 );
 
 type ToastState = { title: string; description?: string; variant: "success" | "danger" };
+type ActionMenuState = {
+  anchorLeft: number;
+  anchorRight: number;
+  anchorTop: number;
+  anchorBottom: number;
+  left?: number;
+  top?: number;
+};
 type DeleteTarget =
   | { kind: "region"; id: string; name: string; details: string }
   | { kind: "congregation"; id: string; name: string; details: string }
@@ -148,6 +160,7 @@ export function OrganizationManagement({ data, activeTab }: { data: Organization
   const [congregationDocuments, setCongregationDocuments] = useState<CongregationItem | null>(null);
   const [regionDetails, setRegionDetails] = useState<OrganizationDetailsTarget | null>(null);
   const [congregationDetails, setCongregationDetails] = useState<OrganizationDetailsTarget | null>(null);
+  const [positionDetails, setPositionDetails] = useState<PositionItem | null>(null);
   const [positionForm, setPositionForm] = useState<PositionItem | "new" | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
 
@@ -297,7 +310,7 @@ export function OrganizationManagement({ data, activeTab }: { data: Organization
           <>
             {activeTab === "regions" && <RegionTable items={pagedItems as RegionItem[]} canManage={canManage} busyId={busyId} onEdit={setRegionForm} onStatus={(item) => changeStatus("region", item.id, item.status)} onDelete={setDeleteTarget} onDetails={(item) => setRegionDetails({ id: item.id, name: item.name })} />}
             {activeTab === "congregations" && <CongregationTable items={pagedItems as CongregationItem[]} canManage={canManage} canViewDocuments={data.management.congregationDocumentsView} busyId={busyId} onEdit={setCongregationForm} onStatus={(item) => changeStatus("congregation", item.id, item.status)} onDelete={setDeleteTarget} onDocuments={setCongregationDocuments} onDetails={(item) => setCongregationDetails({ id: item.id, name: item.name })} />}
-            {activeTab === "positions" && <PositionTable items={pagedItems as PositionItem[]} canManage={canManage} busyId={busyId} onEdit={setPositionForm} onStatus={(item) => changeStatus("position", item.id, item.status)} onDelete={setDeleteTarget} />}
+            {activeTab === "positions" && <PositionTable items={pagedItems as PositionItem[]} canManage={canManage} busyId={busyId} onEdit={setPositionForm} onStatus={(item) => changeStatus("position", item.id, item.status)} onDelete={setDeleteTarget} onDetails={setPositionDetails} />}
             <S.Pagination>
               <span>{visibleItems.length} registro{visibleItems.length === 1 ? "" : "s"} · Página {safePage} de {totalPages}</span>
               <div><button type="button" aria-label="Página anterior" disabled={safePage <= 1} onClick={() => setPage((value) => Math.max(1, value - 1))}><ChevronLeft /></button><button type="button" aria-label="Próxima página" disabled={safePage >= totalPages} onClick={() => setPage((value) => Math.min(totalPages, value + 1))}><ChevronRight /></button></div>
@@ -308,6 +321,7 @@ export function OrganizationManagement({ data, activeTab }: { data: Organization
 
       {regionDetails ? <RegionDetailsModal target={regionDetails} canManage={data.management.regions} onClose={() => setRegionDetails(null)} onEdit={(item) => { setRegionDetails(null); setRegionForm(item); }} onOpenCongregation={(target) => { setRegionDetails(null); setCongregationDetails(target); }} /> : null}
       {congregationDetails ? <CongregationDetailsModal target={congregationDetails} canManage={data.management.congregations} canViewDocuments={data.management.congregationDocumentsView} onClose={() => setCongregationDetails(null)} onEdit={(item) => { setCongregationDetails(null); setCongregationForm(item); }} onOpenDocuments={(item) => { setCongregationDetails(null); setCongregationDocuments(item); }} /> : null}
+      {positionDetails ? <Modal open size="sm" title="Detalhes do Cargo" description="Informações cadastradas no catálogo eclesiástico." icon={<BadgeCheck />} onClose={() => setPositionDetails(null)} footer={<S.DetailFooter><Button variant="outline" onClick={() => setPositionDetails(null)}>Fechar</Button>{canManage ? <Button onClick={() => { setPositionDetails(null); setPositionForm(positionDetails); }}><Pencil size={15} />Editar Cargo</Button> : null}</S.DetailFooter>}><S.PositionDetailsGrid><div><small>Nome do Cargo</small><strong>{positionDetails.name}</strong></div><div><small>Forma feminina</small><strong>{positionDetails.femaleName || "Não informada"}</strong></div><div><small>Abreviação</small><strong>{positionDetails.abbreviation || "Não informada"}</strong></div><div><small>Abreviação feminina</small><strong>{positionDetails.femaleAbbreviation || "Não informada"}</strong></div><div><small>Ordem de exibição</small><strong>{positionDetails.displayOrder}</strong></div><div><small>Situação</small><Status value={positionDetails.status} /></div><div data-wide><small>Descrição</small><strong>{positionDetails.description || "Sem descrição"}</strong></div><div><small>Criação</small><strong>{formatDate(positionDetails.createdAt)}</strong></div><div><small>Última atualização</small><strong>{formatDate(positionDetails.updatedAt)}</strong></div></S.PositionDetailsGrid></Modal> : null}
       {regionForm ? <RegionForm region={regionForm === "new" ? null : regionForm} onClose={() => setRegionForm(null)} onSuccess={regionSuccess} onError={formError} /> : null}
       {congregationForm ? <CongregationForm congregation={congregationForm === "new" ? null : congregationForm} regions={data.activeRegionOptions} onClose={() => setCongregationForm(null)} onSuccess={congregationSuccess} onError={formError} /> : null}
       {congregationDocuments ? <CongregationDocumentsModal congregation={congregationDocuments} canManage={data.management.congregationDocumentsManage} onClose={() => setCongregationDocuments(null)} onResult={notify} /> : null}
@@ -321,26 +335,81 @@ export function OrganizationManagement({ data, activeTab }: { data: Organization
 type CommonTableProps<T> = { items: T[]; canManage: boolean; busyId: string | null; onEdit: (item: T) => void; onStatus: (item: T) => void; onDelete: (target: DeleteTarget) => void; onDetails?: (item: T) => void };
 
 function Actions({ item, canManage, busy, protectedItem = false, onDetails, onEdit, onStatus, onDelete, onDocuments }: { item: RegionItem | CongregationItem | PositionItem; kind?: DeleteTarget["kind"]; canManage: boolean; busy: boolean; protectedItem?: boolean; onDetails?: () => void; onEdit: () => void; onStatus: () => void; onDelete: () => void; onDocuments?: () => void }) {
-  if (!canManage && !onDetails && !onDocuments) return null;
-  return <S.RowActions>
-    {onDetails ? <S.IconButton type="button" title="Ver detalhes" aria-label={`Ver detalhes de ${item.name}`} onClick={onDetails} disabled={busy}><Eye /></S.IconButton> : null}
-    {onDocuments ? <S.IconButton type="button" title="Documentos" aria-label={`Gerenciar documentos de ${item.name}`} onClick={onDocuments} disabled={busy}><Paperclip /></S.IconButton> : null}
-    {canManage ? <S.IconButton type="button" title="Editar" aria-label={`Editar ${item.name}`} onClick={onEdit} disabled={busy}><Pencil /></S.IconButton> : null}
-    {canManage && !protectedItem ? <S.IconButton type="button" $warning title={item.status === "ACTIVE" ? "Inativar" : "Ativar"} aria-label={`${item.status === "ACTIVE" ? "Inativar" : "Ativar"} ${item.name}`} onClick={onStatus} disabled={busy}>{busy ? <S.InlineSpinner /> : <Power />}</S.IconButton> : null}
-    {canManage && !protectedItem ? <S.IconButton type="button" $danger title="Arquivar" aria-label={`Arquivar ${item.name}`} onClick={onDelete} disabled={busy}><Trash2 /></S.IconButton> : null}
-  </S.RowActions>;
+  const [menu, setMenu] = useState<ActionMenuState | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const layout = getOrganizationActionLayout({
+    canManage,
+    canViewDetails: Boolean(onDetails),
+    canViewDocuments: Boolean(onDocuments),
+    protectedItem,
+  });
+
+  useEffect(() => {
+    if (!menu) return;
+    const close = (event?: Event) => {
+      if (event instanceof MouseEvent && menuRef.current?.contains(event.target as Node)) return;
+      if (event instanceof MouseEvent && menuButtonRef.current?.contains(event.target as Node)) return;
+      setMenu(null);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMenu(null);
+    };
+    window.addEventListener("resize", close);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("mousedown", close);
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      window.removeEventListener("resize", close);
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("mousedown", close);
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [menu]);
+
+  useLayoutEffect(() => {
+    if (!menu || !menuRef.current) return;
+    const menuRect = menuRef.current.getBoundingClientRect();
+    const { left, top } = positionAnchoredMenu(
+      { left: menu.anchorLeft, right: menu.anchorRight, top: menu.anchorTop, bottom: menu.anchorBottom },
+      { width: menuRect.width, height: menuRect.height },
+      { width: window.innerWidth, height: window.innerHeight },
+    );
+    if (menu.left === left && menu.top === top) return;
+    setMenu((current) => current ? { ...current, left, top } : null);
+  }, [menu]);
+
+  if (!layout.showDetails && !layout.showEdit && !layout.showOverflow) return null;
+
+  const runMenuAction = (action: () => void) => {
+    setMenu(null);
+    action();
+  };
+
+  return <>
+    <S.RowActions>
+      {layout.showDetails && onDetails ? <S.IconButton type="button" title="Ver detalhes" aria-label={`Ver detalhes de ${item.name}`} onClick={onDetails} disabled={busy}><Eye /></S.IconButton> : null}
+      {layout.showEdit ? <S.IconButton type="button" title="Editar" aria-label={`Editar ${item.name}`} onClick={onEdit} disabled={busy}><Pencil /></S.IconButton> : null}
+      {layout.showOverflow ? <S.IconButton ref={menuButtonRef} type="button" title="Outras ações" aria-label={`Outras ações de ${item.name}`} aria-haspopup="menu" aria-expanded={Boolean(menu)} onClick={(event) => { const rect = event.currentTarget.getBoundingClientRect(); setMenu((current) => current ? null : { anchorLeft: rect.left, anchorRight: rect.right, anchorTop: rect.top, anchorBottom: rect.bottom }); }} disabled={busy}>{busy ? <S.InlineSpinner /> : <EllipsisVertical />}</S.IconButton> : null}
+    </S.RowActions>
+    {menu && typeof document !== "undefined" ? createPortal(<S.ActionMenu ref={menuRef} role="menu" style={{ left: menu.left ?? menu.anchorLeft, top: menu.top ?? menu.anchorBottom + 4, visibility: menu.left === undefined ? "hidden" : "visible" }}>
+      {layout.showDocuments && onDocuments ? <button type="button" role="menuitem" onClick={() => runMenuAction(onDocuments)}><Paperclip />Documentos</button> : null}
+      {layout.showStatus ? <button type="button" role="menuitem" onClick={() => runMenuAction(onStatus)}><Power />{item.status === "ACTIVE" ? "Inativar" : "Ativar"}</button> : null}
+      {layout.showArchive ? <button type="button" role="menuitem" data-danger onClick={() => runMenuAction(onDelete)}><Trash2 />Arquivar</button> : null}
+    </S.ActionMenu>, document.body) : null}
+  </>;
 }
 
 function RegionTable({ items, canManage, busyId, onEdit, onStatus, onDelete, onDetails }: CommonTableProps<RegionItem> & { onDetails: (item: RegionItem) => void }) {
-  return <><S.TableWrap><S.Table><thead><tr><th>Regional</th><th>Coordenação</th><th>Congregações</th><th>Ordem</th><th>Status</th><th>Atualização</th><th aria-label="Ações" /></tr></thead><tbody>{items.map((item) => <tr key={item.id}><td><S.PrimaryCell><strong><Network size={14} />{item.name}</strong><small>{item.description || "Sem descrição"}</small></S.PrimaryCell></td><td>{item.coordinatorName || "Não informado"}<br /><small>{item.coordinatorPhone || ""}</small></td><td>{item.congregationCount} total · {item.activeCongregationCount} ativa{item.activeCongregationCount === 1 ? "" : "s"}</td><td>{item.displayOrder}</td><td><Status value={item.status} /></td><td>{formatDate(item.updatedAt)}</td><td><Actions item={item} kind="region" canManage={canManage} busy={busyId === item.id} onDetails={() => onDetails(item)} onEdit={() => onEdit(item)} onStatus={() => onStatus(item)} onDelete={() => onDelete({ kind: "region", id: item.id, name: item.name, details: "A regional só pode ser arquivada quando não houver congregações vinculadas." })} /></td></tr>)}</tbody></S.Table></S.TableWrap><MobileRows items={items} canManage={canManage} busyId={busyId} kind="region" onEdit={onEdit} onStatus={onStatus} onDelete={onDelete} onDetails={onDetails} /></>;
+  return <><S.TableWrap><S.Table><thead><tr><th>Regional</th><th>Coordenação</th><th>Congregações</th><th>Ordem</th><th>Status</th><th>Atualização</th><th>Ações</th></tr></thead><tbody>{items.map((item) => <tr key={item.id}><td><S.PrimaryCell><strong><Network size={14} />{item.name}</strong><small>{item.description || "Sem descrição"}</small></S.PrimaryCell></td><td>{item.coordinatorName || "Não informado"}<br /><small>{item.coordinatorPhone || ""}</small></td><td>{item.congregationCount} total · {item.activeCongregationCount} ativa{item.activeCongregationCount === 1 ? "" : "s"}</td><td>{item.displayOrder}</td><td><Status value={item.status} /></td><td>{formatDate(item.updatedAt)}</td><td><Actions item={item} kind="region" canManage={canManage} busy={busyId === item.id} onDetails={() => onDetails(item)} onEdit={() => onEdit(item)} onStatus={() => onStatus(item)} onDelete={() => onDelete({ kind: "region", id: item.id, name: item.name, details: "A regional só pode ser arquivada quando não houver congregações vinculadas." })} /></td></tr>)}</tbody></S.Table></S.TableWrap><MobileRows items={items} canManage={canManage} busyId={busyId} kind="region" onEdit={onEdit} onStatus={onStatus} onDelete={onDelete} onDetails={onDetails} /></>;
 }
 
 function CongregationTable({ items, canManage, canViewDocuments, busyId, onEdit, onStatus, onDelete, onDocuments, onDetails }: CommonTableProps<CongregationItem> & { canViewDocuments: boolean; onDocuments: (item: CongregationItem) => void; onDetails: (item: CongregationItem) => void }) {
-  return <><S.TableWrap><S.Table><thead><tr><th>Congregação</th><th>Regional</th><th>Responsável</th><th>Localidade</th><th>Status</th><th>Atualização</th><th aria-label="Ações" /></tr></thead><tbody>{items.map((item) => <tr key={item.id}><td><S.PrimaryCell><strong><Church size={14} />{item.name}{item.isHeadquarters && <S.HeadquartersBadge>Sede</S.HeadquartersBadge>}</strong><small>{item.code || item.email || "Sem código"}</small></S.PrimaryCell></td><td>{item.regionName || "Sem regional"}</td><td>{item.pastorName || "Não informado"}</td><td>{[item.city, item.state].filter(Boolean).join(" / ") || "Não informada"}</td><td><Status value={item.status} /></td><td>{formatDate(item.updatedAt)}</td><td><Actions item={item} kind="congregation" canManage={canManage} busy={busyId === item.id} protectedItem={item.isHeadquarters} onDetails={() => onDetails(item)} onEdit={() => onEdit(item)} onStatus={() => onStatus(item)} onDelete={() => onDelete({ kind: "congregation", id: item.id, name: item.name, details: "O arquivamento é bloqueado quando existem membros, usuários, documentos ou outros vínculos dependentes." })} onDocuments={canViewDocuments ? () => onDocuments(item) : undefined} /></td></tr>)}</tbody></S.Table></S.TableWrap><MobileRows items={items} canManage={canManage} canViewDocuments={canViewDocuments} busyId={busyId} kind="congregation" onEdit={onEdit} onStatus={onStatus} onDelete={onDelete} onDocuments={onDocuments} onDetails={onDetails} /></>;
+  return <><S.TableWrap><S.Table><thead><tr><th>Congregação</th><th>Regional</th><th>Responsável</th><th>Localidade</th><th>Status</th><th>Atualização</th><th>Ações</th></tr></thead><tbody>{items.map((item) => <tr key={item.id}><td><S.PrimaryCell><strong><Church size={14} />{item.name}{item.isHeadquarters && <S.HeadquartersBadge>Sede</S.HeadquartersBadge>}</strong><small>{item.code || item.email || "Sem código"}</small></S.PrimaryCell></td><td>{item.regionName || "Sem regional"}</td><td>{item.pastorName || "Não informado"}</td><td>{[item.city, item.state].filter(Boolean).join(" / ") || "Não informada"}</td><td><Status value={item.status} /></td><td>{formatDate(item.updatedAt)}</td><td><Actions item={item} kind="congregation" canManage={canManage} busy={busyId === item.id} protectedItem={item.isHeadquarters} onDetails={() => onDetails(item)} onEdit={() => onEdit(item)} onStatus={() => onStatus(item)} onDelete={() => onDelete({ kind: "congregation", id: item.id, name: item.name, details: "O arquivamento é bloqueado quando existem membros, usuários, documentos ou outros vínculos dependentes." })} onDocuments={canViewDocuments ? () => onDocuments(item) : undefined} /></td></tr>)}</tbody></S.Table></S.TableWrap><MobileRows items={items} canManage={canManage} canViewDocuments={canViewDocuments} busyId={busyId} kind="congregation" onEdit={onEdit} onStatus={onStatus} onDelete={onDelete} onDocuments={onDocuments} onDetails={onDetails} /></>;
 }
 
-function PositionTable({ items, canManage, busyId, onEdit, onStatus, onDelete }: CommonTableProps<PositionItem>) {
-  return <><S.TableWrap><S.Table><thead><tr><th>Cargo</th><th>Forma feminina</th><th>Siglas</th><th>Ordem</th><th>Status</th><th>Atualização</th>{canManage && <th aria-label="Ações" />}</tr></thead><tbody>{items.map((item) => <tr key={item.id}><td><S.PrimaryCell><strong><ShieldCheck size={14} />{item.name}</strong><small>{item.description || "Sem descrição"}</small></S.PrimaryCell></td><td>{item.femaleName || "—"}</td><td>{[item.abbreviation, item.femaleAbbreviation].filter(Boolean).join(" / ") || "—"}</td><td>{item.displayOrder}</td><td><Status value={item.status} /></td><td>{formatDate(item.updatedAt)}</td>{canManage && <td><Actions item={item} kind="position" canManage busy={busyId === item.id} onEdit={() => onEdit(item)} onStatus={() => onStatus(item)} onDelete={() => onDelete({ kind: "position", id: item.id, name: item.name, details: "O cargo só pode ser arquivado quando não estiver atribuído a nenhum membro." })} /></td>}</tr>)}</tbody></S.Table></S.TableWrap><MobileRows items={items} canManage={canManage} busyId={busyId} kind="position" onEdit={onEdit} onStatus={onStatus} onDelete={onDelete} /></>;
+function PositionTable({ items, canManage, busyId, onEdit, onStatus, onDelete, onDetails }: CommonTableProps<PositionItem> & { onDetails: (item: PositionItem) => void }) {
+  return <><S.TableWrap><S.Table><thead><tr><th>Cargo</th><th>Forma feminina</th><th>Siglas</th><th>Ordem</th><th>Status</th><th>Atualização</th><th>Ações</th></tr></thead><tbody>{items.map((item) => <tr key={item.id}><td><S.PrimaryCell><strong><ShieldCheck size={14} />{item.name}</strong><small>{item.description || "Sem descrição"}</small></S.PrimaryCell></td><td>{item.femaleName || "—"}</td><td>{[item.abbreviation, item.femaleAbbreviation].filter(Boolean).join(" / ") || "—"}</td><td>{item.displayOrder}</td><td><Status value={item.status} /></td><td>{formatDate(item.updatedAt)}</td><td><Actions item={item} kind="position" canManage={canManage} busy={busyId === item.id} onDetails={() => onDetails(item)} onEdit={() => onEdit(item)} onStatus={() => onStatus(item)} onDelete={() => onDelete({ kind: "position", id: item.id, name: item.name, details: "O cargo só pode ser arquivado quando não estiver atribuído a nenhum membro." })} /></td></tr>)}</tbody></S.Table></S.TableWrap><MobileRows items={items} canManage={canManage} busyId={busyId} kind="position" onEdit={onEdit} onStatus={onStatus} onDelete={onDelete} onDetails={onDetails} /></>;
 }
 
 function MobileRows<T extends RegionItem | CongregationItem | PositionItem>({ items, canManage, canViewDocuments = false, busyId, kind, onEdit, onStatus, onDelete, onDocuments, onDetails }: CommonTableProps<T> & { kind: DeleteTarget["kind"]; canViewDocuments?: boolean; onDocuments?: (item: CongregationItem) => void }) {

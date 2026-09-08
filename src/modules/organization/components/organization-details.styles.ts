@@ -60,7 +60,7 @@ export const SummaryCard = styled.div<{ $tone: SummaryTone }>`
     align-items: center;
     justify-content: center;
     flex: 0 0 auto;
-    border-radius: 9px;
+    border-radius: 6px;
     background: ${({ $tone }) => toneBackground[$tone]};
     color: ${({ $tone }) => toneColor[$tone]};
   }
@@ -192,7 +192,7 @@ export const StatusBadge = styled.span<{ $active: boolean }>`
   width: fit-content;
   min-height: 25px;
   align-items: center;
-  border-radius: ${({ theme }) => theme.radius.full};
+  border-radius: ${({ theme }) => theme.radius.sm};
   background: ${({ $active, theme }) =>
     $active ? theme.colors.state.successSoft : theme.colors.surface.muted};
   color: ${({ $active, theme }) =>
@@ -206,7 +206,7 @@ export const CountBadge = styled.span`
   display: inline-flex;
   min-height: 25px;
   align-items: center;
-  border-radius: ${({ theme }) => theme.radius.full};
+  border-radius: ${({ theme }) => theme.radius.sm};
   background: ${({ theme }) => theme.colors.state.infoSoft};
   color: ${({ theme }) => theme.colors.brand.primary};
   padding: 0 9px;

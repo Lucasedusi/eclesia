@@ -26,6 +26,55 @@ export function parsePublicCaravanPaymentAmount(value: string, hasReceipt: boole
   return hasReceipt ? parseBrazilCurrencyInput(value) : 0;
 }
 
+export function normalizePublicCaravanPaymentInput(input: Record<string, unknown>) {
+  const paymentMethod = input.paymentMethod;
+  const receiptPath = typeof input.paymentReceiptPath === "string" ? input.paymentReceiptPath.trim() : "";
+
+  if (paymentMethod === "PIX" && receiptPath) return { ...input, paymentReceiptPath: receiptPath };
+
+  return {
+    ...input,
+    paymentAmount: 0,
+    paymentReceiptPath: "",
+    paymentReceiptFileName: "",
+    paymentReceiptMimeType: "",
+    paymentReceiptFileSize: 0,
+  };
+}
+
+type StorageReadResult<T, E> = { data: T | null; error: E | null };
+
+function isTransientStorageReadError(error: unknown) {
+  if (!error || typeof error !== "object") return false;
+
+  const candidate = error as { message?: unknown; statusCode?: unknown };
+  const statusCode = String(candidate.statusCode ?? "");
+  const message = typeof candidate.message === "string" ? candidate.message.toLowerCase() : "";
+
+  return ["404", "409", "429", "500", "502", "503", "504"].includes(statusCode)
+    || /not found|fetch failed|timeout|temporar/.test(message);
+}
+
+export async function retryPublicCaravanStorageRead<T, E>(
+  read: () => Promise<StorageReadResult<T, E>>,
+  wait: (milliseconds: number) => Promise<void> = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds)),
+) {
+  let result = await read();
+
+  for (
+    let attempt = 1;
+    attempt < 3
+      && (!result.data || result.error)
+      && (!result.error || isTransientStorageReadError(result.error));
+    attempt += 1
+  ) {
+    await wait(attempt * 150);
+    result = await read();
+  }
+
+  return result;
+}
+
 export function buildPublicCaravanPaymentPayload(input: {
   paymentMethod: "PIX" | "CASH" | "NOT_APPLICABLE";
   amountValue: string;

@@ -29,7 +29,7 @@ export const Stat = styled.button<{ $active?: boolean; $tone?: "success" | "warn
   align-items: center;
   gap: 11px;
   border: 1px solid ${({ $active }) => ($active ? "#A8B4E8" : "#e6e9ef")};
-  border-radius: 15px;
+  border-radius: 6px;
   background: ${({ $active }) => ($active ? "#f6f7ff" : "#fff")};
   padding: 13px 14px;
   box-shadow: 0 7px 22px -18px rgb(27 42 74 / 35%);
@@ -47,7 +47,7 @@ export const Stat = styled.button<{ $active?: boolean; $tone?: "success" | "warn
     height: 38px;
     flex: 0 0 auto;
     place-items: center;
-    border-radius: 11px;
+    border-radius: 6px;
     background: ${({ $tone }) =>
       $tone === "success" ? "#eaf8f1" : $tone === "warning" ? "#fff6df" : $tone === "danger" ? "#fff0ef" : "#eef2ff"};
     color: ${({ $tone, theme }) =>
@@ -64,7 +64,7 @@ export const Workspace = styled.div`
   min-height: 560px;
   overflow: hidden;
   border: 1px solid #e5e8ef;
-  border-radius: 18px;
+  border-radius: 6px;
   background: #fff;
   box-shadow: 0 12px 30px -26px rgb(27 42 74 / 40%);
 
@@ -116,7 +116,7 @@ export const TinyButton = styled.button`
   height: 28px;
   place-items: center;
   border: 1px solid #dfe3eb;
-  border-radius: 8px;
+  border-radius: 6px;
   background: #fff;
   color: #667085;
   cursor: pointer;
@@ -147,7 +147,7 @@ export const RailItem = styled.button<{ $active?: boolean }>`
   align-items: center;
   gap: 9px;
   border: 1px solid ${({ $active }) => ($active ? "#c4ccef" : "transparent")};
-  border-radius: 11px;
+  border-radius: 6px;
   background: ${({ $active }) => ($active ? "#f1f3ff" : "transparent")};
   padding: 9px;
   color: ${({ $active }) => ($active ? "#344054" : "#667085")};
@@ -165,7 +165,7 @@ export const RailIcon = styled.span<{ $color?: string }>`
   width: 30px;
   height: 30px;
   place-items: center;
-  border-radius: 9px;
+  border-radius: 6px;
   background: ${({ $color }) => `${$color ?? "#415BA5"}16`};
   color: ${({ $color }) => $color ?? "#415BA5"};
   svg { width: 15px; height: 15px; }
@@ -178,7 +178,7 @@ export const RailText = styled.span`
 `;
 
 export const RailCount = styled.span`
-  border-radius: 999px;
+  border-radius: 6px;
   background: #fff;
   padding: 3px 6px;
   color: #98a2b3;
@@ -241,7 +241,7 @@ const control = css`
   width: 100%;
   min-height: 39px;
   border: 1px solid #dfe3eb;
-  border-radius: 10px;
+  border-radius: 6px;
   outline: none;
   background: #fff;
   padding: 0 11px;
@@ -276,7 +276,7 @@ export const Filters = styled.div<{ $open?: boolean }>`
   gap: 8px;
   margin-bottom: 14px;
   border: 1px solid #edf0f4;
-  border-radius: 12px;
+  border-radius: 6px;
   background: #fafbfc;
   padding: 11px;
 
@@ -300,7 +300,7 @@ export const FilterButton = styled.button<{ $active?: boolean }>`
   justify-content: center;
   gap: 7px;
   border: 1px solid ${({ $active }) => ($active ? "#aebae6" : "#dfe3eb")};
-  border-radius: 10px;
+  border-radius: 6px;
   background: ${({ $active }) => ($active ? "#f1f3ff" : "#fff")};
   padding: 0 12px;
   color: ${({ $active }) => ($active ? "#415BA5" : "#667085")};
@@ -325,7 +325,7 @@ export const TableWrap = styled.div`
   min-height: 260px;
   overflow: auto;
   border: 1px solid #e8ebf0;
-  border-radius: 13px;
+  border-radius: 6px;
 `;
 
 export const Table = styled.table`
@@ -356,7 +356,7 @@ export const FileIcon = styled.span<{ $kind?: "pdf" | "image" | "sheet" | "word"
   width: 34px;
   height: 34px;
   place-items: center;
-  border-radius: 10px;
+  border-radius: 6px;
   background: ${({ $kind }) => $kind === "pdf" ? "#fff0ef" : $kind === "image" ? "#eaf8f1" : $kind === "sheet" ? "#eaf8f1" : "#eef2ff"};
   color: ${({ $kind, theme }) => $kind === "pdf" ? "#c84a44" : $kind === "image" || $kind === "sheet" ? "#25805d" : theme.colors.brand.primary};
   svg { width: 16px; height: 16px; }
@@ -378,7 +378,7 @@ export const Tag = styled.span`
   display: inline-flex;
   min-height: 20px;
   align-items: center;
-  border-radius: 999px;
+  border-radius: 6px;
   background: #f1f3ff;
   padding: 0 7px;
   color: #5267ad;
@@ -390,7 +390,7 @@ export const Status = styled.span<{ $status: "ACTIVE" | "ARCHIVED" | "DELETED" }
   display: inline-flex;
   min-height: 23px;
   align-items: center;
-  border-radius: 999px;
+  border-radius: 6px;
   background: ${({ $status }) => $status === "ACTIVE" ? "#eaf8f1" : $status === "ARCHIVED" ? "#fff6df" : "#fff0ef"};
   padding: 0 8px;
   color: ${({ $status }) => $status === "ACTIVE" ? "#25805d" : $status === "ARCHIVED" ? "#9b6414" : "#c84a44"};
@@ -410,7 +410,7 @@ export const ActionMenuButton = styled.button`
   height: 31px;
   place-items: center;
   border: 1px solid transparent;
-  border-radius: 9px;
+  border-radius: 6px;
   background: transparent;
   color: #667085;
   cursor: pointer;
@@ -429,7 +429,7 @@ export const ActionMenuPanel = styled.div`
   width: 216px;
   gap: 2px;
   border: 1px solid #e1e5ec;
-  border-radius: 12px;
+  border-radius: 6px;
   background: #fff;
   padding: 6px;
   box-shadow: 0 16px 40px -14px rgb(27 42 74 / 32%);
@@ -441,7 +441,7 @@ export const ActionMenuItem = styled.button<{ $danger?: boolean }>`
   align-items: center;
   gap: 9px;
   border: 0;
-  border-radius: 8px;
+  border-radius: 6px;
   background: transparent;
   padding: 0 10px;
   color: ${({ $danger }) => ($danger ? "#c84a44" : "#475467")};
@@ -467,7 +467,7 @@ export const IconButton = styled.button<{ $danger?: boolean }>`
   height: 29px;
   place-items: center;
   border: 1px solid #e1e5ec;
-  border-radius: 8px;
+  border-radius: 6px;
   background: #fff;
   color: ${({ $danger }) => ($danger ? "#c84a44" : "#667085")};
   cursor: pointer;
@@ -494,12 +494,12 @@ export const Empty = styled.div`
   min-height: 250px;
   place-items: center;
   border: 1px dashed #dce1e9;
-  border-radius: 13px;
+  border-radius: 6px;
   background: #fcfdfe;
   padding: 28px;
   text-align: center;
   > div { display: grid; justify-items: center; max-width: 420px; }
-  > div > span { display: grid; width: 50px; height: 50px; place-items: center; border-radius: 14px; background: #eef2ff; color: ${({ theme }) => theme.colors.brand.primary}; }
+  > div > span { display: grid; width: 50px; height: 50px; place-items: center; border-radius: 6px; background: #eef2ff; color: ${({ theme }) => theme.colors.brand.primary}; }
   h3 { margin: 13px 0 0; color: #344054; font-size: 14px; font-weight: 900; }
   p { margin: 7px 0 15px; color: #98a2b3; font-size: 10px; font-weight: 650; line-height: 1.6; }
 `;
@@ -552,10 +552,10 @@ export const ManagerToolbar = styled.div`
 export const Segmented = styled.div`
   display: inline-flex;
   border: 1px solid #dfe3eb;
-  border-radius: 10px;
+  border-radius: 6px;
   background: #f8f9fb;
   padding: 3px;
-  button { min-height: 29px; border: 0; border-radius: 7px; background: transparent; padding: 0 10px; color: #667085; font-size: 9px; font-weight: 800; cursor: pointer; }
+  button { min-height: 29px; border: 0; border-radius: 6px; background: transparent; padding: 0 10px; color: #667085; font-size: 9px; font-weight: 800; cursor: pointer; }
   button[data-active="true"] { background: #fff; color: #415BA5; box-shadow: 0 2px 7px rgb(27 42 74 / 10%); }
 `;
 
@@ -571,7 +571,7 @@ export const ContainerStateTabs = styled.div`
     align-items: center;
     gap: 7px;
     border: 1px solid #e1e5ec;
-    border-radius: 9px;
+    border-radius: 6px;
     background: #fff;
     padding: 0 10px;
     color: #667085;
@@ -582,7 +582,7 @@ export const ContainerStateTabs = styled.div`
 
   > button:hover { border-color: #cbd2e4; background: #fafbfe; }
   > button[data-active="true"] { border-color: #b8c2e5; background: #f1f3ff; color: #415BA5; }
-  > button span { display: grid; min-width: 19px; height: 19px; place-items: center; border-radius: 999px; background: #edf0f5; color: #667085; font-size: 8px; }
+  > button span { display: grid; min-width: 19px; height: 19px; place-items: center; border-radius: 6px; background: #edf0f5; color: #667085; font-size: 8px; }
   > button[data-active="true"] span { background: #dfe4fb; color: #415BA5; }
 `;
 
@@ -598,7 +598,7 @@ export const ManagerEmpty = styled.div`
   min-height: 132px;
   place-items: center;
   border: 1px dashed #dfe3eb;
-  border-radius: 11px;
+  border-radius: 6px;
   color: #98a2b3;
   font-size: 9px;
   font-weight: 750;
@@ -611,7 +611,7 @@ export const ManagerItem = styled.article`
   align-items: center;
   gap: 10px;
   border: 1px solid #e7eaf0;
-  border-radius: 11px;
+  border-radius: 6px;
   padding: 10px;
   > div { min-width: 0; }
   strong { display: block; overflow: hidden; color: #344054; font-size: 10px; font-weight: 850; text-overflow: ellipsis; white-space: nowrap; }
@@ -633,7 +633,7 @@ export const ColorButton = styled.button<{ $color: string; $active?: boolean }>`
   width: 29px;
   height: 29px;
   border: 3px solid ${({ $active }) => ($active ? "#fff" : "transparent")};
-  border-radius: 9px;
+  border-radius: 6px;
   outline: ${({ $active }) => ($active ? "2px solid #98a2b3" : "none")};
   background: ${({ $color }) => $color};
   cursor: pointer;
@@ -645,7 +645,7 @@ export const DropZone = styled.label`
   min-height: 130px;
   place-items: center;
   border: 1.5px dashed #cfd6e3;
-  border-radius: 13px;
+  border-radius: 6px;
   background: #fafbfc;
   padding: 20px;
   color: #667085;
@@ -672,7 +672,7 @@ export const UploadItem = styled.div`
   align-items: center;
   gap: 9px;
   border: 1px solid #e8ebf0;
-  border-radius: 10px;
+  border-radius: 6px;
   padding: 9px;
   strong { display: block; overflow: hidden; color: #475467; font-size: 9px; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
   small { display: block; margin-top: 3px; color: #98a2b3; font-size: 8px; }
@@ -692,7 +692,7 @@ export const Preview = styled.div`
   overflow: hidden;
   place-items: center;
   border: 1px solid #e5e8ef;
-  border-radius: 13px;
+  border-radius: 6px;
   background: #f7f8fa;
   iframe { width: 100%; height: 420px; border: 0; background: #fff; }
   img { display: block; max-width: 100%; max-height: 420px; object-fit: contain; }
@@ -704,7 +704,7 @@ export const DetailGrid = styled.dl`
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
   margin: 0;
-  > div { min-width: 0; border: 1px solid #edf0f4; border-radius: 10px; background: #fcfcfd; padding: 10px; }
+  > div { min-width: 0; border: 1px solid #edf0f4; border-radius: 6px; background: #fcfcfd; padding: 10px; }
   dt { color: #98a2b3; font-size: 8px; font-weight: 850; text-transform: uppercase; }
   dd { overflow-wrap: anywhere; margin: 5px 0 0; color: #475467; font-size: 10px; font-weight: 750; line-height: 1.5; }
   @media (max-width: 650px) { grid-template-columns: 1fr 1fr; }
@@ -717,7 +717,7 @@ export const Confirmation = styled.div`
   gap: 10px;
   padding: 10px 4px;
   text-align: center;
-  > span { display: grid; width: 48px; height: 48px; place-items: center; border-radius: 14px; background: #fff0ef; color: #c84a44; }
+  > span { display: grid; width: 48px; height: 48px; place-items: center; border-radius: 6px; background: #fff0ef; color: #c84a44; }
   p { max-width: 460px; margin: 0; color: #667085; font-size: 11px; font-weight: 650; line-height: 1.6; }
   strong { color: #344054; }
 `;

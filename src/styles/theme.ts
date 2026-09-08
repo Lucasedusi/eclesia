@@ -1,3 +1,5 @@
+import { APP_SURFACE_RADIUS } from "./visual-standards";
+
 export const theme = {
   colors: {
     brand: {
@@ -55,10 +57,10 @@ export const theme = {
   },
   radius: {
     xs: "4px",
-    sm: "6px",
-    md: "10px",
-    lg: "12px",
-    xl: "16px",
+    sm: APP_SURFACE_RADIUS,
+    md: APP_SURFACE_RADIUS,
+    lg: APP_SURFACE_RADIUS,
+    xl: APP_SURFACE_RADIUS,
     full: "999px",
   },
   spacing: {

@@ -248,7 +248,7 @@ export function EventCatalog({ data, canManage, canPublish }: Props) {
         {["OPEN", "IN_PROGRESS", "FINISHED", "CANCELLED", "DELETED"].map((status) => <button key={status} type="button" aria-current={selectedStatus === status ? "page" : undefined} onClick={() => filter(status)}>{status === "DELETED" ? "Lixeira" : status === "OPEN" ? "Inscrições abertas" : eventLabel(EVENT_STATUSES, status)}</button>)}
       </S.Tabs>
       {data.events.length === 0 ? <S.Empty><div><SearchX /><h3>Nenhum evento encontrado</h3><p>Ajuste os filtros ou crie um novo rascunho para começar.</p></div></S.Empty> : (
-        <S.TableWrap><table><thead><tr><th>Evento</th><th>Data e local</th><th>Inscrição</th><th>Ocupação</th><th>Situação</th><th><span className="sr-only">Ações</span></th></tr></thead><tbody>
+        <S.TableWrap><table><thead><tr><th>Evento</th><th>Data e local</th><th>Inscrição</th><th>Ocupação</th><th>Situação</th><th>Ações</th></tr></thead><tbody>
           {data.events.map((event) => { const percent = event.capacity ? Math.min(100, Math.round((event.occupied / event.capacity) * 100)) : 0; return <tr key={event.id}>
             <td><S.EventName><span><CalendarDays size={18} /></span><div><strong>{event.name}</strong><small>{eventLabel(EVENT_TYPES, event.eventType)}</small></div></S.EventName></td>
             <td><strong>{formatDate(event.startsAt)}</strong><br /><small>{[event.location, event.city, event.state].filter(Boolean).join(" · ") || "Local a definir"}</small></td>

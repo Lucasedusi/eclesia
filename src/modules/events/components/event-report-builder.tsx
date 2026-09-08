@@ -477,7 +477,7 @@ export function EventReportBuilder({ data, onNotice }: { data: EventWorkspaceDat
       previewWindow.document.documentElement.innerHTML = `
         <head><title>Preparando relatório</title><style>
           *{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:#f4f6fa;font-family:Inter,Arial,sans-serif;color:#344054}
-          main{display:grid;place-items:center;gap:14px;border:1px solid #e1e6ef;border-radius:14px;background:#fff;padding:34px 42px;box-shadow:0 14px 38px -28px rgba(16,24,40,.45)}
+          main{display:grid;place-items:center;gap:14px;border:1px solid #e1e6ef;border-radius:6px;background:#fff;padding:34px 42px;box-shadow:0 14px 38px -28px rgba(16,24,40,.45)}
           i{width:34px;height:34px;border:3px solid #dbe3f3;border-top-color:#0b51b7;border-radius:50%;animation:spin .75s linear infinite}
           strong{font-size:14px}span{color:#7c8798;font-size:11px}@keyframes spin{to{transform:rotate(360deg)}}
         </style></head><body><main><i></i><strong>Preparando o relatório</strong><span>A visualização será aberta nesta aba.</span></main></body>`;

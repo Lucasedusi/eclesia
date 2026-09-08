@@ -389,7 +389,7 @@ export default async function DesignSystemPage() {
                 <TableHead sortable>Column heading</TableHead>
                 <TableHead sortable>Column heading</TableHead>
                 <TableHead sortable>Column heading</TableHead>
-                <TableHead className="w-[56px]" />
+                <TableHead className="w-[56px]">Ações</TableHead>
               </TableRow>
             </TableHeader>
 

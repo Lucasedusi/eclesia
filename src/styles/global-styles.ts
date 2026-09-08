@@ -173,7 +173,7 @@ export const GlobalStyles = createGlobalStyle`
     position: relative;
     display: block;
     overflow: hidden;
-    border-radius: 12px;
+    border-radius: 6px;
     background: #e9edf3;
   }
 
@@ -207,9 +207,9 @@ export const GlobalStyles = createGlobalStyle`
   }
 
   .app-skeleton-stat { height: 72px; }
-  .app-skeleton-panel { display: grid; gap: 1px; overflow: hidden; border: 1px solid #e2e6ed; border-radius: 18px; background: #fff; padding: 18px; }
+  .app-skeleton-panel { display: grid; gap: 1px; overflow: hidden; border: 1px solid #e2e6ed; border-radius: 6px; background: #fff; padding: 18px; }
   .app-skeleton-toolbar { height: 48px; margin-bottom: 8px; }
-  .app-skeleton-row { height: 52px; border-radius: 8px; }
+  .app-skeleton-row { height: 52px; border-radius: 6px; }
 
   .app-skeleton-form {
     display: grid;
@@ -223,7 +223,7 @@ export const GlobalStyles = createGlobalStyle`
     align-content: start;
     gap: 14px;
     border: 1px solid #e2e6ed;
-    border-radius: 18px;
+    border-radius: 6px;
     background: #fff;
     padding: 22px;
   }

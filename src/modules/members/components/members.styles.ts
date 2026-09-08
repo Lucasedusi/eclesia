@@ -2,6 +2,7 @@
 
 import styled, { keyframes } from "styled-components";
 import Link from "next/link";
+import { TABLE_HEADER_STYLE } from "@/styles/visual-standards";
 
 const enter = keyframes`from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); }`;
 
@@ -27,7 +28,7 @@ export const Stat = styled.article<{ $tone?: string }>`
   gap: 12px;
   min-width: 0;
   border: 1px solid ${({ theme }) => theme.colors.border.soft};
-  border-radius: 15px;
+  border-radius: 6px;
   background: #fff;
   padding: 15px;
   box-shadow: ${({ theme }) => theme.shadows.card};
@@ -37,7 +38,7 @@ export const Stat = styled.article<{ $tone?: string }>`
     height: 40px;
     place-items: center;
     flex: 0 0 auto;
-    border-radius: 12px;
+    border-radius: 6px;
     background: ${({ $tone }) =>
       $tone === "success"
         ? "#eaf8f1"
@@ -72,7 +73,7 @@ export const Stat = styled.article<{ $tone?: string }>`
 export const Panel = styled.section`
   overflow: hidden;
   border: 1px solid ${({ theme }) => theme.colors.border.soft};
-  border-radius: 19px;
+  border-radius: 6px;
   background: #fff;
   box-shadow: ${({ theme }) => theme.shadows.card};
 `;
@@ -316,7 +317,7 @@ export const Control = styled.input<{
   width: 100%;
   min-height: 44px;
   border: 1px solid #d9deea;
-  border-radius: 10px;
+  border-radius: 6px;
   outline: 0;
   background: #f8f9fc;
   padding: 0 13px;
@@ -340,7 +341,7 @@ export const ClearSearchButton = styled.button`
   height: 28px;
   place-items: center;
   border: 0;
-  border-radius: 8px;
+  border-radius: 6px;
   background: transparent;
   color: #98a2b3;
   cursor: pointer;
@@ -364,7 +365,7 @@ export const Select = styled.select`
   width: 100%;
   min-height: 44px;
   border: 1px solid #d9deea;
-  border-radius: 10px;
+  border-radius: 6px;
   outline: 0;
   background: #f8f9fc;
   padding: 0 12px;
@@ -387,14 +388,19 @@ export const Table = styled.table`
   width: 100%;
   border-collapse: collapse;
   th {
-    border-bottom: 1px solid #edf0f4;
-    background: #f9fafb;
+    border-bottom: 1px solid #f0f2f5;
+    background: ${TABLE_HEADER_STYLE.background};
     padding: 12px 14px;
-    color: #98a2b3;
-    font-size: 9px;
-    font-weight: 850;
+    color: ${TABLE_HEADER_STYLE.color};
+    font-size: ${TABLE_HEADER_STYLE.fontSize};
+    font-weight: ${TABLE_HEADER_STYLE.fontWeight};
+    letter-spacing: ${TABLE_HEADER_STYLE.letterSpacing};
     text-align: left;
     text-transform: uppercase;
+  }
+  th:last-child,
+  td:last-child {
+    text-align: right;
   }
   td {
     border-bottom: 1px solid #f0f2f5;
@@ -422,7 +428,7 @@ export const Person = styled.div`
     height: 36px;
     flex: 0 0 auto;
     place-items: center;
-    border-radius: 11px;
+    border-radius: 6px;
     background: #eef2ff;
     color: ${({ theme }) => theme.colors.brand.primary};
     font-size: 11px;
@@ -445,7 +451,7 @@ export const Person = styled.div`
 export const Status = styled.span<{ $status: string }>`
   display: inline-flex;
   align-items: center;
-  border-radius: 999px;
+  border-radius: 6px;
   padding: 5px 8px;
   font-size: 8px;
   font-weight: 900;
@@ -480,7 +486,7 @@ export const IconButton = styled.button`
   place-items: center;
   overflow: hidden;
   border: 1px solid #e2e6ed;
-  border-radius: 9px;
+  border-radius: 6px;
   background: #fff;
   color: #667085;
   cursor: pointer;
@@ -517,7 +523,7 @@ export const MobileList = styled.div`
 `;
 export const MobileCard = styled.article`
   border: 1px solid #e8ebf0;
-  border-radius: 14px;
+  border-radius: 6px;
   background: #fff;
   padding: 14px;
 `;
@@ -603,7 +609,7 @@ export const MenuButton = styled.button`
   align-items: center;
   gap: 9px;
   border: 1px solid #e2e6ed;
-  border-radius: 10px;
+  border-radius: 6px;
   background: #fff;
   padding: 10px 12px;
   color: #475467;
@@ -623,7 +629,7 @@ export const ActionForm = styled.form`
   gap: 18px;
 `;
 export const FormIntro = styled.div`
-  border-radius: 13px;
+  border-radius: 6px;
   background: ${({ theme }) => theme.colors.state.infoSolfSecundary};
   padding: 13px 15px;
   color: ${({ theme }) => theme.colors.brand.primary};
@@ -655,7 +661,7 @@ export const Field = styled.label<{ $span?: number }>`
 export const CheckField = styled.div<{ $span?: number }>`
   grid-column: span ${({ $span = 1 }) => $span};
   border: 1px solid #e2e6ed;
-  border-radius: 10px;
+  border-radius: 6px;
   background: #f8f9fc;
   padding: 12px 13px;
   @media (max-width: 650px) {
@@ -667,7 +673,7 @@ export const Textarea = styled.textarea`
   min-height: 92px;
   resize: vertical;
   border: 1px solid #d9deea;
-  border-radius: 10px;
+  border-radius: 6px;
   outline: 0;
   background: #f8f9fc;
   padding: 12px 13px;

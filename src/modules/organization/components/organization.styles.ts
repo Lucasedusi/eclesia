@@ -2,6 +2,7 @@
 
 import styled, { keyframes } from "styled-components";
 import Link from "next/link";
+import { TABLE_HEADER_STYLE } from "@/styles/visual-standards";
 
 const enter = keyframes`
   from { opacity: 0; transform: translateY(8px); }
@@ -27,7 +28,7 @@ export const Tabs = styled.nav`
   margin-bottom: 20px;
   overflow-x: auto;
   border: 1px solid ${({ theme }) => theme.colors.border.soft};
-  border-radius: 14px;
+  border-radius: 6px;
   background: #fff;
   padding: 5px;
   box-shadow: ${({ theme }) => theme.shadows.card};
@@ -38,7 +39,7 @@ export const Tab = styled(Link)<{ $active: boolean }>`
   min-height: 42px;
   align-items: center;
   gap: 8px;
-  border-radius: 10px;
+  border-radius: 6px;
   background: ${({ $active, theme }) =>
     $active ? theme.colors.brand.primary : "transparent"};
   color: ${({ $active, theme }) => ($active ? "#fff" : theme.colors.text.body)};
@@ -77,7 +78,7 @@ export const Stat = styled.article<{
   align-items: center;
   gap: 12px;
   border: 1px solid ${({ theme }) => theme.colors.border.soft};
-  border-radius: 15px;
+  border-radius: 6px;
   background: #fff;
   padding: 15px;
   box-shadow: ${({ theme }) => theme.shadows.card};
@@ -88,7 +89,7 @@ export const Stat = styled.article<{
     height: 40px;
     flex: 0 0 auto;
     place-items: center;
-    border-radius: 12px;
+    border-radius: 6px;
     background: ${({ $tone }) =>
       $tone === "success"
         ? "#eaf8f1"
@@ -126,7 +127,7 @@ export const Stat = styled.article<{
 export const Panel = styled.section`
   overflow: hidden;
   border: 1px solid ${({ theme }) => theme.colors.border.soft};
-  border-radius: 19px;
+  border-radius: 6px;
   background: #fff;
   box-shadow: ${({ theme }) => theme.shadows.card};
 `;
@@ -199,7 +200,7 @@ export const Control = styled.input<{ $invalid?: boolean }>`
   width: 100%;
   min-height: 44px;
   border: 1px solid ${({ $invalid }) => ($invalid ? "#ef7770" : "#d9deea")};
-  border-radius: 10px;
+  border-radius: 6px;
   outline: 0;
   background: #f8f9fc;
   padding: 0 13px;
@@ -223,7 +224,7 @@ export const SelectControl = styled.select<{ $invalid?: boolean }>`
   width: 100%;
   min-height: 44px;
   border: 1px solid ${({ $invalid }) => ($invalid ? "#ef7770" : "#d9deea")};
-  border-radius: 10px;
+  border-radius: 6px;
   outline: 0;
   background: #f8f9fc;
   padding: 0 12px;
@@ -248,8 +249,9 @@ export const ResetFiltersButton = styled.button`
   height: 44px;
   place-items: center;
   justify-self: end;
+  grid-column: -2 / -1;
   border: 1px solid #d9deea;
-  border-radius: 10px;
+  border-radius: 6px;
   background: #ffffff;
   color: #667085;
   transition:
@@ -276,6 +278,12 @@ export const ResetFiltersButton = styled.button`
   &:disabled {
     opacity: 0.42;
   }
+
+  @media (max-width: 960px) {
+    grid-column: auto;
+    justify-self: stretch;
+    width: 100%;
+  }
 `;
 
 export const TableWrap = styled.div`
@@ -291,16 +299,21 @@ export const Table = styled.table`
   border-collapse: collapse;
 
   th {
-    border-bottom: 1px solid #edf0f4;
-    background: #f9fafb;
+    border-bottom: 1px solid #f0f2f5;
+    background: ${TABLE_HEADER_STYLE.background};
     padding: 12px 15px;
-    color: #98a2b3;
-    font-size: 9px;
-    font-weight: 850;
-    letter-spacing: 0.035em;
+    color: ${TABLE_HEADER_STYLE.color};
+    font-size: ${TABLE_HEADER_STYLE.fontSize};
+    font-weight: ${TABLE_HEADER_STYLE.fontWeight};
+    letter-spacing: ${TABLE_HEADER_STYLE.letterSpacing};
     text-align: left;
     text-transform: uppercase;
     white-space: nowrap;
+  }
+
+  th:last-child,
+  td:last-child {
+    text-align: right;
   }
 
   td {
@@ -351,7 +364,7 @@ export const HeadquartersBadge = styled.span`
   display: inline-flex;
   min-height: 21px;
   align-items: center;
-  border-radius: 999px;
+  border-radius: 6px;
   background: #eef2ff;
   color: ${({ theme }) => theme.colors.brand.primary};
   padding: 0 7px;
@@ -364,7 +377,7 @@ export const StatusBadge = styled.span<{ $status: "ACTIVE" | "INACTIVE" }>`
   min-height: 25px;
   align-items: center;
   gap: 6px;
-  border-radius: 999px;
+  border-radius: 6px;
   background: ${({ $status }) =>
     $status === "ACTIVE" ? "#e9f8f0" : "#f2f4f7"};
   color: ${({ $status }) => ($status === "ACTIVE" ? "#267c5b" : "#667085")};
@@ -388,6 +401,106 @@ export const RowActions = styled.div`
   gap: 6px;
 `;
 
+export const ActionMenu = styled.div`
+  position: fixed;
+  z-index: 1000;
+  display: grid;
+  min-width: 190px;
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
+  border: 1px solid #e0e4eb;
+  border-radius: 6px;
+  background: #fff;
+  padding: 5px;
+  box-shadow: 0 18px 45px rgba(16, 24, 40, 0.18);
+
+  button {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 9px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    padding: 9px;
+    color: #475467;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 700;
+
+    &:hover,
+    &:focus-visible {
+      background: #f2f4f7;
+      color: #344054;
+      outline: none;
+    }
+
+    &[data-danger] {
+      color: #b42318;
+    }
+
+    &[data-danger]:hover,
+    &[data-danger]:focus-visible {
+      background: #fff1f0;
+      color: #a51d14;
+    }
+
+    svg {
+      width: 15px;
+      height: 15px;
+    }
+  }
+`;
+
+export const PositionDetailsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+
+  > div {
+    min-width: 0;
+    border: 1px solid #e8ebf0;
+    border-radius: 6px;
+    background: #fbfcfd;
+    padding: 12px;
+  }
+
+  > div[data-wide] {
+    grid-column: 1 / -1;
+  }
+
+  small {
+    display: block;
+    color: #98a2b3;
+    font-size: 9px;
+    font-weight: 750;
+  }
+
+  strong {
+    display: block;
+    margin-top: 5px;
+    color: #344054;
+    font-size: 11px;
+    font-weight: 750;
+    line-height: 1.5;
+  }
+
+  @media (max-width: 520px) {
+    grid-template-columns: 1fr;
+
+    > div[data-wide] {
+      grid-column: auto;
+    }
+  }
+`;
+
+export const DetailFooter = styled.div`
+  display: flex;
+  width: 100%;
+  justify-content: flex-end;
+  gap: 8px;
+`;
+
 export const IconButton = styled.button<{
   $danger?: boolean;
   $warning?: boolean;
@@ -397,7 +510,7 @@ export const IconButton = styled.button<{
   height: 34px;
   place-items: center;
   border: 1px solid #e2e6ed;
-  border-radius: 9px;
+  border-radius: 6px;
   background: #fff;
   color: ${({ $danger, $warning }) =>
     $danger ? "#c84a44" : $warning ? "#b76b1a" : "#667085"};
@@ -444,7 +557,7 @@ export const MobileList = styled.div`
 
 export const MobileCard = styled.article`
   border: 1px solid #e8ebf1;
-  border-radius: 14px;
+  border-radius: 6px;
   background: #fff;
   padding: 15px;
 `;
@@ -501,7 +614,7 @@ export const Empty = styled.div`
     width: 52px;
     height: 52px;
     place-items: center;
-    border-radius: 16px;
+    border-radius: 6px;
     background: #f2f5fb;
     color: ${({ theme }) => theme.colors.brand.primary};
   }
@@ -542,7 +655,7 @@ export const Pagination = styled.footer`
     height: 32px;
     place-items: center;
     border: 1px solid #e1e5ec;
-    border-radius: 8px;
+    border-radius: 6px;
     background: #fff;
     color: #667085;
   }
@@ -561,7 +674,7 @@ export const Form = styled.form`
 `;
 
 export const FormIntro = styled.div`
-  border-radius: 13px;
+  border-radius: 6px;
   padding: 13px 15px;
   background: ${({ theme }) => theme.colors.state.infoSolfSecundary};
   color: ${({ theme }) => theme.colors.brand.primary};
@@ -607,7 +720,7 @@ export const Textarea = styled.textarea<{ $invalid?: boolean }>`
   width: 100%;
   min-height: 92px;
   border: 1px solid ${({ $invalid }) => ($invalid ? "#ef7770" : "#d9deea")};
-  border-radius: 10px;
+  border-radius: 6px;
   outline: 0;
   background: #f8f9fc;
   padding: 12px 13px;
@@ -631,7 +744,7 @@ export const FieldError = styled.small`
 
 export const FormAlert = styled.div`
   border: 1px solid #ffd0ce;
-  border-radius: 10px;
+  border-radius: 6px;
   background: #fff4f3;
   color: #a9413c;
   padding: 11px 13px;
@@ -663,7 +776,7 @@ export const Step = styled.li<{ $active: boolean; $complete: boolean }>`
   align-items: center;
   gap: 8px;
   border: 1px solid ${({ $active }) => ($active ? "#bdc9ef" : "#e6e9ef")};
-  border-radius: 10px;
+  border-radius: 6px;
   background: ${({ $active }) => ($active ? "#f3f6ff" : "#fff")};
   padding: 9px;
   color: ${({ $active, $complete }) =>
@@ -677,7 +790,7 @@ export const Step = styled.li<{ $active: boolean; $complete: boolean }>`
     height: 23px;
     flex: 0 0 auto;
     place-items: center;
-    border-radius: 7px;
+    border-radius: 6px;
     background: ${({ $active, $complete }) =>
       $active || $complete ? "#415ba5" : "#eef0f4"};
     color: ${({ $active, $complete }) =>
@@ -712,7 +825,7 @@ export const ReviewGrid = styled.div`
 
 export const ReviewCard = styled.div`
   border: 1px solid #e5e9f0;
-  border-radius: 12px;
+  border-radius: 6px;
   background: #fafbfc;
   padding: 13px;
   strong {
@@ -756,7 +869,7 @@ export const DeleteName = styled.strong`
 
 export const Skeleton = styled.div<{ $height?: string }>`
   height: ${({ $height = "54px" }) => $height};
-  border-radius: 13px;
+  border-radius: 6px;
   background: linear-gradient(90deg, #eef1f5 25%, #f8f9fb 50%, #eef1f5 75%);
   background-size: 200% 100%;
   animation: ${shimmer} 1.25s linear infinite;
@@ -775,7 +888,7 @@ export const ErrorState = styled.div`
   display: grid;
   place-items: center;
   border: 1px solid #ffd9d5;
-  border-radius: 17px;
+  border-radius: 6px;
   background: #fff;
   padding: 55px 22px;
   text-align: center;
@@ -785,7 +898,7 @@ export const ErrorState = styled.div`
     width: 52px;
     height: 52px;
     place-items: center;
-    border-radius: 16px;
+    border-radius: 6px;
     background: #fff1f0;
     color: #c84a44;
   }

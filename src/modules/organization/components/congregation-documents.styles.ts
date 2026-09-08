@@ -10,7 +10,7 @@ export const Content = styled.div`
 
 export const UploadPanel = styled.section`
   border: 1px solid #e4e8f0;
-  border-radius: 14px;
+  border-radius: 6px;
   background: #fafbfc;
   padding: 16px;
 `;
@@ -68,7 +68,7 @@ const controlStyles = `
   width: 100%;
   min-height: 44px;
   border: 1px solid #d9deea;
-  border-radius: 10px;
+  border-radius: 6px;
   outline: 0;
   background: #fff;
   padding: 0 13px;
@@ -103,7 +103,7 @@ export const FileDrop = styled.label<{ $invalid?: boolean }>`
   min-height: 104px;
   place-items: center;
   border: 1.5px dashed ${({ $invalid }) => ($invalid ? "#ef7770" : "#cfd6e3")};
-  border-radius: 12px;
+  border-radius: 6px;
   background: #fff;
   padding: 16px;
   color: #667085;
@@ -162,7 +162,7 @@ export const SelectedFile = styled.span`
   max-width: 100%;
   align-items: center;
   gap: 7px;
-  border-radius: 8px;
+  border-radius: 6px;
   background: #eef2ff;
   color: ${({ theme }) => theme.colors.brand.primary};
   padding: 6px 9px;
@@ -208,7 +208,7 @@ export const CountBadge = styled.span`
   display: inline-flex;
   min-height: 25px;
   align-items: center;
-  border-radius: 999px;
+  border-radius: 6px;
   background: #eef2ff;
   color: ${({ theme }) => theme.colors.brand.primary};
   padding: 0 9px;
@@ -249,7 +249,7 @@ export const EmptyState = styled.div`
   min-height: 150px;
   place-items: center;
   border: 1px dashed #dce1e9;
-  border-radius: 13px;
+  border-radius: 6px;
   background: #fbfcfd;
   padding: 22px;
   text-align: center;
@@ -263,7 +263,7 @@ export const EmptyState = styled.div`
     width: 44px;
     height: 44px;
     place-items: center;
-    border-radius: 12px;
+    border-radius: 6px;
     background: #eef2ff;
     color: ${({ theme }) => theme.colors.brand.primary};
   }
@@ -304,7 +304,7 @@ export const DocumentRow = styled.article`
   align-items: center;
   gap: 12px;
   border: 1px solid #e7eaf0;
-  border-radius: 12px;
+  border-radius: 6px;
   background: #fff;
   padding: 12px;
 
@@ -318,7 +318,7 @@ export const DocumentIcon = styled.span<{ $image?: boolean }>`
   width: 40px;
   height: 40px;
   place-items: center;
-  border-radius: 11px;
+  border-radius: 6px;
   background: ${({ $image }) => ($image ? "#eaf8f1" : "#eef2ff")};
   color: ${({ $image, theme }) =>
     $image ? "#25805d" : theme.colors.brand.primary};
@@ -373,7 +373,7 @@ export const DocumentAction = styled.button<{ $danger?: boolean }>`
   height: 32px;
   place-items: center;
   border: 1px solid #e1e5ec;
-  border-radius: 8px;
+  border-radius: 6px;
   background: #fff;
   color: ${({ $danger }) => ($danger ? "#c84a44" : "#667085")};
   transition: 140ms ease;
@@ -428,7 +428,7 @@ export const EditActions = styled.div`
 
 export const DeleteText = styled.div`
   border: 1px solid #ffe0dd;
-  border-radius: 12px;
+  border-radius: 6px;
   background: #fff8f7;
   padding: 13px;
   color: #667085;

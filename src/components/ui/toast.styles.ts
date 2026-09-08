@@ -66,7 +66,7 @@ export const ToastRoot = styled.div<ToastRootProps>`
   column-gap: 10px;
   overflow: hidden;
   border: 0;
-  border-radius: 12px;
+  border-radius: 6px;
   padding: 14px;
   color: ${({ theme, $variant }) =>
     $variant === "warning"
@@ -81,7 +81,7 @@ export const ToastRoot = styled.div<ToastRootProps>`
     align-items: center;
     column-gap: 8px;
     border: 1px solid ${({ theme, $variant }) => $variant === "danger" ? theme.colors.state.danger : $variant === "warning" ? theme.colors.state.warning : theme.colors.state.success};
-    border-radius: 8px;
+    border-radius: 6px;
     background: ${({ theme }) => theme.colors.surface.card};
     padding: 10px 11px;
     color: ${({ theme, $variant }) => $variant === "danger" ? theme.colors.state.danger : $variant === "warning" ? theme.colors.text.title : theme.colors.state.success};
@@ -125,7 +125,7 @@ export const CloseButton = styled.button`
   cursor: pointer;
   opacity: 0.72;
   margin: -4px -4px 0 0;
-  border-radius: 8px;
+  border-radius: 6px;
   padding: 5px;
   transition:
     background ${({ theme }) => theme.transitions.fast},
