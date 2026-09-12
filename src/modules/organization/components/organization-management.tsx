@@ -10,7 +10,6 @@ import {
   Church,
   EllipsisVertical,
   Eye,
-  MapPin,
   Network,
   Paperclip,
   Pencil,
@@ -130,7 +129,6 @@ function OrganizationStats({ data }: { data: OrganizationData }) {
     { icon: Network, label: "Regionais ativas", value: data.stats.activeRegions, tone: "primary" as const },
     { icon: Church, label: "Congregações ativas", value: data.stats.activeCongregations, tone: "success" as const },
     { icon: Power, label: "Congregações inativas", value: data.stats.inactiveCongregations, tone: "neutral" as const },
-    { icon: MapPin, label: "Sem regional", value: data.stats.congregationsWithoutRegion, tone: "warning" as const },
     { icon: BadgeCheck, label: "Cargos ativos", value: data.stats.activePositions, tone: "primary" as const },
   ];
 
@@ -264,7 +262,7 @@ export function OrganizationManagement({ data, activeTab }: { data: Organization
           <div><h2>{descriptions[activeTab].title}</h2><p>{descriptions[activeTab].text}</p></div>
           {canManage ? <Button onClick={openCreate}><Plus size={15} /> Novo cadastro</Button> : null}
         </S.PanelHeader>
-        <S.Toolbar>
+        <S.Toolbar $filterCount={activeTab === "congregations" ? 4 : 2}>
           <S.Search><Search aria-hidden="true" /><S.Control aria-label={`Buscar em ${descriptions[activeTab].title}`} placeholder="Buscar por nome ou identificação..." value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} /></S.Search>
           <S.SelectControl aria-label="Filtrar por status" value={status} onChange={(event) => { setStatus(event.target.value); setPage(1); }}>
             <option value="ALL">Todos os status</option><option value="ACTIVE">Ativos</option><option value="INACTIVE">Inativos</option>
@@ -401,7 +399,7 @@ function Actions({ item, canManage, busy, protectedItem = false, onDetails, onEd
 }
 
 function RegionTable({ items, canManage, busyId, onEdit, onStatus, onDelete, onDetails }: CommonTableProps<RegionItem> & { onDetails: (item: RegionItem) => void }) {
-  return <><S.TableWrap><S.Table><thead><tr><th>Regional</th><th>Coordenação</th><th>Congregações</th><th>Ordem</th><th>Status</th><th>Atualização</th><th>Ações</th></tr></thead><tbody>{items.map((item) => <tr key={item.id}><td><S.PrimaryCell><strong><Network size={14} />{item.name}</strong><small>{item.description || "Sem descrição"}</small></S.PrimaryCell></td><td>{item.coordinatorName || "Não informado"}<br /><small>{item.coordinatorPhone || ""}</small></td><td>{item.congregationCount} total · {item.activeCongregationCount} ativa{item.activeCongregationCount === 1 ? "" : "s"}</td><td>{item.displayOrder}</td><td><Status value={item.status} /></td><td>{formatDate(item.updatedAt)}</td><td><Actions item={item} kind="region" canManage={canManage} busy={busyId === item.id} onDetails={() => onDetails(item)} onEdit={() => onEdit(item)} onStatus={() => onStatus(item)} onDelete={() => onDelete({ kind: "region", id: item.id, name: item.name, details: "A regional só pode ser arquivada quando não houver congregações vinculadas." })} /></td></tr>)}</tbody></S.Table></S.TableWrap><MobileRows items={items} canManage={canManage} busyId={busyId} kind="region" onEdit={onEdit} onStatus={onStatus} onDelete={onDelete} onDetails={onDetails} /></>;
+  return <><S.TableWrap><S.Table><thead><tr><th>Regional</th><th>Coordenação</th><th>Congregações</th><th>Status</th><th>Ações</th></tr></thead><tbody>{items.map((item) => <tr key={item.id}><td><S.PrimaryCell><strong><Network size={14} />{item.name}</strong><small>{item.description || "Sem descrição"}</small></S.PrimaryCell></td><td>{item.coordinatorName || "Não informado"}<br /><small>{item.coordinatorPhone || ""}</small></td><td>{item.congregationCount} total · {item.activeCongregationCount} ativa{item.activeCongregationCount === 1 ? "" : "s"}</td><td><Status value={item.status} /></td><td><Actions item={item} kind="region" canManage={canManage} busy={busyId === item.id} onDetails={() => onDetails(item)} onEdit={() => onEdit(item)} onStatus={() => onStatus(item)} onDelete={() => onDelete({ kind: "region", id: item.id, name: item.name, details: "A regional só pode ser arquivada quando não houver congregações vinculadas." })} /></td></tr>)}</tbody></S.Table></S.TableWrap><MobileRows items={items} canManage={canManage} busyId={busyId} kind="region" onEdit={onEdit} onStatus={onStatus} onDelete={onDelete} onDetails={onDetails} /></>;
 }
 
 function CongregationTable({ items, canManage, canViewDocuments, busyId, onEdit, onStatus, onDelete, onDocuments, onDetails }: CommonTableProps<CongregationItem> & { canViewDocuments: boolean; onDocuments: (item: CongregationItem) => void; onDetails: (item: CongregationItem) => void }) {

@@ -70,7 +70,7 @@ export function Toast({
       <S.ToastContent>
         <S.ToastTitle>{title}</S.ToastTitle>
         {description ? (
-          <S.ToastDescription>{description}</S.ToastDescription>
+          <S.ToastDescription $danger={variant === "danger"}>{description}</S.ToastDescription>
         ) : null}
       </S.ToastContent>
       <S.CloseButton

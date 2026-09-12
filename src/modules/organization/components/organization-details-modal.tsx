@@ -276,10 +276,13 @@ export function RegionDetailsModal({
 
           <S.Section>
             <S.SectionHeader>
-              <div>
-                <h3>Informações da Regional</h3>
-                <p>Identificação, coordenação e situação cadastral.</p>
-              </div>
+              <S.SectionHeading>
+                <S.SectionIcon><Network /></S.SectionIcon>
+                <div>
+                  <h3>Informações da Regional</h3>
+                  <p>Identificação, coordenação e situação cadastral.</p>
+                </div>
+              </S.SectionHeading>
               <Status value={details.status} />
             </S.SectionHeader>
             <S.InfoGrid>
@@ -298,10 +301,6 @@ export function RegionDetailsModal({
                 }
               />
               <Info
-                label="Ordem de exibição"
-                value={String(details.displayOrder)}
-              />
-              <Info
                 label="Cadastrada em"
                 value={formatDateTime(details.createdAt)}
               />
@@ -315,30 +314,28 @@ export function RegionDetailsModal({
 
           <S.Section>
             <S.SectionHeader>
-              <div>
-                <h3>Congregações pertencentes</h3>
-                <p>
-                  Consulte as Congregações atualmente vinculadas a esta
-                  Regional.
-                </p>
-              </div>
-              <S.CountBadge>
-                {details.congregationCount} registro
-                {details.congregationCount === 1 ? "" : "s"}
-              </S.CountBadge>
+              <S.SectionHeading>
+                <S.SectionIcon $tone="success"><Church /></S.SectionIcon>
+                <div>
+                  <h3>Congregações pertencentes</h3>
+                  <p>
+                    Consulte as Congregações atualmente vinculadas a esta
+                    Regional.
+                  </p>
+                </div>
+              </S.SectionHeading>
+              {details.congregationCount > 0 ? (
+                <S.SearchBox>
+                  <Search aria-hidden="true" />
+                  <input
+                    aria-label="Buscar Congregação nesta Regional"
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    placeholder="Buscar Congregação..."
+                  />
+                </S.SearchBox>
+              ) : null}
             </S.SectionHeader>
-
-            {details.congregationCount > 0 ? (
-              <S.SearchBox>
-                <Search aria-hidden="true" />
-                <input
-                  aria-label="Buscar Congregação nesta Regional"
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Buscar Congregação..."
-                />
-              </S.SearchBox>
-            ) : null}
 
             {details.congregationCount === 0 ? (
               <S.EmptyState>

@@ -79,13 +79,14 @@ const buttonVariants = {
   `,
   danger: css`
     border-color: transparent;
-    background: ${({ theme }) => theme.colors.state.danger};
+    background: ${({ theme }) => theme.colors.state.dangerGradient};
     color: ${({ theme }) => theme.colors.text.inverse};
-    box-shadow: 0 8px 24px rgba(245, 126, 119, 0.14);
+    box-shadow: 0 8px 24px rgba(195, 0, 47, 0.18);
 
     &:hover:not(:disabled) {
-      background: ${({ theme }) => theme.colors.state.dangerHover};
-      box-shadow: 0 12px 28px rgba(245, 126, 119, 0.2);
+      background: ${({ theme }) => theme.colors.state.dangerGradient};
+      filter: brightness(0.92);
+      box-shadow: 0 12px 28px rgba(195, 0, 47, 0.24);
     }
   `,
   report: css`
@@ -123,6 +124,7 @@ export const ButtonRoot = styled.button<ButtonRootProps>`
     color ${({ theme }) => theme.transitions.default},
     box-shadow ${({ theme }) => theme.transitions.default},
     transform ${({ theme }) => theme.transitions.fast};
+  filter: none;
 
   ${({ $size }) => buttonSizes[$size]}
   ${({ $variant }) => buttonVariants[$variant]}

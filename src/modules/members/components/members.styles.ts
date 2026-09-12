@@ -2,7 +2,11 @@
 
 import styled, { keyframes } from "styled-components";
 import Link from "next/link";
-import { TABLE_HEADER_STYLE } from "@/styles/visual-standards";
+import {
+  LIST_PANEL_SUBTITLE_STYLE,
+  TABLE_CONTENT_GUTTER,
+  TABLE_HEADER_STYLE,
+} from "@/styles/visual-standards";
 
 const enter = keyframes`from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); }`;
 
@@ -93,8 +97,8 @@ export const PanelHeader = styled.header`
   p {
     margin: 5px 0 0;
     color: #667085;
-    font-size: 11px;
-    font-weight: 600;
+    font-size: ${LIST_PANEL_SUBTITLE_STYLE.fontSize};
+    font-weight: ${LIST_PANEL_SUBTITLE_STYLE.fontWeight};
   }
   @media (max-width: 720px) {
     align-items: stretch;
@@ -398,8 +402,13 @@ export const Table = styled.table`
     text-align: left;
     text-transform: uppercase;
   }
+  th:first-child,
+  td:first-child {
+    padding-left: ${TABLE_CONTENT_GUTTER};
+  }
   th:last-child,
   td:last-child {
+    padding-right: ${TABLE_CONTENT_GUTTER};
     text-align: right;
   }
   td {

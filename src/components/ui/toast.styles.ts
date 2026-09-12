@@ -14,7 +14,7 @@ const toastBackground = {
     background: ${({ theme }) => theme.colors.state.success};
   `,
   danger: css`
-    background: ${({ theme }) => theme.colors.state.dangerHover};
+    background: ${({ theme }) => theme.colors.state.dangerGradient};
   `,
   warning: css`
     background: ${({ theme }) => theme.colors.state.warning};
@@ -80,11 +80,19 @@ export const ToastRoot = styled.div<ToastRootProps>`
     grid-template-columns: 18px minmax(0, 1fr) 24px;
     align-items: center;
     column-gap: 8px;
-    border: 1px solid ${({ theme, $variant }) => $variant === "danger" ? theme.colors.state.danger : $variant === "warning" ? theme.colors.state.warning : theme.colors.state.success};
+    border: 1px solid ${({ theme, $variant }) => $variant === "danger" ? "transparent" : $variant === "warning" ? theme.colors.state.warning : theme.colors.state.success};
     border-radius: 6px;
-    background: ${({ theme }) => theme.colors.surface.card};
+    background: ${({ theme, $variant }) =>
+      $variant === "danger"
+        ? theme.colors.state.dangerGradient
+        : theme.colors.surface.card};
     padding: 10px 11px;
-    color: ${({ theme, $variant }) => $variant === "danger" ? theme.colors.state.danger : $variant === "warning" ? theme.colors.text.title : theme.colors.state.success};
+    color: ${({ theme, $variant }) =>
+      $variant === "danger"
+        ? theme.colors.text.inverse
+        : $variant === "warning"
+          ? theme.colors.text.title
+          : theme.colors.state.success};
     box-shadow: 0 10px 28px rgba(16, 24, 40, 0.16);
   }
 
@@ -163,7 +171,7 @@ export const ToastTitle = styled.p`
   }
 `;
 
-export const ToastDescription = styled.p`
+export const ToastDescription = styled.p<{ $danger?: boolean }>`
   grid-column: 1 / -1;
   grid-row: 2;
   margin: 12px -14px -1px;
@@ -180,7 +188,8 @@ export const ToastDescription = styled.p`
     margin: 2px 0 0;
     border-top: 0;
     padding: 0;
-    color: ${({ theme }) => theme.colors.text.body};
+    color: ${({ theme, $danger }) =>
+      $danger ? theme.colors.text.inverse : theme.colors.text.body};
     font-size: 10px;
     font-weight: 600;
     line-height: 1.35;

@@ -197,7 +197,7 @@ export const ConfirmIconOuter = styled.span<ConfirmIconProps>`
   border-radius: ${({ theme }) => theme.radius.full};
   background: ${({ theme, $destructive }) =>
     $destructive
-      ? theme.colors.state.dangerSoft
+      ? theme.colors.state.dangerGradient
       : theme.colors.state.successSoft};
 `;
 
@@ -210,7 +210,7 @@ export const ConfirmIconInner = styled.span<ConfirmIconProps>`
   border-radius: ${({ theme }) => theme.radius.full};
   background: ${({ theme }) => theme.colors.surface.card};
   color: ${({ theme, $destructive }) =>
-    $destructive ? "#ff2f25" : theme.colors.state.success};
+    $destructive ? "#c3002f" : theme.colors.state.success};
 
   svg {
     width: ${({ $destructive }) => ($destructive ? "21px" : "22px")};

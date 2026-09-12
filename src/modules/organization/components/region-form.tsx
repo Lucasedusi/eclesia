@@ -100,9 +100,10 @@ export function RegionForm({ region, onClose, onSuccess, onError }: RegionFormPr
         }}
       >
         {region && <input type="hidden" name="id" value={region.id} />}
+        <input type="hidden" name="displayOrder" value={values.displayOrder} />
         {state.status === "error" && <S.FormAlert role="alert">{state.message}</S.FormAlert>}
         <S.FormIntro>
-          O nome deve ser único dentro da igreja. A ordem define a posição padrão nas listagens.
+          O nome deve ser único dentro da igreja e facilitar a identificação da área atendida.
         </S.FormIntro>
         <S.FieldGrid>
           <S.Field $span={2}>
@@ -157,19 +158,6 @@ export function RegionForm({ region, onClose, onSuccess, onError }: RegionFormPr
             {errors.description && <S.FieldError>{errors.description}</S.FieldError>}
           </S.Field>
           <S.Field>
-            <span>Ordem de exibição</span>
-            <S.Control
-              name="displayOrder"
-              value={values.displayOrder}
-              onChange={(event) => update("displayOrder", event.target.value)}
-              type="number"
-              min={0}
-              step={1}
-              $invalid={Boolean(errors.displayOrder)}
-            />
-            {errors.displayOrder && <S.FieldError>{errors.displayOrder}</S.FieldError>}
-          </S.Field>
-          <S.Field>
             <span>Status</span>
             <S.SelectControl
               name="status"
@@ -185,4 +173,3 @@ export function RegionForm({ region, onClose, onSuccess, onError }: RegionFormPr
     </Modal>
   );
 }
-

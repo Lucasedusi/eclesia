@@ -1,4 +1,4 @@
-import { APP_SURFACE_RADIUS } from "./visual-standards";
+import { APP_SURFACE_RADIUS, DANGER_GRADIENT } from "./visual-standards";
 
 export const theme = {
   colors: {
@@ -41,6 +41,7 @@ export const theme = {
       danger: "#F57E77",
       dangerHover: "#EB6D66",
       dangerSoft: "#FFEFEF",
+      dangerGradient: DANGER_GRADIENT,
       info: "#415BA5",
       infoSoft: "rgba(65, 91, 165, 0.10)",
       infoSolfSecundary: "#eef2ff",

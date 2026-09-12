@@ -2,7 +2,12 @@
 
 import styled, { keyframes } from "styled-components";
 import Link from "next/link";
-import { TABLE_HEADER_STYLE } from "@/styles/visual-standards";
+import {
+  LIST_PANEL_SUBTITLE_STYLE,
+  TABLE_CONTENT_GUTTER,
+  TABLE_HEADER_STYLE,
+  organizationToolbarColumns,
+} from "@/styles/visual-standards";
 
 const enter = keyframes`
   from { opacity: 0; transform: translateY(8px); }
@@ -56,7 +61,7 @@ export const Tab = styled(Link)<{ $active: boolean }>`
 
 export const Stats = styled.section`
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
 
   @media (max-width: 1120px) {
@@ -150,8 +155,8 @@ export const PanelHeader = styled.header`
     max-width: 720px;
     margin: 5px 0 0;
     color: #667085;
-    font-size: 11px;
-    font-weight: 600;
+    font-size: ${LIST_PANEL_SUBTITLE_STYLE.fontSize};
+    font-weight: ${LIST_PANEL_SUBTITLE_STYLE.fontWeight};
     line-height: 1.55;
   }
 
@@ -160,9 +165,9 @@ export const PanelHeader = styled.header`
   }
 `;
 
-export const Toolbar = styled.div`
+export const Toolbar = styled.div<{ $filterCount: 2 | 4 }>`
   display: grid;
-  grid-template-columns: minmax(230px, 1fr) repeat(4, minmax(135px, 175px)) 44px;
+  grid-template-columns: ${({ $filterCount }) => organizationToolbarColumns($filterCount)};
   align-items: center;
   gap: 10px;
   border-bottom: 1px solid #edf0f4;
@@ -248,8 +253,7 @@ export const ResetFiltersButton = styled.button`
   width: 44px;
   height: 44px;
   place-items: center;
-  justify-self: end;
-  grid-column: -2 / -1;
+  justify-self: start;
   border: 1px solid #d9deea;
   border-radius: 6px;
   background: #ffffff;
@@ -311,8 +315,14 @@ export const Table = styled.table`
     white-space: nowrap;
   }
 
+  th:first-child,
+  td:first-child {
+    padding-left: ${TABLE_CONTENT_GUTTER};
+  }
+
   th:last-child,
   td:last-child {
+    padding-right: ${TABLE_CONTENT_GUTTER};
     text-align: right;
   }
 
@@ -698,6 +708,8 @@ export const FieldGrid = styled.div<{ $columns?: number }>`
 export const Field = styled.label<{ $span?: number }>`
   display: grid;
   grid-column: span ${({ $span = 1 }) => $span};
+  align-content: start;
+  align-self: start;
   gap: 7px;
 
   > span {
@@ -737,6 +749,8 @@ export const Textarea = styled.textarea<{ $invalid?: boolean }>`
 `;
 
 export const FieldError = styled.small`
+  display: block;
+  min-height: 16px;
   color: #c84a44 !important;
   font-size: 11px !important;
   font-weight: 750 !important;
@@ -828,7 +842,8 @@ export const ReviewCard = styled.div`
   border-radius: 6px;
   background: #fafbfc;
   padding: 13px;
-  strong {
+
+  > strong {
     display: block;
     color: #344054;
     font-size: 11px;
@@ -840,6 +855,95 @@ export const ReviewCard = styled.div`
     font-size: 11px;
     font-weight: 650;
     line-height: 1.6;
+  }
+`;
+
+export const ReviewCardHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  > strong {
+    color: #344054;
+    font-size: 11px;
+    font-weight: 850;
+  }
+`;
+
+export const ReviewIcon = styled.span<{
+  $tone: "primary" | "success" | "warning" | "neutral";
+}>`
+  display: grid;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 6px;
+  background: ${({ $tone }) =>
+    $tone === "success"
+      ? "#eaf8f1"
+      : $tone === "warning"
+        ? "#fff5e8"
+        : $tone === "neutral"
+          ? "#f2f4f7"
+          : "#eef2ff"};
+  color: ${({ $tone, theme }) =>
+    $tone === "success"
+      ? "#25805d"
+      : $tone === "warning"
+        ? "#b76b1a"
+        : $tone === "neutral"
+          ? "#667085"
+          : theme.colors.brand.primary};
+
+  svg {
+    width: 16px;
+    height: 16px;
+    stroke-width: 1.9;
+  }
+`;
+
+export const FieldHeader = styled.span`
+  display: flex;
+  min-height: 17px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+`;
+
+export const FieldStatus = styled.small<{ $tone: "success" | "danger" }>`
+  overflow: hidden;
+  color: ${({ $tone }) => ($tone === "success" ? "#25805d" : "#b42318")};
+  font-size: 9px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+export const ControlShell = styled.div`
+  position: relative;
+
+  > input {
+    padding-right: 125px;
+  }
+`;
+
+export const InlineFieldStatus = styled.small`
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: ${({ theme }) => theme.colors.brand.primary};
+  font-size: 9px;
+  font-weight: 800;
+  transform: translateY(-50%);
+
+  svg {
+    width: 13px;
+    height: 13px;
+    animation: spin 0.8s linear infinite;
   }
 `;
 

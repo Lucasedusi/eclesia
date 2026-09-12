@@ -32,6 +32,7 @@ export const GlobalStyles = createGlobalStyle`
     --danger: ${({ theme }) => theme.colors.state.danger};
     --danger-hover: ${({ theme }) => theme.colors.state.dangerHover};
     --danger-soft: ${({ theme }) => theme.colors.state.dangerSoft};
+    --danger-gradient: ${({ theme }) => theme.colors.state.dangerGradient};
     --info: ${({ theme }) => theme.colors.state.info};
     --info-soft: ${({ theme }) => theme.colors.state.infoSoft};
 

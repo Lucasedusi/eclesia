@@ -129,6 +129,39 @@ export const SectionHeader = styled.div`
     font-weight: 650;
     line-height: 1.45;
   }
+
+  @media (max-width: 560px) {
+    align-items: stretch;
+    flex-direction: column;
+  }
+`;
+
+export const SectionHeading = styled.div`
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 11px;
+
+  > div {
+    min-width: 0;
+  }
+`;
+
+export const SectionIcon = styled.span<{ $tone?: SummaryTone }>`
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 6px;
+  background: ${({ $tone = "primary" }) => toneBackground[$tone]};
+  color: ${({ $tone = "primary" }) => toneColor[$tone]};
+
+  svg {
+    width: 17px;
+    height: 17px;
+    stroke-width: 1.9;
+  }
 `;
 
 export const InfoGrid = styled.dl`
@@ -197,18 +230,6 @@ export const StatusBadge = styled.span<{ $active: boolean }>`
     $active ? theme.colors.state.successSoft : theme.colors.surface.muted};
   color: ${({ $active, theme }) =>
     $active ? theme.colors.state.success : theme.colors.text.muted};
-  padding: 0 9px;
-  font-size: 9px;
-  font-weight: 850;
-`;
-
-export const CountBadge = styled.span`
-  display: inline-flex;
-  min-height: 25px;
-  align-items: center;
-  border-radius: ${({ theme }) => theme.radius.sm};
-  background: ${({ theme }) => theme.colors.state.infoSoft};
-  color: ${({ theme }) => theme.colors.brand.primary};
   padding: 0 9px;
   font-size: 9px;
   font-weight: 850;

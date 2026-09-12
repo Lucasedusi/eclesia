@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { formatBrazilCurrencyInput, formatBrazilPhone, parseBrazilCurrencyInput } from "./input-masks";
+import {
+  formatBrazilCurrencyInput,
+  formatBrazilPhone,
+  formatBrazilZipCode,
+  parseBrazilCurrencyInput,
+} from "./input-masks";
 
 describe("máscaras brasileiras", () => {
   it("formata telefones fixos e celulares", () => {
@@ -11,5 +16,10 @@ describe("máscaras brasileiras", () => {
     const formatted = formatBrazilCurrencyInput("12345");
     expect(formatted).toContain("123,45");
     expect(parseBrazilCurrencyInput(formatted)).toBe(123.45);
+  });
+
+  it("formata o CEP sem aceitar mais de oito dígitos", () => {
+    expect(formatBrazilZipCode("76550000")).toBe("76550-000");
+    expect(formatBrazilZipCode("76.550-00099")).toBe("76550-000");
   });
 });
