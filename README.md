@@ -6,6 +6,8 @@ O projeto está sendo construído com foco em simplicidade, organização e esca
 
 A proposta inicial é substituir fluxos manuais, planilhas isoladas e controles dispersos por uma aplicação centralizada, com módulos bem definidos e interface visual simples para usuários com diferentes níveis de familiaridade com tecnologia.
 
+Para preparar o repositório no ChatGPT Desktop e trabalhar com o Codex, consulte [docs/CODEX_SETUP.md](docs/CODEX_SETUP.md).
+
 ---
 
 ## Objetivo do Projeto
