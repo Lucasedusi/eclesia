@@ -19,15 +19,15 @@ export const Icon = styled.div<{ $danger?: boolean }>`
 `;
 
 export const Title = styled.h1`
-  margin: 0; color: ${({ theme }) => theme.colors.text.title}; font-size: 27px; font-weight: 900; letter-spacing: -.035em;
+  margin: 0; color: ${({ theme }) => theme.colors.text.title}; font-size: 27px; font-weight: 700; letter-spacing: -.035em;
 `;
 
 export const Text = styled.p`
-  margin: 13px 0 26px; color: ${({ theme }) => theme.colors.text.muted}; font-size: 14px; font-weight: 550; line-height: 1.7;
+  margin: 13px 0 26px; color: ${({ theme }) => theme.colors.text.muted}; font-size: 14px; font-weight: 400; line-height: 1.7;
 `;
 
 export const Actions = styled.div`
   display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px;
-  a, button { display: inline-flex; min-height: 46px; align-items: center; justify-content: center; gap: 8px; border: 1px solid #d9deea; border-radius: 6px; background: #fff; color: ${({ theme }) => theme.colors.text.body}; padding: 0 18px; font-size: 13px; font-weight: 800; }
+  a, button { display: inline-flex; min-height: 46px; align-items: center; justify-content: center; gap: 8px; border: 1px solid #d9deea; border-radius: 6px; background: #fff; color: ${({ theme }) => theme.colors.text.body}; padding: 0 18px; font-size: 13px; font-weight: 700; }
   a:first-child { border-color: transparent; background: ${({ theme }) => theme.colors.brand.primary}; color: #fff; }
 `;

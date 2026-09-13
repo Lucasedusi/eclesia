@@ -23,9 +23,13 @@ describe("visual standards", () => {
       background: "#fafbfc",
       color: "#667085",
       fontSize: "10px",
-      fontWeight: 700,
+      fontWeight: 600,
       letterSpacing: "0.04em",
     });
+  });
+
+  it("uses the font provided by the root layout throughout the application", () => {
+    expect(theme.font.family).toBe("var(--font-app), sans-serif");
   });
 
   it("centralizes destructive surfaces in the approved gradient", () => {
@@ -38,7 +42,7 @@ describe("visual standards", () => {
   it("keeps list subtitles and table edges aligned with the panel gutter", () => {
     expect(LIST_PANEL_SUBTITLE_STYLE).toEqual({
       fontSize: "12px",
-      fontWeight: 500,
+      fontWeight: 400,
     });
     expect(TABLE_CONTENT_GUTTER).toBe("22px");
   });

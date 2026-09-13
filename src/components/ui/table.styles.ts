@@ -68,7 +68,7 @@ export const SearchInput = styled.input`
   outline: none;
   padding: 0 16px 0 44px;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 400;
   transition:
     border-color ${({ theme }) => theme.transitions.default},
     box-shadow ${({ theme }) => theme.transitions.default};
@@ -127,7 +127,7 @@ export const TableHead = styled.th`
   white-space: nowrap;
   color: ${({ theme }) => theme.colors.text.muted};
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
 `;
 
 export const TableHeadContent = styled.span`
@@ -153,11 +153,11 @@ export const TableCell = styled.td<TableCellProps>`
     $strong
       ? css`
           color: ${theme.colors.text.title};
-          font-weight: 700;
+          font-weight: 600;
         `
       : css`
           color: ${theme.colors.text.muted};
-          font-weight: 500;
+          font-weight: 400;
         `}
 `;
 

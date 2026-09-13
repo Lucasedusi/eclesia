@@ -26,7 +26,7 @@ export const SelectControl = styled.select<{ $hasError?: boolean }>`
   background: ${({ theme }) => theme.colors.surface.card};
   padding: 0 42px 0 14px;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 400;
   color: ${({ theme }) => theme.colors.text.title};
   outline: none;
   cursor: pointer;
@@ -71,7 +71,7 @@ export const SelectBox = styled.div`
 export const ErrorText = styled.p`
   margin: 0;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 400;
   color: #f57e77;
   line-height: 1.4;
 `;

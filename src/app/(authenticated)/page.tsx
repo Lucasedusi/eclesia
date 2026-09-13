@@ -111,12 +111,12 @@ export default async function Home() {
         <section className="overflow-hidden rounded-[24px] border border-[#cfcec9] bg-white shadow-[var(--shadow-card)]">
           <div className="grid gap-0 lg:grid-cols-[1.35fr_0.65fr]">
             <div className="p-6 md:p-8">
-              <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-[#eef2ff] px-3 py-1.5 text-xs font-extrabold text-[#3956a6]">
+              <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-[#eef2ff] px-3 py-1.5 text-xs font-bold text-[#3956a6]">
                 <span className="h-2 w-2 rounded-full bg-[#3956a6]" />
                 Versão {APP_CONFIG.version}
               </div>
 
-              <h1 className="max-w-3xl text-2xl font-extrabold tracking-tight text-slate-950 md:text-4xl">
+              <h1 className="max-w-3xl text-2xl font-bold tracking-tight text-slate-950 md:text-4xl">
                 {appNameFromDatabase ?? APP_CONFIG.name}
               </h1>
 
@@ -146,14 +146,14 @@ export default async function Home() {
             </div>
 
             <div className="border-t border-[#cfcec9] bg-[#f7f7f4] p-6 md:p-8 lg:border-l lg:border-t-0">
-              <p className="text-sm font-extrabold text-slate-950">
+              <p className="text-sm font-bold text-slate-950">
                 Status da aplicação
               </p>
 
               <div className="mt-5 space-y-4">
                 <div className="rounded-[18px] border border-[#cfcec9] bg-white p-4">
                   <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm font-bold text-slate-600">
+                    <p className="text-sm font-semibold text-slate-600">
                       Supabase
                     </p>
 
@@ -169,7 +169,7 @@ export default async function Home() {
 
                 <div className="rounded-[18px] border border-[#cfcec9] bg-white p-4">
                   <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm font-bold text-slate-600">
+                    <p className="text-sm font-semibold text-slate-600">
                       Ambiente
                     </p>
 
@@ -198,11 +198,11 @@ export default async function Home() {
               >
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-sm font-extrabold text-slate-500">
+                    <p className="text-sm font-bold text-slate-500">
                       {card.title}
                     </p>
 
-                    <h3 className="mt-3 text-2xl font-extrabold tracking-tight text-slate-950">
+                    <h3 className="mt-3 text-2xl font-bold tracking-tight text-slate-950">
                       {card.value}
                     </h3>
                   </div>
@@ -213,11 +213,11 @@ export default async function Home() {
                 </div>
 
                 <div className="mt-5 flex items-center justify-between gap-3 border-t border-[#e7e5df] pt-4">
-                  <p className="text-xs font-semibold text-slate-500">
+                  <p className="text-xs font-medium text-slate-500">
                     {card.description}
                   </p>
 
-                  <span className="rounded-full bg-[#f6f7f9] px-2.5 py-1 text-xs font-extrabold text-slate-500">
+                  <span className="rounded-full bg-[#f6f7f9] px-2.5 py-1 text-xs font-bold text-slate-500">
                     {card.variation}
                   </span>
                 </div>
@@ -230,15 +230,15 @@ export default async function Home() {
           <div className="rounded-[24px] border border-[#cfcec9] bg-white p-6 shadow-[var(--shadow-card)]">
             <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
               <div>
-                <h2 className="text-lg font-extrabold tracking-tight text-slate-950">
+                <h2 className="text-lg font-bold tracking-tight text-slate-950">
                   Visão mensal
                 </h2>
-                <p className="mt-1 text-sm font-medium text-slate-500">
+                <p className="mt-1 text-sm font-normal text-slate-500">
                   Espaço reservado para futuros indicadores da plataforma.
                 </p>
               </div>
 
-              <span className="inline-flex w-fit items-center gap-2 rounded-full border border-[#cfcec9] bg-white px-3 py-2 text-xs font-extrabold text-slate-600">
+              <span className="inline-flex w-fit items-center gap-2 rounded-full border border-[#cfcec9] bg-white px-3 py-2 text-xs font-bold text-slate-600">
                 <TrendingUp size={16} className="text-[#3956a6]" />
                 Dados demonstrativos
               </span>
@@ -257,7 +257,7 @@ export default async function Home() {
                     />
                   </div>
 
-                  <p className="text-center text-xs font-extrabold text-slate-500">
+                  <p className="text-center text-xs font-bold text-slate-500">
                     {bar.label}
                   </p>
                 </div>
@@ -267,10 +267,10 @@ export default async function Home() {
 
           <div className="rounded-[24px] border border-[#cfcec9] bg-white p-6 shadow-[var(--shadow-card)]">
             <div className="mb-5">
-              <h2 className="text-lg font-extrabold tracking-tight text-slate-950">
+              <h2 className="text-lg font-bold tracking-tight text-slate-950">
                 Atividades recentes
               </h2>
-              <p className="mt-1 text-sm font-medium text-slate-500">
+              <p className="mt-1 text-sm font-normal text-slate-500">
                 Acompanhamento inicial do projeto.
               </p>
             </div>
@@ -291,11 +291,11 @@ export default async function Home() {
 
                       <div className="min-w-0 flex-1">
                         <div className="flex items-start justify-between gap-3">
-                          <h3 className="text-sm font-extrabold text-slate-950">
+                          <h3 className="text-sm font-bold text-slate-950">
                             {activity.title}
                           </h3>
 
-                          <span className="shrink-0 rounded-full bg-[#f6f7f9] px-2.5 py-1 text-[11px] font-extrabold text-slate-500">
+                          <span className="shrink-0 rounded-full bg-[#f6f7f9] px-2.5 py-1 text-[11px] font-bold text-slate-500">
                             {activity.status}
                           </span>
                         </div>
@@ -314,11 +314,11 @@ export default async function Home() {
 
         <section className="grid gap-6 xl:grid-cols-[0.8fr_1.2fr]">
           <div className="rounded-[24px] border border-[#cfcec9] bg-[#071426] p-6 text-white shadow-[var(--shadow-card)]">
-            <p className="text-sm font-extrabold text-white/55">
+            <p className="text-sm font-bold text-white/55">
               Próxima etapa
             </p>
 
-            <h2 className="mt-3 text-2xl font-extrabold tracking-tight">
+            <h2 className="mt-3 text-2xl font-bold tracking-tight">
               Modelagem geral da plataforma
             </h2>
 
@@ -329,7 +329,7 @@ export default async function Home() {
 
             <button
               type="button"
-              className="mt-6 inline-flex min-h-11 items-center justify-center gap-2 rounded-[14px] bg-white px-4 text-sm font-extrabold text-[#071426] transition hover:bg-[#eef2ff]"
+              className="mt-6 inline-flex min-h-11 items-center justify-center gap-2 rounded-[14px] bg-white px-4 text-sm font-bold text-[#071426] transition hover:bg-[#eef2ff]"
             >
               Preparar escopo
               <ArrowUpRight size={18} />
@@ -339,10 +339,10 @@ export default async function Home() {
           <div className="rounded-[24px] border border-[#cfcec9] bg-white p-6 shadow-[var(--shadow-card)]">
             <div className="mb-5 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
               <div>
-                <h2 className="text-lg font-extrabold tracking-tight text-slate-950">
+                <h2 className="text-lg font-bold tracking-tight text-slate-950">
                   Ações rápidas
                 </h2>
-                <p className="mt-1 text-sm font-medium text-slate-500">
+                <p className="mt-1 text-sm font-normal text-slate-500">
                   Atalhos visuais preparados para os próximos módulos.
                 </p>
               </div>
@@ -364,7 +364,7 @@ export default async function Home() {
                       </div>
 
                       <div>
-                        <h3 className="text-sm font-extrabold text-slate-950">
+                        <h3 className="text-sm font-bold text-slate-950">
                           {action.title}
                         </h3>
                         <p className="mt-1 text-xs leading-5 text-slate-500">

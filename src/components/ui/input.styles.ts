@@ -26,7 +26,7 @@ export const InputControl = styled.input<{ $hasError?: boolean }>`
   background: #ffffff;
   padding: 0 14px;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 400;
   color: ${({ theme }) => theme.colors.text.title};
   outline: none;
   transition:
@@ -56,7 +56,7 @@ export const InputControl = styled.input<{ $hasError?: boolean }>`
 export const ErrorText = styled.p`
   margin: 0;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 400;
   color: #f57e77;
   line-height: 1.4;
 `;

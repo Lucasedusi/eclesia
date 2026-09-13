@@ -158,14 +158,14 @@ export const BrandText = styled.div`
     display: block;
     color: ${({ theme }) => theme.colors.text.title};
     font-size: 18px;
-    font-weight: 850;
+    font-weight: 700;
   }
   span {
     display: block;
     margin-top: 2px;
     color: ${({ theme }) => theme.colors.text.soft};
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 600;
   }
 `;
 
@@ -173,14 +173,14 @@ export const Eyebrow = styled.p`
   margin: 0 0 10px;
   color: ${({ theme }) => theme.colors.brand.primary};
   font-size: 13px;
-  font-weight: 850;
+  font-weight: 700;
 `;
 
 export const Title = styled.h1`
   margin: 0;
   color: ${({ theme }) => theme.colors.text.title};
   font-size: clamp(30px, 3.4vw, 38px);
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: -0.045em;
   line-height: 1.08;
 `;
@@ -189,7 +189,7 @@ export const Description = styled.p`
   margin: 12px 0 26px;
   color: ${({ theme }) => theme.colors.text.muted};
   font-size: 14px;
-  font-weight: 550;
+  font-weight: 400;
   line-height: 1.6;
 `;
 
@@ -213,13 +213,13 @@ export const FieldTop = styled.div`
 export const Label = styled.label`
   color: ${({ theme }) => theme.colors.text.title};
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 700;
 `;
 
 export const FieldLink = styled.a`
   color: ${({ theme }) => theme.colors.brand.primary};
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
 
   &:hover {
     text-decoration: underline;
@@ -240,12 +240,12 @@ export const Input = styled.input<{ $invalid?: boolean }>`
   color: ${({ theme }) => theme.colors.text.title};
   padding: 0 48px 0 16px;
   font-size: 14px;
-  font-weight: 650;
+  font-weight: 500;
   transition: 160ms ease;
 
   &::placeholder {
     color: #a5adbd;
-    font-weight: 550;
+    font-weight: 400;
   }
   &:hover {
     border-color: #b7c0d5;
@@ -280,7 +280,7 @@ export const FieldError = styled.p`
   margin: 0;
   color: #d74f49;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
 `;
 
 export const Submit = styled.button`
@@ -296,7 +296,7 @@ export const Submit = styled.button`
   background: ${({ theme }) => theme.colors.brand.primary};
   box-shadow: 0 14px 28px rgba(65, 91, 165, 0.22);
   font-size: 14px;
-  font-weight: 850;
+  font-weight: 700;
   transition: 180ms ease;
 
   &:hover:not(:disabled) {
@@ -331,7 +331,7 @@ export const Alert = styled.div<{ $success?: boolean }>`
   color: ${({ $success }) => ($success ? "#267c5b" : "#b5423c")};
   padding: 12px 14px;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1.55;
 `;
 
@@ -341,7 +341,7 @@ export const CheckRow = styled.label`
   gap: 10px;
   color: ${({ theme }) => theme.colors.text.muted};
   font-size: 12px;
-  font-weight: 650;
+  font-weight: 500;
   line-height: 1.55;
 
   input {
@@ -352,7 +352,7 @@ export const CheckRow = styled.label`
   }
   a {
     color: ${({ theme }) => theme.colors.brand.primary};
-    font-weight: 800;
+    font-weight: 700;
   }
 `;
 
@@ -361,11 +361,11 @@ export const SwitchText = styled.p`
   color: ${({ theme }) => theme.colors.text.muted};
   text-align: center;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
 
   a {
     color: ${({ theme }) => theme.colors.brand.primary};
-    font-weight: 850;
+    font-weight: 700;
   }
 `;
 
@@ -377,7 +377,7 @@ export const SecurityNote = styled.p`
   margin: 28px 0 0;
   color: #98a2b3;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   svg {
     color: #2f9e73;
   }
@@ -468,7 +468,7 @@ export const VisualBrandText = styled.div`
     display: block;
     color: #fff;
     font-size: 18px;
-    font-weight: 850;
+    font-weight: 700;
   }
 
   span {
@@ -476,7 +476,7 @@ export const VisualBrandText = styled.div`
     margin-top: 2px;
     color: rgba(255, 255, 255, 0.72);
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 600;
   }
 `;
 
@@ -506,14 +506,14 @@ export const VisualBadge = styled.span`
   background: rgba(255, 255, 255, 0.13);
   padding: 9px 13px;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
 `;
 
 export const VisualTitle = styled.h2`
   max-width: 730px;
   margin: 22px 0 30px;
   font-size: clamp(36px, 4.2vw, 58px);
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: -0.055em;
   line-height: 1;
 
@@ -545,7 +545,7 @@ export const PreviewTop = styled.div`
   span {
     color: #98a2b3;
     font-size: 11px;
-    font-weight: 800;
+    font-weight: 700;
   }
   strong {
     display: block;
@@ -587,7 +587,7 @@ export const PreviewStat = styled.div`
     margin-top: 2px;
     color: #98a2b3;
     font-size: 10px;
-    font-weight: 650;
+    font-weight: 500;
   }
 `;
 

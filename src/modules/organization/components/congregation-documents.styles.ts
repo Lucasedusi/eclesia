@@ -25,14 +25,14 @@ export const SectionHeading = styled.div`
     margin: 0;
     color: #344054;
     font-size: 13px;
-    font-weight: 900;
+    font-weight: 700;
   }
 
   p {
     margin: 4px 0 0;
     color: #98a2b3;
     font-size: 10px;
-    font-weight: 650;
+    font-weight: 500;
     line-height: 1.5;
   }
 `;
@@ -60,7 +60,7 @@ export const Field = styled.label`
   > span {
     color: #475467;
     font-size: 10px;
-    font-weight: 850;
+    font-weight: 700;
   }
 `;
 
@@ -74,7 +74,7 @@ const controlStyles = `
   padding: 0 13px;
   color: #344054;
   font-size: 12px;
-  font-weight: 650;
+  font-weight: 500;
 `;
 
 export const Input = styled.input<{ $invalid?: boolean }>`
@@ -146,13 +146,13 @@ export const FileDrop = styled.label<{ $invalid?: boolean }>`
   strong {
     color: #475467;
     font-size: 11px;
-    font-weight: 850;
+    font-weight: 700;
   }
 
   small {
     color: #98a2b3;
     font-size: 9px;
-    font-weight: 650;
+    font-weight: 500;
     line-height: 1.45;
   }
 `;
@@ -167,7 +167,7 @@ export const SelectedFile = styled.span`
   color: ${({ theme }) => theme.colors.brand.primary};
   padding: 6px 9px;
   font-size: 9px;
-  font-weight: 800;
+  font-weight: 700;
 
   svg {
     width: 13px;
@@ -178,7 +178,7 @@ export const SelectedFile = styled.span`
 export const FieldError = styled.small`
   color: #c84a44;
   font-size: 9px;
-  font-weight: 750;
+  font-weight: 600;
 `;
 
 export const UploadFooter = styled.div`
@@ -190,7 +190,7 @@ export const UploadFooter = styled.div`
   > small {
     color: #98a2b3;
     font-size: 9px;
-    font-weight: 650;
+    font-weight: 500;
   }
 
   @media (max-width: 520px) {
@@ -213,7 +213,7 @@ export const CountBadge = styled.span`
   color: ${({ theme }) => theme.colors.brand.primary};
   padding: 0 9px;
   font-size: 9px;
-  font-weight: 850;
+  font-weight: 700;
 `;
 
 export const LoadingState = styled.div`
@@ -222,7 +222,7 @@ export const LoadingState = styled.div`
   place-items: center;
   color: #98a2b3;
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 600;
 
   span {
     display: grid;
@@ -272,14 +272,14 @@ export const EmptyState = styled.div`
     margin: 10px 0 0;
     color: #475467;
     font-size: 12px;
-    font-weight: 900;
+    font-weight: 700;
   }
 
   p {
     margin: 5px 0 0;
     color: #98a2b3;
     font-size: 10px;
-    font-weight: 650;
+    font-weight: 500;
   }
 `;
 
@@ -337,7 +337,7 @@ export const DocumentInfo = styled.div`
     overflow: hidden;
     color: #344054;
     font-size: 11px;
-    font-weight: 850;
+    font-weight: 700;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -349,7 +349,7 @@ export const DocumentInfo = styled.div`
     margin-top: 5px;
     color: #98a2b3;
     font-size: 9px;
-    font-weight: 650;
+    font-weight: 500;
   }
 `;
 
@@ -433,7 +433,7 @@ export const DeleteText = styled.div`
   padding: 13px;
   color: #667085;
   font-size: 11px;
-  font-weight: 650;
+  font-weight: 500;
   line-height: 1.6;
 
   strong {

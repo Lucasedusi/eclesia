@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { Nunito_Sans } from "next/font/google";
+import { Rubik } from "next/font/google";
 import { APP_CONFIG } from "@/constants/app";
 import { AppProviders } from "@/providers/app-providers";
 import { WebVitals } from "@/components/observability/web-vitals";
 import "./globals.css";
 
-const appFont = Nunito_Sans({
+const appFont = Rubik({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-app",

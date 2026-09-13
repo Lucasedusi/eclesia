@@ -98,14 +98,14 @@ export const TitleArea = styled.div`
 export const Title = styled.h2`
   color: ${({ theme }) => theme.colors.text.title};
   font-size: 18px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: -0.02em;
 `;
 
 export const Description = styled.p`
   color: ${({ theme }) => theme.colors.text.soft};
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 400;
 `;
 
 export const CloseButton = styled.button`
@@ -170,7 +170,7 @@ export const LoadingContent = styled.div`
   gap: 12px;
   color: ${({ theme }) => theme.colors.text.muted};
   font-size: 13px;
-  font-weight: 750;
+  font-weight: 600;
 
   svg {
     width: 22px;

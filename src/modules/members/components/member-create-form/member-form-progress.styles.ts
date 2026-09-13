@@ -25,7 +25,7 @@ export const ProgressSummary = styled.div`
 export const ProgressLabel = styled.p`
   color: ${({ theme }) => theme.colors.text.muted};
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
 `;
@@ -33,7 +33,7 @@ export const ProgressLabel = styled.p`
 export const ProgressTitle = styled.h2`
   color: ${({ theme }) => theme.colors.text.title};
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: -0.03em;
 `;
 
@@ -47,7 +47,7 @@ export const ProgressPercent = styled.span`
   background: ${({ theme }) => theme.colors.brand.primarySoft};
   color: ${({ theme }) => theme.colors.brand.primary};
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 700;
 `;
 
 export const ProgressTrack = styled.div`
@@ -128,7 +128,7 @@ export const StepContent = styled.div`
 export const StepTitle = styled.h3`
   color: ${({ theme }) => theme.colors.text.title};
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: -0.02em;
 `;
 
@@ -136,6 +136,6 @@ export const StepDescription = styled.p`
   margin-top: 3px;
   color: ${({ theme }) => theme.colors.text.muted};
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 400;
   line-height: 18px;
 `;

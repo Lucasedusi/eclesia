@@ -115,7 +115,7 @@ export const ButtonRoot = styled.button<ButtonRootProps>`
   width: ${({ $fullWidth }) => ($fullWidth ? "100%" : "auto")};
   border: 1px solid transparent;
   border-radius: ${({ theme }) => theme.radius.sm};
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: -0.01em;
   line-height: 1;
   transition:

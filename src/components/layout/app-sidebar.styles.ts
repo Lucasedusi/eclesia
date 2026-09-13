@@ -45,7 +45,7 @@ export const BrandName = styled.h1`
   overflow: hidden;
   color: #ffffff;
   font-size: 20px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1;
   letter-spacing: -0.02em;
   text-overflow: ellipsis;
@@ -155,7 +155,7 @@ export const NavItem = styled(Link)<{ $active: boolean; $collapsed: boolean }>`
   background: ${({ $active, theme }) =>
     $active ? theme.colors.sidebar.hoverBackground : "transparent"};
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1;
   text-decoration: none;
   transition:
@@ -216,7 +216,7 @@ export const Tooltip = styled.span`
   background: #020617;
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.28);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1;
   white-space: nowrap;
   pointer-events: none;
@@ -257,7 +257,7 @@ export const FooterEyebrow = styled.p`
   margin: 0;
   color: ${({ theme }) => theme.colors.sidebar.item};
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1.2;
 `;
 
@@ -266,7 +266,7 @@ export const FooterName = styled.p`
   overflow: hidden;
   color: #ffffff;
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.2;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -286,7 +286,7 @@ export const Avatar = styled.div`
   background: #ffb31f;
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
   font-size: 13px;
-  font-weight: 900;
+  font-weight: 700;
 
   span {
     position: relative;

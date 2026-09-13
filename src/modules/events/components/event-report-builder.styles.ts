@@ -26,7 +26,7 @@ export const TypeCard = styled.article<{ $disabled?: boolean }>`
 `;
 
 export const Badge = styled.span`
-  display:inline-flex;align-items:center;border-radius:6px;background:#eef2ff;padding:5px 9px;color:#415ba5;font-size:9px;font-weight:850;white-space:nowrap;
+  display:inline-flex;align-items:center;border-radius:6px;background:#eef2ff;padding:5px 9px;color:#415ba5;font-size:9px;font-weight:700;white-space:nowrap;
 `;
 
 export const Wizard = styled.div`
@@ -35,8 +35,8 @@ export const Wizard = styled.div`
 
 export const Stepper = styled.nav`
   display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;overflow-x:auto;border-bottom:1px solid #e7eaf0;background:#f8f9fc;padding:12px 14px;
-  button{position:relative;display:grid;width:100%;min-width:126px;grid-template-rows:28px auto;justify-items:center;gap:6px;align-items:center;overflow:visible;border:1px solid transparent;border-radius: 6px;background:transparent;padding:8px;color:#667085;text-align:center;font-size:9px;font-weight:750;}
-  button>span{position:relative;z-index:1;display:grid;width:28px;height:28px;place-items:center;border-radius: 6px;background:#e9edf3;color:#667085;font-size:9px;font-weight:900;}
+  button{position:relative;display:grid;width:100%;min-width:126px;grid-template-rows:28px auto;justify-items:center;gap:6px;align-items:center;overflow:visible;border:1px solid transparent;border-radius: 6px;background:transparent;padding:8px;color:#667085;text-align:center;font-size:9px;font-weight:600;}
+  button>span{position:relative;z-index:1;display:grid;width:28px;height:28px;place-items:center;border-radius: 6px;background:#e9edf3;color:#667085;font-size:9px;font-weight:700;}
   button[aria-current="step"]{border-color:#cad5ef;background:#fff;color:#344e97;box-shadow:0 7px 18px -17px rgba(16,24,40,.7);}
   button[aria-current="step"]>span,button[data-completed="true"]>span{background:#415ba5;color:#fff;}
   button:disabled{cursor:not-allowed;}button:not(:disabled):hover{background:#fff;}
@@ -49,7 +49,7 @@ export const StepContent = styled.div`
 
 export const StepHeader = styled.header`
   border-bottom:1px solid #edf0f4;padding-bottom:14px;
-  small{color:#415ba5;font-size:9px;font-weight:850;letter-spacing:.06em;text-transform:uppercase;}h3{margin:6px 0 0;color:#101828;font-size:18px;letter-spacing:-.025em;}p{margin:5px 0 0;color:#667085;font-size:11px;line-height:1.55;}
+  small{color:#415ba5;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;}h3{margin:6px 0 0;color:#101828;font-size:18px;letter-spacing:-.025em;}p{margin:5px 0 0;color:#667085;font-size:11px;line-height:1.55;}
 `;
 
 export const ReportTypeChoice = styled.label<{ $selected: boolean; $disabled?: boolean }>`
@@ -63,19 +63,19 @@ export const FilterGrid = styled.div`
 `;
 
 export const Field = styled.label`
-  display:grid;gap:6px;>span{color:#475467;font-size:9px;font-weight:850;}
-  select,input{width:100%;min-height:42px;border:1px solid #d9deea;border-radius:6px;background:#f8f9fc;padding:0 11px;outline:0;color:#344054;font-size:11px;font-weight:650;}
+  display:grid;gap:6px;>span{color:#475467;font-size:9px;font-weight:700;}
+  select,input{width:100%;min-height:42px;border:1px solid #d9deea;border-radius:6px;background:#f8f9fc;padding:0 11px;outline:0;color:#344054;font-size:11px;font-weight:500;}
   select:focus,input:focus{border-color:#415ba5;background:#fff;}select{cursor:pointer;}
 `;
 
 export const FilterToolbar = styled.div`
   display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;border-radius: 6px;background:#f8fafc;padding:10px 12px;
-  >span{color:#667085;font-size:10px;font-weight:700;}button{display:inline-flex;align-items:center;gap:6px;border:0;background:transparent;color:#415ba5;font-size:10px;font-weight:800;}button:disabled{color:#98a2b3;}svg{width:14px;height:14px;}
+  >span{color:#667085;font-size:10px;font-weight:600;}button{display:inline-flex;align-items:center;gap:6px;border:0;background:transparent;color:#415ba5;font-size:10px;font-weight:700;}button:disabled{color:#98a2b3;}svg{width:14px;height:14px;}
 `;
 
 export const Chips = styled.div`
   display:flex;flex-wrap:wrap;gap:6px;
-  span{display:inline-flex;align-items:center;border-radius:6px;background:#eef2ff;padding:6px 9px;color:#415ba5;font-size:9px;font-weight:750;}
+  span{display:inline-flex;align-items:center;border-radius:6px;background:#eef2ff;padding:6px 9px;color:#415ba5;font-size:9px;font-weight:600;}
   p{margin:0;color:#98a2b3;font-size:10px;}
 `;
 
@@ -112,7 +112,7 @@ export const ReviewStats = styled.div`
 
 export const ReviewList = styled.dl`
   display:grid;grid-template-columns:repeat(2,minmax(0,1fr));margin:0;border:1px solid #e7eaf0;border-radius: 6px;overflow:hidden;
-  div{display:grid;gap:4px;border-bottom:1px solid #edf0f4;padding:11px;}div:nth-child(odd){border-right:1px solid #edf0f4;}dt{color:#98a2b3;font-size:8px;font-weight:800;}dd{margin:0;color:#475467;font-size:10px;font-weight:750;line-height:1.45;}
+  div{display:grid;gap:4px;border-bottom:1px solid #edf0f4;padding:11px;}div:nth-child(odd){border-right:1px solid #edf0f4;}dt{color:#98a2b3;font-size:8px;font-weight:700;}dd{margin:0;color:#475467;font-size:10px;font-weight:600;line-height:1.45;}
   @media(max-width:590px){grid-template-columns:1fr;div:nth-child(odd){border-right:0;}}
 `;
 
@@ -122,7 +122,7 @@ export const StateBox = styled.div<{ $danger?: boolean; $loading?: boolean }>`
 `;
 
 export const ErrorText = styled.p`
-  margin:0;color:#b42318;font-size:9px;font-weight:750;
+  margin:0;color:#b42318;font-size:9px;font-weight:600;
 `;
 
 export const Footer = styled.div`

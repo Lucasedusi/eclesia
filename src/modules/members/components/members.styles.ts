@@ -64,14 +64,14 @@ export const Stat = styled.article<{ $tone?: string }>`
     display: block;
     color: #101828;
     font-size: 19px;
-    font-weight: 900;
+    font-weight: 700;
   }
   small {
     display: block;
     margin-top: 2px;
     color: #7c879b;
     font-size: 9px;
-    font-weight: 750;
+    font-weight: 600;
   }
 `;
 export const Panel = styled.section`
@@ -92,7 +92,7 @@ export const PanelHeader = styled.header`
     margin: 0;
     color: #101828;
     font-size: 16px;
-    font-weight: 900;
+    font-weight: 700;
   }
   p {
     margin: 5px 0 0;
@@ -130,7 +130,7 @@ export const HeaderActionLink = styled(Link)<{
   padding: ${({ $iconOnly }) => ($iconOnly ? "0" : "0 22px")};
   color: ${({ $primary }) => ($primary ? "#ffffff" : "#475467")};
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1;
   transition: 150ms ease;
 
@@ -214,7 +214,7 @@ export const AdvancedFiltersButton = styled.button<{ $open: boolean }>`
   color: ${({ $open, theme }) =>
     $open ? theme.colors.brand.primary : "#475467"};
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 700;
   white-space: nowrap;
   transition: 150ms ease;
 
@@ -295,7 +295,7 @@ export const SearchInlineStatus = styled.small`
   overflow: hidden;
   color: #8a5d13;
   font-size: 8px;
-  font-weight: 800;
+  font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
   transform: translateY(-50%);
@@ -327,7 +327,7 @@ export const Control = styled.input<{
   padding: 0 13px;
   color: #344054;
   font-size: 12px;
-  font-weight: 650;
+  font-weight: 500;
   padding-right: ${({ $withInlineStatus, $withClear }) =>
     $withInlineStatus ? "190px" : $withClear ? "45px" : "13px"};
   &:focus {
@@ -375,7 +375,7 @@ export const Select = styled.select`
   padding: 0 12px;
   color: #344054;
   font-size: 11px;
-  font-weight: 750;
+  font-weight: 600;
   &:focus {
     border-color: ${({ theme }) => theme.colors.brand.primary};
     background: #fff;
@@ -416,7 +416,7 @@ export const Table = styled.table`
     padding: 13px 14px;
     color: #475467;
     font-size: 11px;
-    font-weight: 650;
+    font-weight: 500;
     vertical-align: middle;
   }
   tr:last-child td {
@@ -441,13 +441,13 @@ export const Person = styled.div`
     background: #eef2ff;
     color: ${({ theme }) => theme.colors.brand.primary};
     font-size: 11px;
-    font-weight: 900;
+    font-weight: 700;
   }
   strong {
     display: block;
     color: #101828;
     font-size: 11px;
-    font-weight: 850;
+    font-weight: 700;
     text-transform: uppercase;
   }
   small {
@@ -463,7 +463,7 @@ export const Status = styled.span<{ $status: string }>`
   border-radius: 6px;
   padding: 5px 8px;
   font-size: 8px;
-  font-weight: 900;
+  font-weight: 700;
   text-transform: uppercase;
   background: ${({ $status }) =>
     $status === "ACTIVE"
@@ -547,7 +547,7 @@ export const MobileMeta = styled.div`
     display: block;
     color: #98a2b3;
     font-size: 8px;
-    font-weight: 850;
+    font-weight: 700;
     text-transform: uppercase;
   }
   strong {
@@ -565,7 +565,7 @@ export const Pagination = styled.footer`
   padding: 14px 20px;
   color: #667085;
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 600;
   > div {
     display: flex;
     align-items: center;
@@ -623,7 +623,7 @@ export const MenuButton = styled.button`
   padding: 10px 12px;
   color: #475467;
   font-size: 10px;
-  font-weight: 750;
+  font-weight: 600;
   cursor: pointer;
   svg {
     width: 15px;
@@ -643,7 +643,7 @@ export const FormIntro = styled.div`
   padding: 13px 15px;
   color: ${({ theme }) => theme.colors.brand.primary};
   font-size: 10px;
-  font-weight: 650;
+  font-weight: 500;
   line-height: 1.55;
 `;
 export const FieldGrid = styled.div`
@@ -661,7 +661,7 @@ export const Field = styled.label<{ $span?: number }>`
   > span {
     color: #475467;
     font-size: 10px;
-    font-weight: 850;
+    font-weight: 700;
   }
   @media (max-width: 650px) {
     grid-column: auto;
@@ -688,7 +688,7 @@ export const Textarea = styled.textarea`
   padding: 12px 13px;
   color: #344054;
   font-size: 12px;
-  font-weight: 650;
+  font-weight: 500;
   line-height: 1.55;
   &:focus {
     border-color: ${({ theme }) => theme.colors.brand.primary};

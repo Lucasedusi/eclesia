@@ -50,7 +50,7 @@ export const Tab = styled(Link)<{ $active: boolean }>`
   color: ${({ $active, theme }) => ($active ? "#fff" : theme.colors.text.body)};
   padding: 0 16px;
   font-size: 11px;
-  font-weight: 850;
+  font-weight: 700;
   white-space: nowrap;
   transition: 160ms ease;
 
@@ -117,14 +117,14 @@ export const Stat = styled.article<{
     display: block;
     color: #101828;
     font-size: 19px;
-    font-weight: 900;
+    font-weight: 700;
   }
   small {
     display: block;
     margin-top: 2px;
     color: #7c879b;
     font-size: 9px;
-    font-weight: 750;
+    font-weight: 600;
     line-height: 1.35;
   }
 `;
@@ -149,7 +149,7 @@ export const PanelHeader = styled.header`
     margin: 0;
     color: #101828;
     font-size: 16px;
-    font-weight: 900;
+    font-weight: 700;
   }
   p {
     max-width: 720px;
@@ -167,7 +167,8 @@ export const PanelHeader = styled.header`
 
 export const Toolbar = styled.div<{ $filterCount: 2 | 4 }>`
   display: grid;
-  grid-template-columns: ${({ $filterCount }) => organizationToolbarColumns($filterCount)};
+  grid-template-columns: ${({ $filterCount }) =>
+    organizationToolbarColumns($filterCount)};
   align-items: center;
   gap: 10px;
   border-bottom: 1px solid #edf0f4;
@@ -211,7 +212,7 @@ export const Control = styled.input<{ $invalid?: boolean }>`
   padding: 0 13px;
   color: #344054;
   font-size: 11px;
-  font-weight: 650;
+  font-weight: 500;
   transition: 150ms ease;
 
   &:focus {
@@ -235,7 +236,7 @@ export const SelectControl = styled.select<{ $invalid?: boolean }>`
   padding: 0 12px;
   color: #344054;
   font-size: 11px;
-  font-weight: 750;
+  font-weight: 600;
 
   &:focus {
     border-color: ${({ theme }) => theme.colors.brand.primary};
@@ -331,7 +332,7 @@ export const Table = styled.table`
     padding: 14px 15px;
     color: #667085;
     font-size: 11px;
-    font-weight: 650;
+    font-weight: 500;
     line-height: 1.45;
     vertical-align: middle;
   }
@@ -355,7 +356,7 @@ export const PrimaryCell = styled.div`
     gap: 7px;
     color: #344054;
     font-size: 12px;
-    font-weight: 850;
+    font-weight: 700;
   }
   small {
     display: block;
@@ -364,7 +365,7 @@ export const PrimaryCell = styled.div`
     margin-top: 4px;
     color: #98a2b3;
     font-size: 9px;
-    font-weight: 650;
+    font-weight: 500;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -379,7 +380,7 @@ export const HeadquartersBadge = styled.span`
   color: ${({ theme }) => theme.colors.brand.primary};
   padding: 0 7px;
   font-size: 8px;
-  font-weight: 900;
+  font-weight: 700;
 `;
 
 export const StatusBadge = styled.span<{ $status: "ACTIVE" | "INACTIVE" }>`
@@ -393,7 +394,7 @@ export const StatusBadge = styled.span<{ $status: "ACTIVE" | "INACTIVE" }>`
   color: ${({ $status }) => ($status === "ACTIVE" ? "#267c5b" : "#667085")};
   padding: 0 9px;
   font-size: 9px;
-  font-weight: 850;
+  font-weight: 700;
 
   &::before {
     content: "";
@@ -436,7 +437,7 @@ export const ActionMenu = styled.div`
     color: #475467;
     text-align: left;
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 600;
 
     &:hover,
     &:focus-visible {
@@ -483,7 +484,7 @@ export const PositionDetailsGrid = styled.div`
     display: block;
     color: #98a2b3;
     font-size: 9px;
-    font-weight: 750;
+    font-weight: 600;
   }
 
   strong {
@@ -491,7 +492,7 @@ export const PositionDetailsGrid = styled.div`
     margin-top: 5px;
     color: #344054;
     font-size: 11px;
-    font-weight: 750;
+    font-weight: 600;
     line-height: 1.5;
   }
 
@@ -591,7 +592,7 @@ export const MobileMeta = styled.dl`
   dt {
     color: #98a2b3;
     font-size: 8px;
-    font-weight: 850;
+    font-weight: 700;
     text-transform: uppercase;
   }
   dd {
@@ -599,7 +600,7 @@ export const MobileMeta = styled.dl`
     margin: 4px 0 0;
     color: #475467;
     font-size: 10px;
-    font-weight: 750;
+    font-weight: 600;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -632,14 +633,14 @@ export const Empty = styled.div`
     margin: 14px 0 0;
     color: #344054;
     font-size: 14px;
-    font-weight: 900;
+    font-weight: 700;
   }
   p {
     max-width: 430px;
     margin: 7px 0 18px;
     color: #98a2b3;
     font-size: 11px;
-    font-weight: 650;
+    font-weight: 500;
     line-height: 1.6;
   }
 `;
@@ -653,7 +654,7 @@ export const Pagination = styled.footer`
   padding: 13px 18px;
   color: #98a2b3;
   font-size: 9px;
-  font-weight: 750;
+  font-weight: 600;
 
   div {
     display: flex;
@@ -689,7 +690,7 @@ export const FormIntro = styled.div`
   background: ${({ theme }) => theme.colors.state.infoSolfSecundary};
   color: ${({ theme }) => theme.colors.brand.primary};
   font-size: 11px;
-  font-weight: 650;
+  font-weight: 500;
   line-height: 1.55;
 `;
 
@@ -715,12 +716,12 @@ export const Field = styled.label<{ $span?: number }>`
   > span {
     color: #475467;
     font-size: 11px;
-    font-weight: 850;
+    font-weight: 700;
   }
   > small {
     color: #98a2b3;
     font-size: 9px;
-    font-weight: 600;
+    font-weight: 500;
   }
 
   @media (max-width: 650px) {
@@ -738,7 +739,7 @@ export const Textarea = styled.textarea<{ $invalid?: boolean }>`
   padding: 12px 13px;
   color: #344054;
   font-size: 11px;
-  font-weight: 650;
+  font-weight: 500;
   line-height: 1.55;
   resize: vertical;
   &:focus {
@@ -753,7 +754,7 @@ export const FieldError = styled.small`
   min-height: 16px;
   color: #c84a44 !important;
   font-size: 11px !important;
-  font-weight: 750 !important;
+  font-weight: 600 !important;
 `;
 
 export const FormAlert = styled.div`
@@ -763,7 +764,7 @@ export const FormAlert = styled.div`
   color: #a9413c;
   padding: 11px 13px;
   font-size: 11px;
-  font-weight: 750;
+  font-weight: 600;
   line-height: 1.55;
 `;
 
@@ -796,7 +797,7 @@ export const Step = styled.li<{ $active: boolean; $complete: boolean }>`
   color: ${({ $active, $complete }) =>
     $active || $complete ? "#415ba5" : "#98a2b3"};
   font-size: 11px;
-  font-weight: 850;
+  font-weight: 700;
 
   span {
     display: grid;
@@ -817,13 +818,13 @@ export const SectionTitle = styled.div`
     margin: 0;
     color: #344054;
     font-size: 14px;
-    font-weight: 900;
+    font-weight: 700;
   }
   p {
     margin: 5px 0 0;
     color: #98a2b3;
     font-size: 11px;
-    font-weight: 650;
+    font-weight: 500;
     line-height: 1.5;
   }
 `;
@@ -847,13 +848,13 @@ export const ReviewCard = styled.div`
     display: block;
     color: #344054;
     font-size: 11px;
-    font-weight: 850;
+    font-weight: 700;
   }
   p {
     margin: 6px 0 0;
     color: #667085;
     font-size: 11px;
-    font-weight: 650;
+    font-weight: 500;
     line-height: 1.6;
   }
 `;
@@ -866,7 +867,7 @@ export const ReviewCardHeader = styled.div`
   > strong {
     color: #344054;
     font-size: 11px;
-    font-weight: 850;
+    font-weight: 700;
   }
 `;
 
@@ -915,7 +916,7 @@ export const FieldStatus = styled.small<{ $tone: "success" | "danger" }>`
   overflow: hidden;
   color: ${({ $tone }) => ($tone === "success" ? "#25805d" : "#b42318")};
   font-size: 9px;
-  font-weight: 800;
+  font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
 `;
@@ -937,7 +938,7 @@ export const InlineFieldStatus = styled.small`
   gap: 5px;
   color: ${({ theme }) => theme.colors.brand.primary};
   font-size: 9px;
-  font-weight: 800;
+  font-weight: 700;
   transform: translateY(-50%);
 
   svg {
@@ -1010,14 +1011,14 @@ export const ErrorState = styled.div`
     margin: 14px 0 0;
     color: #344054;
     font-size: 15px;
-    font-weight: 900;
+    font-weight: 700;
   }
   p {
     max-width: 470px;
     margin: 7px 0 18px;
     color: #98a2b3;
     font-size: 11px;
-    font-weight: 650;
+    font-weight: 500;
     line-height: 1.6;
   }
 `;

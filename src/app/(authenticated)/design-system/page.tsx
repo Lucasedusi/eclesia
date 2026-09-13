@@ -76,10 +76,10 @@ function ModalPreview({
         </span>
 
         <div className="flex-1">
-          <h3 className="text-[18px] font-bold text-[var(--text-title)]">
+          <h3 className="text-[18px] font-semibold text-[var(--text-title)]">
             {danger ? "Confirmação de Delete" : "Confirmação"}
           </h3>
-          <p className="mt-1 text-[14px] font-medium leading-6 text-[var(--text-body)]">
+          <p className="mt-1 text-[14px] font-normal leading-6 text-[var(--text-body)]">
             {danger
               ? "Tem certeza que deseja excluir, essa ação apagará tudo."
               : "Tem certeza que deseja confirmar esta ação?"}
@@ -434,24 +434,24 @@ export default async function DesignSystemPage() {
           </CardHeader>
           <CardContent className="grid gap-4 md:grid-cols-3">
             <div className="rounded-[6px] border border-[#EAECF0] p-4">
-              <p className="text-[13px] font-bold text-[#101828]">
+              <p className="text-[13px] font-semibold text-[#101828]">
                 Cor principal
               </p>
-              <p className="mt-1 text-[13px] font-medium text-[#667085]">
+              <p className="mt-1 text-[13px] font-normal text-[#667085]">
                 #415BA5
               </p>
             </div>
             <div className="rounded-[6px] border border-[#EAECF0] p-4">
-              <p className="text-[13px] font-bold text-[#101828]">Sidebar</p>
-              <p className="mt-1 text-[13px] font-medium text-[#667085]">
+              <p className="text-[13px] font-semibold text-[#101828]">Sidebar</p>
+              <p className="mt-1 text-[13px] font-normal text-[#667085]">
                 #071426
               </p>
             </div>
             <div className="rounded-[6px] border border-[#EAECF0] p-4">
-              <p className="text-[13px] font-bold text-[#101828]">
+              <p className="text-[13px] font-semibold text-[#101828]">
                 Borda padrão
               </p>
-              <p className="mt-1 text-[13px] font-medium text-[#667085]">
+              <p className="mt-1 text-[13px] font-normal text-[#667085]">
                 #CFD3D4
               </p>
             </div>

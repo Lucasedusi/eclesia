@@ -30,14 +30,14 @@ export const TextArea = styled.div``;
 export const StatTitle = styled.p`
   color: ${({ theme }) => theme.colors.text.muted};
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 400;
 `;
 
 export const StatValue = styled.h3`
   margin-top: 12px;
   color: ${({ theme }) => theme.colors.text.title};
   font-size: 22px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: -0.03em;
 `;
 
@@ -71,7 +71,7 @@ export const Footer = styled.div`
 export const Description = styled.p`
   color: ${({ theme }) => theme.colors.text.muted};
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 400;
 `;
 
 export const Variation = styled.span`
@@ -80,5 +80,5 @@ export const Variation = styled.span`
   color: ${({ theme }) => theme.colors.text.muted};
   padding: 4px 10px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
 `;

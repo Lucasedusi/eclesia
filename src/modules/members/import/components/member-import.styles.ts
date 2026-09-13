@@ -35,7 +35,7 @@ export const Tab = styled.button<{ $active?: boolean }>`
   padding: 0 14px;
   color: ${({ $active }) => $active ? "#fff" : "#667085"};
   font-size: 11px;
-  font-weight: 850;
+  font-weight: 700;
   cursor: pointer;
   &:hover { background: ${({ $active }) => $active ? undefined : "#f4f6fa"}; }
   &:focus-visible { outline: 0; box-shadow: ${({ theme }) => theme.shadows.focus}; }
@@ -75,7 +75,7 @@ export const CardHeader = styled.header`
   gap: 20px;
   border-bottom: 1px solid #edf0f4;
   padding: 20px 22px;
-  h2 { margin: 0; color: #101828; font-size: 16px; font-weight: 900; }
+  h2 { margin: 0; color: #101828; font-size: 16px; font-weight: 700; }
   p { margin: 5px 0 0; color: #667085; font-size: 11px; line-height: 1.55; }
   > div:last-child { display: flex; gap: 8px; }
   @media (max-width: 700px) { flex-direction: column; > div:last-child { width: 100%; flex-wrap: wrap; } }
@@ -90,7 +90,7 @@ export const CardBody = styled.div`
 export const Field = styled.label`
   display: grid;
   gap: 7px;
-  > span { color: #475467; font-size: 10px; font-weight: 850; }
+  > span { color: #475467; font-size: 10px; font-weight: 700; }
   > small { color: #98a2b3; font-size: 9px; line-height: 1.5; }
 `;
 
@@ -104,7 +104,7 @@ export const Select = styled.select`
   padding: 0 12px;
   color: #344054;
   font-size: 11px;
-  font-weight: 750;
+  font-weight: 600;
   &:focus { border-color: ${({ theme }) => theme.colors.brand.primary}; background: #fff; box-shadow: ${({ theme }) => theme.shadows.focus}; }
 `;
 
@@ -177,7 +177,7 @@ export const Stat = styled.article<{ $tone?: "success" | "warning" | "danger" | 
   padding: 13px;
   box-shadow: 0 5px 18px rgba(16, 24, 40, 0.07);
   strong { display: block; color: ${({ $tone }) => $tone === "success" ? "#227055" : $tone === "warning" ? "#9b5b18" : $tone === "danger" ? "#b7423e" : "#344054"}; font-size: 18px; }
-  small { display: block; margin-top: 3px; color: #667085; font-size: 8px; font-weight: 800; text-transform: uppercase; }
+  small { display: block; margin-top: 3px; color: #667085; font-size: 8px; font-weight: 700; text-transform: uppercase; }
 `;
 
 export const InfoGrid = styled.div`
@@ -227,7 +227,7 @@ export const Status = styled.span<{ $status: string }>`
   padding: 5px 8px;
   color: ${({ $status }) => ["VALID", "READY", "COMPLETED", "IMPORTED"].includes($status) ? "#237458" : ["WARNING", "REVIEW", "FAILED"].includes($status) ? "#9c5c18" : $status === "ERROR" ? "#b6423e" : "#667085"};
   font-size: 8px;
-  font-weight: 900;
+  font-weight: 700;
   text-transform: uppercase;
 `;
 
@@ -263,7 +263,7 @@ export const TableWrap = styled.div`overflow-x: auto; @media (max-width: 850px) 
 export const Table = styled.table`
   width: 100%;
   border-collapse: collapse;
-  th { border-bottom: 1px solid #e8ebf0; background: #f9fafb; padding: 11px 13px; color: #98a2b3; font-size: 8px; font-weight: 900; text-align: left; text-transform: uppercase; }
+  th { border-bottom: 1px solid #e8ebf0; background: #f9fafb; padding: 11px 13px; color: #98a2b3; font-size: 8px; font-weight: 700; text-align: left; text-transform: uppercase; }
   td { border-bottom: 1px solid #eef1f4; padding: 12px 13px; color: #475467; font-size: 10px; vertical-align: top; }
   tr:last-child td { border-bottom: 0; }
   strong { color: #101828; }
@@ -285,7 +285,7 @@ export const SmallButton = styled.button`
   padding: 0 8px;
   color: #526074;
   font-size: 8px;
-  font-weight: 800;
+  font-weight: 700;
   cursor: pointer;
   &:hover { border-color: ${({ theme }) => theme.colors.brand.primary}; color: ${({ theme }) => theme.colors.brand.primary}; }
   &:disabled { opacity: .55; cursor: wait; }

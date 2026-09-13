@@ -58,7 +58,7 @@ export const BadgeRoot = styled.span<BadgeProps>`
   border-radius: ${({ theme }) => theme.radius.sm};
   padding: 0 10px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1;
 
   ${({ $variant }) => badgeVariants[$variant]}

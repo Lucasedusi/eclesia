@@ -162,7 +162,7 @@ export const ToastTitle = styled.p`
   min-width: 0;
   margin: 0;
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.01em;
   line-height: 1.35;
 
@@ -178,7 +178,7 @@ export const ToastDescription = styled.p<{ $danger?: boolean }>`
   border-top: 1px solid rgba(255, 255, 255, 0.22);
   padding: 12px 14px 0;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1.5;
   opacity: 0.94;
 
@@ -191,7 +191,7 @@ export const ToastDescription = styled.p<{ $danger?: boolean }>`
     color: ${({ theme, $danger }) =>
       $danger ? theme.colors.text.inverse : theme.colors.text.body};
     font-size: 10px;
-    font-weight: 600;
+    font-weight: 500;
     line-height: 1.35;
   }
 `;

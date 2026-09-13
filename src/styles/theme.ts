@@ -54,7 +54,7 @@ export const theme = {
     },
   },
   font: {
-    family: "'Nunito_Sans', sans-serif",
+    family: "var(--font-app), sans-serif",
   },
   radius: {
     xs: "4px",

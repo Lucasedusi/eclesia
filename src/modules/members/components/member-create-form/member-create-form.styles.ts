@@ -35,7 +35,7 @@ export const StepHeader = styled.div`
 export const StepEyebrow = styled.p`
   color: ${({ theme }) => theme.colors.brand.primary};
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   background: rgba(65, 91, 165, 0.1);
@@ -48,7 +48,7 @@ export const StepTitle = styled.h2`
   margin-top: 8px;
   color: ${({ theme }) => theme.colors.text.title};
   font-size: 18px;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: -0.03em;
 `;
 
@@ -56,7 +56,7 @@ export const StepDescription = styled.p`
   // margin-top: 6px;
   color: ${({ theme }) => theme.colors.text.muted};
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 400;
   line-height: 24px;
 `;
 
@@ -85,7 +85,7 @@ export const GroupTitle = styled.h3`
   margin: 26px 0 14px;
   color: ${({ theme }) => theme.colors.text.title};
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: -0.02em;
 `;
 
@@ -122,7 +122,7 @@ export const FieldBlock = styled.div`
 export const FieldLabel = styled.label`
   color: #475467;
   font-size: 11px;
-  font-weight: 850;
+  font-weight: 700;
 `;
 
 export const Field = styled.label`
@@ -132,7 +132,7 @@ export const Field = styled.label`
   > span:first-child {
     color: #475467;
     font-size: 11px;
-    font-weight: 850;
+    font-weight: 700;
   }
 `;
 
@@ -147,7 +147,7 @@ export const FieldHeader = styled.span`
   > span:first-child, > label:first-child {
     color: #475467;
     font-size: 11px;
-    font-weight: 850;
+    font-weight: 700;
   }
 `;
 
@@ -156,7 +156,7 @@ export const LabelStatus = styled.small<{ $tone: "success" | "danger" }>`
   overflow: hidden;
   color: ${({ $tone }) => ($tone === "success" ? "#267c5b" : "#c84a44")};
   font-size: 9px;
-  font-weight: 800;
+  font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
 `;
@@ -178,7 +178,7 @@ export const InlineFieldStatus = styled.small`
   overflow: hidden;
   color: #667085;
   font-size: 9px;
-  font-weight: 750;
+  font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
   transform: translateY(-50%);
@@ -204,10 +204,10 @@ export const Control = styled.input<{ $invalid?: boolean; $withInlineStatus?: bo
   padding: 0 ${({ $withInlineStatus }) => ($withInlineStatus ? "150px" : "13px")} 0 13px;
   color: #344054;
   font-size: 12px;
-  font-weight: 650;
+  font-weight: 500;
   transition: 150ms ease;
 
-  &::placeholder { color: #98a2b3; font-weight: 500; }
+  &::placeholder { color: #98a2b3; font-weight: 400; }
   &:focus {
     border-color: ${({ theme }) => theme.colors.brand.primary};
     background: #fff;
@@ -226,7 +226,7 @@ export const SelectControl = styled.select<{ $invalid?: boolean }>`
   padding: 0 12px;
   color: #344054;
   font-size: 11px;
-  font-weight: 750;
+  font-weight: 600;
   cursor: pointer;
 
   &:focus {
@@ -248,7 +248,7 @@ export const Textarea = styled.textarea<{ $hasError?: boolean }>`
   padding: 12px 13px;
   color: #344054;
   font-size: 12px;
-  font-weight: 650;
+  font-weight: 500;
   line-height: 1.55;
   outline: none;
   transition:
@@ -273,14 +273,14 @@ export const ErrorText = styled.p`
   margin: 0;
   color: ${({ theme }) => theme.colors.state.danger};
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 400;
   line-height: 1.4;
 `;
 
 export const FieldError = styled.small`
   color: #c84a44;
   font-size: 10px;
-  font-weight: 750;
+  font-weight: 600;
   line-height: 1.45;
 `;
 
@@ -293,7 +293,7 @@ export const InfoBox = styled.div`
   padding: 16px;
   color: ${({ theme }) => theme.colors.text.body};
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 400;
   line-height: 21px;
 
   svg {
@@ -346,7 +346,7 @@ export const FooterHint = styled.p`
   max-width: 560px;
   color: ${({ theme }) => theme.colors.text.muted};
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 400;
   line-height: 21px;
 `;
 
@@ -376,7 +376,7 @@ export const ReviewCard = styled.article`
 export const ReviewTitle = styled.h3`
   color: ${({ theme }) => theme.colors.text.title};
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.02em;
 `;
 
@@ -397,7 +397,7 @@ export const ReviewItem = styled.div`
   span {
     color: ${({ theme }) => theme.colors.text.muted};
     font-size: 10px;
-    font-weight: 750;
+    font-weight: 600;
     text-transform: uppercase;
   }
 
@@ -410,7 +410,7 @@ export const ReviewItem = styled.div`
 export const ReviewLabel = styled.dt`
   color: ${({ theme }) => theme.colors.text.soft};
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 `;
@@ -418,7 +418,7 @@ export const ReviewLabel = styled.dt`
 export const ReviewValue = styled.dd`
   color: ${({ theme }) => theme.colors.text.body};
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 20px;
   word-break: break-word;
 `;

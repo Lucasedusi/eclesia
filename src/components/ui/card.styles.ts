@@ -41,7 +41,7 @@ export const CardHeader = styled.div<CardHeaderProps>`
 export const CardTitle = styled.h2`
   color: ${({ theme }) => theme.colors.text.title};
   font-size: 18px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: -0.02em;
 `;
 
@@ -49,7 +49,7 @@ export const CardDescription = styled.p`
   margin-top: 4px;
   color: ${({ theme }) => theme.colors.text.body};
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 400;
   line-height: 24px;
 `;
 

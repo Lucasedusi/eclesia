@@ -27,7 +27,7 @@ export const TitleRow = styled.div`
 export const Title = styled.h1`
   color: ${({ theme }) => theme.colors.text.title};
   font-size: 20px;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: -0.03em;
 `;
 
@@ -37,14 +37,14 @@ export const HeaderBadge = styled.span`
   color: ${({ theme }) => theme.colors.brand.primary};
   padding: 4px 10px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
 `;
 
 export const Subtitle = styled.p`
   color: ${({ theme }) => theme.colors.text.muted};
   margin-top: 4px;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 400;
   line-height: 24px;
 `;
 

@@ -5,7 +5,7 @@ export const DANGER_GRADIENT =
 
 export const LIST_PANEL_SUBTITLE_STYLE = {
   fontSize: "12px",
-  fontWeight: 500,
+  fontWeight: 400,
 } as const;
 
 export const TABLE_CONTENT_GUTTER = "22px" as const;
@@ -14,7 +14,7 @@ export const TABLE_HEADER_STYLE = {
   background: "#fafbfc",
   color: "#667085",
   fontSize: "10px",
-  fontWeight: 700,
+  fontWeight: 600,
   letterSpacing: "0.04em",
 } as const;
 

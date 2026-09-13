@@ -81,7 +81,7 @@ export const SummaryCard = styled.div<{ $tone: SummaryTone }>`
     overflow: hidden;
     color: ${({ theme }) => theme.colors.text.title};
     font-size: 15px;
-    font-weight: 800;
+    font-weight: 700;
     line-height: 1.15;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -90,7 +90,7 @@ export const SummaryCard = styled.div<{ $tone: SummaryTone }>`
   small {
     color: ${({ theme }) => theme.colors.text.soft};
     font-size: 9px;
-    font-weight: 750;
+    font-weight: 600;
     line-height: 1.3;
   }
 `;
@@ -119,14 +119,14 @@ export const SectionHeader = styled.div`
     margin: 0;
     color: ${({ theme }) => theme.colors.text.body};
     font-size: 12px;
-    font-weight: 850;
+    font-weight: 700;
   }
 
   p {
     margin: 3px 0 0;
     color: ${({ theme }) => theme.colors.text.soft};
     font-size: 9px;
-    font-weight: 650;
+    font-weight: 500;
     line-height: 1.45;
   }
 
@@ -188,7 +188,7 @@ export const InfoItem = styled.div<{ $wide?: boolean }>`
   dt {
     color: ${({ theme }) => theme.colors.text.soft};
     font-size: 9px;
-    font-weight: 750;
+    font-weight: 600;
   }
 
   dd {
@@ -197,7 +197,7 @@ export const InfoItem = styled.div<{ $wide?: boolean }>`
     overflow-wrap: anywhere;
     color: ${({ theme }) => theme.colors.text.body};
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 600;
     line-height: 1.45;
   }
 `;
@@ -215,7 +215,7 @@ export const Notes = styled.p`
   margin: 0;
   color: ${({ theme }) => theme.colors.text.body};
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1.65;
   white-space: pre-wrap;
 `;
@@ -232,7 +232,7 @@ export const StatusBadge = styled.span<{ $active: boolean }>`
     $active ? theme.colors.state.success : theme.colors.text.muted};
   padding: 0 9px;
   font-size: 9px;
-  font-weight: 850;
+  font-weight: 700;
 `;
 
 export const SearchBox = styled.label`
@@ -261,7 +261,7 @@ export const SearchBox = styled.label`
     padding: 0 11px 0 33px;
     color: ${({ theme }) => theme.colors.text.body};
     font-size: 10px;
-    font-weight: 650;
+    font-weight: 500;
 
     &:focus {
       border-color: ${({ theme }) => theme.colors.brand.primary};
@@ -333,7 +333,7 @@ export const LinkedPrimary = styled.div`
     overflow: hidden;
     color: ${({ theme }) => theme.colors.text.body};
     font-size: 10px;
-    font-weight: 800;
+    font-weight: 700;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -348,7 +348,7 @@ export const LinkedPrimary = styled.div`
   small {
     color: ${({ theme }) => theme.colors.text.soft};
     font-size: 8px;
-    font-weight: 650;
+    font-weight: 500;
   }
 `;
 
@@ -360,14 +360,14 @@ export const LinkedMeta = styled.div`
   small {
     color: ${({ theme }) => theme.colors.text.soft};
     font-size: 8px;
-    font-weight: 700;
+    font-weight: 600;
   }
 
   span {
     overflow: hidden;
     color: ${({ theme }) => theme.colors.text.body};
     font-size: 9px;
-    font-weight: 700;
+    font-weight: 600;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -419,13 +419,13 @@ export const EmptyState = styled.div`
   strong {
     color: ${({ theme }) => theme.colors.text.body};
     font-size: 11px;
-    font-weight: 800;
+    font-weight: 700;
   }
 
   p {
     margin: 0;
     font-size: 9px;
-    font-weight: 650;
+    font-weight: 500;
   }
 `;
 
@@ -448,12 +448,12 @@ export const LoadingState = styled.div`
   strong {
     color: ${({ theme }) => theme.colors.text.body};
     font-size: 11px;
-    font-weight: 800;
+    font-weight: 700;
   }
 
   span {
     font-size: 9px;
-    font-weight: 650;
+    font-weight: 500;
   }
 `;
 
@@ -499,7 +499,7 @@ export const ErrorState = styled.div`
   strong {
     color: ${({ theme }) => theme.colors.text.title};
     font-size: 12px;
-    font-weight: 850;
+    font-weight: 700;
   }
 
   p {
@@ -507,7 +507,7 @@ export const ErrorState = styled.div`
     margin: 0 0 5px;
     color: ${({ theme }) => theme.colors.text.soft};
     font-size: 10px;
-    font-weight: 650;
+    font-weight: 500;
     line-height: 1.5;
   }
 `;

@@ -63,12 +63,12 @@ export const Greeting = styled.p`
   margin: 0;
   color: #667085;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 400;
   line-height: 1;
 
   strong {
     color: #667085;
-    font-weight: 800;
+    font-weight: 700;
   }
 
   @media (max-width: 640px) {
@@ -185,7 +185,7 @@ export const UserName = styled.p`
   margin: 0;
   color: #212b36;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
 `;
 
 export const UserRole = styled.p`
@@ -206,7 +206,7 @@ export const UserAvatar = styled.div`
   background: #ffce34;
   box-shadow: 0 0 0 4px #f2f4f7;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 700;
 `;
 
 export const MobileAvatar = styled(UserAvatar)`
@@ -251,8 +251,8 @@ export const DropdownIdentity = styled.div`
   padding: 9px 9px 14px;
 
   > div:last-child { min-width: 0; }
-  strong { display: block; overflow: hidden; color: #344054; font-size: 12px; font-weight: 850; text-overflow: ellipsis; white-space: nowrap; }
-  span { display: block; overflow: hidden; margin-top: 3px; color: #98a2b3; font-size: 10px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+  strong { display: block; overflow: hidden; color: #344054; font-size: 12px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+  span { display: block; overflow: hidden; margin-top: 3px; color: #98a2b3; font-size: 10px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
 `;
 
 export const DropdownItem = styled.a`
@@ -264,7 +264,7 @@ export const DropdownItem = styled.a`
   color: #475467;
   padding: 0 10px;
   font-size: 11px;
-  font-weight: 750;
+  font-weight: 600;
 
   &:hover { background: #f6f8fc; color: ${({ theme }) => theme.colors.brand.primary}; }
 `;
@@ -274,8 +274,8 @@ export const ChurchList = styled.div`
   border-bottom: 1px solid #edf0f4;
   padding: 9px 0;
 
-  > span { display: flex; align-items: center; gap: 7px; padding: 5px 10px 8px; color: #98a2b3; font-size: 9px; font-weight: 800; text-transform: uppercase; }
-  button { display: flex; width: 100%; align-items: center; gap: 7px; border: 0; border-radius: 6px; background: transparent; color: #475467; padding: 8px 10px; text-align: left; font-size: 10px; font-weight: 750; }
+  > span { display: flex; align-items: center; gap: 7px; padding: 5px 10px 8px; color: #98a2b3; font-size: 9px; font-weight: 700; text-transform: uppercase; }
+  button { display: flex; width: 100%; align-items: center; gap: 7px; border: 0; border-radius: 6px; background: transparent; color: #475467; padding: 8px 10px; text-align: left; font-size: 10px; font-weight: 600; }
   button:hover, button[data-active="true"] { background: #eef2ff; color: ${({ theme }) => theme.colors.brand.primary}; }
   button:disabled { cursor: wait; opacity: .72; }
   button[data-loading="true"] svg { width: 13px; height: 13px; animation: ${headerActionSpin} 720ms linear infinite; }
@@ -294,7 +294,7 @@ export const LogoutButton = styled.button`
   color: #b5423c;
   padding: 0 10px;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 700;
 
   &:hover { background: #fff0ef; }
   &:disabled { cursor: wait; opacity: .72; }

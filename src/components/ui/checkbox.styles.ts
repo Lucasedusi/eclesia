@@ -9,7 +9,7 @@ export const CheckboxLabel = styled.label`
   gap: 12px;
   color: #525252;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 400;
 `;
 
 export const HiddenCheckbox = styled.input`
