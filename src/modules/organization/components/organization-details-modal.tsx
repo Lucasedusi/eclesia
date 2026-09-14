@@ -31,6 +31,7 @@ import type {
   RegionDetails,
   RegionItem,
 } from "../types/organization.types";
+import { DetailSectionHeading } from "./organization-detail-section-heading";
 import * as S from "./organization-details.styles";
 
 export type OrganizationDetailsTarget = { id: string; name: string };
@@ -511,10 +512,11 @@ export function CongregationDetailsModal({
 
           <S.Section>
             <S.SectionHeader>
-              <div>
-                <h3>Identificação</h3>
-                <p>Informações gerais e vínculo administrativo.</p>
-              </div>
+              <DetailSectionHeading
+                icon={<Church />}
+                title="Identificação"
+                subtitle="Informações gerais e vínculo administrativo."
+              />
               <Status value={details.status} />
             </S.SectionHeader>
             <S.InfoGrid>
@@ -540,11 +542,12 @@ export function CongregationDetailsModal({
 
           <S.Section>
             <S.SectionHeader>
-              <div>
-                <h3>Liderança e contato</h3>
-                <p>Responsáveis e canais institucionais cadastrados.</p>
-              </div>
-              <UserRound size={18} />
+              <DetailSectionHeading
+                icon={<UserRound />}
+                title="Liderança e contato"
+                subtitle="Responsáveis e canais institucionais cadastrados."
+                tone="success"
+              />
             </S.SectionHeader>
             <S.InfoGrid>
               <Info label="Dirigente ou Pastor" value={details.pastorName} />
@@ -585,11 +588,11 @@ export function CongregationDetailsModal({
 
           <S.Section>
             <S.SectionHeader>
-              <div>
-                <h3>Endereço</h3>
-                <p>Localização registrada para a Congregação.</p>
-              </div>
-              <MapPin size={18} />
+              <DetailSectionHeading
+                icon={<MapPin />}
+                title="Endereço"
+                subtitle="Localização registrada para a Congregação."
+              />
             </S.SectionHeader>
             <S.InfoGrid>
               <Info
@@ -606,11 +609,12 @@ export function CongregationDetailsModal({
 
           <S.Section>
             <S.SectionHeader>
-              <div>
-                <h3>Observações</h3>
-                <p>Informações administrativas adicionais.</p>
-              </div>
-              <FileText size={18} />
+              <DetailSectionHeading
+                icon={<FileText />}
+                title="Observações"
+                subtitle="Informações administrativas adicionais."
+                tone="warning"
+              />
             </S.SectionHeader>
             <S.Notes>
               {details.notes || "Nenhuma observação cadastrada."}
@@ -619,11 +623,12 @@ export function CongregationDetailsModal({
 
           <S.Section>
             <S.SectionHeader>
-              <div>
-                <h3>Histórico do cadastro</h3>
-                <p>Datas de criação e última alteração do registro.</p>
-              </div>
-              <CalendarClock size={18} />
+              <DetailSectionHeading
+                icon={<CalendarClock />}
+                title="Histórico do cadastro"
+                subtitle="Datas de criação e última alteração do registro."
+                tone="neutral"
+              />
             </S.SectionHeader>
             <S.InfoGrid>
               <Info
