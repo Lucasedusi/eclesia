@@ -213,7 +213,7 @@ export const Tooltip = styled.span`
   padding: 8px 12px;
   border-radius: 6px;
   color: #ffffff;
-  background: #020617;
+  background: ${({ theme }) => theme.colors.sidebar.background};
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.28);
   font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 600;

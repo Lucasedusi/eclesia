@@ -8,8 +8,8 @@ export const theme = {
       primarySoft: "rgba(65, 91, 165, 0.10)",
     },
     sidebar: {
-      background: "#071426",
-      item: "#A3A7AC",
+      background: "#162E52",
+      item: "#F2F4F7",
       itemHover: "#FFFFFF",
       hoverBackground: "rgba(65, 91, 165, 0.30)",
       divider: "rgba(226, 232, 240, 0.10)",
