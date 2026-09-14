@@ -701,6 +701,7 @@ export const FieldGrid = styled.div<{ $columns?: number }>`
     minmax(0, 1fr)
   );
   gap: 15px;
+  margin: 18px 0 18px;
   @media (max-width: 650px) {
     grid-template-columns: 1fr;
   }
@@ -771,6 +772,7 @@ export const FormAlert = styled.div`
 export const StepHeader = styled.div`
   display: grid;
   gap: 12px;
+  margin-bottom: 4px;
 `;
 
 export const StepProgress = styled.ol`
@@ -810,22 +812,6 @@ export const Step = styled.li<{ $active: boolean; $complete: boolean }>`
       $active || $complete ? "#415ba5" : "#eef0f4"};
     color: ${({ $active, $complete }) =>
       $active || $complete ? "#fff" : "#98a2b3"};
-  }
-`;
-
-export const SectionTitle = styled.div`
-  h3 {
-    margin: 0;
-    color: #344054;
-    font-size: calc(14px + var(--eclesia-font-size-adjustment, 0px));
-    font-weight: 700;
-  }
-  p {
-    margin: 5px 0 0;
-    color: #98a2b3;
-    font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
-    font-weight: 500;
-    line-height: 1.5;
   }
 `;
 

@@ -322,13 +322,6 @@ export function CongregationForm({
 
         {currentStep === 0 && (
           <>
-            <S.SectionTitle>
-              <h3>Identificação e Regional</h3>
-              <p>
-                Defina como a Congregação será localizada nas listagens e
-                relatórios.
-              </p>
-            </S.SectionTitle>
             {isHeadquarters && (
               <S.FormIntro>
                 Esta é a Congregação Sede. Ela deve permanecer ativa, não pode
@@ -388,12 +381,6 @@ export function CongregationForm({
 
         {currentStep === 1 && (
           <>
-            <S.SectionTitle>
-              <h3>Liderança e contato</h3>
-              <p>
-                Registre os responsáveis e os principais canais de atendimento.
-              </p>
-            </S.SectionTitle>
             <S.FieldGrid>
               <S.Field>
                 <span>Pastor/Dirigente</span>
@@ -465,13 +452,6 @@ export function CongregationForm({
 
         {currentStep === 2 && (
           <>
-            <S.SectionTitle>
-              <h3>Endereço</h3>
-              <p>
-                O preenchimento é opcional, mas facilita buscas e relatórios
-                futuros.
-              </p>
-            </S.SectionTitle>
             <S.FieldGrid>
               <S.Field>
                 <S.FieldHeader>
@@ -599,10 +579,6 @@ export function CongregationForm({
 
         {currentStep === 3 && (
           <>
-            <S.SectionTitle>
-              <h3>Revisão e conclusão</h3>
-              <p>Confira as informações antes de salvar a Congregação.</p>
-            </S.SectionTitle>
             <S.ReviewGrid>
               <S.ReviewCard>
                 <S.ReviewCardHeader>

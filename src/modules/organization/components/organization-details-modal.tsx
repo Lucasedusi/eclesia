@@ -4,11 +4,9 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   AlertCircle,
   Building2,
-  CalendarClock,
   Church,
   Eye,
   FileText,
-  ListOrdered,
   Loader2,
   MapPin,
   Network,
@@ -400,6 +398,140 @@ export function RegionDetailsModal({
   );
 }
 
+export function CongregationDetailsContent({
+  details,
+}: {
+  details: CongregationDetails;
+}) {
+  return (
+    <S.Content>
+      <S.SummaryGrid>
+        <SummaryCard
+          icon={<Power />}
+          value={details.status === "ACTIVE" ? "Ativa" : "Inativa"}
+          label="Situação atual"
+          tone={details.status === "ACTIVE" ? "success" : "neutral"}
+        />
+        <SummaryCard
+          icon={<Network />}
+          value={details.regionName || "Sem Regional"}
+          label="Regional"
+          tone="primary"
+        />
+        {details.documentCount !== null ? (
+          <SummaryCard
+            icon={<FileText />}
+            value={details.documentCount}
+            label="Documentos anexados"
+            tone="warning"
+          />
+        ) : null}
+      </S.SummaryGrid>
+
+      <S.Section>
+        <S.SectionHeader>
+          <DetailSectionHeading
+            icon={<Church />}
+            title="Identificação"
+            subtitle="Informações gerais e vínculo administrativo."
+          />
+          <Status value={details.status} />
+        </S.SectionHeader>
+        <S.InfoGrid>
+          <Info label="Nome" value={details.name} />
+          <Info label="Código" value={details.code} />
+          <Info
+            label="Tipo"
+            value={details.isHeadquarters ? "Congregação Sede" : "Congregação"}
+          />
+          <Info label="Regional" value={details.regionName || "Sem Regional"} />
+          <Info
+            label="Ordem de exibição"
+            value={String(details.displayOrder)}
+          />
+          <Info label="País" value={details.country} />
+        </S.InfoGrid>
+      </S.Section>
+
+      <S.Section>
+        <S.SectionHeader>
+          <DetailSectionHeading
+            icon={<UserRound />}
+            title="Liderança e contato"
+            subtitle="Responsáveis e canais institucionais cadastrados."
+            tone="success"
+          />
+        </S.SectionHeader>
+        <S.InfoGrid>
+          <Info label="Dirigente ou Pastor" value={details.pastorName} />
+          <Info label="Cônjuge" value={details.pastorSpouseName} />
+          <Info
+            label="Telefone"
+            value={
+              details.phone ? (
+                <S.Link href={`tel:${details.phone.replace(/\D/g, "")}`}>
+                  {details.phone}
+                </S.Link>
+              ) : null
+            }
+          />
+          <Info
+            label="WhatsApp"
+            value={
+              details.whatsapp ? (
+                <S.Link href={`tel:${details.whatsapp.replace(/\D/g, "")}`}>
+                  {details.whatsapp}
+                </S.Link>
+              ) : null
+            }
+          />
+          <Info
+            label="E-mail"
+            value={
+              details.email ? (
+                <S.Link href={`mailto:${details.email}`}>
+                  {details.email}
+                </S.Link>
+              ) : null
+            }
+            wide
+          />
+        </S.InfoGrid>
+      </S.Section>
+
+      <S.Section>
+        <S.SectionHeader>
+          <DetailSectionHeading
+            icon={<MapPin />}
+            title="Endereço"
+            subtitle="Localização registrada para a Congregação."
+          />
+        </S.SectionHeader>
+        <S.InfoGrid>
+          <Info label="Logradouro e número" value={formatAddress(details)} />
+          <Info label="Complemento" value={details.complement} />
+          <Info label="Bairro" value={details.district} />
+          <Info label="Cidade" value={details.city} />
+          <Info label="Estado" value={details.state} />
+          <Info label="CEP" value={details.zipCode} />
+        </S.InfoGrid>
+      </S.Section>
+
+      <S.Section>
+        <S.SectionHeader>
+          <DetailSectionHeading
+            icon={<FileText />}
+            title="Observações"
+            subtitle="Informações administrativas adicionais."
+            tone="warning"
+          />
+        </S.SectionHeader>
+        <S.Notes>{details.notes || "Nenhuma observação cadastrada."}</S.Notes>
+      </S.Section>
+    </S.Content>
+  );
+}
+
 export function CongregationDetailsModal({
   target,
   canManage,
@@ -479,170 +611,7 @@ export function CongregationDetailsModal({
       {state.status === "error" ? (
         <DetailsError message={state.message} onRetry={retryLoad} />
       ) : null}
-      {details ? (
-        <S.Content>
-          <S.SummaryGrid>
-            <SummaryCard
-              icon={<Power />}
-              value={details.status === "ACTIVE" ? "Ativa" : "Inativa"}
-              label="Situação atual"
-              tone={details.status === "ACTIVE" ? "success" : "neutral"}
-            />
-            <SummaryCard
-              icon={<Network />}
-              value={details.regionName || "Sem Regional"}
-              label="Regional"
-              tone="primary"
-            />
-            <SummaryCard
-              icon={<ListOrdered />}
-              value={details.displayOrder}
-              label="Ordem de exibição"
-              tone="neutral"
-            />
-            {details.documentCount !== null ? (
-              <SummaryCard
-                icon={<FileText />}
-                value={details.documentCount}
-                label="Documentos anexados"
-                tone="warning"
-              />
-            ) : null}
-          </S.SummaryGrid>
-
-          <S.Section>
-            <S.SectionHeader>
-              <DetailSectionHeading
-                icon={<Church />}
-                title="Identificação"
-                subtitle="Informações gerais e vínculo administrativo."
-              />
-              <Status value={details.status} />
-            </S.SectionHeader>
-            <S.InfoGrid>
-              <Info label="Nome" value={details.name} />
-              <Info label="Código" value={details.code} />
-              <Info
-                label="Tipo"
-                value={
-                  details.isHeadquarters ? "Congregação Sede" : "Congregação"
-                }
-              />
-              <Info
-                label="Regional"
-                value={details.regionName || "Sem Regional"}
-              />
-              <Info
-                label="Ordem de exibição"
-                value={String(details.displayOrder)}
-              />
-              <Info label="País" value={details.country} />
-            </S.InfoGrid>
-          </S.Section>
-
-          <S.Section>
-            <S.SectionHeader>
-              <DetailSectionHeading
-                icon={<UserRound />}
-                title="Liderança e contato"
-                subtitle="Responsáveis e canais institucionais cadastrados."
-                tone="success"
-              />
-            </S.SectionHeader>
-            <S.InfoGrid>
-              <Info label="Dirigente ou Pastor" value={details.pastorName} />
-              <Info label="Cônjuge" value={details.pastorSpouseName} />
-              <Info
-                label="Telefone"
-                value={
-                  details.phone ? (
-                    <S.Link href={`tel:${details.phone.replace(/\D/g, "")}`}>
-                      {details.phone}
-                    </S.Link>
-                  ) : null
-                }
-              />
-              <Info
-                label="WhatsApp"
-                value={
-                  details.whatsapp ? (
-                    <S.Link href={`tel:${details.whatsapp.replace(/\D/g, "")}`}>
-                      {details.whatsapp}
-                    </S.Link>
-                  ) : null
-                }
-              />
-              <Info
-                label="E-mail"
-                value={
-                  details.email ? (
-                    <S.Link href={`mailto:${details.email}`}>
-                      {details.email}
-                    </S.Link>
-                  ) : null
-                }
-                wide
-              />
-            </S.InfoGrid>
-          </S.Section>
-
-          <S.Section>
-            <S.SectionHeader>
-              <DetailSectionHeading
-                icon={<MapPin />}
-                title="Endereço"
-                subtitle="Localização registrada para a Congregação."
-              />
-            </S.SectionHeader>
-            <S.InfoGrid>
-              <Info
-                label="Logradouro e número"
-                value={formatAddress(details)}
-              />
-              <Info label="Complemento" value={details.complement} />
-              <Info label="Bairro" value={details.district} />
-              <Info label="Cidade" value={details.city} />
-              <Info label="Estado" value={details.state} />
-              <Info label="CEP" value={details.zipCode} />
-            </S.InfoGrid>
-          </S.Section>
-
-          <S.Section>
-            <S.SectionHeader>
-              <DetailSectionHeading
-                icon={<FileText />}
-                title="Observações"
-                subtitle="Informações administrativas adicionais."
-                tone="warning"
-              />
-            </S.SectionHeader>
-            <S.Notes>
-              {details.notes || "Nenhuma observação cadastrada."}
-            </S.Notes>
-          </S.Section>
-
-          <S.Section>
-            <S.SectionHeader>
-              <DetailSectionHeading
-                icon={<CalendarClock />}
-                title="Histórico do cadastro"
-                subtitle="Datas de criação e última alteração do registro."
-                tone="neutral"
-              />
-            </S.SectionHeader>
-            <S.InfoGrid>
-              <Info
-                label="Cadastrada em"
-                value={formatDateTime(details.createdAt)}
-              />
-              <Info
-                label="Última atualização"
-                value={formatDateTime(details.updatedAt)}
-              />
-            </S.InfoGrid>
-          </S.Section>
-        </S.Content>
-      ) : null}
+      {details ? <CongregationDetailsContent details={details} /> : null}
     </Modal>
   );
 }
