@@ -22,7 +22,8 @@ describe("visual standards", () => {
     expect(TABLE_HEADER_STYLE).toEqual({
       background: "#fafbfc",
       color: "#667085",
-      fontSize: "10px",
+      fontSize:
+        "calc(10px + var(--eclesia-font-size-adjustment, 0px))",
       fontWeight: 600,
       letterSpacing: "0.04em",
     });
@@ -41,7 +42,8 @@ describe("visual standards", () => {
 
   it("keeps list subtitles and table edges aligned with the panel gutter", () => {
     expect(LIST_PANEL_SUBTITLE_STYLE).toEqual({
-      fontSize: "12px",
+      fontSize:
+        "calc(12px + var(--eclesia-font-size-adjustment, 0px))",
       fontWeight: 400,
     });
     expect(TABLE_CONTENT_GUTTER).toBe("22px");

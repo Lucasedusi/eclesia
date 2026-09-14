@@ -22,17 +22,17 @@ const buttonSizes = {
   sm: css`
     min-height: 40px;
     padding: 8px 16px;
-    font-size: 13px;
+    font-size: calc(13px + var(--eclesia-font-size-adjustment, 0px));
   `,
   md: css`
     min-height: 48px;
     padding: 12px 24px;
-    font-size: 14px;
+    font-size: calc(14px + var(--eclesia-font-size-adjustment, 0px));
   `,
   lg: css`
     min-height: 56px;
     padding: 16px 32px;
-    font-size: 15px;
+    font-size: calc(15px + var(--eclesia-font-size-adjustment, 0px));
   `,
 };
 

@@ -80,7 +80,7 @@ export const SummaryCard = styled.div<{ $tone: SummaryTone }>`
   strong {
     overflow: hidden;
     color: ${({ theme }) => theme.colors.text.title};
-    font-size: 15px;
+    font-size: calc(15px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 700;
     line-height: 1.15;
     text-overflow: ellipsis;
@@ -89,7 +89,7 @@ export const SummaryCard = styled.div<{ $tone: SummaryTone }>`
 
   small {
     color: ${({ theme }) => theme.colors.text.soft};
-    font-size: 9px;
+    font-size: calc(9px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 600;
     line-height: 1.3;
   }
@@ -118,14 +118,14 @@ export const SectionHeader = styled.div`
   h3 {
     margin: 0;
     color: ${({ theme }) => theme.colors.text.body};
-    font-size: 12px;
+    font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 700;
   }
 
   p {
     margin: 3px 0 0;
     color: ${({ theme }) => theme.colors.text.soft};
-    font-size: 9px;
+    font-size: calc(9px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 500;
     line-height: 1.45;
   }
@@ -187,7 +187,7 @@ export const InfoItem = styled.div<{ $wide?: boolean }>`
 
   dt {
     color: ${({ theme }) => theme.colors.text.soft};
-    font-size: 9px;
+    font-size: calc(9px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 600;
   }
 
@@ -196,7 +196,7 @@ export const InfoItem = styled.div<{ $wide?: boolean }>`
     margin: 0;
     overflow-wrap: anywhere;
     color: ${({ theme }) => theme.colors.text.body};
-    font-size: 11px;
+    font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 600;
     line-height: 1.45;
   }
@@ -214,7 +214,7 @@ export const Link = styled.a`
 export const Notes = styled.p`
   margin: 0;
   color: ${({ theme }) => theme.colors.text.body};
-  font-size: 11px;
+  font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 500;
   line-height: 1.65;
   white-space: pre-wrap;
@@ -231,7 +231,7 @@ export const StatusBadge = styled.span<{ $active: boolean }>`
   color: ${({ $active, theme }) =>
     $active ? theme.colors.state.success : theme.colors.text.muted};
   padding: 0 9px;
-  font-size: 9px;
+  font-size: calc(9px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 700;
 `;
 
@@ -260,7 +260,7 @@ export const SearchBox = styled.label`
     background: ${({ theme }) => theme.colors.surface.card};
     padding: 0 11px 0 33px;
     color: ${({ theme }) => theme.colors.text.body};
-    font-size: 10px;
+    font-size: calc(10px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 500;
 
     &:focus {
@@ -332,7 +332,7 @@ export const LinkedPrimary = styled.div`
     gap: 6px;
     overflow: hidden;
     color: ${({ theme }) => theme.colors.text.body};
-    font-size: 10px;
+    font-size: calc(10px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 700;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -347,7 +347,7 @@ export const LinkedPrimary = styled.div`
 
   small {
     color: ${({ theme }) => theme.colors.text.soft};
-    font-size: 8px;
+    font-size: calc(8px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 500;
   }
 `;
@@ -359,14 +359,14 @@ export const LinkedMeta = styled.div`
 
   small {
     color: ${({ theme }) => theme.colors.text.soft};
-    font-size: 8px;
+    font-size: calc(8px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 600;
   }
 
   span {
     overflow: hidden;
     color: ${({ theme }) => theme.colors.text.body};
-    font-size: 9px;
+    font-size: calc(9px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 600;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -418,13 +418,13 @@ export const EmptyState = styled.div`
 
   strong {
     color: ${({ theme }) => theme.colors.text.body};
-    font-size: 11px;
+    font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 700;
   }
 
   p {
     margin: 0;
-    font-size: 9px;
+    font-size: calc(9px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 500;
   }
 `;
@@ -447,12 +447,12 @@ export const LoadingState = styled.div`
 
   strong {
     color: ${({ theme }) => theme.colors.text.body};
-    font-size: 11px;
+    font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 700;
   }
 
   span {
-    font-size: 9px;
+    font-size: calc(9px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 500;
   }
 `;
@@ -498,7 +498,7 @@ export const ErrorState = styled.div`
 
   strong {
     color: ${({ theme }) => theme.colors.text.title};
-    font-size: 12px;
+    font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 700;
   }
 
@@ -506,7 +506,7 @@ export const ErrorState = styled.div`
     max-width: 360px;
     margin: 0 0 5px;
     color: ${({ theme }) => theme.colors.text.soft};
-    font-size: 10px;
+    font-size: calc(10px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 500;
     line-height: 1.5;
   }

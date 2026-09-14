@@ -34,7 +34,7 @@ export const StepHeader = styled.div`
 
 export const StepEyebrow = styled.p`
   color: ${({ theme }) => theme.colors.brand.primary};
-  font-size: 10px;
+  font-size: calc(10px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -47,7 +47,7 @@ export const StepEyebrow = styled.p`
 export const StepTitle = styled.h2`
   margin-top: 8px;
   color: ${({ theme }) => theme.colors.text.title};
-  font-size: 18px;
+  font-size: calc(18px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 500;
   letter-spacing: -0.03em;
 `;
@@ -55,7 +55,7 @@ export const StepTitle = styled.h2`
 export const StepDescription = styled.p`
   // margin-top: 6px;
   color: ${({ theme }) => theme.colors.text.muted};
-  font-size: 14px;
+  font-size: calc(14px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 400;
   line-height: 24px;
 `;
@@ -84,7 +84,7 @@ export const FieldGroup = styled.div`
 export const GroupTitle = styled.h3`
   margin: 26px 0 14px;
   color: ${({ theme }) => theme.colors.text.title};
-  font-size: 15px;
+  font-size: calc(15px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 500;
   letter-spacing: -0.02em;
 `;
@@ -109,7 +109,7 @@ export const CheckCard = styled.div`
   padding: 0 14px;
 
   label {
-    font-size: 11px;
+    font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
   }
 `;
 
@@ -121,7 +121,7 @@ export const FieldBlock = styled.div`
 
 export const FieldLabel = styled.label`
   color: #475467;
-  font-size: 11px;
+  font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 700;
 `;
 
@@ -131,7 +131,7 @@ export const Field = styled.label`
 
   > span:first-child {
     color: #475467;
-    font-size: 11px;
+    font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 700;
   }
 `;
@@ -146,7 +146,7 @@ export const FieldHeader = styled.span`
 
   > span:first-child, > label:first-child {
     color: #475467;
-    font-size: 11px;
+    font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 700;
   }
 `;
@@ -155,7 +155,7 @@ export const LabelStatus = styled.small<{ $tone: "success" | "danger" }>`
   min-width: 0;
   overflow: hidden;
   color: ${({ $tone }) => ($tone === "success" ? "#267c5b" : "#c84a44")};
-  font-size: 9px;
+  font-size: calc(9px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -177,7 +177,7 @@ export const InlineFieldStatus = styled.small`
   gap: 5px;
   overflow: hidden;
   color: #667085;
-  font-size: 9px;
+  font-size: calc(9px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -203,7 +203,7 @@ export const Control = styled.input<{ $invalid?: boolean; $withInlineStatus?: bo
   background: #f8f9fc;
   padding: 0 ${({ $withInlineStatus }) => ($withInlineStatus ? "150px" : "13px")} 0 13px;
   color: #344054;
-  font-size: 12px;
+  font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 500;
   transition: 150ms ease;
 
@@ -225,7 +225,7 @@ export const SelectControl = styled.select<{ $invalid?: boolean }>`
   background: #f8f9fc;
   padding: 0 12px;
   color: #344054;
-  font-size: 11px;
+  font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 600;
   cursor: pointer;
 
@@ -247,7 +247,7 @@ export const Textarea = styled.textarea<{ $hasError?: boolean }>`
   background: #f8f9fc;
   padding: 12px 13px;
   color: #344054;
-  font-size: 12px;
+  font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 500;
   line-height: 1.55;
   outline: none;
@@ -272,14 +272,14 @@ export const Textarea = styled.textarea<{ $hasError?: boolean }>`
 export const ErrorText = styled.p`
   margin: 0;
   color: ${({ theme }) => theme.colors.state.danger};
-  font-size: 12px;
+  font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 400;
   line-height: 1.4;
 `;
 
 export const FieldError = styled.small`
   color: #c84a44;
-  font-size: 10px;
+  font-size: calc(10px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 600;
   line-height: 1.45;
 `;
@@ -292,7 +292,7 @@ export const InfoBox = styled.div`
   background: rgba(65, 91, 165, 0.07);
   padding: 16px;
   color: ${({ theme }) => theme.colors.text.body};
-  font-size: 13px;
+  font-size: calc(13px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 400;
   line-height: 21px;
 
@@ -305,7 +305,7 @@ export const InfoBox = styled.div`
 `;
 
 export const ChurchContextBox = styled(InfoBox)`
-  font-size: 12px;
+  font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px));
 `;
 
 export const WarningBox = styled(InfoBox)`
@@ -345,7 +345,7 @@ export const FormFooter = styled.footer`
 export const FooterHint = styled.p`
   max-width: 560px;
   color: ${({ theme }) => theme.colors.text.muted};
-  font-size: 13px;
+  font-size: calc(13px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 400;
   line-height: 21px;
 `;
@@ -375,7 +375,7 @@ export const ReviewCard = styled.article`
 
 export const ReviewTitle = styled.h3`
   color: ${({ theme }) => theme.colors.text.title};
-  font-size: 14px;
+  font-size: calc(14px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 700;
   letter-spacing: -0.02em;
 `;
@@ -396,20 +396,20 @@ export const ReviewItem = styled.div`
 
   span {
     color: ${({ theme }) => theme.colors.text.muted};
-    font-size: 10px;
+    font-size: calc(10px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 600;
     text-transform: uppercase;
   }
 
   strong {
     color: ${({ theme }) => theme.colors.text.title};
-    font-size: 13px;
+    font-size: calc(13px + var(--eclesia-font-size-adjustment, 0px));
   }
 `;
 
 export const ReviewLabel = styled.dt`
   color: ${({ theme }) => theme.colors.text.soft};
-  font-size: 11px;
+  font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -417,7 +417,7 @@ export const ReviewLabel = styled.dt`
 
 export const ReviewValue = styled.dd`
   color: ${({ theme }) => theme.colors.text.body};
-  font-size: 13px;
+  font-size: calc(13px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 500;
   line-height: 20px;
   word-break: break-word;

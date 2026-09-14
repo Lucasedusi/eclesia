@@ -8,7 +8,7 @@ export const CheckboxLabel = styled.label`
   align-items: center;
   gap: 12px;
   color: #525252;
-  font-size: 14px;
+  font-size: calc(14px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 400;
 `;
 

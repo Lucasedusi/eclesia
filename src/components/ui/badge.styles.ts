@@ -57,7 +57,7 @@ export const BadgeRoot = styled.span<BadgeProps>`
   gap: 6px;
   border-radius: ${({ theme }) => theme.radius.sm};
   padding: 0 10px;
-  font-size: 12px;
+  font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 500;
   line-height: 1;
 

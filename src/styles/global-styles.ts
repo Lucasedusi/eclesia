@@ -4,6 +4,8 @@ import { createGlobalStyle } from "styled-components";
 
 export const GlobalStyles = createGlobalStyle`
   :root {
+    --eclesia-font-size-adjustment: 1px;
+
     --eclesia-primary: ${({ theme }) => theme.colors.brand.primary};
     --eclesia-primary-hover: ${({ theme }) => theme.colors.brand.primaryHover};
     --eclesia-primary-soft: ${({ theme }) => theme.colors.brand.primarySoft};
@@ -43,6 +45,58 @@ export const GlobalStyles = createGlobalStyle`
     --shadow-soft: ${({ theme }) => theme.shadows.soft};
     --shadow-card: ${({ theme }) => theme.shadows.card};
     --shadow-modal: ${({ theme }) => theme.shadows.modal};
+  }
+
+  body .text-xs {
+    font-size: calc(0.75rem + var(--eclesia-font-size-adjustment, 0px));
+  }
+
+  body .text-sm {
+    font-size: calc(0.875rem + var(--eclesia-font-size-adjustment, 0px));
+  }
+
+  body .text-base {
+    font-size: calc(1rem + var(--eclesia-font-size-adjustment, 0px));
+  }
+
+  body .text-lg {
+    font-size: calc(1.125rem + var(--eclesia-font-size-adjustment, 0px));
+  }
+
+  body .text-xl {
+    font-size: calc(1.25rem + var(--eclesia-font-size-adjustment, 0px));
+  }
+
+  body .text-2xl {
+    font-size: calc(1.5rem + var(--eclesia-font-size-adjustment, 0px));
+  }
+
+  body .text-3xl {
+    font-size: calc(1.875rem + var(--eclesia-font-size-adjustment, 0px));
+  }
+
+  body .text-4xl {
+    font-size: calc(2.25rem + var(--eclesia-font-size-adjustment, 0px));
+  }
+
+  body .text-5xl {
+    font-size: calc(3rem + var(--eclesia-font-size-adjustment, 0px));
+  }
+
+  body .text-6xl {
+    font-size: calc(3.75rem + var(--eclesia-font-size-adjustment, 0px));
+  }
+
+  body .text-7xl {
+    font-size: calc(4.5rem + var(--eclesia-font-size-adjustment, 0px));
+  }
+
+  body .text-8xl {
+    font-size: calc(6rem + var(--eclesia-font-size-adjustment, 0px));
+  }
+
+  body .text-9xl {
+    font-size: calc(8rem + var(--eclesia-font-size-adjustment, 0px));
   }
 
   * {

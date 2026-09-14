@@ -157,14 +157,14 @@ export const BrandText = styled.div`
   strong {
     display: block;
     color: ${({ theme }) => theme.colors.text.title};
-    font-size: 18px;
+    font-size: calc(18px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 700;
   }
   span {
     display: block;
     margin-top: 2px;
     color: ${({ theme }) => theme.colors.text.soft};
-    font-size: 12px;
+    font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 600;
   }
 `;
@@ -172,14 +172,14 @@ export const BrandText = styled.div`
 export const Eyebrow = styled.p`
   margin: 0 0 10px;
   color: ${({ theme }) => theme.colors.brand.primary};
-  font-size: 13px;
+  font-size: calc(13px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 700;
 `;
 
 export const Title = styled.h1`
   margin: 0;
   color: ${({ theme }) => theme.colors.text.title};
-  font-size: clamp(30px, 3.4vw, 38px);
+  font-size: clamp(calc(30px + var(--eclesia-font-size-adjustment, 0px)), 3.4vw, calc(38px + var(--eclesia-font-size-adjustment, 0px)));
   font-weight: 700;
   letter-spacing: -0.045em;
   line-height: 1.08;
@@ -188,7 +188,7 @@ export const Title = styled.h1`
 export const Description = styled.p`
   margin: 12px 0 26px;
   color: ${({ theme }) => theme.colors.text.muted};
-  font-size: 14px;
+  font-size: calc(14px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 400;
   line-height: 1.6;
 `;
@@ -212,13 +212,13 @@ export const FieldTop = styled.div`
 
 export const Label = styled.label`
   color: ${({ theme }) => theme.colors.text.title};
-  font-size: 13px;
+  font-size: calc(13px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 700;
 `;
 
 export const FieldLink = styled.a`
   color: ${({ theme }) => theme.colors.brand.primary};
-  font-size: 12px;
+  font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 700;
 
   &:hover {
@@ -239,7 +239,7 @@ export const Input = styled.input<{ $invalid?: boolean }>`
   background: #f6f8fc;
   color: ${({ theme }) => theme.colors.text.title};
   padding: 0 48px 0 16px;
-  font-size: 14px;
+  font-size: calc(14px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 500;
   transition: 160ms ease;
 
@@ -279,7 +279,7 @@ export const PasswordButton = styled.button`
 export const FieldError = styled.p`
   margin: 0;
   color: #d74f49;
-  font-size: 12px;
+  font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 600;
 `;
 
@@ -295,7 +295,7 @@ export const Submit = styled.button`
   color: #fff;
   background: ${({ theme }) => theme.colors.brand.primary};
   box-shadow: 0 14px 28px rgba(65, 91, 165, 0.22);
-  font-size: 14px;
+  font-size: calc(14px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 700;
   transition: 180ms ease;
 
@@ -330,7 +330,7 @@ export const Alert = styled.div<{ $success?: boolean }>`
   background: ${({ $success }) => ($success ? "#edf9f3" : "#fff4f3")};
   color: ${({ $success }) => ($success ? "#267c5b" : "#b5423c")};
   padding: 12px 14px;
-  font-size: 12px;
+  font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 600;
   line-height: 1.55;
 `;
@@ -340,7 +340,7 @@ export const CheckRow = styled.label`
   align-items: flex-start;
   gap: 10px;
   color: ${({ theme }) => theme.colors.text.muted};
-  font-size: 12px;
+  font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 500;
   line-height: 1.55;
 
@@ -360,7 +360,7 @@ export const SwitchText = styled.p`
   margin: 20px 0 0;
   color: ${({ theme }) => theme.colors.text.muted};
   text-align: center;
-  font-size: 13px;
+  font-size: calc(13px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 500;
 
   a {
@@ -376,7 +376,7 @@ export const SecurityNote = styled.p`
   gap: 8px;
   margin: 28px 0 0;
   color: #98a2b3;
-  font-size: 11px;
+  font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 600;
   svg {
     color: #2f9e73;
@@ -467,7 +467,7 @@ export const VisualBrandText = styled.div`
   strong {
     display: block;
     color: #fff;
-    font-size: 18px;
+    font-size: calc(18px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 700;
   }
 
@@ -475,7 +475,7 @@ export const VisualBrandText = styled.div`
     display: block;
     margin-top: 2px;
     color: rgba(255, 255, 255, 0.72);
-    font-size: 11px;
+    font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 600;
   }
 `;
@@ -505,14 +505,14 @@ export const VisualBadge = styled.span`
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.13);
   padding: 9px 13px;
-  font-size: 12px;
+  font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 700;
 `;
 
 export const VisualTitle = styled.h2`
   max-width: 730px;
   margin: 22px 0 30px;
-  font-size: clamp(36px, 4.2vw, 58px);
+  font-size: clamp(calc(36px + var(--eclesia-font-size-adjustment, 0px)), 4.2vw, calc(58px + var(--eclesia-font-size-adjustment, 0px)));
   font-weight: 700;
   letter-spacing: -0.055em;
   line-height: 1;
@@ -520,7 +520,7 @@ export const VisualTitle = styled.h2`
   @media (max-height: 760px) and (min-width: 1041px) {
     max-width: 620px;
     margin: 16px 0 20px;
-    font-size: clamp(32px, 4vw, 48px);
+    font-size: clamp(calc(32px + var(--eclesia-font-size-adjustment, 0px)), 4vw, calc(48px + var(--eclesia-font-size-adjustment, 0px)));
   }
 `;
 
@@ -544,13 +544,13 @@ export const PreviewTop = styled.div`
   gap: 18px;
   span {
     color: #98a2b3;
-    font-size: 11px;
+    font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 700;
   }
   strong {
     display: block;
     margin-top: 4px;
-    font-size: 16px;
+    font-size: calc(16px + var(--eclesia-font-size-adjustment, 0px));
   }
 `;
 
@@ -579,14 +579,14 @@ export const PreviewStat = styled.div`
   align-items: center;
   color: #415ba5;
   strong {
-    font-size: 15px;
+    font-size: calc(15px + var(--eclesia-font-size-adjustment, 0px));
     color: #101828;
   }
   small {
     display: block;
     margin-top: 2px;
     color: #98a2b3;
-    font-size: 10px;
+    font-size: calc(10px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 500;
   }
 `;

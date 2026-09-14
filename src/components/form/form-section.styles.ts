@@ -35,7 +35,7 @@ export const FormSectionHeader = styled.div<HeaderProps>`
 
 export const FormSectionTitle = styled.h2<HeaderProps>`
   color: ${({ theme, $dark }) => ($dark ? theme.colors.text.inverse : theme.colors.text.title)};
-  font-size: 18px;
+  font-size: calc(18px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 600;
   letter-spacing: -0.02em;
 `;
@@ -43,7 +43,7 @@ export const FormSectionTitle = styled.h2<HeaderProps>`
 export const FormSectionDescription = styled.p<HeaderProps>`
   margin-top: 4px;
   color: ${({ theme, $dark }) => ($dark ? "rgba(255, 255, 255, 0.75)" : theme.colors.text.body)};
-  font-size: 14px;
+  font-size: calc(14px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 400;
   line-height: 24px;
 `;
@@ -78,7 +78,7 @@ export const FormContainerHeader = styled.div`
 
 export const FormContainerTitle = styled.h2`
   color: #2b2f32;
-  font-size: 24px;
+  font-size: calc(24px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 500;
   letter-spacing: -0.02em;
 `;
@@ -86,14 +86,14 @@ export const FormContainerTitle = styled.h2`
 export const FormContainerDescription = styled.p`
   margin-top: 8px;
   color: ${({ theme }) => theme.colors.text.muted};
-  font-size: 14px;
+  font-size: calc(14px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 400;
   line-height: 24px;
 `;
 
 export const StepText = styled.p`
   color: ${({ theme }) => theme.colors.text.muted};
-  font-size: 14px;
+  font-size: calc(14px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 400;
 
   span {

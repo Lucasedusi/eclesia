@@ -26,7 +26,7 @@ export const TitleRow = styled.div`
 
 export const Title = styled.h1`
   color: ${({ theme }) => theme.colors.text.title};
-  font-size: 20px;
+  font-size: calc(20px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 500;
   letter-spacing: -0.03em;
 `;
@@ -36,14 +36,14 @@ export const HeaderBadge = styled.span`
   background: ${({ theme }) => theme.colors.brand.primarySoft};
   color: ${({ theme }) => theme.colors.brand.primary};
   padding: 4px 10px;
-  font-size: 12px;
+  font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 500;
 `;
 
 export const Subtitle = styled.p`
   color: ${({ theme }) => theme.colors.text.muted};
   margin-top: 4px;
-  font-size: 13px;
+  font-size: calc(13px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 400;
   line-height: 24px;
 `;

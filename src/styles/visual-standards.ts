@@ -4,7 +4,7 @@ export const DANGER_GRADIENT =
   "linear-gradient(to right bottom, rgb(221, 0, 49), rgb(195, 0, 47))" as const;
 
 export const LIST_PANEL_SUBTITLE_STYLE = {
-  fontSize: "12px",
+  fontSize: "calc(12px + var(--eclesia-font-size-adjustment, 0px))",
   fontWeight: 400,
 } as const;
 
@@ -13,7 +13,7 @@ export const TABLE_CONTENT_GUTTER = "22px" as const;
 export const TABLE_HEADER_STYLE = {
   background: "#fafbfc",
   color: "#667085",
-  fontSize: "10px",
+  fontSize: "calc(10px + var(--eclesia-font-size-adjustment, 0px))",
   fontWeight: 600,
   letterSpacing: "0.04em",
 } as const;

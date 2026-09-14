@@ -49,7 +49,7 @@ export const Aside = styled.aside`
 
 export const Brand = styled.div`
   position: relative; z-index: 1; display: flex; align-items: center; gap: 12px;
-  strong { font-size: 18px; font-weight: 700; }
+  strong { font-size: calc(18px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 700; }
 `;
 
 export const BrandMark = styled.span`
@@ -59,12 +59,12 @@ export const BrandMark = styled.span`
 
 export const AsideTitle = styled.h1`
   position: relative; z-index: 1; margin: 64px 0 14px;
-  font-size: clamp(28px, 3vw, 42px); font-weight: 700; letter-spacing: -.045em; line-height: 1.05;
+  font-size: clamp(calc(28px + var(--eclesia-font-size-adjustment, 0px)), 3vw, calc(42px + var(--eclesia-font-size-adjustment, 0px))); font-weight: 700; letter-spacing: -.045em; line-height: 1.05;
 `;
 
 export const AsideText = styled.p`
   position: relative; z-index: 1; margin: 0; color: rgba(255,255,255,.72);
-  font-size: 14px; font-weight: 400; line-height: 1.75;
+  font-size: calc(14px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 400; line-height: 1.75;
 `;
 
 export const Steps = styled.ol`
@@ -81,10 +81,10 @@ export const Step = styled.li<{ $active: boolean; $complete: boolean }>`
     display: grid; width: 32px; height: 32px; place-items: center; border-radius: 6px;
     background: ${({ $active, $complete }) => $active || $complete ? "#fff" : "rgba(255,255,255,.12)"};
     color: ${({ $active, $complete }) => $active || $complete ? "#415ba5" : "#fff"};
-    font-size: 12px; font-weight: 700;
+    font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 700;
   }
-  strong { display: block; font-size: 12px; font-weight: 700; }
-  small { display: block; margin-top: 3px; color: rgba(255,255,255,.62); font-size: 10px; font-weight: 500; }
+  strong { display: block; font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 700; }
+  small { display: block; margin-top: 3px; color: rgba(255,255,255,.62); font-size: calc(10px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 500; }
 `;
 
 export const Content = styled.section`
@@ -102,7 +102,7 @@ export const Progress = styled.div`
 `;
 
 export const Counter = styled.span`
-  color: ${({ theme }) => theme.colors.text.muted}; font-size: 12px; font-weight: 700;
+  color: ${({ theme }) => theme.colors.text.muted}; font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 700;
 `;
 
 export const Stage = styled.div`
@@ -110,15 +110,15 @@ export const Stage = styled.div`
 `;
 
 export const Eyebrow = styled.p`
-  margin: 0 0 8px; color: ${({ theme }) => theme.colors.brand.primary}; font-size: 12px; font-weight: 700;
+  margin: 0 0 8px; color: ${({ theme }) => theme.colors.brand.primary}; font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 700;
 `;
 
 export const Title = styled.h2`
-  margin: 0; color: ${({ theme }) => theme.colors.text.title}; font-size: clamp(25px, 3vw, 35px); font-weight: 700; letter-spacing: -.04em;
+  margin: 0; color: ${({ theme }) => theme.colors.text.title}; font-size: clamp(calc(25px + var(--eclesia-font-size-adjustment, 0px)), 3vw, calc(35px + var(--eclesia-font-size-adjustment, 0px))); font-weight: 700; letter-spacing: -.04em;
 `;
 
 export const Description = styled.p`
-  max-width: 700px; margin: 11px 0 30px; color: ${({ theme }) => theme.colors.text.muted}; font-size: 14px; font-weight: 400; line-height: 1.7;
+  max-width: 700px; margin: 11px 0 30px; color: ${({ theme }) => theme.colors.text.muted}; font-size: calc(14px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 400; line-height: 1.7;
 `;
 
 export const Grid = styled.div<{ $columns?: number }>`
@@ -128,14 +128,14 @@ export const Grid = styled.div<{ $columns?: number }>`
 
 export const Field = styled.label`
   display: grid; gap: 8px;
-  > span { color: ${({ theme }) => theme.colors.text.body}; font-size: 12px; font-weight: 700; }
-  > small { color: ${({ theme }) => theme.colors.text.soft}; font-size: 11px; font-weight: 500; }
+  > span { color: ${({ theme }) => theme.colors.text.body}; font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 700; }
+  > small { color: ${({ theme }) => theme.colors.text.soft}; font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 500; }
 `;
 
 export const Input = styled.input<{ $invalid?: boolean }>`
   width: 100%; min-height: 51px; border: 1px solid ${({ $invalid }) => $invalid ? "#f57e77" : "#d9deea"};
   border-radius: 6px; outline: 0; background: #f8f9fc; padding: 0 15px;
-  color: ${({ theme }) => theme.colors.text.title}; font-size: 13px; font-weight: 500; transition: 160ms ease;
+  color: ${({ theme }) => theme.colors.text.title}; font-size: calc(13px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 500; transition: 160ms ease;
   &:focus { border-color: ${({ theme }) => theme.colors.brand.primary}; background: #fff; box-shadow: ${({ theme }) => theme.shadows.focus}; }
 `;
 
@@ -145,7 +145,7 @@ export const FieldError = styled.small`
 
 export const Alert = styled.div`
   margin-bottom: 20px; border: 1px solid #ffd0ce; border-radius: 6px; background: #fff4f3;
-  color: #a9413c; padding: 12px 14px; font-size: 12px; font-weight: 600; line-height: 1.55;
+  color: #a9413c; padding: 12px 14px; font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 600; line-height: 1.55;
 `;
 
 export const Review = styled.div`
@@ -155,8 +155,8 @@ export const Review = styled.div`
 
 export const ReviewCard = styled.article`
   border: 1px solid ${({ theme }) => theme.colors.border.soft}; border-radius: 6px; background: #fafbfc; padding: 18px;
-  strong { display: block; color: ${({ theme }) => theme.colors.text.title}; font-size: 13px; font-weight: 700; }
-  p { margin: 7px 0 0; color: ${({ theme }) => theme.colors.text.muted}; font-size: 12px; font-weight: 500; line-height: 1.6; }
+  strong { display: block; color: ${({ theme }) => theme.colors.text.title}; font-size: calc(13px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 700; }
+  p { margin: 7px 0 0; color: ${({ theme }) => theme.colors.text.muted}; font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 500; line-height: 1.6; }
 `;
 
 export const Footer = styled.div`
@@ -168,7 +168,7 @@ export const Button = styled.button<{ $secondary?: boolean }>`
   border: 1px solid ${({ $secondary }) => $secondary ? "#d9deea" : "transparent"}; border-radius: 6px;
   background: ${({ $secondary, theme }) => $secondary ? "#fff" : theme.colors.brand.primary};
   color: ${({ $secondary, theme }) => $secondary ? theme.colors.text.body : "#fff"}; padding: 0 21px;
-  font-size: 13px; font-weight: 700; transition: 170ms ease;
+  font-size: calc(13px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 700; transition: 170ms ease;
   &:hover:not(:disabled) { transform: translateY(-1px); }
   &:disabled { opacity: .55; cursor: wait; }
 `;

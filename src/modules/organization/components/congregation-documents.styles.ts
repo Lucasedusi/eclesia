@@ -24,14 +24,14 @@ export const SectionHeading = styled.div`
   h3 {
     margin: 0;
     color: #344054;
-    font-size: 13px;
+    font-size: calc(13px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 700;
   }
 
   p {
     margin: 4px 0 0;
     color: #98a2b3;
-    font-size: 10px;
+    font-size: calc(10px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 500;
     line-height: 1.5;
   }
@@ -59,7 +59,7 @@ export const Field = styled.label`
 
   > span {
     color: #475467;
-    font-size: 10px;
+    font-size: calc(10px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 700;
   }
 `;
@@ -73,7 +73,7 @@ const controlStyles = `
   background: #fff;
   padding: 0 13px;
   color: #344054;
-  font-size: 12px;
+  font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 500;
 `;
 
@@ -145,13 +145,13 @@ export const FileDrop = styled.label<{ $invalid?: boolean }>`
 
   strong {
     color: #475467;
-    font-size: 11px;
+    font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 700;
   }
 
   small {
     color: #98a2b3;
-    font-size: 9px;
+    font-size: calc(9px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 500;
     line-height: 1.45;
   }
@@ -166,7 +166,7 @@ export const SelectedFile = styled.span`
   background: #eef2ff;
   color: ${({ theme }) => theme.colors.brand.primary};
   padding: 6px 9px;
-  font-size: 9px;
+  font-size: calc(9px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 700;
 
   svg {
@@ -177,7 +177,7 @@ export const SelectedFile = styled.span`
 
 export const FieldError = styled.small`
   color: #c84a44;
-  font-size: 9px;
+  font-size: calc(9px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 600;
 `;
 
@@ -189,7 +189,7 @@ export const UploadFooter = styled.div`
 
   > small {
     color: #98a2b3;
-    font-size: 9px;
+    font-size: calc(9px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 500;
   }
 
@@ -212,7 +212,7 @@ export const CountBadge = styled.span`
   background: #eef2ff;
   color: ${({ theme }) => theme.colors.brand.primary};
   padding: 0 9px;
-  font-size: 9px;
+  font-size: calc(9px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 700;
 `;
 
@@ -221,7 +221,7 @@ export const LoadingState = styled.div`
   min-height: 150px;
   place-items: center;
   color: #98a2b3;
-  font-size: 10px;
+  font-size: calc(10px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 600;
 
   span {
@@ -271,14 +271,14 @@ export const EmptyState = styled.div`
   h4 {
     margin: 10px 0 0;
     color: #475467;
-    font-size: 12px;
+    font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 700;
   }
 
   p {
     margin: 5px 0 0;
     color: #98a2b3;
-    font-size: 10px;
+    font-size: calc(10px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 500;
   }
 `;
@@ -336,7 +336,7 @@ export const DocumentInfo = styled.div`
     display: block;
     overflow: hidden;
     color: #344054;
-    font-size: 11px;
+    font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 700;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -348,7 +348,7 @@ export const DocumentInfo = styled.div`
     gap: 5px 9px;
     margin-top: 5px;
     color: #98a2b3;
-    font-size: 9px;
+    font-size: calc(9px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 500;
   }
 `;
@@ -432,7 +432,7 @@ export const DeleteText = styled.div`
   background: #fff8f7;
   padding: 13px;
   color: #667085;
-  font-size: 11px;
+  font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 500;
   line-height: 1.6;
 

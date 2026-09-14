@@ -29,14 +29,14 @@ export const TextArea = styled.div``;
 
 export const StatTitle = styled.p`
   color: ${({ theme }) => theme.colors.text.muted};
-  font-size: 14px;
+  font-size: calc(14px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 400;
 `;
 
 export const StatValue = styled.h3`
   margin-top: 12px;
   color: ${({ theme }) => theme.colors.text.title};
-  font-size: 22px;
+  font-size: calc(22px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 600;
   letter-spacing: -0.03em;
 `;
@@ -70,7 +70,7 @@ export const Footer = styled.div`
 
 export const Description = styled.p`
   color: ${({ theme }) => theme.colors.text.muted};
-  font-size: 12px;
+  font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 400;
 `;
 
@@ -79,6 +79,6 @@ export const Variation = styled.span`
   background: ${({ theme }) => theme.colors.surface.muted};
   color: ${({ theme }) => theme.colors.text.muted};
   padding: 4px 10px;
-  font-size: 12px;
+  font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 500;
 `;

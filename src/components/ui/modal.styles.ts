@@ -97,14 +97,14 @@ export const TitleArea = styled.div`
 
 export const Title = styled.h2`
   color: ${({ theme }) => theme.colors.text.title};
-  font-size: 18px;
+  font-size: calc(18px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 600;
   letter-spacing: -0.02em;
 `;
 
 export const Description = styled.p`
   color: ${({ theme }) => theme.colors.text.soft};
-  font-size: 12px;
+  font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 400;
 `;
 
@@ -169,7 +169,7 @@ export const LoadingContent = styled.div`
   justify-content: center;
   gap: 12px;
   color: ${({ theme }) => theme.colors.text.muted};
-  font-size: 13px;
+  font-size: calc(13px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 600;
 
   svg {

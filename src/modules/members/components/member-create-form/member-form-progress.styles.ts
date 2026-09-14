@@ -24,7 +24,7 @@ export const ProgressSummary = styled.div`
 
 export const ProgressLabel = styled.p`
   color: ${({ theme }) => theme.colors.text.muted};
-  font-size: 12px;
+  font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -32,7 +32,7 @@ export const ProgressLabel = styled.p`
 
 export const ProgressTitle = styled.h2`
   color: ${({ theme }) => theme.colors.text.title};
-  font-size: 16px;
+  font-size: calc(16px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 500;
   letter-spacing: -0.03em;
 `;
@@ -46,7 +46,7 @@ export const ProgressPercent = styled.span`
   border-radius: ${({ theme }) => theme.radius.sm};
   background: ${({ theme }) => theme.colors.brand.primarySoft};
   color: ${({ theme }) => theme.colors.brand.primary};
-  font-size: 13px;
+  font-size: calc(13px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 700;
 `;
 
@@ -127,7 +127,7 @@ export const StepContent = styled.div`
 
 export const StepTitle = styled.h3`
   color: ${({ theme }) => theme.colors.text.title};
-  font-size: 13px;
+  font-size: calc(13px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 500;
   letter-spacing: -0.02em;
 `;
@@ -135,7 +135,7 @@ export const StepTitle = styled.h3`
 export const StepDescription = styled.p`
   margin-top: 3px;
   color: ${({ theme }) => theme.colors.text.muted};
-  font-size: 12px;
+  font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 400;
   line-height: 18px;
 `;

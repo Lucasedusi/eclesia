@@ -67,7 +67,7 @@ export const SearchInput = styled.input`
   color: ${({ theme }) => theme.colors.text.title};
   outline: none;
   padding: 0 16px 0 44px;
-  font-size: 14px;
+  font-size: calc(14px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 400;
   transition:
     border-color ${({ theme }) => theme.transitions.default},
@@ -126,7 +126,7 @@ export const TableHead = styled.th`
   text-align: left;
   white-space: nowrap;
   color: ${({ theme }) => theme.colors.text.muted};
-  font-size: 12px;
+  font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 500;
 `;
 
@@ -147,7 +147,7 @@ export const TableCell = styled.td<TableCellProps>`
   height: 48px;
   padding: 0 20px;
   white-space: nowrap;
-  font-size: 13px;
+  font-size: calc(13px + var(--eclesia-font-size-adjustment, 0px));
 
   ${({ $strong, theme }) =>
     $strong

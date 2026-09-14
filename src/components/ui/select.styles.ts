@@ -10,7 +10,7 @@ export const FieldWrapper = styled.div`
 `;
 
 export const FieldLabel = styled.label`
-  font-size: 13px;
+  font-size: calc(13px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 400;
   color: ${({ theme }) => theme.colors.text.label};
   line-height: 1.2;
@@ -25,7 +25,7 @@ export const SelectControl = styled.select<{ $hasError?: boolean }>`
       $hasError ? "#F57E77" : theme.colors.border.default};
   background: ${({ theme }) => theme.colors.surface.card};
   padding: 0 42px 0 14px;
-  font-size: 13px;
+  font-size: calc(13px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 400;
   color: ${({ theme }) => theme.colors.text.title};
   outline: none;
@@ -70,7 +70,7 @@ export const SelectBox = styled.div`
 
 export const ErrorText = styled.p`
   margin: 0;
-  font-size: 12px;
+  font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 400;
   color: #f57e77;
   line-height: 1.4;

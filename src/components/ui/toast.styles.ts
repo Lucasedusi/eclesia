@@ -36,6 +36,10 @@ const toastIn = keyframes`
 `;
 
 export const Viewport = styled.div`
+  &.public-flow-toast-viewport {
+    --eclesia-font-size-adjustment: 0px;
+  }
+
   position: fixed;
   z-index: 1200;
   top: 20px;
@@ -161,13 +165,13 @@ export const ToastTitle = styled.p`
   align-self: center;
   min-width: 0;
   margin: 0;
-  font-size: 14px;
+  font-size: calc(14px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 700;
   letter-spacing: -0.01em;
   line-height: 1.35;
 
   @media (max-width: 640px) {
-    font-size: 12px;
+    font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px));
   }
 `;
 
@@ -177,7 +181,7 @@ export const ToastDescription = styled.p<{ $danger?: boolean }>`
   margin: 12px -14px -1px;
   border-top: 1px solid rgba(255, 255, 255, 0.22);
   padding: 12px 14px 0;
-  font-size: 13px;
+  font-size: calc(13px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 500;
   line-height: 1.5;
   opacity: 0.94;
@@ -190,7 +194,7 @@ export const ToastDescription = styled.p<{ $danger?: boolean }>`
     padding: 0;
     color: ${({ theme, $danger }) =>
       $danger ? theme.colors.text.inverse : theme.colors.text.body};
-    font-size: 10px;
+    font-size: calc(10px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 500;
     line-height: 1.35;
   }

@@ -295,7 +295,7 @@ export default async function Home() {
                             {activity.title}
                           </h3>
 
-                          <span className="shrink-0 rounded-full bg-[#f6f7f9] px-2.5 py-1 text-[11px] font-bold text-slate-500">
+                          <span className="shrink-0 rounded-full bg-[#f6f7f9] px-2.5 py-1 text-[calc(11px+var(--eclesia-font-size-adjustment))] font-bold text-slate-500">
                             {activity.status}
                           </span>
                         </div>

@@ -49,7 +49,7 @@ export const Tab = styled(Link)<{ $active: boolean }>`
     $active ? theme.colors.brand.primary : "transparent"};
   color: ${({ $active, theme }) => ($active ? "#fff" : theme.colors.text.body)};
   padding: 0 16px;
-  font-size: 11px;
+  font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 700;
   white-space: nowrap;
   transition: 160ms ease;
@@ -116,14 +116,14 @@ export const Stat = styled.article<{
   strong {
     display: block;
     color: #101828;
-    font-size: 19px;
+    font-size: calc(19px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 700;
   }
   small {
     display: block;
     margin-top: 2px;
     color: #7c879b;
-    font-size: 9px;
+    font-size: calc(9px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 600;
     line-height: 1.35;
   }
@@ -148,7 +148,7 @@ export const PanelHeader = styled.header`
   h2 {
     margin: 0;
     color: #101828;
-    font-size: 16px;
+    font-size: calc(16px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 700;
   }
   p {
@@ -211,7 +211,7 @@ export const Control = styled.input<{ $invalid?: boolean }>`
   background: #f8f9fc;
   padding: 0 13px;
   color: #344054;
-  font-size: 11px;
+  font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 500;
   transition: 150ms ease;
 
@@ -235,7 +235,7 @@ export const SelectControl = styled.select<{ $invalid?: boolean }>`
   background: #f8f9fc;
   padding: 0 12px;
   color: #344054;
-  font-size: 11px;
+  font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 600;
 
   &:focus {
@@ -331,7 +331,7 @@ export const Table = styled.table`
     border-bottom: 1px solid #f0f2f5;
     padding: 14px 15px;
     color: #667085;
-    font-size: 11px;
+    font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 500;
     line-height: 1.45;
     vertical-align: middle;
@@ -355,7 +355,7 @@ export const PrimaryCell = styled.div`
     align-items: center;
     gap: 7px;
     color: #344054;
-    font-size: 12px;
+    font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 700;
   }
   small {
@@ -364,7 +364,7 @@ export const PrimaryCell = styled.div`
     overflow: hidden;
     margin-top: 4px;
     color: #98a2b3;
-    font-size: 9px;
+    font-size: calc(9px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 500;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -379,7 +379,7 @@ export const HeadquartersBadge = styled.span`
   background: #eef2ff;
   color: ${({ theme }) => theme.colors.brand.primary};
   padding: 0 7px;
-  font-size: 8px;
+  font-size: calc(8px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 700;
 `;
 
@@ -393,7 +393,7 @@ export const StatusBadge = styled.span<{ $status: "ACTIVE" | "INACTIVE" }>`
     $status === "ACTIVE" ? "#e9f8f0" : "#f2f4f7"};
   color: ${({ $status }) => ($status === "ACTIVE" ? "#267c5b" : "#667085")};
   padding: 0 9px;
-  font-size: 9px;
+  font-size: calc(9px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 700;
 
   &::before {
@@ -436,7 +436,7 @@ export const ActionMenu = styled.div`
     padding: 9px;
     color: #475467;
     text-align: left;
-    font-size: 11px;
+    font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 600;
 
     &:hover,
@@ -483,7 +483,7 @@ export const PositionDetailsGrid = styled.div`
   small {
     display: block;
     color: #98a2b3;
-    font-size: 9px;
+    font-size: calc(9px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 600;
   }
 
@@ -491,7 +491,7 @@ export const PositionDetailsGrid = styled.div`
     display: block;
     margin-top: 5px;
     color: #344054;
-    font-size: 11px;
+    font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 600;
     line-height: 1.5;
   }
@@ -591,7 +591,7 @@ export const MobileMeta = styled.dl`
   }
   dt {
     color: #98a2b3;
-    font-size: 8px;
+    font-size: calc(8px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 700;
     text-transform: uppercase;
   }
@@ -599,7 +599,7 @@ export const MobileMeta = styled.dl`
     overflow: hidden;
     margin: 4px 0 0;
     color: #475467;
-    font-size: 10px;
+    font-size: calc(10px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 600;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -632,14 +632,14 @@ export const Empty = styled.div`
   h3 {
     margin: 14px 0 0;
     color: #344054;
-    font-size: 14px;
+    font-size: calc(14px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 700;
   }
   p {
     max-width: 430px;
     margin: 7px 0 18px;
     color: #98a2b3;
-    font-size: 11px;
+    font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 500;
     line-height: 1.6;
   }
@@ -653,7 +653,7 @@ export const Pagination = styled.footer`
   border-top: 1px solid #edf0f4;
   padding: 13px 18px;
   color: #98a2b3;
-  font-size: 9px;
+  font-size: calc(9px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 600;
 
   div {
@@ -681,7 +681,7 @@ export const Pagination = styled.footer`
 export const Form = styled.form`
   display: grid;
   gap: 18px;
-  font-size: 11px;
+  font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
 `;
 
 export const FormIntro = styled.div`
@@ -689,7 +689,7 @@ export const FormIntro = styled.div`
   padding: 13px 15px;
   background: ${({ theme }) => theme.colors.state.infoSolfSecundary};
   color: ${({ theme }) => theme.colors.brand.primary};
-  font-size: 11px;
+  font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 500;
   line-height: 1.55;
 `;
@@ -715,12 +715,12 @@ export const Field = styled.label<{ $span?: number }>`
 
   > span {
     color: #475467;
-    font-size: 11px;
+    font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 700;
   }
   > small {
     color: #98a2b3;
-    font-size: 9px;
+    font-size: calc(9px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 500;
   }
 
@@ -738,7 +738,7 @@ export const Textarea = styled.textarea<{ $invalid?: boolean }>`
   background: #f8f9fc;
   padding: 12px 13px;
   color: #344054;
-  font-size: 11px;
+  font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 500;
   line-height: 1.55;
   resize: vertical;
@@ -753,7 +753,7 @@ export const FieldError = styled.small`
   display: block;
   min-height: 16px;
   color: #c84a44 !important;
-  font-size: 11px !important;
+  font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px)) !important;
   font-weight: 600 !important;
 `;
 
@@ -763,7 +763,7 @@ export const FormAlert = styled.div`
   background: #fff4f3;
   color: #a9413c;
   padding: 11px 13px;
-  font-size: 11px;
+  font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 600;
   line-height: 1.55;
 `;
@@ -796,7 +796,7 @@ export const Step = styled.li<{ $active: boolean; $complete: boolean }>`
   padding: 9px;
   color: ${({ $active, $complete }) =>
     $active || $complete ? "#415ba5" : "#98a2b3"};
-  font-size: 11px;
+  font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 700;
 
   span {
@@ -817,13 +817,13 @@ export const SectionTitle = styled.div`
   h3 {
     margin: 0;
     color: #344054;
-    font-size: 14px;
+    font-size: calc(14px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 700;
   }
   p {
     margin: 5px 0 0;
     color: #98a2b3;
-    font-size: 11px;
+    font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 500;
     line-height: 1.5;
   }
@@ -847,13 +847,13 @@ export const ReviewCard = styled.div`
   > strong {
     display: block;
     color: #344054;
-    font-size: 11px;
+    font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 700;
   }
   p {
     margin: 6px 0 0;
     color: #667085;
-    font-size: 11px;
+    font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 500;
     line-height: 1.6;
   }
@@ -866,7 +866,7 @@ export const ReviewCardHeader = styled.div`
 
   > strong {
     color: #344054;
-    font-size: 11px;
+    font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 700;
   }
 `;
@@ -915,7 +915,7 @@ export const FieldHeader = styled.span`
 export const FieldStatus = styled.small<{ $tone: "success" | "danger" }>`
   overflow: hidden;
   color: ${({ $tone }) => ($tone === "success" ? "#25805d" : "#b42318")};
-  font-size: 9px;
+  font-size: calc(9px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -937,7 +937,7 @@ export const InlineFieldStatus = styled.small`
   align-items: center;
   gap: 5px;
   color: ${({ theme }) => theme.colors.brand.primary};
-  font-size: 9px;
+  font-size: calc(9px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 700;
   transform: translateY(-50%);
 
@@ -1010,14 +1010,14 @@ export const ErrorState = styled.div`
   h2 {
     margin: 14px 0 0;
     color: #344054;
-    font-size: 15px;
+    font-size: calc(15px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 700;
   }
   p {
     max-width: 470px;
     margin: 7px 0 18px;
     color: #98a2b3;
-    font-size: 11px;
+    font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 500;
     line-height: 1.6;
   }

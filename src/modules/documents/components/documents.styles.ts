@@ -54,8 +54,8 @@ export const Stat = styled.button<{ $active?: boolean; $tone?: "success" | "warn
       $tone === "success" ? "#25805d" : $tone === "warning" ? "#a86d14" : $tone === "danger" ? "#c84a44" : theme.colors.brand.primary};
   }
 
-  strong { display: block; color: #344054; font-size: 18px; font-weight: 700; line-height: 1; }
-  small { display: block; margin-top: 5px; color: #98a2b3; font-size: 9px; font-weight: 600; }
+  strong { display: block; color: #344054; font-size: calc(18px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 700; line-height: 1; }
+  small { display: block; margin-top: 5px; color: #98a2b3; font-size: calc(9px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 600; }
 `;
 
 export const Workspace = styled.div`
@@ -106,8 +106,8 @@ export const RailHeading = styled.div`
   margin-bottom: 12px;
 
   div { min-width: 0; }
-  strong { display: block; color: #344054; font-size: 11px; font-weight: 700; }
-  small { display: block; margin-top: 3px; color: #98a2b3; font-size: 8px; font-weight: 600; }
+  strong { display: block; color: #344054; font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 700; }
+  small { display: block; margin-top: 3px; color: #98a2b3; font-size: calc(8px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 600; }
 `;
 
 export const TinyButton = styled.button`
@@ -173,8 +173,8 @@ export const RailIcon = styled.span<{ $color?: string }>`
 
 export const RailText = styled.span`
   min-width: 0;
-  strong { display: block; overflow: hidden; font-size: 10px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
-  small { display: block; overflow: hidden; margin-top: 3px; color: #98a2b3; font-size: 8px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
+  strong { display: block; overflow: hidden; font-size: calc(10px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+  small { display: block; overflow: hidden; margin-top: 3px; color: #98a2b3; font-size: calc(8px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
 `;
 
 export const RailCount = styled.span`
@@ -182,14 +182,14 @@ export const RailCount = styled.span`
   background: #fff;
   padding: 3px 6px;
   color: #98a2b3;
-  font-size: 8px;
+  font-size: calc(8px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 700;
 `;
 
 export const RailEmpty = styled.p`
   margin: 14px 4px;
   color: #98a2b3;
-  font-size: 9px;
+  font-size: calc(9px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 500;
   line-height: 1.6;
 `;
@@ -209,7 +209,7 @@ export const Breadcrumb = styled.nav`
   gap: 6px;
   margin-bottom: 13px;
   color: #98a2b3;
-  font-size: 9px;
+  font-size: calc(9px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 600;
 
   button { border: 0; background: transparent; padding: 0; color: inherit; cursor: pointer; }
@@ -247,7 +247,7 @@ const control = css`
   padding: 0 11px;
   color: #475467;
   font: inherit;
-  font-size: 10px;
+  font-size: calc(10px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 600;
 
   &:focus { border-color: ${({ theme }) => theme.colors.brand.primary}; box-shadow: ${({ theme }) => theme.shadows.focus}; }
@@ -289,8 +289,8 @@ export const Field = styled.label`
   gap: 6px;
   min-width: 0;
 
-  > span { color: #667085; font-size: 9px; font-weight: 700; }
-  > small { color: #c84a44; font-size: 8px; font-weight: 600; }
+  > span { color: #667085; font-size: calc(9px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 700; }
+  > small { color: #c84a44; font-size: calc(8px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 600; }
 `;
 
 export const FilterButton = styled.button<{ $active?: boolean }>`
@@ -304,7 +304,7 @@ export const FilterButton = styled.button<{ $active?: boolean }>`
   background: ${({ $active }) => ($active ? "#f1f3ff" : "#fff")};
   padding: 0 12px;
   color: ${({ $active }) => ($active ? "#415BA5" : "#667085")};
-  font-size: 10px;
+  font-size: calc(10px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 700;
   cursor: pointer;
   svg { width: 14px; height: 14px; }
@@ -316,8 +316,8 @@ export const ListHeader = styled.div`
   justify-content: space-between;
   gap: 10px;
   margin: 13px 0 9px;
-  strong { color: #344054; font-size: 11px; font-weight: 700; }
-  span { color: #98a2b3; font-size: 9px; font-weight: 600; }
+  strong { color: #344054; font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 700; }
+  span { color: #98a2b3; font-size: calc(9px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 600; }
 `;
 
 export const TableWrap = styled.div`
@@ -333,8 +333,8 @@ export const Table = styled.table`
   min-width: 560px;
   border-collapse: collapse;
 
-  th { background: #fafbfc; padding: 10px; color: #98a2b3; font-size: 8px; font-weight: 700; letter-spacing: .03em; text-align: left; text-transform: uppercase; }
-  td { border-top: 1px solid #edf0f4; padding: 11px 10px; color: #667085; font-size: 9px; font-weight: 500; vertical-align: middle; }
+  th { background: #fafbfc; padding: 10px; color: #98a2b3; font-size: calc(8px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 700; letter-spacing: .03em; text-align: left; text-transform: uppercase; }
+  td { border-top: 1px solid #edf0f4; padding: 11px 10px; color: #667085; font-size: calc(9px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 500; vertical-align: middle; }
   th:nth-child(2), td:nth-child(2) { width: 150px; }
   th:nth-child(3), td:nth-child(3) { width: 96px; }
   th:last-child, td:last-child { width: 52px; text-align: right; }
@@ -347,8 +347,8 @@ export const DocumentCell = styled.div`
   align-items: center;
   gap: 9px;
   min-width: 220px;
-  strong { display: block; overflow: hidden; max-width: 270px; color: #344054; font-size: 10px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
-  small { display: block; overflow: hidden; max-width: 270px; margin-top: 3px; color: #98a2b3; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+  strong { display: block; overflow: hidden; max-width: 270px; color: #344054; font-size: calc(10px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+  small { display: block; overflow: hidden; max-width: 270px; margin-top: 3px; color: #98a2b3; font-size: calc(8px + var(--eclesia-font-size-adjustment, 0px)); text-overflow: ellipsis; white-space: nowrap; }
 `;
 
 export const FileIcon = styled.span<{ $kind?: "pdf" | "image" | "sheet" | "word" }>`
@@ -363,8 +363,8 @@ export const FileIcon = styled.span<{ $kind?: "pdf" | "image" | "sheet" | "word"
 `;
 
 export const PathCell = styled.div`
-  strong { display: block; color: #475467; font-size: 9px; font-weight: 700; }
-  small { display: block; margin-top: 3px; color: #98a2b3; font-size: 8px; }
+  strong { display: block; color: #475467; font-size: calc(9px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 700; }
+  small { display: block; margin-top: 3px; color: #98a2b3; font-size: calc(8px + var(--eclesia-font-size-adjustment, 0px)); }
 `;
 
 export const Tags = styled.div`
@@ -382,7 +382,7 @@ export const Tag = styled.span`
   background: #f1f3ff;
   padding: 0 7px;
   color: #5267ad;
-  font-size: 8px;
+  font-size: calc(8px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 700;
 `;
 
@@ -394,7 +394,7 @@ export const Status = styled.span<{ $status: "ACTIVE" | "ARCHIVED" | "DELETED" }
   background: ${({ $status }) => $status === "ACTIVE" ? "#eaf8f1" : $status === "ARCHIVED" ? "#fff6df" : "#fff0ef"};
   padding: 0 8px;
   color: ${({ $status }) => $status === "ACTIVE" ? "#25805d" : $status === "ARCHIVED" ? "#9b6414" : "#c84a44"};
-  font-size: 8px;
+  font-size: calc(8px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 700;
 `;
 
@@ -445,7 +445,7 @@ export const ActionMenuItem = styled.button<{ $danger?: boolean }>`
   background: transparent;
   padding: 0 10px;
   color: ${({ $danger }) => ($danger ? "#c84a44" : "#475467")};
-  font-size: 9px;
+  font-size: calc(9px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 700;
   cursor: pointer;
   text-align: left;
@@ -500,8 +500,8 @@ export const Empty = styled.div`
   text-align: center;
   > div { display: grid; justify-items: center; max-width: 420px; }
   > div > span { display: grid; width: 50px; height: 50px; place-items: center; border-radius: 6px; background: #eef2ff; color: ${({ theme }) => theme.colors.brand.primary}; }
-  h3 { margin: 13px 0 0; color: #344054; font-size: 14px; font-weight: 700; }
-  p { margin: 7px 0 15px; color: #98a2b3; font-size: 10px; font-weight: 500; line-height: 1.6; }
+  h3 { margin: 13px 0 0; color: #344054; font-size: calc(14px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 700; }
+  p { margin: 7px 0 15px; color: #98a2b3; font-size: calc(10px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 500; line-height: 1.6; }
 `;
 
 export const Pagination = styled.div`
@@ -511,7 +511,7 @@ export const Pagination = styled.div`
   gap: 10px;
   margin-top: 12px;
   color: #98a2b3;
-  font-size: 9px;
+  font-size: calc(9px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 600;
   > div { display: flex; gap: 6px; }
 `;
@@ -555,7 +555,7 @@ export const Segmented = styled.div`
   border-radius: 6px;
   background: #f8f9fb;
   padding: 3px;
-  button { min-height: 29px; border: 0; border-radius: 6px; background: transparent; padding: 0 10px; color: #667085; font-size: 9px; font-weight: 700; cursor: pointer; }
+  button { min-height: 29px; border: 0; border-radius: 6px; background: transparent; padding: 0 10px; color: #667085; font-size: calc(9px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 700; cursor: pointer; }
   button[data-active="true"] { background: #fff; color: #415BA5; box-shadow: 0 2px 7px rgb(27 42 74 / 10%); }
 `;
 
@@ -575,14 +575,14 @@ export const ContainerStateTabs = styled.div`
     background: #fff;
     padding: 0 10px;
     color: #667085;
-    font-size: 9px;
+    font-size: calc(9px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 700;
     cursor: pointer;
   }
 
   > button:hover { border-color: #cbd2e4; background: #fafbfe; }
   > button[data-active="true"] { border-color: #b8c2e5; background: #f1f3ff; color: #415BA5; }
-  > button span { display: grid; min-width: 19px; height: 19px; place-items: center; border-radius: 6px; background: #edf0f5; color: #667085; font-size: 8px; }
+  > button span { display: grid; min-width: 19px; height: 19px; place-items: center; border-radius: 6px; background: #edf0f5; color: #667085; font-size: calc(8px + var(--eclesia-font-size-adjustment, 0px)); }
   > button[data-active="true"] span { background: #dfe4fb; color: #415BA5; }
 `;
 
@@ -600,7 +600,7 @@ export const ManagerEmpty = styled.div`
   border: 1px dashed #dfe3eb;
   border-radius: 6px;
   color: #98a2b3;
-  font-size: 9px;
+  font-size: calc(9px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 600;
   text-align: center;
 `;
@@ -614,8 +614,8 @@ export const ManagerItem = styled.article`
   border-radius: 6px;
   padding: 10px;
   > div { min-width: 0; }
-  strong { display: block; overflow: hidden; color: #344054; font-size: 10px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
-  p { overflow: hidden; margin: 3px 0 0; color: #98a2b3; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+  strong { display: block; overflow: hidden; color: #344054; font-size: calc(10px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+  p { overflow: hidden; margin: 3px 0 0; color: #98a2b3; font-size: calc(8px + var(--eclesia-font-size-adjustment, 0px)); text-overflow: ellipsis; white-space: nowrap; }
 `;
 
 export const ManagerActions = styled.div`
@@ -655,8 +655,8 @@ export const DropZone = styled.label`
   input { position: absolute; width: 1px; height: 1px; opacity: 0; }
   div { display: grid; justify-items: center; gap: 6px; }
   svg { width: 27px; height: 27px; color: ${({ theme }) => theme.colors.brand.primary}; }
-  strong { color: #475467; font-size: 11px; font-weight: 700; }
-  small { max-width: 430px; color: #98a2b3; font-size: 9px; font-weight: 500; line-height: 1.5; }
+  strong { color: #475467; font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 700; }
+  small { max-width: 430px; color: #98a2b3; font-size: calc(9px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 500; line-height: 1.5; }
 `;
 
 export const UploadList = styled.div`
@@ -674,8 +674,8 @@ export const UploadItem = styled.div`
   border: 1px solid #e8ebf0;
   border-radius: 6px;
   padding: 9px;
-  strong { display: block; overflow: hidden; color: #475467; font-size: 9px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
-  small { display: block; margin-top: 3px; color: #98a2b3; font-size: 8px; }
+  strong { display: block; overflow: hidden; color: #475467; font-size: calc(9px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+  small { display: block; margin-top: 3px; color: #98a2b3; font-size: calc(8px + var(--eclesia-font-size-adjustment, 0px)); }
 `;
 
 export const Progress = styled.div`
@@ -696,7 +696,7 @@ export const Preview = styled.div`
   background: #f7f8fa;
   iframe { width: 100%; height: 420px; border: 0; background: #fff; }
   img { display: block; max-width: 100%; max-height: 420px; object-fit: contain; }
-  > div { display: grid; justify-items: center; gap: 9px; padding: 25px; color: #98a2b3; font-size: 10px; font-weight: 600; text-align: center; }
+  > div { display: grid; justify-items: center; gap: 9px; padding: 25px; color: #98a2b3; font-size: calc(10px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 600; text-align: center; }
 `;
 
 export const DetailGrid = styled.dl`
@@ -705,8 +705,8 @@ export const DetailGrid = styled.dl`
   gap: 10px;
   margin: 0;
   > div { min-width: 0; border: 1px solid #edf0f4; border-radius: 6px; background: #fcfcfd; padding: 10px; }
-  dt { color: #98a2b3; font-size: 8px; font-weight: 700; text-transform: uppercase; }
-  dd { overflow-wrap: anywhere; margin: 5px 0 0; color: #475467; font-size: 10px; font-weight: 600; line-height: 1.5; }
+  dt { color: #98a2b3; font-size: calc(8px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 700; text-transform: uppercase; }
+  dd { overflow-wrap: anywhere; margin: 5px 0 0; color: #475467; font-size: calc(10px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 600; line-height: 1.5; }
   @media (max-width: 650px) { grid-template-columns: 1fr 1fr; }
   @media (max-width: 430px) { grid-template-columns: 1fr; }
 `;
@@ -718,6 +718,6 @@ export const Confirmation = styled.div`
   padding: 10px 4px;
   text-align: center;
   > span { display: grid; width: 48px; height: 48px; place-items: center; border-radius: 6px; background: #fff0ef; color: #c84a44; }
-  p { max-width: 460px; margin: 0; color: #667085; font-size: 11px; font-weight: 500; line-height: 1.6; }
+  p { max-width: 460px; margin: 0; color: #667085; font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 500; line-height: 1.6; }
   strong { color: #344054; }
 `;

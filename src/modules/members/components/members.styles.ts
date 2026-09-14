@@ -63,14 +63,14 @@ export const Stat = styled.article<{ $tone?: string }>`
   strong {
     display: block;
     color: #101828;
-    font-size: 19px;
+    font-size: calc(19px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 700;
   }
   small {
     display: block;
     margin-top: 2px;
     color: #7c879b;
-    font-size: 9px;
+    font-size: calc(9px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 600;
   }
 `;
@@ -91,7 +91,7 @@ export const PanelHeader = styled.header`
   h2 {
     margin: 0;
     color: #101828;
-    font-size: 16px;
+    font-size: calc(16px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 700;
   }
   p {
@@ -129,7 +129,7 @@ export const HeaderActionLink = styled(Link)<{
     $primary ? theme.colors.brand.primary : "#ffffff"};
   padding: ${({ $iconOnly }) => ($iconOnly ? "0" : "0 22px")};
   color: ${({ $primary }) => ($primary ? "#ffffff" : "#475467")};
-  font-size: 13px;
+  font-size: calc(13px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 600;
   line-height: 1;
   transition: 150ms ease;
@@ -213,7 +213,7 @@ export const AdvancedFiltersButton = styled.button<{ $open: boolean }>`
   padding: 0 15px;
   color: ${({ $open, theme }) =>
     $open ? theme.colors.brand.primary : "#475467"};
-  font-size: 11px;
+  font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 700;
   white-space: nowrap;
   transition: 150ms ease;
@@ -294,7 +294,7 @@ export const SearchInlineStatus = styled.small`
   gap: 5px;
   overflow: hidden;
   color: #8a5d13;
-  font-size: 8px;
+  font-size: calc(8px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -326,7 +326,7 @@ export const Control = styled.input<{
   background: #f8f9fc;
   padding: 0 13px;
   color: #344054;
-  font-size: 12px;
+  font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 500;
   padding-right: ${({ $withInlineStatus, $withClear }) =>
     $withInlineStatus ? "190px" : $withClear ? "45px" : "13px"};
@@ -374,7 +374,7 @@ export const Select = styled.select`
   background: #f8f9fc;
   padding: 0 12px;
   color: #344054;
-  font-size: 11px;
+  font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 600;
   &:focus {
     border-color: ${({ theme }) => theme.colors.brand.primary};
@@ -415,7 +415,7 @@ export const Table = styled.table`
     border-bottom: 1px solid #f0f2f5;
     padding: 13px 14px;
     color: #475467;
-    font-size: 11px;
+    font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 500;
     vertical-align: middle;
   }
@@ -440,13 +440,13 @@ export const Person = styled.div`
     border-radius: 6px;
     background: #eef2ff;
     color: ${({ theme }) => theme.colors.brand.primary};
-    font-size: 11px;
+    font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 700;
   }
   strong {
     display: block;
     color: #101828;
-    font-size: 11px;
+    font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 700;
     text-transform: uppercase;
   }
@@ -454,7 +454,7 @@ export const Person = styled.div`
     display: block;
     margin-top: 2px;
     color: #98a2b3;
-    font-size: 9px;
+    font-size: calc(9px + var(--eclesia-font-size-adjustment, 0px));
   }
 `;
 export const Status = styled.span<{ $status: string }>`
@@ -462,7 +462,7 @@ export const Status = styled.span<{ $status: string }>`
   align-items: center;
   border-radius: 6px;
   padding: 5px 8px;
-  font-size: 8px;
+  font-size: calc(8px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 700;
   text-transform: uppercase;
   background: ${({ $status }) =>
@@ -542,11 +542,11 @@ export const MobileMeta = styled.div`
   gap: 10px;
   margin-top: 13px;
   color: #667085;
-  font-size: 10px;
+  font-size: calc(10px + var(--eclesia-font-size-adjustment, 0px));
   span {
     display: block;
     color: #98a2b3;
-    font-size: 8px;
+    font-size: calc(8px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 700;
     text-transform: uppercase;
   }
@@ -564,7 +564,7 @@ export const Pagination = styled.footer`
   border-top: 1px solid #edf0f4;
   padding: 14px 20px;
   color: #667085;
-  font-size: 10px;
+  font-size: calc(10px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 600;
   > div {
     display: flex;
@@ -586,11 +586,11 @@ export const Empty = styled.div`
   h3 {
     margin: 10px 0 4px;
     color: #101828;
-    font-size: 15px;
+    font-size: calc(15px + var(--eclesia-font-size-adjustment, 0px));
   }
   p {
     margin: 0;
-    font-size: 11px;
+    font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
   }
 `;
 export const Loading = styled.div`
@@ -622,7 +622,7 @@ export const MenuButton = styled.button`
   background: #fff;
   padding: 10px 12px;
   color: #475467;
-  font-size: 10px;
+  font-size: calc(10px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 600;
   cursor: pointer;
   svg {
@@ -642,7 +642,7 @@ export const FormIntro = styled.div`
   background: ${({ theme }) => theme.colors.state.infoSolfSecundary};
   padding: 13px 15px;
   color: ${({ theme }) => theme.colors.brand.primary};
-  font-size: 10px;
+  font-size: calc(10px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 500;
   line-height: 1.55;
 `;
@@ -660,7 +660,7 @@ export const Field = styled.label<{ $span?: number }>`
   gap: 7px;
   > span {
     color: #475467;
-    font-size: 10px;
+    font-size: calc(10px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 700;
   }
   @media (max-width: 650px) {
@@ -687,7 +687,7 @@ export const Textarea = styled.textarea`
   background: #f8f9fc;
   padding: 12px 13px;
   color: #344054;
-  font-size: 12px;
+  font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 500;
   line-height: 1.55;
   &:focus {

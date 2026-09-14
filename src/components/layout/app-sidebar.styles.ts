@@ -44,7 +44,7 @@ export const BrandName = styled.h1`
   margin: 0;
   overflow: hidden;
   color: #ffffff;
-  font-size: 20px;
+  font-size: calc(20px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 700;
   line-height: 1;
   letter-spacing: -0.02em;
@@ -154,7 +154,7 @@ export const NavItem = styled(Link)<{ $active: boolean; $collapsed: boolean }>`
     $active ? theme.colors.sidebar.itemHover : theme.colors.sidebar.item};
   background: ${({ $active, theme }) =>
     $active ? theme.colors.sidebar.hoverBackground : "transparent"};
-  font-size: 15px;
+  font-size: calc(15px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 500;
   line-height: 1;
   text-decoration: none;
@@ -215,7 +215,7 @@ export const Tooltip = styled.span`
   color: #ffffff;
   background: #020617;
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.28);
-  font-size: 12px;
+  font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 600;
   line-height: 1;
   white-space: nowrap;
@@ -256,7 +256,7 @@ export const FooterText = styled.div`
 export const FooterEyebrow = styled.p`
   margin: 0;
   color: ${({ theme }) => theme.colors.sidebar.item};
-  font-size: 12px;
+  font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 600;
   line-height: 1.2;
 `;
@@ -265,7 +265,7 @@ export const FooterName = styled.p`
   margin: 6px 0 0;
   overflow: hidden;
   color: #ffffff;
-  font-size: 14px;
+  font-size: calc(14px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 700;
   line-height: 1.2;
   text-overflow: ellipsis;
@@ -285,7 +285,7 @@ export const Avatar = styled.div`
   color: ${({ theme }) => theme.colors.sidebar.background};
   background: #ffb31f;
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
-  font-size: 13px;
+  font-size: calc(13px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 700;
 
   span {
