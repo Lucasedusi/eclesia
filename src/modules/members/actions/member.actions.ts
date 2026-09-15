@@ -7,6 +7,7 @@ import { requireAccessContext } from "@/modules/auth/services/access-context.ser
 import {
   getMemberCoreDetails,
   getMemberDocuments,
+  getMemberEvents,
   getMemberFinance,
   getMemberHistory,
   listMembers,
@@ -62,6 +63,15 @@ export async function getMemberFinanceAction(memberId: string, page = 1) {
     return { success: true as const, data: await getMemberFinance(context, memberId, page) };
   } catch {
     return { success: false as const, message: "Não foi possível carregar os lançamentos financeiros." };
+  }
+}
+
+export async function getMemberEventsAction(memberId: string, page = 1) {
+  const context = await requireAccessContext(PERMISSIONS.membersViewBasic);
+  try {
+    return { success: true as const, data: await getMemberEvents(context, memberId, page) };
+  } catch {
+    return { success: false as const, message: "Não foi possível carregar os eventos." };
   }
 }
 

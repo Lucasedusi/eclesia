@@ -73,6 +73,7 @@ export type MemberCapabilities = {
   createHistory: boolean;
   viewSensitiveHistory: boolean;
   viewFinance: boolean;
+  viewEvents: boolean;
   viewDocuments: boolean;
   manageDocuments: boolean;
   viewSensitiveDocuments: boolean;
@@ -155,6 +156,13 @@ export type MemberFinanceItem = {
   status: string;
   category: string;
   paymentMethod: string | null;
+};
+
+export type MemberEventItem = {
+  id: string;
+  name: string;
+  startsAt: string;
+  location: string;
 };
 
 export type MemberDocumentItem = {

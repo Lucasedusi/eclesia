@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { eventFinancialReportConfigSchema, eventFormSchema, eventGeneralReportConfigSchema, eventListSchema, eventParticipantReportConfigSchema, expenseSchema, groupSchema, paymentStatusSchema, publicCaravanSchema, publicPixPaymentSchema, publicRegistrationSchema, publicTrackingSchema, registrationFieldSchema, registrationSchema } from "./event.schemas";
+import { eventFinancialReportConfigSchema, eventFormSchema, eventGeneralReportConfigSchema, eventListSchema, eventParticipantReportConfigSchema, expenseSchema, groupSchema, paymentSchema, paymentStatusSchema, publicCaravanSchema, publicPixPaymentSchema, publicRegistrationSchema, publicTrackingSchema, registrationFieldSchema, registrationSchema } from "./event.schemas";
 
 const baseEvent = { id:"",name:"Congresso 2027",slug:"congresso-2027",description:"",eventType:"CONGRESS",visibility:"PUBLIC",eventScope:"CHURCH",regionId:"",congregationId:"",ministryId:"",startsAt:"2027-08-20T19:00",endsAt:"2027-08-22T18:00",timezone:"America/Sao_Paulo",registrationMode:"MIXED",capacity:500,requiresPayment:false,requiresGroupResponsible:false,requiresPastorInfo:false,requiresGenderTotals:false,locationName:"",zipCode:"",address:"",number:"",complement:"",district:"",city:"Porangatu",state:"GO",country:"Brasil",notes:"" };
 
@@ -40,6 +40,15 @@ describe("expenseSchema",()=>{
 describe("publicRegistrationSchema",()=>{
   const base={eventId:"123e4567-e89b-12d3-a456-426614174000",participantKind:"VISITOR",congregationId:"",participantName:"Ana da Silva",participantGender:"FEMALE",participantPhone:"62999999999",participantRoleId:"",preferredPaymentMethod:"PIX",items:[]};
   it("não exige o checkbox de consentimento removido da interface",()=>expect(publicRegistrationSchema.safeParse(base).success).toBe(true));
+  it("aceita membro com CPF e nascimento e normaliza o documento",()=>{
+    const result=publicRegistrationSchema.safeParse({...base,participantKind:"MEMBER",memberCpf:"529.982.247-25",memberBirthDate:"1990-01-15"});
+    expect(result.success).toBe(true);
+    if(result.success) expect(result.data.memberCpf).toBe("52998224725");
+  });
+  it("rejeita membro sem identificação válida",()=>{
+    expect(publicRegistrationSchema.safeParse({...base,participantKind:"MEMBER",memberCpf:"",memberBirthDate:""}).success).toBe(false);
+    expect(publicRegistrationSchema.safeParse({...base,participantKind:"MEMBER",memberCpf:"111.111.111-11",memberBirthDate:"1990-01-15"}).success).toBe(false);
+  });
 });
 
 describe("groupSchema",()=>{
@@ -53,6 +62,12 @@ describe("groupSchema",()=>{
 
 describe("paymentStatusSchema",()=>{
   it("aceita o registro de pagamento não concluído",()=>expect(paymentStatusSchema.safeParse({paymentId:"123e4567-e89b-12d3-a456-426614174000",status:"FAILED",reason:"Transação recusada"}).success).toBe(true));
+});
+
+describe("paymentSchema",()=>{
+  const base={eventId:"123e4567-e89b-12d3-a456-426614174000",registrationId:"123e4567-e89b-12d3-a456-426614174001",amount:200};
+  it("preserva a forma usada no pagamento interno",()=>expect(paymentSchema.parse({...base,paymentMethod:"CASH"}).paymentMethod).toBe("CASH"));
+  it("rejeita a forma sem pagamento ao registrar um valor positivo",()=>expect(paymentSchema.safeParse({...base,paymentMethod:"NOT_APPLICABLE"}).success).toBe(false));
 });
 
 describe("publicPixPaymentSchema",()=>{

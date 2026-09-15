@@ -6,10 +6,23 @@ export type PublicRefreshNotice = {
   tone: PublicStatusTone;
 };
 export type PublicRegistrationIntent = "START_NEW" | "RESUME" | "TRACK_SAVED";
+export type PublicParticipantKind = "MEMBER" | "VISITOR";
 
 export const PUBLIC_BACK_LABEL = "Voltar";
 export const PUBLIC_MANUAL_PAYMENT_SUBTITLE =
   "Finalize sua inscrição pelo WhatsApp com a organização do evento.";
+
+export function buildPublicMemberClaim(
+  participantKind: PublicParticipantKind,
+  memberCpf: string,
+  memberBirthDate: string,
+) {
+  if (participantKind === "MEMBER") {
+    return { participantKind, memberCpf, memberBirthDate } as const;
+  }
+
+  return { participantKind, memberCpf: "", memberBirthDate: "" } as const;
+}
 
 const TOKEN_PATTERN = /^[A-Za-z0-9_-]{40,120}$/;
 const TERMINAL_STATUSES = new Set(["CONFIRMED", "CHECKED_IN", "NO_SHOW", "CANCELLED", "EXPIRED", "FAILED"]);

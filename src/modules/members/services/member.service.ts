@@ -12,6 +12,7 @@ import type {
   MemberCapabilities,
   MemberCoreDetails,
   MemberDocumentItem,
+  MemberEventItem,
   MemberFilters,
   MemberFinanceItem,
   MemberHistoryItem,
@@ -22,6 +23,7 @@ import type {
   MemberStats,
   PaginatedTab,
 } from "../types/member.types";
+import { toMemberEventItem } from "../utils/member-events";
 
 // Supabase returns relation shapes dynamically because this project does not yet
 // use generated Database generics. The casts remain isolated in this service.
@@ -83,6 +85,7 @@ export function getMemberCapabilities(context: AuthContext): MemberCapabilities 
     createHistory: can(PERMISSIONS.memberHistoryCreate),
     viewSensitiveHistory: can(PERMISSIONS.memberHistoryViewSensitive),
     viewFinance: can(PERMISSIONS.financeView),
+    viewEvents: can(PERMISSIONS.eventsView) && can(PERMISSIONS.eventRegistrationsView),
     viewDocuments: can(PERMISSIONS.membersViewFull),
     manageDocuments: can(PERMISSIONS.membersManageDocuments),
     viewSensitiveDocuments: can(PERMISSIONS.membersViewSensitiveDocuments),
@@ -375,6 +378,48 @@ export async function getMemberFinance(context: AuthContext, memberId: string, p
     status: row.status, category: first<AnyRow>(row.financial_categories)?.name ?? "Sem categoria",
     paymentMethod: first<AnyRow>(row.financial_payment_methods)?.name ?? null }));
   return { items, total: count ?? 0, page, pageCount: Math.ceil((count ?? 0) / pageSize) };
+}
+
+export async function getMemberEvents(context: AuthContext, memberId: string, page = 1): Promise<PaginatedTab<MemberEventItem>> {
+  if (!getMemberCapabilities(context).viewEvents) throw new Error("MEMBER_EVENTS_PERMISSION_DENIED");
+
+  const supabase = await createClient();
+  const { data: member, error: memberError } = await supabase
+    .from("members")
+    .select("id")
+    .eq("id", memberId)
+    .eq("church_id", context.church.id)
+    .maybeSingle();
+  if (memberError) throw new Error(memberError.message);
+  if (!member) throw new Error("MEMBER_NOT_FOUND");
+
+  const pageSize = 20;
+  const safePage = Math.max(1, page);
+  const from = (safePage - 1) * pageSize;
+  const { data, count, error } = await supabase
+    .from("events")
+    .select("id, name, starts_at, location_name, city, state, registrations:event_registrations!event_registrations_event_id_fkey!inner(church_id, member_id, event_group_id, deleted_at)", { count: "exact" })
+    .eq("church_id", context.church.id)
+    .eq("registrations.church_id", context.church.id)
+    .eq("registrations.member_id", memberId)
+    .in("registrations.payment_status", ["PAID", "NOT_REQUIRED"])
+    .is("registrations.event_group_id", null)
+    .is("registrations.deleted_at", null)
+    .is("deleted_at", null)
+    .order("starts_at", { ascending: false })
+    .order("id", { ascending: false })
+    .range(from, from + pageSize - 1);
+  if (error) throw new Error(error.message);
+
+  const items = ((data ?? []) as unknown as AnyRow[]).map((row) => toMemberEventItem({
+    id: row.id,
+    name: row.name,
+    starts_at: row.starts_at,
+    location_name: row.location_name,
+    city: row.city,
+    state: row.state,
+  }));
+  return { items, total: count ?? 0, page: safePage, pageCount: Math.ceil((count ?? 0) / pageSize) };
 }
 
 export async function getMemberDocuments(context: AuthContext, memberId: string): Promise<MemberDocumentItem[]> {

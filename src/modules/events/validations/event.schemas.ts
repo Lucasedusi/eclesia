@@ -113,9 +113,20 @@ export const registrationSchema = registrationBaseSchema.superRefine((data, ctx)
 });
 
 export const publicRegistrationSchema = registrationBaseSchema.omit({ memberId: true, regionId: true }).extend({
-  participantKind: z.literal("VISITOR").default("VISITOR"),
+  participantKind: z.enum(["MEMBER", "VISITOR"]).default("VISITOR"),
+  memberCpf: z.string().trim()
+    .refine((value) => !value || isValidCpf(value), "Informe um CPF válido.")
+    .transform((value) => value.replace(/\D/g, ""))
+    .optional().default(""),
+  memberBirthDate: z.string().trim()
+    .regex(/^$|^\d{4}-\d{2}-\d{2}$/, "Informe uma data de nascimento válida.")
+    .optional().default(""),
   consentAccepted: z.coerce.boolean().optional().default(true),
   consentVersion: z.string().trim().max(40).default("2026-08"),
+}).superRefine((data, ctx) => {
+  if (data.participantKind !== "MEMBER") return;
+  if (!data.memberCpf) ctx.addIssue({ code: "custom", path: ["memberCpf"], message: "Informe o CPF cadastrado como membro." });
+  if (!data.memberBirthDate) ctx.addIssue({ code: "custom", path: ["memberBirthDate"], message: "Informe a data de nascimento cadastrada." });
 });
 
 export const updateRegistrationSchema = registrationBaseSchema.extend({
@@ -217,7 +228,7 @@ export const publicCaravanDraftSchema = groupBaseSchema.omit({ groupId: true, ex
 
 export const lifecycleSchema = z.object({ eventId: z.uuid(), action: z.enum(["PUBLISH", "OPEN_REGISTRATION", "CLOSE_REGISTRATION", "REOPEN_REGISTRATION", "START", "FINISH", "CANCEL"]), reason: z.string().trim().max(1000).optional().default("") });
 export const cancelRegistrationSchema = z.object({ registrationId: z.uuid(), reason: z.string().trim().min(3).max(1000) });
-export const paymentSchema = z.object({ eventId: z.uuid(), registrationId: z.uuid(), amount: z.coerce.number().positive(), receiptPath: z.string().trim().max(900).optional().default(""), receiptFileName: z.string().trim().max(220).optional().default(""), receiptMimeType: z.string().trim().max(100).optional().default(""), receiptFileSize: z.coerce.number().int().min(0).max(10 * 1024 * 1024).optional().default(0) });
+export const paymentSchema = z.object({ eventId: z.uuid(), registrationId: z.uuid(), amount: z.coerce.number().positive(), paymentMethod: z.enum(["PIX", "CASH", "CREDIT_CARD", "DEBIT_CARD"]).default("PIX"), receiptPath: z.string().trim().max(900).optional().default(""), receiptFileName: z.string().trim().max(220).optional().default(""), receiptMimeType: z.string().trim().max(100).optional().default(""), receiptFileSize: z.coerce.number().int().min(0).max(10 * 1024 * 1024).optional().default(0) });
 export const paymentStatusSchema = z.object({ paymentId: z.uuid(), status: z.enum(["CONFIRMED", "FAILED", "CANCELLED", "REFUNDED"]), reason: z.string().trim().max(1000).optional().default("") });
 export const checkinSchema = z.object({ eventId: z.uuid(), registrationId: optionalUuid, qrToken: z.string().trim().max(300).optional().default(""), method: z.enum(["QR_CODE", "MANUAL", "SEARCH"]).default("MANUAL"), notes: z.string().trim().max(500).optional().default("") }).refine((data) => Boolean(data.registrationId || data.qrToken), { message: "Informe a inscrição ou leia o QR Code." });
 export const reverseCheckinSchema = z.object({ checkinId: z.uuid(), reason: z.string().trim().min(3).max(500) });

@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   ArrowRight,
   BookOpen,
+  CalendarDays,
   CreditCard,
   Download,
   Eye,
@@ -31,6 +32,7 @@ import {
   addMemberHistoryNoteAction,
   getMemberDetailsAction,
   getMemberDocumentsAction,
+  getMemberEventsAction,
   getMemberFinanceAction,
   getMemberHistoryAction,
   manageMemberRoleAction,
@@ -55,6 +57,7 @@ import type {
   MemberCapabilities,
   MemberCoreDetails,
   MemberDocumentItem,
+  MemberEventItem,
   MemberFilters,
   MemberFinanceItem,
   MemberHistoryItem,
@@ -72,7 +75,7 @@ import {
 import * as M from "./members.styles";
 import * as S from "./member-details.styles";
 
-type Tab = "data" | "history" | "finance" | "documents";
+type Tab = "data" | "history" | "events" | "finance" | "documents";
 type Notice = {
   title: string;
   description: string;
@@ -95,6 +98,14 @@ function dateTime(value: string) {
   return new Intl.DateTimeFormat("pt-BR", {
     dateStyle: "short",
     timeStyle: "short",
+  }).format(new Date(value));
+}
+
+function eventDateTime(value: string) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+    timeZone: "America/Sao_Paulo",
   }).format(new Date(value));
 }
 
@@ -219,6 +230,8 @@ export function MemberDetailsModal({
     useState<PaginatedTab<MemberHistoryItem> | null>(null);
   const [finance, setFinance] =
     useState<PaginatedTab<MemberFinanceItem> | null>(null);
+  const [events, setEvents] =
+    useState<PaginatedTab<MemberEventItem> | null>(null);
   const [documents, setDocuments] = useState<MemberDocumentItem[] | null>(null);
   const [tabLoading, setTabLoading] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -258,6 +271,7 @@ export function MemberDetailsModal({
     if (
       next === "data" ||
       (next === "history" && history) ||
+      (next === "events" && events) ||
       (next === "finance" && finance) ||
       (next === "documents" && documents)
     ) {
@@ -284,6 +298,16 @@ export function MemberDetailsModal({
           variant: "danger",
         });
     }
+    if (next === "events") {
+      const result = await getMemberEventsAction(memberId);
+      if (result.success) setEvents(result.data);
+      else
+        setNotice({
+          title: "Eventos indisponíveis",
+          description: result.message,
+          variant: "danger",
+        });
+    }
     if (next === "documents") {
       const result = await getMemberDocumentsAction(memberId);
       if (result.success) setDocuments(result.data);
@@ -294,6 +318,19 @@ export function MemberDetailsModal({
           variant: "danger",
         });
     }
+    setTabLoading(false);
+  }
+
+  async function changeEventsPage(page: number) {
+    setTabLoading(true);
+    const result = await getMemberEventsAction(memberId, page);
+    if (result.success) setEvents(result.data);
+    else
+      setNotice({
+        title: "Eventos indisponíveis",
+        description: result.message,
+        variant: "danger",
+      });
     setTabLoading(false);
   }
 
@@ -651,7 +688,7 @@ export function MemberDetailsModal({
       <Modal
         open
         title="Ficha do membro"
-        description="Consulta cadastral, eclesiástica, financeira e documental."
+        description="Consulta cadastral, eclesiástica, de eventos, financeira e documental."
         icon={<UserRound />}
         size="xl"
         onClose={onClose}
@@ -695,6 +732,14 @@ export function MemberDetailsModal({
                   onClick={() => void chooseTab("history")}
                 >
                   <BookOpen /> Histórico eclesiástico
+                </S.Tab>
+              )}
+              {capabilities.viewEvents && (
+                <S.Tab
+                  $active={tab === "events"}
+                  onClick={() => void chooseTab("events")}
+                >
+                  <CalendarDays /> Eventos
                 </S.Tab>
               )}
               {capabilities.viewFinance && (
@@ -976,6 +1021,43 @@ export function MemberDetailsModal({
                       </tbody>
                     </table>
                   </S.SimpleTable>
+                )}
+              </S.Section>
+            )}
+
+            {!tabLoading && tab === "events" && (
+              <S.Section>
+                {!events?.items.length ? (
+                  <S.Empty>Nenhuma inscrição em evento vinculada ao membro.</S.Empty>
+                ) : (
+                  <>
+                    <S.SimpleTable>
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Nome</th>
+                            <th>Data</th>
+                            <th>Local</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {events.items.map((item) => (
+                            <tr key={item.id}>
+                              <td>{item.name}</td>
+                              <td>{eventDateTime(item.startsAt)}</td>
+                              <td>{item.location}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </S.SimpleTable>
+                    {events.pageCount > 1 && (
+                      <S.Pager>
+                        <Button type="button" size="sm" variant="secondary" disabled={events.page <= 1} onClick={() => void changeEventsPage(events.page - 1)}>Anterior</Button>
+                        <Button type="button" size="sm" variant="secondary" disabled={events.page >= events.pageCount} onClick={() => void changeEventsPage(events.page + 1)}>Próxima</Button>
+                      </S.Pager>
+                    )}
+                  </>
                 )}
               </S.Section>
             )}

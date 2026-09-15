@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildPublicMemberClaim,
   buildTrackingHash,
   isPublicManualPaymentMethod,
   isTerminalPublicStatus,
@@ -19,6 +20,19 @@ import {
 const token = "A".repeat(48);
 
 describe("public registration flow", () => {
+  it("envia a identificação somente quando a pessoa se declara membro", () => {
+    expect(buildPublicMemberClaim("MEMBER", "529.982.247-25", "1990-01-15")).toEqual({
+      participantKind: "MEMBER",
+      memberCpf: "529.982.247-25",
+      memberBirthDate: "1990-01-15",
+    });
+    expect(buildPublicMemberClaim("VISITOR", "529.982.247-25", "1990-01-15")).toEqual({
+      participantKind: "VISITOR",
+      memberCpf: "",
+      memberBirthDate: "",
+    });
+  });
+
   it("mantém polling somente para situação pendente e aba visível", () => {
     expect(shouldPollPublicStatus({ status: "PENDING", visible: true })).toBe(true);
     expect(shouldPollPublicStatus({ status: "PENDING", visible: false })).toBe(false);

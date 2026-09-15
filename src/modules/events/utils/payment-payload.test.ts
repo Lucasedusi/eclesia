@@ -1,26 +1,58 @@
 import { describe, expect, it } from "vitest";
-import { buildPublicCaravanPaymentPayload, buildRegistrationPaymentPayload, canShowPublicCashWhatsapp, normalizePublicCaravanPaymentInput, parsePublicCaravanPaymentAmount, retryPublicCaravanStorageRead } from "./payment-payload";
+import { buildPublicCaravanPaymentPayload, buildRegistrationPaymentPayload, canShowPublicCashWhatsapp, normalizePublicCaravanPaymentInput, parsePublicCaravanPaymentAmount, resolveRegistrationPaymentMethod, retryPublicCaravanStorageRead } from "./payment-payload";
+
+describe("forma de pagamento da inscrição", () => {
+  it("usa a forma escolhida quando a inscrição possui valor", () => {
+    expect(resolveRegistrationPaymentMethod(200, "CASH")).toBe("CASH");
+  });
+
+  it("recupera como PIX uma inscrição paga gravada sem forma aplicável", () => {
+    expect(resolveRegistrationPaymentMethod(200, "NOT_APPLICABLE")).toBe("PIX");
+  });
+
+  it("mantém sem pagamento apenas inscrições de valor zero", () => {
+    expect(resolveRegistrationPaymentMethod(0, "PIX")).toBe("NOT_APPLICABLE");
+  });
+});
 
 describe("buildRegistrationPaymentPayload", () => {
   it("omite todos os metadados quando não existe comprovante", () => {
     expect(buildRegistrationPaymentPayload({
       amount: 125,
+      paymentMethod: "CASH",
       receiptPath: "",
       receiptFileName: "",
       receiptMimeType: "",
       receiptFileSize: 0,
-    })).toEqual({ amount: 125 });
+    })).toEqual({ amount: 125, paymentMethod: "CASH" });
+  });
+
+  it("usa PIX ao registrar uma inscrição paga criada como sem pagamento", () => {
+    expect(buildRegistrationPaymentPayload({
+      amount: 200,
+      paymentMethod: "NOT_APPLICABLE",
+    })).toEqual({ amount: 200, paymentMethod: "PIX" });
+  });
+
+  it("identifica a aprovação para confirmar um pagamento pendente na mesma transação", () => {
+    expect(buildRegistrationPaymentPayload({
+      amount: 200,
+      paymentMethod: "CREDIT_CARD",
+      approvePending: true,
+    })).toEqual({ amount: 200, paymentMethod: "CREDIT_CARD", approvePending: true });
   });
 
   it("mantém os metadados completos quando existe comprovante", () => {
     expect(buildRegistrationPaymentPayload({
       amount: 125,
+      paymentMethod: "DEBIT_CARD",
       receiptPath: "tenant/events/event/payment-receipts/id/comprovante.pdf",
       receiptFileName: "comprovante.pdf",
       receiptMimeType: "application/pdf",
       receiptFileSize: 2048,
     })).toEqual({
       amount: 125,
+      paymentMethod: "DEBIT_CARD",
       receiptPath: "tenant/events/event/payment-receipts/id/comprovante.pdf",
       receiptFileName: "comprovante.pdf",
       receiptMimeType: "application/pdf",

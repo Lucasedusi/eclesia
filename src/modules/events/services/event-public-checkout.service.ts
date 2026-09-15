@@ -14,6 +14,7 @@ import {
   publicPixData,
   type MercadoPagoPayment,
 } from "./mercado-pago-pix.service";
+import { buildPublicRegistrationPayload, resolvePublicMemberId } from "./public-member-link";
 
 type PublicRegistrationInput = z.infer<typeof publicRegistrationSchema>;
 type AnyRow = Record<string, unknown>;
@@ -24,6 +25,19 @@ export class PublicCheckoutError extends Error {
     super(message);
     this.name = "PublicCheckoutError";
   }
+}
+
+export async function hasPublicCheckoutReplay(eventId: string, churchId: string, idempotencyKey: string) {
+  const admin = createAdminClient();
+  const result = await admin.from("event_public_checkouts")
+    .select("id")
+    .eq("event_id", eventId)
+    .eq("church_id", churchId)
+    .eq("idempotency_key", idempotencyKey)
+    .eq("checkout_type", "INDIVIDUAL")
+    .maybeSingle();
+  if (result.error) throw new PublicCheckoutError("Não foi possível consultar a inscrição.");
+  return Boolean(result.data);
 }
 
 function tokenHash(token: string) {
@@ -156,11 +170,51 @@ export async function startPublicCheckout(
   const admin = createAdminClient();
   const eventResult = await admin.from("events").select("id,church_id").eq("id", input.eventId).eq("public_code", publicCode).eq("slug", slug).eq("visibility", "PUBLIC").is("deleted_at", null).maybeSingle();
   if (eventResult.error || !eventResult.data) throw new PublicCheckoutError("Evento público indisponível.");
-  const role = await resolveEventRoleSnapshot(String(eventResult.data.church_id), input.participantRoleId, input.participantGender);
+  const eventRow = eventResult.data;
   const checkoutToken = createCheckoutToken(input.eventId, idempotencyKey);
+  const replayResult = await admin.from("event_public_checkouts")
+    .select("id")
+    .eq("event_id", input.eventId)
+    .eq("church_id", eventRow.church_id)
+    .eq("idempotency_key", idempotencyKey)
+    .eq("checkout_type", "INDIVIDUAL")
+    .maybeSingle();
+  if (replayResult.error) throw new PublicCheckoutError("Não foi possível iniciar a inscrição.");
+  if (replayResult.data) {
+    return {
+      checkoutToken,
+      checkout: await getPublicCheckoutStatus(publicCode, slug, checkoutToken, false),
+    };
+  }
+  const memberId = await resolvePublicMemberId(input, async (cpf, birthDate) => {
+    const identityResult = await admin.from("member_sensitive_identity")
+      .select("member_id")
+      .eq("church_id", eventRow.church_id)
+      .eq("cpf", cpf)
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (identityResult.error || !identityResult.data) return null;
+    const memberResult = await admin.from("members")
+      .select("id")
+      .eq("id", identityResult.data.member_id)
+      .eq("church_id", eventRow.church_id)
+      .eq("birth_date", birthDate)
+      .eq("member_status", "ACTIVE")
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (memberResult.error || !memberResult.data) return null;
+    return memberResult.data.id;
+  });
+  if (input.participantKind === "MEMBER" && !memberId) {
+    throw new PublicCheckoutError("Não foi possível confirmar seu cadastro de membro. Revise o CPF e a data de nascimento ou inscreva-se como visitante.");
+  }
+  const role = await resolveEventRoleSnapshot(String(eventRow.church_id), input.participantRoleId, input.participantGender);
   const result = await admin.rpc("start_event_public_checkout", {
     p_event_id: input.eventId,
-    p_payload: { ...input, registrationSource: "PUBLIC", consentAccepted: true, metadata: role ? { participantRoleId: role.id, participantRoleName: role.name } : {} },
+    p_payload: buildPublicRegistrationPayload({
+      ...input,
+      metadata: role ? { participantRoleId: role.id, participantRoleName: role.name } : {},
+    }, memberId),
     p_idempotency_key: idempotencyKey,
     p_access_token_hash: tokenHash(checkoutToken),
   });

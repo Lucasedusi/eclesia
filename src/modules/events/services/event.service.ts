@@ -38,7 +38,8 @@ import type {
   registrationSchema,
   updateRegistrationSchema,
 } from "../validations/event.schemas";
-import { buildRegistrationPaymentPayload, retryPublicCaravanStorageRead } from "../utils/payment-payload";
+import { buildRegistrationPaymentPayload, resolveRegistrationPaymentMethod, retryPublicCaravanStorageRead } from "../utils/payment-payload";
+import { createPublicMemberAttemptHash } from "./public-member-link";
 
 type RecordValue = Record<string, unknown>;
 type EventForm = z.infer<typeof eventFormSchema>;
@@ -92,6 +93,7 @@ function fail(error: { message?: string; code?: string } | null, fallback: strin
     EVENT_CHECKIN_REGISTRATION_NOT_CONFIRMED: "Somente inscrições confirmadas podem realizar check-in.",
     EVENT_PAYMENT_EXCEEDS_BALANCE: "O pagamento ultrapassa o saldo pendente.",
     EVENT_PAYMENT_ALREADY_SETTLED: "Esta inscrição já está totalmente paga.",
+    EVENT_PAYMENT_METHOD_INVALID: "Selecione uma forma de pagamento válida.",
     EVENT_PAYMENT_NOT_FOUND: "O pagamento não foi encontrado ou já foi excluído.",
     EVENT_TRANSITION_INVALID: "Esta transição não é permitida no estado atual.",
     EVENT_REGISTRATIONS_MUST_BE_CLOSED: "Encerre manualmente as inscrições antes de finalizar ou cancelar o evento.",
@@ -593,11 +595,11 @@ export async function approveCaravanPayment(eventId:string,paymentId:string,stat
   if(error)fail(error,"Não foi possível analisar o pagamento.");
 }
 
-export async function approveRegistrationPayment(eventId: string, registrationId: string) {
-  const { supabase } = await getEventRow(eventId, PERMISSIONS.eventPaymentsManage);
+export async function approveRegistrationPayment(eventId: string, registrationId: string, paymentMethod: string) {
+  const { supabase } = await getEventRow(eventId, PERMISSIONS.eventPaymentsApprove);
   const registrationResult = await supabase
     .from("event_registrations")
-    .select("id,remaining_amount,status")
+    .select("id,remaining_amount,status,preferred_payment_method")
     .eq("id", registrationId)
     .eq("event_id", eventId)
     .is("deleted_at", null)
@@ -608,32 +610,14 @@ export async function approveRegistrationPayment(eventId: string, registrationId
   const remainingAmount = Number(registrationResult.data.remaining_amount);
   if (!Number.isFinite(remainingAmount) || remainingAmount <= 0) throw new EventServiceError("Esta inscrição já está totalmente paga.");
 
-  const pendingResult = await supabase
-    .from("event_payments")
-    .select("id,amount")
-    .eq("event_id", eventId)
-    .eq("event_registration_id", registrationId)
-    .eq("payment_status", "PENDING")
-    .is("deleted_at", null)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (pendingResult.error) fail(pendingResult.error, "Não foi possível consultar o pagamento pendente.");
-
-  if (pendingResult.data) {
-    const pendingAmount = Number(pendingResult.data.amount);
-    if (!Number.isFinite(pendingAmount) || pendingAmount <= 0 || pendingAmount > remainingAmount) {
-      throw new EventServiceError("O pagamento pendente não corresponde ao valor restante. Revise o histórico antes de aprovar.");
-    }
-    const approved = await supabase.rpc("change_event_payment_status", { p_payment_id: pendingResult.data.id, p_status: "CONFIRMED", p_reason: null });
-    if (approved.error) fail(approved.error, "Não foi possível confirmar o pagamento pendente.");
-    return;
-  }
-
   const recorded = await supabase.rpc("record_event_registration_payment", {
     p_event_id: eventId,
     p_registration_id: registrationId,
-    p_payload: buildRegistrationPaymentPayload({ amount: remainingAmount }),
+    p_payload: buildRegistrationPaymentPayload({
+      amount: remainingAmount,
+      paymentMethod: resolveRegistrationPaymentMethod(remainingAmount, paymentMethod || registrationResult.data.preferred_payment_method),
+      approvePending: true,
+    }),
     p_idempotency_key: randomUUID(),
   });
   if (recorded.error) fail(recorded.error, "Não foi possível registrar a aprovação manual.");
@@ -838,6 +822,11 @@ export async function completePublicCaravan(publicCode:string,slug:string,input:
   return{...(completed.data as RecordValue),accessToken:input.sessionKey};
 }
 export async function consumePublicRegistrationRateLimit(eventId: string, keyHash: string) { const admin = createAdminClient(); const { data, error } = await admin.rpc("consume_event_public_limit", { p_event_id: eventId, p_key_hash: keyHash, p_limit: 8, p_window_seconds: 600 }); if (error) fail(error, "Não foi possível validar a tentativa."); return data === true; }
+export async function consumePublicMemberLinkRateLimit(eventId: string, cpf: string) {
+  const secret = process.env.EVENT_CHECKOUT_SECRET?.trim();
+  if (!secret || secret.length < 32) throw new EventServiceError("O checkout público ainda não está configurado para este ambiente.");
+  return consumePublicRegistrationRateLimit(eventId, createPublicMemberAttemptHash(secret, eventId, cpf));
+}
 
 export async function prepareEventDocument(eventId: string, input: { title: string; fileName: string; mimeType: string; fileSize: number }) {
   const { supabase, row } = await getEventRow(eventId, PERMISSIONS.eventDocumentsManage);

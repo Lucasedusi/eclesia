@@ -93,6 +93,7 @@ import type { ActionResult, EventExpenseRow, EventItemRow, EventMemberReference,
 import { useEventWorkspaceRealtime } from "../hooks/use-event-workspace-realtime";
 import { formatRegistrationFieldValue, visibleRegistrationFields } from "../utils/registration-fields";
 import {sortCaravans,type CaravanSortOrder} from "../utils/group-items";
+import { resolveRegistrationPaymentMethod } from "../utils/payment-payload";
 import * as S from "./events.styles";
 import { EventReportBuilder } from "./event-report-builder";
 import { QrCode } from "./qr-code";
@@ -204,6 +205,7 @@ export function EventWorkspace({ initial }: { initial: EventWorkspaceData }) {
   const [caravanAdvancedFilters,setCaravanAdvancedFilters]=useState(false);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
   const [confirmationReason, setConfirmationReason] = useState("");
+  const [confirmationPaymentMethod, setConfirmationPaymentMethod] = useState("PIX");
   const menuRef = useRef<HTMLDivElement>(null);
   const expenseMenuRef = useRef<HTMLDivElement>(null);
   const caravanMenuRef = useRef<HTMLDivElement>(null);
@@ -313,6 +315,9 @@ export function EventWorkspace({ initial }: { initial: EventWorkspaceData }) {
     setExpenseMenu(null);
     setCaravanMenu(null);
     setConfirmationReason("");
+    if (next.kind === "approvePayment") {
+      setConfirmationPaymentMethod(resolveRegistrationPaymentMethod(next.registration.remainingAmount, next.registration.preferredPaymentMethod));
+    }
     setConfirmation(next);
   }
 
@@ -331,7 +336,7 @@ export function EventWorkspace({ initial }: { initial: EventWorkspaceData }) {
             : confirmation.kind === "registration"
               ? () => cancelRegistrationAction({ registrationId: confirmation.registration.id, reason: confirmationReason }, event.id)
               : confirmation.kind === "approvePayment"
-                ? () => approveRegistrationPaymentAction(event.id, confirmation.registration.id)
+                ? () => approveRegistrationPaymentAction(event.id, confirmation.registration.id, confirmationPaymentMethod)
                 : () => deletePaymentAction(event.id, confirmation.id);
     execute(task, false, () => {
       if (confirmation.kind === "payment" || confirmation.kind === "approvePayment") setRegistrationModal(null);
@@ -493,6 +498,8 @@ export function EventWorkspace({ initial }: { initial: EventWorkspaceData }) {
         eventId={event.id}
         canManage={can(PERMISSIONS.eventRegistrationsManage)}
         canPay={can(PERMISSIONS.eventPaymentsManage)}
+        canApprove={can(PERMISSIONS.eventPaymentsApprove)}
+        hasPendingPayment={initial.payments.some((payment) => payment.registrationId === menu.registrationId && payment.status === "PENDING")}
         onClose={() => setMenu(null)}
         onDetails={(registration) => setRegistrationModal({ kind: "details", registration })}
         onEdit={(registration) => setRegistrationModal({ kind: "edit", registration })}
@@ -537,7 +544,7 @@ export function EventWorkspace({ initial }: { initial: EventWorkspaceData }) {
       {expenseModal ? <ExpenseModal data={initial} expense={expenseModal === "new" ? null : expenseModal} busy={pending} onClose={() => setExpenseModal(null)} execute={execute} /> : null}
       {credential ? <Modal open title={`Credencial ${credential.number}`} icon={<QrCodeIcon />} onClose={() => setCredential(null)}><div style={{ display: "grid", placeItems: "center", gap: 14 }}><QrCode value={credential.token} /><code style={{ wordBreak: "break-all" }}>{credential.token}</code></div></Modal> : null}
       {confirmation ? <Modal open size="sm" title={confirmation.kind === "registration" ? "Cancelar inscrição" : confirmation.kind === "group" ? "Excluir caravana" : confirmation.kind === "approvePayment" ? "Aprovar pagamento" : confirmation.kind === "payment" ? "Excluir pagamento" : "Confirmar exclusão"} description={confirmation.kind === "approvePayment" ? "O pagamento pendente será confirmado manualmente e ficará registrado no histórico." : confirmation.kind === "payment" ? "Esta ação removerá o pagamento selecionado." : confirmation.kind === "registration" || confirmation.kind === "group" ? "O histórico será preservado. Informe o motivo para continuar." : "Esta operação removerá o registro selecionado."} icon={confirmation.kind === "approvePayment" ? <BadgeDollarSign /> : <Trash2 />} onClose={() => setConfirmation(null)} busy={pending} footer={<S.ModalFooter><Button variant="outline" onClick={() => setConfirmation(null)} disabled={pending}>Voltar</Button><Button variant={confirmation.kind === "approvePayment" ? "primary" : "danger"} onClick={confirmWorkspaceAction} loading={pending} disabled={(confirmation.kind === "registration" || confirmation.kind === "group") && confirmationReason.trim().length < 3}>{confirmation.kind === "approvePayment" ? "Aprovar pagamento" : confirmation.kind === "registration" ? "Confirmar cancelamento" : "Confirmar exclusão"}</Button></S.ModalFooter>}>
-        {confirmation.kind === "approvePayment" ? <S.ApprovalNotice>Inscrição: <strong>{confirmation.registration.participantName}</strong></S.ApprovalNotice> : <S.DeleteWarning>Selecionado: <strong>{confirmation.kind === "registration" ? confirmation.registration.participantName : confirmation.label}</strong></S.DeleteWarning>}
+        {confirmation.kind === "approvePayment" ? <><S.ApprovalNotice>Inscrição: <strong>{confirmation.registration.participantName}</strong></S.ApprovalNotice><S.Field style={{ marginTop: 14 }}><span>Forma de pagamento *</span><select data-autofocus required value={confirmationPaymentMethod} onChange={(change) => setConfirmationPaymentMethod(change.target.value)}>{PAYMENT_METHODS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></S.Field></> : <S.DeleteWarning>Selecionado: <strong>{confirmation.kind === "registration" ? confirmation.registration.participantName : confirmation.label}</strong></S.DeleteWarning>}
         {confirmation.kind === "registration" || confirmation.kind === "group" ? <S.Field style={{ marginTop: 14 }}><span>Motivo *</span><textarea data-autofocus value={confirmationReason} onChange={(change) => setConfirmationReason(change.target.value)} maxLength={1000} placeholder="Descreva o motivo" /></S.Field> : null}
       </Modal> : null}
       <ToastViewport>{notice ? <Toast title={notice.danger ? "Ação não concluída" : "Tudo certo"} description={notice.message} variant={notice.danger ? "danger" : "success"} onClose={() => setNotice(null)} /> : null}</ToastViewport>
@@ -545,8 +552,8 @@ export function EventWorkspace({ initial }: { initial: EventWorkspaceData }) {
   );
 }
 
-const RegistrationMenu = ({ registration, eventId, canManage, canPay, onClose, onDetails, onEdit, onPayment, onApprovePayment, onQr, onCancel, menuRef, ...props }: {
-  registration: RegistrationRow; eventId: string; canManage: boolean; canPay: boolean; onClose: () => void;
+const RegistrationMenu = ({ registration, eventId, canManage, canPay, canApprove, hasPendingPayment, onClose, onDetails, onEdit, onPayment, onApprovePayment, onQr, onCancel, menuRef, ...props }: {
+  registration: RegistrationRow; eventId: string; canManage: boolean; canPay: boolean; canApprove: boolean; hasPendingPayment: boolean; onClose: () => void;
   onDetails: (registration: RegistrationRow) => void; onPayment: (registration: RegistrationRow) => void;
   onEdit: (registration: RegistrationRow) => void;
   onApprovePayment: (registration: RegistrationRow) => void;
@@ -555,7 +562,7 @@ const RegistrationMenu = ({ registration, eventId, canManage, canPay, onClose, o
 } & React.HTMLAttributes<HTMLDivElement>) => <S.Menu {...props} ref={menuRef} role="menu">
   <button role="menuitem" onClick={() => { onDetails(registration); onClose(); }}><Eye />Ver detalhes</button>
   {canManage && registration.status !== "CANCELLED" ? <button role="menuitem" onClick={() => { onEdit(registration); onClose(); }}><Pencil />Editar inscrição</button> : null}
-  {canPay && registration.remainingAmount > 0 && !["CANCELLED", "EXPIRED"].includes(registration.status) ? <button role="menuitem" onClick={() => { onApprovePayment(registration); onClose(); }}><BadgeDollarSign />Aprovar pagamento</button> : null}
+  {canApprove && (hasPendingPayment || canPay) && registration.remainingAmount > 0 && !["CANCELLED", "EXPIRED"].includes(registration.status) ? <button role="menuitem" onClick={() => { onApprovePayment(registration); onClose(); }}><BadgeDollarSign />Aprovar pagamento</button> : null}
   {canPay && registration.remainingAmount > 0 && !["CANCELLED", "EXPIRED"].includes(registration.status) ? <button role="menuitem" onClick={() => { onPayment(registration); onClose(); }}><CreditCard />Registrar pagamento</button> : null}
   {canManage ? <a role="menuitem" href={`/api/events/${eventId}/registrations/${registration.id}/receipt`} target="_blank" rel="noreferrer" onClick={onClose}><Download />Comprovante de inscrição</a> : null}
   {canManage ? <a role="menuitem" href={`/api/events/${eventId}/registrations/${registration.id}/thermal`} target="_blank" rel="noreferrer" onClick={onClose}><Printer />Imprimir em térmica</a> : null}
@@ -661,7 +668,7 @@ function RegistrationModalForm({ data, busy, onClose, execute }: { data: EventWo
     if (field.key === "participant_state") return <S.Field><span>{label}</span><input maxLength={2} required={isRequired} value={standardValues.participantState} onChange={(event) => setStandardValues((current) => ({ ...current, participantState: event.target.value.toUpperCase() }))} /></S.Field>;
     if (field.key === "responsible_name") return <S.Field><span>{label}</span><input required={isRequired} value={standardValues.responsibleName} onChange={(event) => setStandardValues((current) => ({ ...current, responsibleName: event.target.value }))} /></S.Field>;
     if (field.key === "responsible_phone") return <S.Field><span>{label}</span><input required={isRequired} value={standardValues.responsiblePhone} onChange={(event) => setStandardValues((current) => ({ ...current, responsiblePhone: formatBrazilPhone(event.target.value) }))} /></S.Field>;
-    if (field.key === "preferred_payment_method" && data.event.requiresPayment) return <S.Field><span>{field.label}</span><select value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value)}>{PAYMENT_METHODS.map(([value, optionLabel]) => <option key={value} value={value}>{optionLabel}</option>)}</select></S.Field>;
+    if (field.key === "preferred_payment_method" && total > 0) return <S.Field><span>{field.label}</span><select value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value)}>{PAYMENT_METHODS.map(([value, optionLabel]) => <option key={value} value={value}>{optionLabel}</option>)}</select></S.Field>;
     if (field.key === "items" && data.items.some((item) => item.active)) return <S.Wide><div><strong style={{ color: "#344054", fontSize: "calc(12px + var(--eclesia-font-size-adjustment, 0px))" }}>{field.label}</strong><S.ItemCards>{data.items.filter((item) => item.active).map((item) => <SelectableItem key={item.id} item={item} selected={selectedItems.has(item.id)} onToggle={() => setSelectedItems((current) => { const next = new Set(current); if (next.has(item.id) && !item.required) next.delete(item.id); else next.add(item.id); return next; })} />)}</S.ItemCards></div></S.Wide>;
     return null;
   }
@@ -697,7 +704,7 @@ function RegistrationModalForm({ data, busy, onClose, execute }: { data: EventWo
     event.preventDefault();
     setSubmitAttempted(true);
     if (kind === "MEMBER" && !selectedMember) return;
-    execute(() => createRegistrationAction({ eventId: data.event.id, participantKind: kind, memberId: selectedMember?.id ?? "", regionId, congregationId, participantName: name, participantGender: gender, participantPhone: phone, participantEmail: standardValues.participantEmail, participantDocument: standardValues.participantDocument, participantBirthDate: standardValues.participantBirthDate, participantCity: standardValues.participantCity, participantState: standardValues.participantState, responsibleName: standardValues.responsibleName, responsiblePhone: standardValues.responsiblePhone, participantRoleId: roleId, preferredPaymentMethod: data.event.requiresPayment ? paymentMethod : "NOT_APPLICABLE", items: [...selectedItems].map((itemId) => ({ itemId, quantity: 1 })), customFields: customValues }));
+    execute(() => createRegistrationAction({ eventId: data.event.id, participantKind: kind, memberId: selectedMember?.id ?? "", regionId, congregationId, participantName: name, participantGender: gender, participantPhone: phone, participantEmail: standardValues.participantEmail, participantDocument: standardValues.participantDocument, participantBirthDate: standardValues.participantBirthDate, participantCity: standardValues.participantCity, participantState: standardValues.participantState, responsibleName: standardValues.responsibleName, responsiblePhone: standardValues.responsiblePhone, participantRoleId: roleId, preferredPaymentMethod: resolveRegistrationPaymentMethod(total, paymentMethod), items: [...selectedItems].map((itemId) => ({ itemId, quantity: 1 })), customFields: customValues }));
   }
 
   return (
@@ -733,7 +740,7 @@ function EditRegistrationModal({ data, registration, busy, onClose, execute }: {
     participantEmail: registration.participantEmail ?? "", participantDocument: registration.participantDocument ?? "", participantBirthDate: registration.participantBirthDate ?? "",
     participantCity: registration.participantCity ?? "", participantState: registration.participantState ?? "", responsibleName: registration.responsibleName ?? "",
     responsiblePhone: registration.responsiblePhone ?? "", regionId: registration.regionId ?? "", congregationId: registration.congregationId ?? "",
-    participantRoleId: registration.participantRoleId ?? "", preferredPaymentMethod: registration.preferredPaymentMethod ?? (data.event.requiresPayment ? "PIX" : "NOT_APPLICABLE"),
+    participantRoleId: registration.participantRoleId ?? "", preferredPaymentMethod: resolveRegistrationPaymentMethod(registration.totalAmount, registration.preferredPaymentMethod),
   });
   const [customValues, setCustomValues] = useState<Record<string, unknown>>(registration.customFieldValues);
   const [quantities, setQuantities] = useState<Record<string, number>>(() => ({ ...registration.itemQuantities }));
@@ -764,7 +771,7 @@ function EditRegistrationModal({ data, registration, busy, onClose, execute }: {
     if (field.key === "participant_state") return <S.Field><span>{label}</span><input maxLength={2} required={isRequired} value={values.participantState} onChange={(event) => set("participantState", event.target.value.toUpperCase())} /></S.Field>;
     if (field.key === "responsible_name") return <S.Field><span>{label}</span><input required={isRequired} value={values.responsibleName} onChange={(event) => set("responsibleName", event.target.value)} /></S.Field>;
     if (field.key === "responsible_phone") return <S.Field><span>{label}</span><input required={isRequired} value={values.responsiblePhone} onChange={(event) => set("responsiblePhone", formatBrazilPhone(event.target.value))} /></S.Field>;
-    if (field.key === "preferred_payment_method" && data.event.requiresPayment) return <S.Field><span>{field.label}</span><select value={values.preferredPaymentMethod} onChange={(event) => set("preferredPaymentMethod", event.target.value)}>{PAYMENT_METHODS.map(([key, optionLabel]) => <option key={key} value={key}>{optionLabel}</option>)}</select></S.Field>;
+    if (field.key === "preferred_payment_method" && total > 0) return <S.Field><span>{field.label}</span><select value={values.preferredPaymentMethod} onChange={(event) => set("preferredPaymentMethod", event.target.value)}>{PAYMENT_METHODS.map(([key, optionLabel]) => <option key={key} value={key}>{optionLabel}</option>)}</select></S.Field>;
     if (field.key === "items" && data.items.some((item) => item.active)) return <S.Wide><div><strong style={{ color: "#344054", fontSize: "calc(12px + var(--eclesia-font-size-adjustment, 0px))" }}>{field.label}</strong><S.ItemCards>{data.items.filter((item) => item.active).map((item) => { const quantity = quantities[item.id] ?? 0; const checked = quantity > 0; return <S.ItemCard key={item.id} $selected={checked}><input type="checkbox" checked={checked} disabled={registration.status === "CHECKED_IN" || item.required} onChange={(event) => setQuantities((current) => ({ ...current, [item.id]: event.target.checked ? Math.max(item.minQuantity, 1) : 0 }))} /><Ticket /><strong>{item.name}</strong><small>{money(item.price)}{item.required ? " · obrigatório" : ""}</small>{checked && item.allowQuantity ? <input aria-label={`Quantidade de ${item.name}`} type="number" min={Math.max(item.minQuantity, 1)} max={item.maxQuantity ?? item.availableQuantity ?? undefined} value={quantity} disabled={registration.status === "CHECKED_IN"} onChange={(event) => setQuantities((current) => ({ ...current, [item.id]: Number(event.target.value) }))} /> : null}</S.ItemCard>; })}</S.ItemCards>{registration.status === "CHECKED_IN" ? <S.FilterResult>Os itens não podem ser alterados após o check-in.</S.FilterResult> : null}</div></S.Wide>;
     return null;
   }
@@ -775,6 +782,7 @@ function EditRegistrationModal({ data, registration, busy, onClose, execute }: {
       .map((field) => [field.key, customValues[field.key]]));
     execute(() => updateRegistrationAction({
       eventId: data.event.id, registrationId: registration.id, expectedUpdatedAt: registration.updatedAt, ...values,
+      preferredPaymentMethod: resolveRegistrationPaymentMethod(total, values.preferredPaymentMethod),
       items: selectedItems.map((item) => ({ itemId: item.id, quantity: quantities[item.id] })), customFields: editableCustomFields,
     }));
   }
@@ -892,7 +900,8 @@ function PaymentModal({ eventId, registration, busy, onClose, execute }: { event
   const formId = "event-payment-form";
   const [file, setFile] = useState<File | null>(null);
   const [amount, setAmount] = useState(formatBrazilCurrencyInput(String(Math.round(registration.remainingAmount * 100))));
-  return <Modal open title={`Pagamento — ${registration.participantName}`} description={`${registration.registrationNumber ?? "Inscrição"} · ${eventLabel(PAYMENT_METHODS, registration.preferredPaymentMethod ?? "PIX")}`} icon={<WalletCards />} onClose={onClose} busy={busy} size="lg" footer={<S.ModalFooter><Button variant="outline" onClick={onClose}>Cancelar</Button><Button type="submit" form={formId} loading={busy}>Confirmar pagamento</Button></S.ModalFooter>}><S.ModalForm id={formId} onSubmit={(event) => { event.preventDefault(); execute(async () => { let receipt = { receiptPath: "", receiptFileName: "", receiptMimeType: "", receiptFileSize: 0 }; if (file) { const prepared = await preparePaymentReceiptAction(eventId, { name: file.name, type: file.type, size: file.size }); if (prepared.status === "error") return prepared; const upload = await createClient().storage.from("event-documents").uploadToSignedUrl(prepared.data.path, prepared.data.token, file, { contentType: file.type }); if (upload.error) return { status: "error", message: "Não foi possível enviar o comprovante." }; receipt = { receiptPath: prepared.data.path, receiptFileName: file.name, receiptMimeType: file.type, receiptFileSize: file.size }; } return recordPaymentAction({ eventId, registrationId: registration.id, amount: parseBrazilCurrencyInput(amount), ...receipt }); }); }}><S.FieldGrid><S.Field><span>Valor *</span><input data-autofocus required value={amount} onChange={(change) => setAmount(formatBrazilCurrencyInput(change.target.value))} inputMode="numeric" /></S.Field><S.Field><span>Data do pagamento</span><input value={new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date())} readOnly /></S.Field><S.Wide><S.DropField><input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" onChange={(event) => setFile(event.target.files?.[0] ?? null)} /><ReceiptText /><strong>{file ? file.name : "Comprovante do pagamento"}</strong><small>{file ? `${(file.size / 1024 / 1024).toFixed(2)} MB` : "PDF ou imagem de até 10 MB"}</small></S.DropField></S.Wide></S.FieldGrid></S.ModalForm></Modal>;
+  const [paymentMethod, setPaymentMethod] = useState(resolveRegistrationPaymentMethod(registration.remainingAmount, registration.preferredPaymentMethod));
+  return <Modal open title={`Pagamento — ${registration.participantName}`} description={`${registration.registrationNumber ?? "Inscrição"} · ${eventLabel(PAYMENT_METHODS, paymentMethod)}`} icon={<WalletCards />} onClose={onClose} busy={busy} size="lg" footer={<S.ModalFooter><Button variant="outline" onClick={onClose}>Cancelar</Button><Button type="submit" form={formId} loading={busy}>Confirmar pagamento</Button></S.ModalFooter>}><S.ModalForm id={formId} onSubmit={(event) => { event.preventDefault(); execute(async () => { let receipt = { receiptPath: "", receiptFileName: "", receiptMimeType: "", receiptFileSize: 0 }; if (file) { const prepared = await preparePaymentReceiptAction(eventId, { name: file.name, type: file.type, size: file.size }); if (prepared.status === "error") return prepared; const upload = await createClient().storage.from("event-documents").uploadToSignedUrl(prepared.data.path, prepared.data.token, file, { contentType: file.type }); if (upload.error) return { status: "error", message: "Não foi possível enviar o comprovante." }; receipt = { receiptPath: prepared.data.path, receiptFileName: file.name, receiptMimeType: file.type, receiptFileSize: file.size }; } return recordPaymentAction({ eventId, registrationId: registration.id, amount: parseBrazilCurrencyInput(amount), paymentMethod, ...receipt }); }); }}><S.FieldGrid><S.Field><span>Valor *</span><input data-autofocus required value={amount} onChange={(change) => setAmount(formatBrazilCurrencyInput(change.target.value))} inputMode="numeric" /></S.Field><S.Field><span>Forma de pagamento *</span><select required value={paymentMethod} onChange={(change) => setPaymentMethod(change.target.value)}>{PAYMENT_METHODS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></S.Field><S.Field><span>Data do pagamento</span><input value={new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date())} readOnly /></S.Field><S.Wide><S.DropField><input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" onChange={(event) => setFile(event.target.files?.[0] ?? null)} /><ReceiptText /><strong>{file ? file.name : "Comprovante do pagamento"}</strong><small>{file ? `${(file.size / 1024 / 1024).toFixed(2)} MB` : "PDF ou imagem de até 10 MB"}</small></S.DropField></S.Wide></S.FieldGrid></S.ModalForm></Modal>;
 }
 
 function RegistrationDetailsModal({ data, registration, busy, canDeletePayment, onClose, onOpenReceipt, onDeletePayment }: { data: EventWorkspaceData; registration: RegistrationRow; busy: boolean; canDeletePayment: boolean; onClose: () => void; onOpenReceipt: (paymentId: string) => void; onDeletePayment: (paymentId: string, label: string) => void }) {

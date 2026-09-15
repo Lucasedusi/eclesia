@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { formatBrazilPhone, formatCpf } from "@/utils/input-masks";
 import type { EventDetail, EventRegistrationFieldRow, PublicCheckoutStatus } from "../types/event.types";
 import { visibleRegistrationFields } from "../utils/registration-fields";
-import { buildTrackingHash, isPublicManualPaymentMethod, PUBLIC_BACK_LABEL, PUBLIC_MANUAL_PAYMENT_SUBTITLE, publicRefreshNotice, publicRegistrationIntent, publicResumeDestination, shouldShowPublicSummary } from "../utils/public-registration-flow";
+import { buildPublicMemberClaim, buildTrackingHash, isPublicManualPaymentMethod, PUBLIC_BACK_LABEL, PUBLIC_MANUAL_PAYMENT_SUBTITLE, publicRefreshNotice, publicRegistrationIntent, publicResumeDestination, shouldShowPublicSummary, type PublicParticipantKind } from "../utils/public-registration-flow";
 import * as S from "./events.styles";
 import { PublicCollapsibleSummary, PublicEventHeroMeta, PublicFlowToast, type PublicFlowNotice } from "./public-event-mobile";
 import { QrCode } from "./qr-code";
@@ -55,6 +55,9 @@ export function PublicRegistration({ event, items, congregations, roles, fields,
   const [pixCopied, setPixCopied] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [regionId, setRegionId] = useState("");
+  const [participantKind, setParticipantKind] = useState<PublicParticipantKind>("VISITOR");
+  const [memberCpf, setMemberCpf] = useState("");
+  const [memberBirthDate, setMemberBirthDate] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("PIX");
   const [selected, setSelected] = useState(() => new Set(items.filter((item) => item.is_required).map((item) => item.id)));
   const [quantities, setQuantities] = useState<Record<string, number>>(() => Object.fromEntries(items.map((item) => [item.id, Math.max(item.min_quantity, 1)])));
@@ -172,7 +175,7 @@ export function PublicRegistration({ event, items, congregations, roles, fields,
   function submitRegistration(formEvent: FormEvent<HTMLFormElement>) {
     formEvent.preventDefault(); setNotice(null); setFieldErrors({});
     const form = new FormData(formEvent.currentTarget);
-    const payload = { eventId: event.id, website: String(form.get("website") ?? ""), participantKind: "VISITOR", congregationId: String(form.get("congregationId") ?? ""), participantName: String(form.get("participantName") ?? ""), participantGender: String(form.get("participantGender") ?? ""), participantPhone: String(form.get("participantPhone") ?? ""), participantEmail: String(form.get("participantEmail") ?? ""), participantDocument: String(form.get("participantDocument") ?? ""), participantBirthDate: String(form.get("participantBirthDate") ?? ""), participantCity: String(form.get("participantCity") ?? ""), participantState: String(form.get("participantState") ?? ""), responsibleName: String(form.get("responsibleName") ?? ""), responsiblePhone: String(form.get("responsiblePhone") ?? ""), participantRoleId: String(form.get("participantRoleId") ?? ""), preferredPaymentMethod: effectiveMethod, consentAccepted: true, consentVersion: "2026-08", items: selectedItems.map((item) => ({ itemId: item.id, quantity: item.quantity })), customFields: customValues };
+    const payload = { eventId: event.id, website: String(form.get("website") ?? ""), ...buildPublicMemberClaim(participantKind, memberCpf, memberBirthDate), congregationId: String(form.get("congregationId") ?? ""), participantName: String(form.get("participantName") ?? ""), participantGender: String(form.get("participantGender") ?? ""), participantPhone: String(form.get("participantPhone") ?? ""), participantEmail: String(form.get("participantEmail") ?? ""), participantDocument: String(form.get("participantDocument") ?? ""), participantBirthDate: String(form.get("participantBirthDate") ?? ""), participantCity: String(form.get("participantCity") ?? ""), participantState: String(form.get("participantState") ?? ""), responsibleName: String(form.get("responsibleName") ?? ""), responsiblePhone: String(form.get("responsiblePhone") ?? ""), participantRoleId: String(form.get("participantRoleId") ?? ""), preferredPaymentMethod: effectiveMethod, consentAccepted: true, consentVersion: "2026-08", items: selectedItems.map((item) => ({ itemId: item.id, quantity: item.quantity })), customFields: customValues };
     startTransition(async () => {
       try{
         const response = await fetch(`/api/public/events/${event.publicCode}/${event.slug}/checkout`, { method: "POST", headers: { "content-type": "application/json", "idempotency-key": checkoutIdempotency.current }, body: JSON.stringify(payload) });
@@ -223,7 +226,19 @@ export function PublicRegistration({ event, items, congregations, roles, fields,
       {showBack ? <S.PublicBackRow aria-label="Navegação de retorno"><S.PublicBackButton type="button" onClick={goBack}><ArrowLeft />{PUBLIC_BACK_LABEL}</S.PublicBackButton></S.PublicBackRow> : null}
       {!flowSelected?<S.PublicModePanel><S.PublicStepHeading><small>TIPO DE INSCRIÇÃO</small><h2>Como você deseja se inscrever?</h2><p>As inscrições individuais e as caravanas possuem dados e pagamentos independentes.</p></S.PublicStepHeading><S.PublicModeGrid><S.PublicModeCard type="button" onClick={()=>setFlowSelected(true)}><span><Ticket/></span><strong>Inscrição individual</strong><small>Para uma única pessoa, com os campos personalizados e itens do evento.</small></S.PublicModeCard><S.PublicModeLink href={`/inscricoes/${event.publicCode}/${event.slug}/caravana`}><span><Bus/></span><strong>Inscrição por caravana</strong><small>Para igrejas e grupos, com quantidade de participantes, lista opcional e pagamento coletivo.</small></S.PublicModeLink></S.PublicModeGrid></S.PublicModePanel>:null}
       {step === 1&&flowSelected ? <S.CheckoutPanel><S.PublicStepHeading><small>ETAPA 1 DE 3</small><h2>Seus dados e escolhas</h2><p>Preencha os dados do participante e selecione o que deseja incluir.</p></S.PublicStepHeading>
-        {isRegistrationOpen ? <form id={registrationFormId} onSubmit={submitRegistration}><div aria-hidden="true" style={{ position: "absolute", left: "-10000px" }}><label>Não preencha<input name="website" tabIndex={-1} autoComplete="off" /></label></div><S.FieldGrid>
+        {isRegistrationOpen ? <form id={registrationFormId} onSubmit={submitRegistration}><div aria-hidden="true" style={{ position: "absolute", left: "-10000px" }}><label>Não preencha<input name="website" tabIndex={-1} autoComplete="off" /></label></div>
+          <S.ChoiceTabs role="group" aria-label="Vínculo do participante">
+            <button type="button" aria-pressed={participantKind === "MEMBER"} onClick={() => { setParticipantKind("MEMBER"); setFieldErrors({}); }}>Sou membro</button>
+            <button type="button" aria-pressed={participantKind === "VISITOR"} onClick={() => { setParticipantKind("VISITOR"); setMemberCpf(""); setMemberBirthDate(""); setFieldErrors({}); }}>Sou visitante</button>
+          </S.ChoiceTabs>
+          {participantKind === "MEMBER" ? <>
+            <S.InfoBox><ShieldCheck /><div><strong>Confirme seu cadastro de membro</strong><p>Informe o mesmo CPF e a mesma data de nascimento cadastrados no sistema. Esses dados serão usados somente para localizar seu cadastro nesta igreja.</p></div></S.InfoBox>
+            <S.FieldGrid>
+              <S.Field><span>CPF cadastrado *</span><input value={memberCpf} onChange={(change) => setMemberCpf(formatCpf(change.target.value))} inputMode="numeric" autoComplete="off" required minLength={14} aria-invalid={Boolean(fieldErrors.memberCpf)} placeholder="000.000.000-00" />{fieldErrors.memberCpf?.map((error) => <S.ErrorText key={error}>{error}</S.ErrorText>)}</S.Field>
+              <S.Field><span>Data de nascimento cadastrada *</span><input type="date" value={memberBirthDate} onChange={(change) => setMemberBirthDate(change.target.value)} autoComplete="bday" required aria-invalid={Boolean(fieldErrors.memberBirthDate)} />{fieldErrors.memberBirthDate?.map((error) => <S.ErrorText key={error}>{error}</S.ErrorText>)}</S.Field>
+            </S.FieldGrid>
+          </> : null}
+          <S.FieldGrid>
           {orderedFields.map((field) => <Fragment key={field.id || field.key}>{renderRegistrationField(field)}</Fragment>)}
         </S.FieldGrid></form> : <S.Notice $danger>As inscrições deste evento estão encerradas.</S.Notice>}
       </S.CheckoutPanel> : null}

@@ -138,6 +138,22 @@ begin
   ) then
     raise exception 'Status FAILED não está protegido pela constraint de pagamentos';
   end if;
+  if not exists (
+    select 1 from pg_constraint
+    where conname='event_registration_payment_method_matches_total_check'
+  ) or not exists (
+    select 1 from pg_constraint
+    where conname='event_payment_method_valid_check'
+  ) then
+    raise exception 'Formas de pagamento individuais não possuem constraints de integridade';
+  end if;
+  if not exists (
+    select 1 from pg_trigger
+    where tgrelid='public.event_registrations'::regclass
+      and tgname='normalize_event_registration_payment_method' and not tgisinternal
+  ) then
+    raise exception 'Normalização da forma de pagamento da inscrição ausente';
+  end if;
 end $$;
 
 select 'events_module_verification_ok' as result;

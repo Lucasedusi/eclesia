@@ -193,9 +193,11 @@ export async function prepareCaravanParticipantListAction(eventId:string,groupId
   try{return{status:"success",message:"Upload preparado.",data:await prepareCaravanParticipantList(eventId,groupId,{fileName:file.name,mimeType:file.type,fileSize:file.size})};}catch(error){return errorResult(error,"Não foi possível preparar a lista.") as ActionResult<{id:string;path:string;token:string}>;}
 }
 
-export async function approveRegistrationPaymentAction(eventId: string, registrationId: string): Promise<ActionResult> {
+export async function approveRegistrationPaymentAction(eventId: string, registrationId: string, paymentMethod: unknown = "PIX"): Promise<ActionResult> {
+  const parsedPaymentMethod = paymentSchema.shape.paymentMethod.safeParse(paymentMethod);
+  if (!parsedPaymentMethod.success) return { status: "error", message: "Selecione uma forma de pagamento válida." };
   try {
-    await approveRegistrationPayment(eventId, registrationId);
+    await approveRegistrationPayment(eventId, registrationId, parsedPaymentMethod.data);
     await refresh(eventId);
     return { status: "success", message: "Pagamento aprovado manualmente com sucesso." };
   } catch (error) {

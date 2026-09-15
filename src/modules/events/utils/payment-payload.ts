@@ -2,19 +2,32 @@ import { parseBrazilCurrencyInput } from "@/utils/input-masks";
 
 type PaymentReceiptInput = {
   amount: number;
+  paymentMethod?: string | null;
+  approvePending?: boolean;
   receiptPath?: string;
   receiptFileName?: string;
   receiptMimeType?: string;
   receiptFileSize?: number;
 };
 
+const registrationPaymentMethods = new Set(["PIX", "CASH", "CREDIT_CARD", "DEBIT_CARD"]);
+
+export function resolveRegistrationPaymentMethod(totalAmount: number, paymentMethod: string | null | undefined) {
+  if (totalAmount <= 0) return "NOT_APPLICABLE";
+  return paymentMethod && registrationPaymentMethods.has(paymentMethod) ? paymentMethod : "PIX";
+}
+
 export function buildRegistrationPaymentPayload(input: PaymentReceiptInput) {
   const receiptPath = input.receiptPath?.trim() ?? "";
+  const paymentMethod = resolveRegistrationPaymentMethod(input.amount, input.paymentMethod);
+  const approval = input.approvePending ? { approvePending: true } : {};
 
-  if (!receiptPath) return { amount: input.amount };
+  if (!receiptPath) return { amount: input.amount, paymentMethod, ...approval };
 
   return {
     amount: input.amount,
+    paymentMethod,
+    ...approval,
     receiptPath,
     receiptFileName: input.receiptFileName?.trim() ?? "",
     receiptMimeType: input.receiptMimeType?.trim() ?? "",
