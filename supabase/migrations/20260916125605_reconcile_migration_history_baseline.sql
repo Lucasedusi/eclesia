@@ -148,7 +148,7 @@ alter function public.reissue_event_registration_qr(uuid)
   set search_path = '';
 
 -- Compatibility wrappers are needed only while the immutable history replays.
-drop function public.digest(text, text);
-drop function public.gen_random_bytes(integer);
+drop function if exists public.digest(text, text);
+drop function if exists public.gen_random_bytes(integer);
 
 commit;
