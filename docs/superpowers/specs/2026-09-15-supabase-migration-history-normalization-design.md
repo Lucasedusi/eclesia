@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Restabelecer uma única linha do tempo confiável para as migrations do projeto, sem alterar dados nem o schema funcional do ambiente online, e comprovar em um Supabase local executado com Docker que o banco pode ser reconstruído do zero. Ao final, novos ajustes de banco devem seguir o fluxo normal `migration new` → teste local → revisão → `db push`/CI.
+Restabelecer uma única linha do tempo confiável para as migrations do projeto, sem alterar dados nem o schema funcional do ambiente online, e comprovar em um Supabase local executado pela API Docker do Colima que o banco pode ser reconstruído do zero. Ao final, novos ajustes de banco devem seguir o fluxo normal `migration new` → teste local → revisão → `db push`/CI.
 
 ## Estado atual verificado
 
@@ -11,7 +11,7 @@ Restabelecer uma única linha do tempo confiável para as migrations do projeto,
 - Há versões existentes somente no repositório, versões existentes somente no histórico remoto e arquivos de mesmo propósito com timestamps ou conteúdo diferentes.
 - As duas migrations recentes foram aplicadas e verificadas no ambiente online, mas precisaram ser marcadas como aplicadas porque o `supabase db push` normal foi bloqueado pela divergência anterior.
 - O schema e os dados do módulo de Eventos estão funcionais; o problema a corrigir agora é o histórico de controle de migrations.
-- Docker ainda não está instalado nesta máquina. O Supabase CLI está fixado no projeto na versão `2.117.0`.
+- Colima `0.10.3`, Docker CLI `29.8.1` e Lima `2.2.0` estão instalados. Não há instância Colima ativa. O Supabase CLI está fixado no projeto na versão `2.117.0`.
 
 ## Princípios e restrições
 
@@ -20,7 +20,7 @@ Restabelecer uma única linha do tempo confiável para as migrations do projeto,
 - O ambiente online não receberá migrations de schema, seeds ou dados de teste durante a normalização.
 - A eventual alteração remota ficará limitada à tabela de controle de migrations do Supabase e só ocorrerá depois de os critérios de segurança desta especificação passarem.
 - Não será feito um reparo em massa por suposição. Cada conjunto de versões será derivado novamente por comandos de leitura e registrado em um relatório auditável.
-- Segredos, dados de membros e dados de produção não serão copiados para o Docker local. A comparação será de estrutura, não de conteúdo das tabelas.
+- Segredos, dados de membros e dados de produção não serão copiados para o ambiente local. A comparação será de estrutura, não de conteúdo das tabelas.
 - Esta etapa prepara o CI/CD, mas não habilita implantação automática em produção. A automação será uma fase separada, depois que o histórico estiver normalizado.
 
 ## Arquitetura escolhida
@@ -29,11 +29,11 @@ Restabelecer uma única linha do tempo confiável para as migrations do projeto,
 
 O trabalho será executado na branch `codex/supabase-history-normalization`. Antes das mudanças operacionais, será criado um worktree Git isolado seguindo as regras do repositório. O checkout principal e a branch `main` permanecerão disponíveis como referência e recuperação.
 
-### 2. Supabase local em Docker
+### 2. Supabase local com Colima
 
-Será instalado o Docker Desktop para Apple Silicon pelo Homebrew, inicializado e validado com `docker version`. O Supabase local será iniciado pelo CLI versionado do projeto. A configuração local continuará usando PostgreSQL 17, compatível com a versão principal já configurada e com o projeto remoto.
+Será criada uma instância Colima exclusiva chamada `eclesia`, usando arquitetura `aarch64`, Apple Virtualization Framework (`vz`), runtime Docker, 2 CPUs, 4 GiB de memória e disco máximo de 40 GiB. Rosetta, Kubernetes, execução automática no login e serviços desnecessários permanecerão desativados. O Supabase local será iniciado pelo CLI versionado do projeto. A configuração local continuará usando PostgreSQL 17, compatível com a versão principal já configurada e com o projeto remoto.
 
-A instalação pode exigir uma confirmação visual do macOS para licença, componentes privilegiados ou abertura inicial do Docker Desktop. Nenhuma credencial do projeto será gravada em arquivo versionado.
+O Colima será iniciado somente durante verificações de banco e interrompido ao final. Para a normalização será usado inicialmente `supabase db start`, que inicia apenas o PostgreSQL local. Serviços adicionais do Supabase somente serão ativados se uma verificação demonstrar dependência concreta. Nenhuma credencial do projeto será gravada em arquivo versionado.
 
 ### 3. Reconstrução a partir do histórico local
 
@@ -41,7 +41,7 @@ O fluxo principal será:
 
 1. Capturar novamente, por leitura, a lista local e a lista remota de versões.
 2. Exportar somente metadados e estrutura remota necessários à comparação, sem dados de usuários.
-3. Executar `supabase start` e reconstruir o banco vazio com `supabase db reset` usando exatamente as 54 migrations atuais.
+3. Executar `supabase db start` e reconstruir o banco vazio com `supabase db reset` usando exatamente as 54 migrations atuais.
 4. Executar as verificações SQL versionadas e os testes da aplicação.
 5. Comparar o schema resultante com o schema remoto, normalizando diferenças voláteis que não representam estrutura funcional, como proprietário, comentários gerados e metadados internos do Supabase.
 
@@ -84,7 +84,7 @@ O reparo será executado em lotes pequenos. Após cada lote, `supabase migration
 
 ### Banco local
 
-- Docker responde e o conjunto local do Supabase inicia sem erro.
+- Colima e a API Docker respondem, e o PostgreSQL local do Supabase inicia sem erro dentro dos limites de recursos aprovados.
 - `supabase db reset` conclui em banco vazio somente com arquivos versionados.
 - As verificações relevantes em `supabase/tests/` e `supabase/verification/` passam.
 - Os Security e Performance Advisors do ambiente local não apresentam regressões causadas pela normalização ou por eventual migration de reconciliação.
@@ -108,19 +108,19 @@ O reparo será executado em lotes pequenos. Após cada lote, `supabase migration
 
 - `supabase migration list --linked` mostra correspondência exata entre versões locais e remotas.
 - `supabase db push --linked --dry-run --skip-vault` não encontra migration pendente.
-- Um novo banco vazio pode ser reconstruído integralmente pelo Docker local.
+- Um novo banco vazio pode ser reconstruído integralmente pelo PostgreSQL local executado no Colima.
 - O diff Git não contém segredos, dumps de dados, ruído gerado ou alteração em migrations históricas.
 
 ## Recuperação e interrupção segura
 
 - Até o reparo remoto, todas as mudanças são locais e reversíveis por descarte do worktree ou revert dos commits.
-- Se Docker, replay, testes ou comparação falharem, o processo para antes de qualquer escrita remota.
+- Se Colima, replay, testes ou comparação falharem, o processo para antes de qualquer escrita remota.
 - Se um lote de reparo remoto não produzir a lista esperada, os lotes seguintes não serão executados; o estado será comparado ao backup de histórico e restaurado com comandos explícitos se necessário.
 - O schema e os dados de produção não dependem do conteúdo da tabela de histórico para continuar operando, mas o reparo será tratado como uma mudança auditável e sensível.
 
 ## Entregáveis
 
-- Docker Desktop e Supabase local instalados e validados nesta máquina.
+- Colima e PostgreSQL local do Supabase configurados e validados nesta máquina, sem Rosetta nem inicialização automática.
 - Histórico local preservado e comprovadamente reproduzível.
 - Relatório versionado de divergências, equivalência estrutural e versões reparadas.
 - Histórico remoto alinhado ao repositório, somente depois de todos os gates.
@@ -132,7 +132,7 @@ O reparo será executado em lotes pequenos. Após cada lote, `supabase migration
 Após a normalização, toda mudança de banco seguirá:
 
 1. criar uma nova migration pelo CLI;
-2. aplicar e testar no Docker local;
+2. iniciar o Colima sob demanda e aplicar/testar no PostgreSQL local;
 3. executar verificações SQL, lint, typecheck, testes e build aplicáveis;
 4. revisar e versionar a migration junto com o código;
 5. aplicar ao ambiente online por CI/CD com segredos protegidos, ambiente de produção com aprovação e `db push` sem reparos manuais.
