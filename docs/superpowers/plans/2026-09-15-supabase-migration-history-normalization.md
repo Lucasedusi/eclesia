@@ -65,7 +65,7 @@ Expected: the main checkout stays on `main`; all following repository changes oc
 
 **Files:** none
 
-- [ ] **Step 1: Confirm installed versions and absence of an existing VM**
+- [x] **Step 1: Confirm installed versions and absence of an existing VM**
 
    ```bash
    colima version
@@ -74,13 +74,13 @@ Expected: the main checkout stays on `main`; all following repository changes oc
    colima list
    ```
 
-- [ ] **Step 2: Create the isolated ARM64 Colima profile**
+- [x] **Step 2: Create the isolated ARM64 Colima profile**
 
    ```bash
    colima start eclesia --runtime docker --vm-type vz --arch aarch64 --cpus 2 --memory 4 --disk 40 --save-config
    ```
 
-- [ ] **Step 3: Verify the runtime and active Docker context**
+- [x] **Step 3: Verify the runtime and active Docker context**
 
    ```bash
    colima list
@@ -98,7 +98,7 @@ Expected: profile `eclesia` is `Running`, architecture is `aarch64`, resources a
 - Create later: `docs/supabase/migration-history-normalization-2026-09-15.md`
 - Verify: `supabase/migrations/*.sql`
 
-- [ ] **Step 1: Create a private temporary evidence directory**
+- [x] **Step 1: Create a private temporary evidence directory**
 
    ```bash
    mktemp -d /private/tmp/eclesia-supabase-evidence.XXXXXX | tee /private/tmp/eclesia-supabase-evidence.path
@@ -107,14 +107,14 @@ Expected: profile `eclesia` is `Running`, architecture is `aarch64`, resources a
 
    Record the returned absolute path, set mode `700`, and use only that directory for non-versioned evidence.
 
-- [ ] **Step 2: Record local migration names and SHA-256 hashes**
+- [x] **Step 2: Record local migration names and SHA-256 hashes**
 
    ```bash
    find supabase/migrations -maxdepth 1 -type f -name '*.sql' -print | sort
    shasum -a 256 supabase/migrations/*.sql
    ```
 
-- [ ] **Step 3: Record the linked project and complete local/remote histories with read-only commands**
+- [x] **Step 3: Record the linked project and complete local/remote histories with read-only commands**
 
    ```bash
    npx supabase projects list
@@ -122,9 +122,9 @@ Expected: profile `eclesia` is `Running`, architecture is `aarch64`, resources a
    npx supabase db query --linked "select version, name, statements is not null as has_statements from supabase_migrations.schema_migrations order by version"
    ```
 
-- [ ] **Step 4: Export only `supabase_migrations.schema_migrations` into the evidence directory**
+- [x] **Step 4: Export only `supabase_migrations.schema_migrations` into the evidence directory**
 
-- [ ] **Step 5: Derive and save the four explicit comparison sets**
+- [x] **Step 5: Derive and save the four explicit comparison sets**
 
    - versions present in both histories;
    - versions only local;
@@ -140,25 +140,25 @@ Expected: migration counts and sets are reproducible from saved evidence; no rem
 - Modify only if needed: `supabase/config.toml`
 - Create only if needed: `supabase/seed.sql`
 
-- [ ] **Step 1: Start only the local Supabase PostgreSQL database**
+- [x] **Step 1: Start only the local Supabase PostgreSQL database**
 
    ```bash
    npx supabase db start
    ```
 
-- [ ] **Step 2: Run the first full reset**
+- [x] **Step 2: Run the first full reset**
 
    ```bash
    npx supabase db reset --local
    ```
 
-- [ ] **Step 3: If and only if reset reports the absent configured seed file, create `supabase/seed.sql` containing only `-- Intentionally empty: local schema verification does not use production data.`**
+- [x] **Step 3: If and only if reset reports the absent configured seed file, create `supabase/seed.sql` containing only `-- Intentionally empty: local schema verification does not use production data.`**
 
-- [ ] **Step 4: Repeat `npx supabase db reset --local` after a necessary seed fix**
+- [x] **Step 4: Repeat `npx supabase db reset --local` after a necessary seed fix**
 
 Expected: failure, if any, now identifies a migration or database object rather than missing Docker/seed infrastructure.
 
-- [ ] **Step 5: Commit only a necessary seed/config support change**
+- [x] **Step 5: Commit only a necessary seed/config support change**
 
    ```bash
    git add supabase/config.toml supabase/seed.sql
@@ -173,16 +173,16 @@ Expected: failure, if any, now identifies a migration or database object rather 
 - Verify: `supabase/tests/events_verification.sql`
 - Verify: `supabase/verification/performance_audit.sql`
 
-- [ ] **Step 1: Run a clean reset and capture the full output**
+- [x] **Step 1: Run a clean reset and capture the full output**
 
    ```bash
    npx supabase db reset --local
    npx supabase migration list --local
    ```
 
-- [ ] **Step 2: Compare local applied versions with all 54 migration filenames**
+- [x] **Step 2: Compare local applied versions with all 54 migration filenames**
 
-- [ ] **Step 3: Run the versioned database checks against local PostgreSQL**
+- [x] **Step 3: Run the versioned database checks against local PostgreSQL**
 
    ```bash
    npx supabase db query --local --file supabase/tests/events_verification.sql
@@ -190,9 +190,9 @@ Expected: failure, if any, now identifies a migration or database object rather 
    npx supabase db lint --local --schema public --level warning --fail-on error
    ```
 
-- [ ] **Step 4: Run local Security and Performance Advisors and save their outputs in the evidence directory**
+- [x] **Step 4: Run local Security and Performance Advisors and save their outputs in the evidence directory**
 
-- [ ] **Step 5: Recompute migration hashes and stop if any historical migration changed or failed**
+- [x] **Step 5: Recompute migration hashes and stop if any historical migration changed or failed**
 
 Expected: all migrations replay successfully, the Events verification emits its success marker, and no historical file changes hash.
 
@@ -203,13 +203,13 @@ Expected: all migrations replay successfully, the Events verification emits its 
 - Create later: `docs/supabase/migration-history-normalization-2026-09-15.md`
 - Potentially create: the CLI-generated `reconcile_replayed_schema` migration under `supabase/migrations/`
 
-- [ ] **Step 1: Generate a direct review diff without creating a migration automatically**
+- [x] **Step 1: Generate a direct review diff without creating a migration automatically**
 
    ```bash
    npx supabase db diff --from migrations --to linked --schema public,storage --output /private/tmp/supabase-schema-diff.sql
    ```
 
-- [ ] **Step 2: Produce independent schema-only dumps for local and linked databases**
+- [x] **Step 2: Produce independent schema-only dumps for local and linked databases**
 
    ```bash
    eclesia_evidence_dir="$(tr -d '\n' < /private/tmp/eclesia-supabase-evidence.path)"
@@ -217,17 +217,17 @@ Expected: all migrations replay successfully, the Events verification emits its 
    npx supabase db dump --linked --schema public,storage --file "$eclesia_evidence_dir/remote-schema.sql"
    ```
 
-- [ ] **Step 3: Review every difference and classify only named owner/platform/version noise as ignorable**
+- [x] **Step 3: Review every difference and classify only named owner/platform/version noise as ignorable**
 
-- [ ] **Step 4: Record equivalence or stop on functional divergence**
+- [x] **Step 4: Record equivalence or stop on functional divergence**
 
-- [ ] **Step 5: If the replay completed but differs functionally, create one forward-only reconciliation migration with the CLI**
+- [x] **Step 5: If the replay completed but differs functionally, create one forward-only reconciliation migration with the CLI**
 
    ```bash
    npx supabase migration new reconcile_replayed_schema
    ```
 
-- [ ] **Step 6: Add only reviewed SQL to the new migration, rerun Tasks 5 and 6, and require an empty or fully justified diff**
+- [x] **Step 6: Add only reviewed SQL to the new migration, rerun Tasks 5 and 6, and require an empty or fully justified diff**
 
 Expected: either structural equivalence is proven or a new tested reconciliation migration makes it so. No production write has occurred.
 
@@ -238,16 +238,16 @@ Expected: either structural equivalence is proven or a new tested reconciliation
 - Verify: `src/lib/supabase/database.types.ts`
 - Verify: affected Events and Members tests
 
-- [ ] **Step 1: Generate local types to a temporary file and compare them with committed types**
+- [x] **Step 1: Generate local types to a temporary file and compare them with committed types**
 
    ```bash
    npx supabase gen types typescript --local > /private/tmp/database.types.local.ts
    diff -u src/lib/supabase/database.types.ts /private/tmp/database.types.local.ts
    ```
 
-- [ ] **Step 2: Regenerate committed types through the CLI only if the comparison proves they are stale**
+- [x] **Step 2: Regenerate committed types through the CLI only if the comparison proves they are stale**
 
-- [ ] **Step 3: Run all application gates**
+- [x] **Step 3: Run all application gates**
 
    ```bash
    npm run lint -- --max-warnings=0
@@ -256,7 +256,7 @@ Expected: either structural equivalence is proven or a new tested reconciliation
    npm run build
    ```
 
-- [ ] **Step 4: Recompute historical migration hashes and compare them with Task 3**
+- [x] **Step 4: Recompute historical migration hashes and compare them with Task 3**
 
 Expected: all gates pass and every historical migration hash is unchanged.
 
@@ -266,7 +266,7 @@ Expected: all gates pass and every historical migration hash is unchanged.
 
 - Create: `docs/supabase/migration-history-normalization-2026-09-15.md`
 
-- [ ] **Step 1: Write the evidence report with all audit fields**
+- [x] **Step 1: Write the evidence report with all audit fields**
 
    - linked project name/ref without credentials;
    - Colima, Docker CLI, Lima, Supabase CLI and PostgreSQL versions;
@@ -278,9 +278,9 @@ Expected: all gates pass and every historical migration hash is unchanged.
    - inverse rollback batches;
    - explicit statement that production schema/data were not changed.
 
-- [ ] **Step 2: Validate that repair sets are disjoint and derived from a fresh linked list**
+- [x] **Step 2: Validate that repair sets are disjoint and derived from a fresh linked list**
 
-- [ ] **Step 3: Commit the report before any remote mutation**
+- [x] **Step 3: Commit the report before any remote mutation**
 
    ```bash
    git add docs/supabase/migration-history-normalization-2026-09-15.md
@@ -312,9 +312,12 @@ Expected: another engineer can audit and reverse every proposed metadata change.
    ```bash
    npx supabase migration list --linked
    npx supabase db push --linked --dry-run --skip-vault
+   npx supabase db push --linked --skip-vault
+   npx supabase migration list --linked
+   npx supabase db push --linked --dry-run --skip-vault
    ```
 
-Expected: local and remote columns match exactly and dry-run reports no pending migration. Do not run a real `db push` when the dry-run is empty.
+Expected: after metadata repair, the first dry-run lists only the reviewed reconciliation migration. Apply it transactionally, then require exact local/remote history alignment and an empty final dry-run. Never run a real `db push` when a dry-run is already empty.
 
 ## Task 10: Add the future migration runbook
 
@@ -323,7 +326,7 @@ Expected: local and remote columns match exactly and dry-run reports no pending 
 - Create: `docs/supabase/migrations-runbook.md`
 - Modify: `docs/supabase/migration-history-normalization-2026-09-15.md`
 
-- [ ] **Step 1: Document the lightweight routine workflow**
+- [x] **Step 1: Document the lightweight routine workflow**
 
    ```bash
    colima start eclesia
@@ -338,11 +341,11 @@ Expected: local and remote columns match exactly and dry-run reports no pending 
 
    Explain in prose that each change begins with `npx supabase migration new` followed by a descriptive snake-case name, and that its real verification SQL file is executed with `npx supabase db query --local --file`.
 
-- [ ] **Step 2: State that online push requires reviewed code and an explicit production gate; `migration repair` is exceptional**
+- [x] **Step 2: State that online push requires reviewed code and an explicit production gate; `migration repair` is exceptional**
 
-- [ ] **Step 3: Record final post-repair outputs and Colima shutdown commands**
+- [x] **Step 3: Record final post-repair outputs and Colima shutdown commands**
 
-- [ ] **Step 4: Commit documentation and any reviewed generated-type/reconciliation changes**
+- [x] **Step 4: Commit documentation and any reviewed generated-type/reconciliation changes**
 
    ```bash
    git add docs/supabase src/lib/supabase/database.types.ts supabase/migrations supabase/seed.sql supabase/config.toml
