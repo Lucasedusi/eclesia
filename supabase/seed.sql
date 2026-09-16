@@ -1,0 +1,1 @@
+-- Intentionally empty: local schema verification does not use production data.
