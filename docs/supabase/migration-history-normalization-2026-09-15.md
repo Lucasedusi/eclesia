@@ -54,7 +54,7 @@ O schema `public` reconstruído coincide com o remoto, exceto por:
 
 `register_event_checkin` e `reissue_event_registration_qr` terminam com o mesmo `search_path = ''` do ambiente remoto. As diferenças restantes no dump de `storage` são objetos e grants gerenciados pela versão da plataforma (`iceberg_*` e `supabase_storage_admin`); as políticas de Storage da aplicação coincidem.
 
-O `supabase db diff --from migrations --to linked` identificou somente os dois RPCs de convite acima e `handle_new_user`; neste último, a diferença é apenas a normalização CRLF para LF dentro do corpo da função, sem mudança de instruções ou comportamento.
+Antes do push, `supabase db diff --from migrations --to linked` identificou somente os dois RPCs de convite acima e `handle_new_user`. Depois do push, restou apenas `handle_new_user`; a comparação direta do catálogo local e remoto confirmou o mesmo SHA-256 do corpo normalizado (`37912220a08084fa0c49da71cfe95cc1c3a7e1e006f146e667a5775a55467550`), linguagem, assinatura, retorno, `SECURITY DEFINER` e `search_path`. A diferença é somente a representação textual CRLF/LF, sem mudança de instruções ou comportamento.
 
 ## Plano exato de reparo
 
@@ -111,6 +111,25 @@ npx supabase migration repair --linked --status applied 20260827010629 202608270
 
 Se a migration `20260916125605` falhar, o `db push` a executa em transação e não deve deixar mudança parcial. Se ela já tiver sido aplicada e uma reversão funcional se tornar necessária, criar uma nova migration para frente; não remover nem editar o arquivo aplicado.
 
-## Estado da escrita remota
+## Execução e estado final remoto
 
-Até a criação deste relatório, nenhuma operação desta normalização alterou schema, dados ou histórico do ambiente online. Somente leituras foram realizadas.
+O histórico remoto foi relido imediatamente antes da escrita e permaneceu idêntico ao backup por conteúdo, versão, nome e statements. A normalização foi então executada nos lotes auditados acima:
+
+- 45 versões exclusivas do histórico remoto foram marcadas como `reverted`;
+- o baseline e as 48 versões canônicas já representadas no schema foram marcados como `applied`;
+- cada lote foi seguido por nova leitura da lista remota;
+- o primeiro dry-run listou exclusivamente `20260916125605_reconcile_migration_history_baseline.sql`.
+
+A primeira tentativa de aplicar a reconciliação falhou porque `public.digest(text, text)` já não existia no ambiente online. O push era transacional: a migration não foi registrada e os RPCs permaneceram inalterados. A reconciliação foi tornada idempotente com `DROP FUNCTION IF EXISTS`, validada novamente nos dois caminhos locais — replay completo e aplicação incremental com wrappers previamente ausentes — e então reaplicada com sucesso.
+
+Estado final confirmado:
+
+- histórico local e remoto alinhado nas mesmas 56 versões;
+- dry-run final vazio (`upToDate: true`);
+- wrappers temporários `public.digest` e `public.gen_random_bytes` ausentes;
+- os quatro RPCs auditados possuem `search_path = ''`;
+- `create_church_invitation` e `renew_church_invitation` usam as funções `extensions` qualificadas;
+- nenhum dado de negócio foi criado, alterado ou removido;
+- a única alteração real de schema foi o endurecimento/reconciliação dos RPCs revisados.
+
+O erro preexistente do lint SQL (`42702` em `claim_stale_administrative_document_cleanups`) e os avisos preexistentes dos Advisors permanecem fora do escopo desta normalização e não foram agravados por ela.

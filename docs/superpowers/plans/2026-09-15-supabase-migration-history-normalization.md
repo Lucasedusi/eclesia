@@ -295,19 +295,19 @@ Expected: another engineer can audit and reverse every proposed metadata change.
 
 **Gate:** Run only if Tasks 5–8 passed and the final report proves schema equivalence.
 
-- [ ] **Step 1: Re-read remote history immediately before writing and compare it byte-for-byte with the report input**
+- [x] **Step 1: Re-read remote history immediately before writing and compare it byte-for-byte with the report input**
 
-- [ ] **Step 2: Run the exact remote-only `reverted` batches recorded in the report, checking the list after each batch**
+- [x] **Step 2: Run the exact remote-only `reverted` batches recorded in the report, checking the list after each batch**
 
    Copy the concrete `reverted` commands from the committed evidence report and execute them verbatim. After each command, run `npx supabase migration list --linked`.
 
-- [ ] **Step 3: Run the exact local-only `applied` batches recorded in the report, checking the list after each batch**
+- [x] **Step 3: Run the exact local-only `applied` batches recorded in the report, checking the list after each batch**
 
    Copy the concrete `applied` commands from the committed evidence report and execute them verbatim. After each command, run `npx supabase migration list --linked`.
 
-- [ ] **Step 4: Stop after any unexpected list result and use only the recorded inverse batch if restoration is required**
+- [x] **Step 4: Stop after any unexpected list result and use only the recorded inverse batch if restoration is required**
 
-- [ ] **Step 5: Verify the final no-op deployment state**
+- [x] **Step 5: Verify the final no-op deployment state**
 
    ```bash
    npx supabase migration list --linked
@@ -358,7 +358,7 @@ Expected: future database work has a short, repeatable Colima-first path that st
 
 **Files:** all files changed in this plan
 
-- [ ] **Step 1: Run the final clean verification from the worktree**
+- [x] **Step 1: Run the final clean verification from the worktree**
 
    ```bash
    git diff main...HEAD --check
@@ -373,22 +373,22 @@ Expected: future database work has a short, repeatable Colima-first path that st
    npm run build
    ```
 
-- [ ] **Step 2: Confirm no secrets or dumps were added**
+- [x] **Step 2: Confirm no secrets or dumps were added**
 
    ```bash
    git diff main...HEAD --name-only
    git status --ignored --short
    ```
 
-- [ ] **Step 3: Update and commit the evidence report with exact final results if necessary**
+- [x] **Step 3: Update and commit the evidence report with exact final results if necessary**
 
-- [ ] **Step 4: Stop local services and the Colima profile**
+- [x] **Step 4: Stop local services and the Colima profile**
 
    ```bash
    npx supabase stop
    colima stop eclesia
    ```
 
-- [ ] **Step 5: Review the branch diff and present the commits**
+- [x] **Step 5: Review the branch diff and present the commits**
 
 Expected: the branch is clean, Colima replay is deterministic, histories align, dry-run is empty, all applicable project checks are evidenced, and no VM remains running.
