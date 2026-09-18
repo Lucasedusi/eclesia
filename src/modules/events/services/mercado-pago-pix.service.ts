@@ -71,7 +71,7 @@ export async function createMercadoPagoPixCharge(input: {
   const [firstName, ...lastNameParts] = input.participantName.trim().split(/\s+/);
   const notificationUrl = process.env.MERCADO_PAGO_WEBHOOK_URL?.trim()
     || `${process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? ""}/api/payments/webhooks/mercado-pago`;
-  if (!notificationUrl.startsWith("https://") && process.env.MERCADO_PAGO_ENV !== "test") {
+  if (!notificationUrl.startsWith("https://")) {
     throw new MercadoPagoPixError("Configure uma URL HTTPS para receber as confirmações do Pix.");
   }
 

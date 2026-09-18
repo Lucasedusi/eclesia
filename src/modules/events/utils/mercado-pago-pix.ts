@@ -2,6 +2,22 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 export type NormalizedPaymentStatus = "PENDING" | "CONFIRMED" | "FAILED" | "CANCELLED" | "REFUNDED" | "EXPIRED";
 
+export function createMercadoPagoPixIdempotencyKey(
+  secret: string,
+  checkoutId: string,
+  previousProviderPaymentId: string | null,
+) {
+  return createHmac("sha256", secret)
+    .update(`event-pix:${checkoutId}:${previousProviderPaymentId ?? "initial"}`)
+    .digest("hex");
+}
+
+export function resolveMercadoPagoPixExpirationMinutes(value: unknown) {
+  const parsed = Number(value ?? 31);
+  if (!Number.isFinite(parsed)) return 31;
+  return Math.min(Math.max(parsed, 31), 60);
+}
+
 export function normalizeMercadoPagoStatus(status: string, expiresAt?: string | null): NormalizedPaymentStatus {
   if (status === "approved") return "CONFIRMED";
   if (status === "refunded" || status === "charged_back") return "REFUNDED";

@@ -14,6 +14,7 @@ import {
   publicPixData,
   type MercadoPagoPayment,
 } from "./mercado-pago-pix.service";
+import { createMercadoPagoPixIdempotencyKey, resolveMercadoPagoPixExpirationMinutes } from "../utils/mercado-pago-pix";
 import { buildPublicRegistrationPayload, resolvePublicMemberId } from "./public-member-link";
 
 type PublicRegistrationInput = z.infer<typeof publicRegistrationSchema>;
@@ -235,7 +236,6 @@ export async function createPublicPixPayment(input: {
   checkoutToken: string;
   payerEmail: string;
   payerCpf: string;
-  idempotencyKey: string;
 }) {
   const rows = await checkoutRows(input.checkoutToken, input.publicCode, input.slug);
   if (rows.checkout.payment_method !== "PIX" || number(rows.registration.total_amount) <= 0) {
@@ -260,9 +260,18 @@ export async function createPublicPixPayment(input: {
     }
   }
 
-  const expirationMinutes = Math.min(Math.max(Number(process.env.MERCADO_PAGO_PIX_EXPIRATION_MINUTES ?? 30), 10), 60);
+  const expirationMinutes = resolveMercadoPagoPixExpirationMinutes(process.env.MERCADO_PAGO_PIX_EXPIRATION_MINUTES);
   const expiresAt = new Date(Date.now() + expirationMinutes * 60_000).toISOString();
   const externalReference = `event:${rows.event.id}:registration:${rows.registration.id}`;
+  const checkoutSecret = process.env.EVENT_CHECKOUT_SECRET?.trim();
+  if (!checkoutSecret || checkoutSecret.length < 32) {
+    throw new PublicCheckoutError("O checkout público ainda não está configurado para este ambiente.");
+  }
+  const paymentIdempotencyKey = createMercadoPagoPixIdempotencyKey(
+    checkoutSecret,
+    String(rows.checkout.id),
+    rows.payment?.provider_payment_id ? String(rows.payment.provider_payment_id) : null,
+  );
   const simulationEnabled = isPaymentSimulationEnabled();
   const payment = simulationEnabled
     ? simulatedProviderPayment({
@@ -281,7 +290,7 @@ export async function createPublicPixPayment(input: {
       payerCpf: input.payerCpf,
       eventName: String(rows.event.name),
       externalReference,
-      idempotencyKey: input.idempotencyKey,
+      idempotencyKey: paymentIdempotencyKey,
       expiresAt,
     });
   const providerExpiration = payment.date_of_expiration ?? expiresAt;
@@ -292,7 +301,7 @@ export async function createPublicPixPayment(input: {
     p_amount: number(payment.transaction_amount),
     p_expires_at: providerExpiration,
     p_external_reference: externalReference,
-    p_idempotency_key: input.idempotencyKey,
+    p_idempotency_key: paymentIdempotencyKey,
   });
   if (attached.error) throw new PublicCheckoutError("O Pix foi criado, mas não foi possível vinculá-lo. Tente novamente.");
   await rows.admin.from("event_registrations").update({ participant_email: input.payerEmail }).eq("id", rows.registration.id);
@@ -472,22 +481,6 @@ export async function getPublicTrackingStatus(
 export async function reconcileMercadoPagoPayment(providerPaymentId: string) {
   const payment = await getMercadoPagoPayment(providerPaymentId);
   return applyProviderPayment(payment);
-}
-
-export async function registerMercadoPagoWebhookEvent(input: { eventId: string; paymentId: string }) {
-  const admin = createAdminClient();
-  const existing = await admin.from("event_payment_webhook_events").select("id,processing_status").eq("provider", "MERCADO_PAGO").eq("provider_event_id", input.eventId).maybeSingle();
-  if (existing.data?.processing_status === "PROCESSED") return false;
-  if (!existing.data) {
-    const inserted = await admin.from("event_payment_webhook_events").insert({ provider: "MERCADO_PAGO", provider_event_id: input.eventId, provider_payment_id: input.paymentId, payload: { topic: "payment" } });
-    if (inserted.error && inserted.error.code !== "23505") throw new PublicCheckoutError("Não foi possível registrar a notificação.");
-  }
-  return true;
-}
-
-export async function finishMercadoPagoWebhookEvent(eventId: string, status: "PROCESSED" | "IGNORED" | "FAILED") {
-  const admin = createAdminClient();
-  await admin.from("event_payment_webhook_events").update({ processing_status: status, processed_at: new Date().toISOString() }).eq("provider", "MERCADO_PAGO").eq("provider_event_id", eventId);
 }
 
 export async function cleanupExpiredPublicEventCheckouts() {

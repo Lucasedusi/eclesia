@@ -69,7 +69,6 @@ export function PublicRegistration({ event, items, congregations, roles, fields,
   const trackingPath = `/inscricoes/${event.publicCode}/${event.slug}/acompanhar`;
   const registrationFormId = `event-public-registration-${event.id}`;
   const checkoutIdempotency = useRef(`checkout_${crypto.randomUUID()}`);
-  const pixIdempotency = useRef(`pix_${crypto.randomUUID()}`);
 
   const regions = useMemo(() => Array.from(new Map(congregations.filter((item) => item.regionId).map((item) => [item.regionId!, { id: item.regionId!, name: item.regionName || "Regional" }])).values()), [congregations]);
   const filteredCongregations = congregations.filter((item) => !regionId || item.regionId === regionId);
@@ -191,7 +190,7 @@ export function PublicRegistration({ event, items, congregations, roles, fields,
   function generatePix(formEvent: FormEvent<HTMLFormElement>) {
     formEvent.preventDefault(); setNotice(null); setFieldErrors({});
     startTransition(async () => {
-      const response = await fetch(`/api/public/events/${event.publicCode}/${event.slug}/payments/pix`, { method: "POST", headers: { "content-type": "application/json", "idempotency-key": pixIdempotency.current }, body: JSON.stringify({ checkoutToken, payerEmail, payerCpf }) });
+      const response = await fetch(`/api/public/events/${event.publicCode}/${event.slug}/payments/pix`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ checkoutToken, payerEmail, payerCpf }) });
       const body = await readJson(response);
       if (!response.ok || !body.data) { setFieldErrors(body.fieldErrors ?? {}); setNotice({ message: body.message ?? "Não foi possível gerar o Pix.", danger: true }); return; }
       const data = body.data as { checkout: PublicCheckoutStatus; pix: PixData }; setCheckout(data.checkout); setPix({ ...data.pix, expiresAt: data.pix.expiresAt ?? data.checkout.expiresAt }); setNotice({ message: data.pix.isSimulated ? "Pix de teste gerado. Nenhuma cobrança real foi criada." : "Pix gerado. A confirmação será atualizada automaticamente." });
@@ -270,7 +269,7 @@ export function PublicRegistration({ event, items, congregations, roles, fields,
           {pix.qrCode ? <S.PixKeyInput><input readOnly value={pix.qrCode} aria-label={pix.isSimulated ? "Código Pix de teste" : "Código Pix"}/><button type="button" onClick={copyPix} aria-label={pixCopied ? "Código Pix copiado" : "Copiar código Pix"}>{pixCopied ? <Check/> : <Copy/>}</button></S.PixKeyInput> : null}
           <S.PixHelp>{pix.isSimulated ? <><b>1</b><span>Confira o QR Code e o código fictícios</span><b>2</b><span>Use a opção de copiar para testar a interação</span><b>3</b><span>Clique em seguir para simular a aprovação</span></> : <><b>1</b><span>Abra o app do banco</span><b>2</b><span>Escolha pagar com Pix</span><b>3</b><span>Confirme o valor e conclua</span></>}</S.PixHelp>
           {secondsLeft <= 0 ? <S.Notice $danger>Este Pix expirou. Gere uma nova cobrança para continuar.</S.Notice> : null}
-          <Button type="button" fullWidth loading={pending} onClick={secondsLeft <= 0 ? () => { setPix(null); pixIdempotency.current = `pix_${crypto.randomUUID()}`; } : pix.isSimulated ? approveSimulatedPayment : refreshStatus}>{secondsLeft <= 0 ? <><QrCodeIcon size={16}/>Gerar novo Pix</> : pix.isSimulated ? <><CheckCircle2 size={16}/>Seguir e aprovar pagamento de teste</> : <><RefreshCw size={16}/>Já paguei — verificar novamente</>}</Button>
+          <Button type="button" fullWidth loading={pending} onClick={secondsLeft <= 0 ? () => setPix(null) : pix.isSimulated ? approveSimulatedPayment : refreshStatus}>{secondsLeft <= 0 ? <><QrCodeIcon size={16}/>Gerar novo Pix</> : pix.isSimulated ? <><CheckCircle2 size={16}/>Seguir e aprovar pagamento de teste</> : <><RefreshCw size={16}/>Já paguei — verificar novamente</>}</Button>
         </S.PixCodePanel></S.PixLayout> : <><S.ManualPayment><span><Banknote /></span><h3>Pagamento presencial</h3><p>{PUBLIC_MANUAL_PAYMENT_SUBTITLE}</p><S.ManualPaymentHint><LockKeyhole /><span>Nenhum comprovante é necessário. A credencial será liberada após a confirmação do pagamento.</span></S.ManualPaymentHint></S.ManualPayment><S.PublicPrimaryActions><Button onClick={openTracking}><CheckCircle2 size={16} />Concluir inscrição</Button></S.PublicPrimaryActions></>}
       </S.CheckoutPanel> : null}
 
