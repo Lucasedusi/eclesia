@@ -71,6 +71,22 @@ export type EventPaymentSettings = {
   cashEnabled: boolean;
   whatsappNumber: string;
   paymentInstructions: string;
+  individual: IndividualPaymentSettings;
+};
+
+export type IndividualPixMode = "DISABLED" | "STATIC" | "AUTOMATIC";
+export type IndividualPaymentFlow = "NOT_APPLICABLE" | "AUTOMATIC_PIX" | "STATIC_PIX" | "MANUAL";
+export type IndividualPaymentMethod = "PIX" | "CASH" | "DEBIT_CARD" | "CREDIT_CARD" | "NOT_APPLICABLE";
+
+export type IndividualPaymentSettings = {
+  pixMode: IndividualPixMode;
+  pixKey: string;
+  pixHolderName: string;
+  pixQrUrl: string | null;
+  cashEnabled: boolean;
+  cardEnabled: boolean;
+  whatsappNumber: string;
+  paymentInstructions: string;
 };
 
 export type RegistrationRow = {

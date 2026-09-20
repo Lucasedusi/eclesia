@@ -5,6 +5,24 @@ const optionalText = z.string().trim().max(500).optional().default("");
 const optionalUuid = z.union([z.literal(""), z.uuid()]).optional().default("");
 const dateTime = z.string().min(1, "Informe a data e hora.").refine((value) => !Number.isNaN(Date.parse(value)), "Data inválida.");
 
+export const individualPaymentSettingsSchema = z.object({
+  pixMode: z.enum(["DISABLED", "STATIC", "AUTOMATIC"]).default("AUTOMATIC"),
+  pixKey: z.string().trim().max(220).optional().default(""),
+  pixHolderName: z.string().trim().max(180).optional().default(""),
+  cashEnabled: z.coerce.boolean().default(false),
+  cardEnabled: z.coerce.boolean().default(false),
+  whatsappNumber: z.string().trim().max(30).optional().default(""),
+  paymentInstructions: z.string().trim().max(1500).optional().default(""),
+}).default({
+  pixMode: "AUTOMATIC",
+  pixKey: "",
+  pixHolderName: "",
+  cashEnabled: false,
+  cardEnabled: false,
+  whatsappNumber: "",
+  paymentInstructions: "",
+});
+
 export const registrationFieldSchema = z.object({
   id: optionalUuid,
   key: z.string().trim().regex(/^[a-z][a-z0-9_]{1,79}$/),
@@ -72,6 +90,7 @@ export const eventFormSchema = z.object({
     whatsappNumber: z.string().trim().max(30).optional().default(""),
     paymentInstructions: z.string().trim().max(1500).optional().default(""),
   }).default({ allowParticipantList:true,caravanRegistrationItemId:"",pixEnabled:false,pixKey:"",pixHolderName:"",cashEnabled:false,whatsappNumber:"",paymentInstructions:"" }),
+  individualPaymentSettings: individualPaymentSettingsSchema,
   registrationFields: z.array(registrationFieldSchema).max(40).default([]),
 }).superRefine((data, ctx) => {
   if (data.endsAt && Date.parse(data.endsAt) < Date.parse(data.startsAt)) ctx.addIssue({ code: "custom", path: ["endsAt"], message: "O término não pode anteceder o início." });
@@ -81,8 +100,19 @@ export const eventFormSchema = z.object({
     if (!data.caravanSettings.pixKey) ctx.addIssue({ code: "custom", path: ["caravanSettings", "pixKey"], message: "Informe a chave Pix do evento." });
     if (!data.caravanSettings.pixHolderName) ctx.addIssue({ code: "custom", path: ["caravanSettings", "pixHolderName"], message: "Informe o titular da chave Pix." });
   }
-  if ((data.caravanSettings.cashEnabled || (data.registrationMode === "INDIVIDUAL" && data.requiresPayment)) && !data.caravanSettings.whatsappNumber.replace(/\D/g, "")) {
+  if (data.caravanSettings.cashEnabled && !data.caravanSettings.whatsappNumber.replace(/\D/g, "")) {
     ctx.addIssue({ code: "custom", path: ["caravanSettings", "whatsappNumber"], message: "Informe o WhatsApp da organização para pagamentos em dinheiro." });
+  }
+  const individual = data.individualPaymentSettings;
+  if (data.requiresPayment && individual.pixMode === "DISABLED" && !individual.cashEnabled && !individual.cardEnabled) {
+    ctx.addIssue({ code: "custom", path: ["individualPaymentSettings", "pixMode"], message: "Habilite ao menos uma forma de pagamento individual." });
+  }
+  if (data.requiresPayment && individual.pixMode === "STATIC") {
+    if (!individual.pixKey) ctx.addIssue({ code: "custom", path: ["individualPaymentSettings", "pixKey"], message: "Informe a chave do Pix estático individual." });
+    if (!individual.pixHolderName) ctx.addIssue({ code: "custom", path: ["individualPaymentSettings", "pixHolderName"], message: "Informe o titular do Pix estático individual." });
+  }
+  if (data.requiresPayment && (individual.cashEnabled || individual.cardEnabled) && !individual.whatsappNumber.replace(/\D/g, "")) {
+    ctx.addIssue({ code: "custom", path: ["individualPaymentSettings", "whatsappNumber"], message: "Informe o WhatsApp da organização para pagamentos presenciais." });
   }
 });
 

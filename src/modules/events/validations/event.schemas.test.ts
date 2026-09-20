@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { eventFinancialReportConfigSchema, eventFormSchema, eventGeneralReportConfigSchema, eventListSchema, eventParticipantReportConfigSchema, expenseSchema, groupSchema, paymentSchema, paymentStatusSchema, publicCaravanSchema, publicPixPaymentSchema, publicRegistrationSchema, publicTrackingSchema, registrationFieldSchema, registrationSchema } from "./event.schemas";
 
 const baseEvent = { id:"",name:"Congresso 2027",slug:"congresso-2027",description:"",eventType:"CONGRESS",visibility:"PUBLIC",eventScope:"CHURCH",regionId:"",congregationId:"",ministryId:"",startsAt:"2027-08-20T19:00",endsAt:"2027-08-22T18:00",timezone:"America/Sao_Paulo",registrationMode:"MIXED",capacity:500,requiresPayment:false,requiresGroupResponsible:false,requiresPastorInfo:false,requiresGenderTotals:false,locationName:"",zipCode:"",address:"",number:"",complement:"",district:"",city:"Porangatu",state:"GO",country:"Brasil",notes:"" };
+const baseIndividualPaymentSettings = { pixMode:"AUTOMATIC",pixKey:"",pixHolderName:"",cashEnabled:false,cardEnabled:false,whatsappNumber:"",paymentInstructions:"" };
 
 describe("eventListSchema",()=>{
   it("seleciona inscrições abertas quando a situação não é informada",()=>expect(eventListSchema.parse({status:""}).status).toBe("OPEN"));
@@ -13,8 +14,14 @@ describe("eventFormSchema",()=>{
   it("rejeita término anterior ao início",()=>{const result=eventFormSchema.safeParse({...baseEvent,endsAt:"2027-08-19T18:00"});expect(result.success).toBe(false);});
   it("exige alvo para escopo regional",()=>{const result=eventFormSchema.safeParse({...baseEvent,eventScope:"REGION",regionId:""});expect(result.success).toBe(false);});
   it("exige WhatsApp quando o pagamento em dinheiro de caravanas está ativo",()=>{const result=eventFormSchema.safeParse({...baseEvent,caravanSettings:{cashEnabled:true,whatsappNumber:"",allowParticipantList:true,pixEnabled:false,pixKey:"",pixHolderName:"",caravanRegistrationItemId:"",paymentInstructions:""}});expect(result.success).toBe(false);});
-  it("exige WhatsApp também no pagamento em dinheiro da inscrição individual",()=>{const result=eventFormSchema.safeParse({...baseEvent,registrationMode:"INDIVIDUAL",caravanSettings:{cashEnabled:true,whatsappNumber:"",allowParticipantList:true,pixEnabled:false,pixKey:"",pixHolderName:"",caravanRegistrationItemId:"",paymentInstructions:""}});expect(result.success).toBe(false);});
-  it("exige WhatsApp em evento individual pago para orientar pagamentos presenciais",()=>{const result=eventFormSchema.safeParse({...baseEvent,registrationMode:"INDIVIDUAL",requiresPayment:true,caravanSettings:{cashEnabled:false,whatsappNumber:"",allowParticipantList:true,pixEnabled:false,pixKey:"",pixHolderName:"",caravanRegistrationItemId:"",paymentInstructions:""}});expect(result.success).toBe(false);});
+  it("aceita evento individual pago somente com Pix automático",()=>{const result=eventFormSchema.safeParse({...baseEvent,registrationMode:"INDIVIDUAL",requiresPayment:true,individualPaymentSettings:baseIndividualPaymentSettings});expect(result.success).toBe(true);});
+  it("exige chave e titular quando o Pix individual é estático",()=>{const result=eventFormSchema.safeParse({...baseEvent,registrationMode:"INDIVIDUAL",requiresPayment:true,individualPaymentSettings:{...baseIndividualPaymentSettings,pixMode:"STATIC"}});expect(result.success).toBe(false);});
+  it("exige WhatsApp quando Dinheiro ou Cartão individual está ativo",()=>{
+    expect(eventFormSchema.safeParse({...baseEvent,requiresPayment:true,individualPaymentSettings:{...baseIndividualPaymentSettings,cashEnabled:true}}).success).toBe(false);
+    expect(eventFormSchema.safeParse({...baseEvent,requiresPayment:true,individualPaymentSettings:{...baseIndividualPaymentSettings,cardEnabled:true}}).success).toBe(false);
+  });
+  it("exige ao menos uma forma individual em evento pago",()=>{const result=eventFormSchema.safeParse({...baseEvent,requiresPayment:true,individualPaymentSettings:{...baseIndividualPaymentSettings,pixMode:"DISABLED"}});expect(result.success).toBe(false);});
+  it("rejeita um modo de Pix individual fora da escolha exclusiva",()=>{const result=eventFormSchema.safeParse({...baseEvent,requiresPayment:true,individualPaymentSettings:{...baseIndividualPaymentSettings,pixMode:"STATIC_AND_AUTOMATIC"}});expect(result.success).toBe(false);});
 });
 
 describe("registrationSchema",()=>{
