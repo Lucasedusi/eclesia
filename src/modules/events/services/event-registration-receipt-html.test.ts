@@ -6,8 +6,8 @@ const checkout: PublicCheckoutStatus = {
   checkoutId: "internal", eventId: "event", eventName: "Congresso <2026>", eventStartsAt: "2026-09-05T19:00:00Z", eventLocation: "Catedral",
   registrationId: "registration", registrationNumber: "EVT-001", participantName: "Ana & João", congregationName: "Congregação Central", regionName: "Regional 01",
   registeredAt: "2026-09-05T18:00:00Z", confirmedAt: null, registrationStatus: "PENDING", paymentStatus: "PENDING", paymentMethod: "CASH",
-  checkoutStatus: "PENDING", totalAmount: 250, items: [{ id: "item", name: "Inscrição", quantity: 2, unitPrice: 125, totalPrice: 250 }], expiresAt: null,
-  credentialToken: null, providerPaymentId: null, providerStatus: null, paymentSimulationEnabled: false, isSimulatedPayment: false, pix: null,
+  paymentFlow: "MANUAL", checkoutStatus: "PENDING", totalAmount: 250, items: [{ id: "item", name: "Inscrição", quantity: 2, unitPrice: 125, totalPrice: 250 }], expiresAt: null,
+  credentialToken: null, providerPaymentId: null, providerStatus: null, paymentSimulationEnabled: false, isSimulatedPayment: false, receiptSubmitted: false, pix: null,
 };
 
 describe("createEventThermalReceiptHtml", () => {

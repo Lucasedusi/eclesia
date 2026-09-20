@@ -1,11 +1,12 @@
 import "server-only";
 
+import { Buffer } from "node:buffer";
 import { createHash, createHmac, randomUUID } from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { PublicCaravanTrackingStatus, PublicCheckoutItem, PublicCheckoutStatus, PublicTrackingStatus } from "../types/event.types";
 import type { z } from "zod";
 import { resolveEventRoleSnapshot } from "./event.service";
-import type { publicRegistrationSchema } from "../validations/event.schemas";
+import type { publicRegistrationSchema, publicStaticPixReceiptSchema, publicStaticPixReceiptUploadSchema } from "../validations/event.schemas";
 import { ensureEventCredential } from "./event-credential.service";
 import {
   createMercadoPagoPixCharge,
@@ -19,6 +20,8 @@ import { createMercadoPagoPixExternalReference, createMercadoPagoPixIdempotencyK
 import { buildPublicRegistrationPayload, resolvePublicMemberId } from "./public-member-link";
 
 type PublicRegistrationInput = z.infer<typeof publicRegistrationSchema>;
+type PublicStaticPixReceiptInput = z.infer<typeof publicStaticPixReceiptSchema>;
+type PublicStaticPixReceiptUploadInput = z.infer<typeof publicStaticPixReceiptUploadSchema>;
 type AnyRow = Record<string, unknown>;
 const SIMULATED_PAYMENT_PREFIX = "MOCK-";
 
@@ -115,18 +118,26 @@ function validCheckoutToken(token: string) {
   return /^[A-Za-z0-9_-]{40,120}$/.test(token);
 }
 
+function validStaticPixReceiptContent(buffer: Buffer, mimeType: string) {
+  if (mimeType === "application/pdf") return buffer.subarray(0, 5).toString("ascii") === "%PDF-";
+  if (mimeType === "image/jpeg") return buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+  if (mimeType === "image/png") return buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+  if (mimeType === "image/webp") return buffer.length >= 12 && buffer.subarray(0, 4).toString("ascii") === "RIFF" && buffer.subarray(8, 12).toString("ascii") === "WEBP";
+  return false;
+}
+
 async function checkoutRows(checkoutToken: string, publicCode: string, slug: string) {
   if (!validCheckoutToken(checkoutToken)) throw new PublicCheckoutError("Sessão de inscrição inválida.");
   const admin = createAdminClient();
   const checkoutResult = await admin.from("event_public_checkouts")
-    .select("id,event_id,registration_id,status,payment_method,expires_at")
+    .select("id,event_id,registration_id,status,payment_method,payment_flow,expires_at")
     .eq("access_token_hash", tokenHash(checkoutToken)).maybeSingle();
   if (checkoutResult.error || !checkoutResult.data) throw new PublicCheckoutError("Sessão de inscrição não encontrada.");
   const [eventResult, registrationResult, itemResult, paymentResult] = await Promise.all([
-    admin.from("events").select("id,name,public_code,slug,starts_at,location_name,city,state").eq("id", checkoutResult.data.event_id).eq("public_code", publicCode).eq("slug", slug).eq("visibility", "PUBLIC").is("deleted_at", null).maybeSingle(),
+    admin.from("events").select("id,church_id,name,public_code,slug,starts_at,location_name,city,state").eq("id", checkoutResult.data.event_id).eq("public_code", publicCode).eq("slug", slug).eq("visibility", "PUBLIC").is("deleted_at", null).maybeSingle(),
     admin.from("event_registrations").select("id,registration_number,participant_name,congregation_id,status,payment_status,total_amount,registered_at,confirmed_at,credential_version,congregations!event_registrations_congregation_tenant_fkey(name,regions(name))").eq("id", checkoutResult.data.registration_id).is("deleted_at", null).maybeSingle(),
     admin.from("event_registration_items").select("event_item_id,item_name,quantity,unit_price,total_price").eq("event_registration_id", checkoutResult.data.registration_id).is("deleted_at", null).order("created_at"),
-    admin.from("event_payments").select("id,provider_payment_id,provider_status,payment_status,amount,external_reference,expires_at,created_at,paid_at").eq("event_registration_id", checkoutResult.data.registration_id).eq("provider", "MERCADO_PAGO").is("deleted_at", null).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+    admin.from("event_payments").select("id,provider,provider_payment_id,provider_status,payment_status,amount,external_reference,expires_at,created_at,paid_at,receipt_storage_path,payment_channel").eq("event_registration_id", checkoutResult.data.registration_id).is("deleted_at", null).order("created_at", { ascending: false }).limit(1).maybeSingle(),
   ]);
   if (eventResult.error || !eventResult.data || registrationResult.error || !registrationResult.data) {
     throw new PublicCheckoutError("Esta inscrição não está mais disponível.");
@@ -239,8 +250,8 @@ export async function createPublicPixPayment(input: {
   payerCpf: string;
 }) {
   const rows = await checkoutRows(input.checkoutToken, input.publicCode, input.slug);
-  if (rows.checkout.payment_method !== "PIX" || number(rows.registration.total_amount) <= 0) {
-    throw new PublicCheckoutError("Esta inscrição não utiliza pagamento por Pix.");
+  if (rows.checkout.payment_method !== "PIX" || rows.checkout.payment_flow !== "AUTOMATIC_PIX" || number(rows.registration.total_amount) <= 0) {
+    throw new PublicCheckoutError("Esta inscrição não utiliza Pix automático.");
   }
   if (rows.registration.status === "CONFIRMED") return getPublicCheckoutStatus(input.publicCode, input.slug, input.checkoutToken, true);
 
@@ -324,7 +335,7 @@ export async function approveSimulatedPublicPixPayment(input: {
   if (rows.registration.status === "CONFIRMED") {
     return getPublicCheckoutStatus(input.publicCode, input.slug, input.checkoutToken, false);
   }
-  if (rows.checkout.payment_method !== "PIX" || !rows.payment?.provider_payment_id || !isSimulatedPaymentId(rows.payment.provider_payment_id)) {
+  if (rows.checkout.payment_method !== "PIX" || rows.checkout.payment_flow !== "AUTOMATIC_PIX" || !rows.payment?.provider_payment_id || !isSimulatedPaymentId(rows.payment.provider_payment_id)) {
     throw new PublicCheckoutError("Gere um Pix de teste antes de seguir.");
   }
   if (rows.payment.payment_status !== "PENDING") {
@@ -404,6 +415,7 @@ export async function getPublicCheckoutStatus(
     registrationStatus: String(rows.registration.status),
     paymentStatus: String(rows.registration.payment_status),
     paymentMethod: String(rows.checkout.payment_method) as PublicCheckoutStatus["paymentMethod"],
+    paymentFlow: String(rows.checkout.payment_flow) as PublicCheckoutStatus["paymentFlow"],
     checkoutStatus: String(rows.checkout.status),
     totalAmount: number(rows.registration.total_amount),
     items,
@@ -413,6 +425,7 @@ export async function getPublicCheckoutStatus(
     providerStatus: providerPayment?.status ?? (rows.payment?.provider_status ? String(rows.payment.provider_status) : null),
     paymentSimulationEnabled: isPaymentSimulationEnabled(),
     isSimulatedPayment: simulatedPayment,
+    receiptSubmitted: rows.checkout.payment_flow === "STATIC_PIX" && Boolean(rows.payment?.receipt_storage_path),
     pix: providerPayment ? {
       qrCode: providerPayment.point_of_interaction?.transaction_data?.qr_code ?? null,
       qrCodeBase64: providerPayment.point_of_interaction?.transaction_data?.qr_code_base64 ?? null,
@@ -420,6 +433,63 @@ export async function getPublicCheckoutStatus(
       isSimulated: simulatedPayment,
     } : null,
   };
+}
+
+export async function preparePublicStaticPixReceiptUpload(input: {
+  publicCode: string;
+  slug: string;
+} & PublicStaticPixReceiptUploadInput) {
+  const rows = await checkoutRows(input.checkoutToken, input.publicCode, input.slug);
+  if (rows.checkout.payment_method !== "PIX" || rows.checkout.payment_flow !== "STATIC_PIX" || rows.checkout.status !== "AWAITING_PAYMENT") {
+    throw new PublicCheckoutError("Esta inscrição não utiliza Pix estático.");
+  }
+  if (rows.registration.status !== "PENDING" || rows.registration.payment_status !== "PENDING") {
+    throw new PublicCheckoutError("Esta inscrição não aceita mais comprovantes.");
+  }
+  const safeName = input.fileName.replace(/[^a-zA-Z0-9._-]/g, "_").slice(-180);
+  const path = `${String(rows.event.church_id)}/events/${String(rows.event.id)}/public-individuals/${String(rows.checkout.id)}/static-pix/${randomUUID()}/${safeName}`;
+  const signed = await rows.admin.storage.from("event-documents").createSignedUploadUrl(path);
+  if (signed.error) throw new PublicCheckoutError("Não foi possível preparar o comprovante.");
+  return { path, token: signed.data.token };
+}
+
+export async function submitPublicStaticPixReceipt(input: {
+  publicCode: string;
+  slug: string;
+  idempotencyKey: string;
+} & PublicStaticPixReceiptInput) {
+  const rows = await checkoutRows(input.checkoutToken, input.publicCode, input.slug);
+  if (rows.checkout.payment_method !== "PIX" || rows.checkout.payment_flow !== "STATIC_PIX" || rows.checkout.status !== "AWAITING_PAYMENT") {
+    throw new PublicCheckoutError("Esta inscrição não utiliza Pix estático.");
+  }
+  const expectedPrefix = `${String(rows.event.church_id)}/events/${String(rows.event.id)}/public-individuals/${String(rows.checkout.id)}/static-pix/`;
+  if (!input.receiptPath.startsWith(expectedPrefix)) throw new PublicCheckoutError("O comprovante não pertence a esta inscrição.");
+
+  const downloaded = await rows.admin.storage.from("event-documents").download(input.receiptPath);
+  if (downloaded.error || !downloaded.data) throw new PublicCheckoutError("Não foi possível validar o comprovante enviado.");
+  const buffer = Buffer.from(await downloaded.data.arrayBuffer());
+  if (buffer.length !== input.receiptFileSize || buffer.length > 10 * 1024 * 1024 || !validStaticPixReceiptContent(buffer, input.receiptMimeType)) {
+    await rows.admin.storage.from("event-documents").remove([input.receiptPath]);
+    throw new PublicCheckoutError("O conteúdo do comprovante não corresponde ao formato informado.");
+  }
+
+  const result = await rows.admin.rpc("submit_event_public_static_pix_receipt", {
+    p_event_id: rows.event.id,
+    p_checkout_id: rows.checkout.id,
+    p_payload: {
+      receiptPath: input.receiptPath,
+      receiptFileName: input.receiptFileName,
+      receiptMimeType: input.receiptMimeType,
+      receiptFileSize: input.receiptFileSize,
+    },
+    p_idempotency_key: input.idempotencyKey,
+  });
+  if (result.error) throw new PublicCheckoutError("Não foi possível registrar o comprovante.");
+  const persisted = result.data as AnyRow | null;
+  if (persisted?.receipt_storage_path && persisted.receipt_storage_path !== input.receiptPath) {
+    await rows.admin.storage.from("event-documents").remove([input.receiptPath]);
+  }
+  return getPublicCheckoutStatus(input.publicCode, input.slug, input.checkoutToken, false);
 }
 
 export async function getPublicTrackingStatus(

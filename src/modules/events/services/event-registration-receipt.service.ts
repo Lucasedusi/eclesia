@@ -17,7 +17,7 @@ export async function getInternalRegistrationReceipt(eventId: string, registrati
     admin.from("events").select("id,name,starts_at,location_name,city,state").eq("id", eventId).eq("church_id", context.church.id).is("deleted_at", null).maybeSingle(),
     admin.from("event_registrations").select("id,registration_number,participant_name,congregation_id,status,payment_status,preferred_payment_method,total_amount,registered_at,confirmed_at,credential_version,congregations!event_registrations_congregation_tenant_fkey(name,regions(name))").eq("id", registrationId).eq("event_id", eventId).eq("church_id", context.church.id).is("event_group_id", null).is("deleted_at", null).maybeSingle(),
     admin.from("event_registration_items").select("event_item_id,item_name,quantity,unit_price,total_price").eq("event_registration_id", registrationId).is("deleted_at", null).order("created_at"),
-    admin.from("event_payments").select("provider_payment_id,provider_status").eq("event_registration_id", registrationId).is("deleted_at", null).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+    admin.from("event_payments").select("provider_payment_id,provider_status,receipt_storage_path").eq("event_registration_id", registrationId).is("deleted_at", null).order("created_at", { ascending: false }).limit(1).maybeSingle(),
   ]);
   if (eventResult.error || !eventResult.data || registrationResult.error || !registrationResult.data) throw new Error("EVENT_REGISTRATION_RECEIPT_NOT_FOUND");
   const event = eventResult.data as Row;
@@ -38,9 +38,10 @@ export async function getInternalRegistrationReceipt(eventId: string, registrati
     registeredAt: String(registration.registered_at), confirmedAt: registration.confirmed_at ? String(registration.confirmed_at) : null,
     registrationStatus: status, paymentStatus: String(registration.payment_status),
     paymentMethod: String(registration.preferred_payment_method ?? "NOT_APPLICABLE") as PublicCheckoutStatus["paymentMethod"],
+    paymentFlow: registration.preferred_payment_method === "NOT_APPLICABLE" ? "NOT_APPLICABLE" : registration.preferred_payment_method === "PIX" ? "AUTOMATIC_PIX" : "MANUAL",
     checkoutStatus: status, totalAmount: number(registration.total_amount), items, expiresAt: null, credentialToken,
     providerPaymentId: paymentResult.data?.provider_payment_id ? String(paymentResult.data.provider_payment_id) : null,
     providerStatus: paymentResult.data?.provider_status ? String(paymentResult.data.provider_status) : null,
-    paymentSimulationEnabled: false, isSimulatedPayment: false, pix: null,
+    paymentSimulationEnabled: false, isSimulatedPayment: false, receiptSubmitted: Boolean(paymentResult.data?.receipt_storage_path), pix: null,
   };
 }

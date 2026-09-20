@@ -3,11 +3,13 @@
 import { Fragment, type FormEvent, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Banknote, BedDouble, Bus, CalendarDays, Check, CheckCircle2, Clock3, Copy, CreditCard, Download, Gift, LoaderCircle, LockKeyhole, MapPin, MessageCircle, Minus, Plus, Printer, QrCode as QrCodeIcon, RefreshCw, ShieldCheck, Shirt, Smartphone, Ticket, UtensilsCrossed } from "lucide-react";
+import { ArrowLeft, ArrowRight, Banknote, BedDouble, Bus, CalendarDays, Check, CheckCircle2, Clock3, Copy, CreditCard, Download, Gift, Info, LoaderCircle, LockKeyhole, MapPin, MessageCircle, Minus, Plus, Printer, QrCode as QrCodeIcon, RefreshCw, ShieldCheck, Shirt, Smartphone, Ticket, UploadCloud, UtensilsCrossed } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { createClient } from "@/lib/supabase/client";
 import { formatBrazilPhone, formatCpf } from "@/utils/input-masks";
 import type { EventDetail, EventRegistrationFieldRow, PublicCheckoutStatus } from "../types/event.types";
 import { visibleRegistrationFields } from "../utils/registration-fields";
+import { individualPaymentOptions } from "../utils/individual-payment";
 import { buildPublicMemberClaim, buildTrackingHash, isPublicManualPaymentMethod, PUBLIC_BACK_LABEL, PUBLIC_MANUAL_PAYMENT_SUBTITLE, publicRefreshNotice, publicRegistrationIntent, publicResumeDestination, shouldShowPublicSummary, type PublicParticipantKind } from "../utils/public-registration-flow";
 import * as S from "./events.styles";
 import { PublicCollapsibleSummary, PublicEventHeroMeta, PublicFlowToast, type PublicFlowNotice } from "./public-event-mobile";
@@ -44,6 +46,7 @@ function PublicCustomField({ field, values, onChange }: { field: EventRegistrati
 }
 
 export function PublicRegistration({ event, items, congregations, roles, fields, isRegistrationOpen }: Props) {
+  const configuredPaymentOptions = individualPaymentOptions(event.paymentSettings.individual);
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [step, setStep] = useState<Step>(1);
@@ -58,17 +61,19 @@ export function PublicRegistration({ event, items, congregations, roles, fields,
   const [participantKind, setParticipantKind] = useState<PublicParticipantKind>("VISITOR");
   const [memberCpf, setMemberCpf] = useState("");
   const [memberBirthDate, setMemberBirthDate] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("PIX");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(() => configuredPaymentOptions[0]?.value ?? "NOT_APPLICABLE");
   const [selected, setSelected] = useState(() => new Set(items.filter((item) => item.is_required).map((item) => item.id)));
   const [quantities, setQuantities] = useState<Record<string, number>>(() => Object.fromEntries(items.map((item) => [item.id, Math.max(item.min_quantity, 1)])));
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [payerEmail, setPayerEmail] = useState("");
   const [payerCpf, setPayerCpf] = useState("");
+  const [staticPixReceipt,setStaticPixReceipt]=useState<File|null>(null);
   const [customValues, setCustomValues] = useState<Record<string, unknown>>({});
   const checkoutKey = `eklesia:event-checkout:${event.id}`;
   const trackingPath = `/inscricoes/${event.publicCode}/${event.slug}/acompanhar`;
   const registrationFormId = `event-public-registration-${event.id}`;
   const checkoutIdempotency = useRef(`checkout_${crypto.randomUUID()}`);
+  const staticPixIdempotency = useRef(`static_pix_${crypto.randomUUID()}`);
 
   const regions = useMemo(() => Array.from(new Map(congregations.filter((item) => item.regionId).map((item) => [item.regionId!, { id: item.regionId!, name: item.regionName || "Regional" }])).values()), [congregations]);
   const filteredCongregations = congregations.filter((item) => !regionId || item.regionId === regionId);
@@ -77,8 +82,16 @@ export function PublicRegistration({ event, items, congregations, roles, fields,
   const effectiveMethod: PaymentMethod = selectedTotal <= 0 ? "NOT_APPLICABLE" : paymentMethod;
   const activeMethod: PaymentMethod = checkout?.paymentMethod ?? effectiveMethod;
   const orderedFields = useMemo(() => visibleRegistrationFields(fields), [fields]);
-  const whatsappNumber = (event.paymentSettings.whatsappNumber ?? "").replace(/\D/g, "");
-  const availableMethodOptions = methodOptions.filter((method) => method.value === "PIX" || Boolean(whatsappNumber));
+  const whatsappNumber = (event.paymentSettings.individual.whatsappNumber ?? "").replace(/\D/g, "");
+  const availableMethodValues = new Set(configuredPaymentOptions.map((option) => option.value));
+  const availableMethodOptions = methodOptions
+    .filter((method) => availableMethodValues.has(method.value))
+    .map((method) => method.value === "PIX" ? {
+      ...method,
+      description: event.paymentSettings.individual.pixMode === "STATIC"
+        ? "Pagamento pela chave do evento, com comprovante opcional"
+        : "Pagamento on-line com confirmação automática",
+    } : method);
 
   function renderRegistrationField(field: EventRegistrationFieldRow) {
     const isRequired = field.visibility === "REQUIRED";
@@ -161,7 +174,7 @@ export function PublicRegistration({ event, items, congregations, roles, fields,
   }, [pix?.expiresAt, checkout?.expiresAt]);
 
   useEffect(() => {
-    if (step !== 2 || !checkoutToken || activeMethod !== "PIX" || !pix || pix.isSimulated || checkout?.registrationStatus === "CONFIRMED") return;
+    if (step !== 2 || !checkoutToken || checkout?.paymentFlow !== "AUTOMATIC_PIX" || !pix || pix.isSimulated || checkout?.registrationStatus === "CONFIRMED") return;
     const timer = window.setInterval(() => { startTransition(async () => { try { await queryStatus(checkoutToken, true); } catch { /* consulta manual permanece disponível */ } }); }, 12_000);
     return () => window.clearInterval(timer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -199,12 +212,30 @@ export function PublicRegistration({ event, items, congregations, roles, fields,
 
   function refreshStatus() { startTransition(async () => { try { const status = await queryStatus(checkoutToken, true); setNotice(publicRefreshNotice(status.registrationStatus)); } catch (error) { setNotice({ message: error instanceof Error ? error.message : "Não foi possível verificar agora.", danger: true }); } }); }
   function approveSimulatedPayment() { startTransition(async () => { try { const response = await fetch(`/api/public/events/${event.publicCode}/${event.slug}/payments/pix/simulate`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ checkoutToken }) }); const body = await readJson(response); if (!response.ok || !body.data) throw new Error(body.message ?? "Não foi possível aprovar o pagamento de teste."); const status = body.data as PublicCheckoutStatus; setCheckout(status); if (status.pix) setPix({ ...status.pix, expiresAt: status.expiresAt, paymentStatus: status.paymentStatus }); setStep(3); setNotice({ message: "Pagamento de teste aprovado. Comprovante e credencial liberados." }); window.scrollTo({ top: 0, behavior: "smooth" }); } catch (error) { setNotice({ message: error instanceof Error ? error.message : "Não foi possível aprovar o pagamento de teste.", danger: true }); } }); }
-  async function copyPix() { if (!pix?.qrCode) return; await navigator.clipboard.writeText(pix.qrCode); setPixCopied(true); setNotice({ message: "Código Pix copiado." }); window.setTimeout(() => setPixCopied(false), 2600); }
+  async function copyPixValue(value:string) { if (!value) return; await navigator.clipboard.writeText(value); setPixCopied(true); setNotice({ message: "Código Pix copiado." }); window.setTimeout(() => setPixCopied(false), 2600); }
+  function submitStaticPixReceipt(){
+    if(!staticPixReceipt){setNotice({message:"Selecione um comprovante antes de enviar.",danger:true});return;}
+    if(!["application/pdf","image/jpeg","image/png","image/webp"].includes(staticPixReceipt.type)||staticPixReceipt.size<=0||staticPixReceipt.size>10*1024*1024){setNotice({message:"Envie um comprovante PDF, JPG, PNG ou WEBP de até 10 MB.",danger:true});return;}
+    startTransition(async()=>{
+      try{
+        const preparedResponse=await fetch(`/api/public/events/${event.publicCode}/${event.slug}/payments/pix/static/uploads`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({checkoutToken,fileName:staticPixReceipt.name,mimeType:staticPixReceipt.type,fileSize:staticPixReceipt.size})});
+        const preparedBody=await readJson(preparedResponse);if(!preparedResponse.ok||!preparedBody.data)throw new Error(preparedBody.message??"Não foi possível preparar o comprovante.");
+        const prepared=preparedBody.data as {path:string;token:string};
+        const upload=await createClient().storage.from("event-documents").uploadToSignedUrl(prepared.path,prepared.token,staticPixReceipt,{contentType:staticPixReceipt.type});
+        if(upload.error)throw new Error("Não foi possível enviar o comprovante.");
+        const submittedResponse=await fetch(`/api/public/events/${event.publicCode}/${event.slug}/payments/pix/static`,{method:"POST",headers:{"content-type":"application/json","idempotency-key":staticPixIdempotency.current},body:JSON.stringify({checkoutToken,receiptPath:prepared.path,receiptFileName:staticPixReceipt.name,receiptMimeType:staticPixReceipt.type,receiptFileSize:staticPixReceipt.size})});
+        const submittedBody=await readJson(submittedResponse);if(!submittedResponse.ok||!submittedBody.data)throw new Error(submittedBody.message??"Não foi possível registrar o comprovante.");
+        applyCheckoutStatus(submittedBody.data as PublicCheckoutStatus);setStep(3);setNotice({message:"Comprovante enviado. A organização fará a conferência do pagamento."});window.scrollTo({top:0,behavior:"smooth"});
+      }catch(error){setNotice({message:error instanceof Error?error.message:"Não foi possível enviar o comprovante.",danger:true});}
+    });
+  }
   function downloadReceipt() { startTransition(async () => { const response = await fetch(`/api/public/events/${event.publicCode}/${event.slug}/receipt`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ checkoutToken }) }); if (!response.ok) { const body = await readJson(response); setNotice({ message: body.message ?? "Comprovante indisponível.", danger: true }); return; } const blobUrl = URL.createObjectURL(await response.blob()); const anchor = document.createElement("a"); anchor.href = blobUrl; anchor.download = `comprovante-evento-${checkout?.registrationNumber ?? "inscricao"}.pdf`; anchor.click(); window.setTimeout(() => URL.revokeObjectURL(blobUrl), 1000); }); }
 
   const timerLabel = `${String(Math.floor(secondsLeft / 60)).padStart(2, "0")}:${String(secondsLeft % 60).padStart(2, "0")}`;
   const pixReady = Boolean(pix?.qrCode || pix?.qrCodeBase64);
   const complete = checkout?.registrationStatus === "CONFIRMED";
+  const automaticPix = activeMethod === "PIX" && checkout?.paymentFlow === "AUTOMATIC_PIX";
+  const staticPix = activeMethod === "PIX" && checkout?.paymentFlow === "STATIC_PIX";
   const manualWhatsapp = checkout && isPublicManualPaymentMethod(activeMethod) && whatsappNumber
     ? `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`Olá! Gostaria de combinar o pagamento ${activeMethod === "CASH" ? "em dinheiro" : `presencial por ${methodLabel(activeMethod).toLocaleLowerCase("pt-BR")}`} da inscrição ${checkout.registrationNumber} de ${checkout.participantName} para o evento ${event.name}. Total: ${money(checkout.totalAmount)}.`)}`
     : "";
@@ -244,18 +275,20 @@ export function PublicRegistration({ event, items, congregations, roles, fields,
       </S.CheckoutPanel> : null}
 
       {step === 2 ? <S.CheckoutPanel>
-        {activeMethod === "PIX" ? <S.PublicStepHeading>
+        {automaticPix||staticPix ? <S.PublicStepHeading>
           <small>ETAPA 2 DE 3</small>
           <h2>Pagamento por Pix</h2>
-          <p>{checkout?.paymentSimulationEnabled
+          <p>{staticPix
+            ? "Pague usando a chave do evento. Se desejar, envie o comprovante para facilitar a conferência."
+            : checkout?.paymentSimulationEnabled
             ? "Teste o fluxo completo com um Pix simulado, sem cobrança real."
             : "Gere o Pix e acompanhe a confirmação sem sair desta página."}</p>
         </S.PublicStepHeading> : null}
-        {activeMethod === "PIX" && checkout?.paymentSimulationEnabled ? <S.SimulationNotice role="status">
+        {automaticPix && checkout?.paymentSimulationEnabled ? <S.SimulationNotice role="status">
           <span><ShieldCheck /></span>
           <div><strong>Ambiente de simulação</strong><p>Nenhuma cobrança será enviada ao Mercado Pago ou a um banco. Os dados e o comprovante serão criados apenas para testar o módulo.</p></div>
         </S.SimulationNotice> : null}
-        {activeMethod === "PIX" ? !pix ? <form onSubmit={generatePix}>
+        {automaticPix ? !pix ? <form onSubmit={generatePix}>
           <S.PixIntro><span><ShieldCheck /></span><div><strong>{checkout?.paymentSimulationEnabled ? "Dados para o cenário de teste" : "Dados usados somente para gerar o Pix"}</strong><p>{checkout?.paymentSimulationEnabled ? "Use um e-mail e CPF válidos apenas para percorrer as mesmas validações do fluxo real." : "O Mercado Pago exige o e-mail e o CPF do pagador. Eles não alteram seu cadastro de membro."}</p></div></S.PixIntro>
           <S.FieldGrid>
             <S.Field><span>E-mail do pagador *</span><input type="email" value={payerEmail} onChange={(change) => setPayerEmail(change.target.value)} autoComplete="email" required aria-invalid={Boolean(fieldErrors.payerEmail)} placeholder="voce@exemplo.com" />{fieldErrors.payerEmail?.map((error) => <S.ErrorText key={error}>{error}</S.ErrorText>)}</S.Field>
@@ -267,11 +300,20 @@ export function PublicRegistration({ event, items, congregations, roles, fields,
           {pix.qrCodeBase64 ? <Image unoptimized width={180} height={180} src={`data:image/png;base64,${pix.qrCodeBase64}`} alt="QR Code para pagamento Pix" /> : pix.isSimulated && pix.qrCode ? <S.SimulatedQr><QrCode value={pix.qrCode} size={160} /></S.SimulatedQr> : null}
           <h3>{pix.isSimulated ? "QR Code Pix simulado" : pixReady ? "Escaneie o QR Code" : "O Mercado Pago está preparando seu Pix"}</h3>
           <p>{pix.isSimulated ? "Este código é apenas visual e não deve ser lido ou pago em um aplicativo bancário." : pixReady ? "Abra o aplicativo do seu banco, escolha Pix e aponte a câmera para o código." : "A página consultará a cobrança automaticamente. Você também pode verificar novamente agora."}</p>
-          {pix.qrCode ? <S.PixKeyInput><input readOnly value={pix.qrCode} aria-label={pix.isSimulated ? "Código Pix de teste" : "Código Pix"}/><button type="button" onClick={copyPix} aria-label={pixCopied ? "Código Pix copiado" : "Copiar código Pix"}>{pixCopied ? <Check/> : <Copy/>}</button></S.PixKeyInput> : null}
+          {pix.qrCode ? <S.PixKeyInput><input readOnly value={pix.qrCode} aria-label={pix.isSimulated ? "Código Pix de teste" : "Código Pix"}/><button type="button" onClick={()=>copyPixValue(pix.qrCode??"")} aria-label={pixCopied ? "Código Pix copiado" : "Copiar código Pix"}>{pixCopied ? <Check/> : <Copy/>}</button></S.PixKeyInput> : null}
           <S.PixHelp>{pix.isSimulated ? <><b>1</b><span>Confira o QR Code e o código fictícios</span><b>2</b><span>Use a opção de copiar para testar a interação</span><b>3</b><span>Clique em seguir para simular a aprovação</span></> : pixReady ? <><b>1</b><span>Abra o app do banco</span><b>2</b><span>Escolha pagar com Pix</span><b>3</b><span>Confirme o valor e conclua</span></> : <><b>1</b><span>Aguarde o processamento da cobrança</span><b>2</b><span>O QR Code aparecerá automaticamente</span><b>3</b><span>Se necessário, verifique novamente</span></>}</S.PixHelp>
           {secondsLeft <= 0 ? <S.Notice $danger>Este Pix expirou. Gere uma nova cobrança para continuar.</S.Notice> : null}
           <Button type="button" fullWidth loading={pending} onClick={secondsLeft <= 0 ? () => setPix(null) : pix.isSimulated ? approveSimulatedPayment : refreshStatus}>{secondsLeft <= 0 ? <><QrCodeIcon size={16}/>Gerar novo Pix</> : pix.isSimulated ? <><CheckCircle2 size={16}/>Seguir e aprovar pagamento de teste</> : <><RefreshCw size={16}/>{pixReady ? "Já paguei — verificar novamente" : "Verificar QR Code"}</>}</Button>
-        </S.PixCodePanel></S.PixLayout> : <><S.ManualPayment><span><Banknote /></span><h3>Pagamento presencial</h3><p>{PUBLIC_MANUAL_PAYMENT_SUBTITLE}</p><S.ManualPaymentHint><LockKeyhole /><span>Nenhum comprovante é necessário. A credencial será liberada após a confirmação do pagamento.</span></S.ManualPaymentHint></S.ManualPayment><S.PublicPrimaryActions><Button onClick={openTracking}><CheckCircle2 size={16} />Concluir inscrição</Button></S.PublicPrimaryActions></>}
+        </S.PixCodePanel></S.PixLayout> : staticPix ? <S.PixLayout><S.PixCodePanel>
+          <S.PixStatus><span><Clock3/></span><div><small>SITUAÇÃO</small><strong>{checkout?.receiptSubmitted?"Comprovante enviado":"Aguardando pagamento"}</strong></div></S.PixStatus>
+          {event.paymentSettings.individual.pixQrUrl?<Image unoptimized width={180} height={180} src={event.paymentSettings.individual.pixQrUrl} alt="QR Code Pix do evento"/>:<QrCodeIcon size={64}/>}
+          <h3>{event.paymentSettings.individual.pixHolderName}</h3>
+          <p>Faça o pagamento para a chave abaixo. A inscrição será confirmada pela organização após a conferência.</p>
+          <S.PixKeyInput><input readOnly value={event.paymentSettings.individual.pixKey} aria-label="Chave Pix do evento"/><button type="button" onClick={()=>copyPixValue(event.paymentSettings.individual.pixKey)} aria-label={pixCopied?"Chave Pix copiada":"Copiar chave Pix"}>{pixCopied?<Check/>:<Copy/>}</button></S.PixKeyInput>
+          {event.paymentSettings.individual.paymentInstructions?<S.ManualPaymentHint><Info/><span>{event.paymentSettings.individual.paymentInstructions}</span></S.ManualPaymentHint>:null}
+          {!checkout?.receiptSubmitted?<S.UploadBox><span><UploadCloud/><strong>Comprovante opcional</strong><small>PDF, JPG, PNG ou WEBP de até 10 MB</small></span><div><label className="app-button-secondary"><UploadCloud size={16}/>{staticPixReceipt?"Trocar comprovante":"Selecionar comprovante"}<input type="file" accept="application/pdf,image/jpeg,image/png,image/webp" onChange={(change)=>setStaticPixReceipt(change.target.files?.[0]??null)}/></label></div>{staticPixReceipt?<small>{staticPixReceipt.name}</small>:null}</S.UploadBox>:<S.ManualPaymentHint><CheckCircle2/><span>O comprovante foi recebido e aguarda análise da organização.</span></S.ManualPaymentHint>}
+          <S.PublicPrimaryActions>{staticPixReceipt&&!checkout?.receiptSubmitted?<Button type="button" onClick={submitStaticPixReceipt} loading={pending}><UploadCloud size={16}/>Enviar comprovante</Button>:null}<Button type="button" variant="outline" onClick={()=>{setStep(3);window.scrollTo({top:0,behavior:"smooth"});}}><CheckCircle2 size={16}/>{checkout?.receiptSubmitted?"Continuar":"Concluir sem comprovante"}</Button></S.PublicPrimaryActions>
+        </S.PixCodePanel></S.PixLayout> : <><S.ManualPayment><span><Banknote /></span><h3>Pagamento presencial</h3><p>{PUBLIC_MANUAL_PAYMENT_SUBTITLE}</p>{event.paymentSettings.individual.paymentInstructions?<S.ManualPaymentHint><Info/><span>{event.paymentSettings.individual.paymentInstructions}</span></S.ManualPaymentHint>:null}<S.ManualPaymentHint><LockKeyhole /><span>Nenhum comprovante é necessário. A credencial será liberada após a confirmação do pagamento.</span></S.ManualPaymentHint></S.ManualPayment><S.PublicPrimaryActions><Button onClick={openTracking}><CheckCircle2 size={16} />Concluir inscrição</Button></S.PublicPrimaryActions></>}
       </S.CheckoutPanel> : null}
 
       {step === 3 && checkout ? <S.ConfirmationPanel><S.ConfirmationHeader data-pending={!complete}><span>{complete ? <CheckCircle2 /> : <Clock3 />}</span><div><small>{complete ? "INSCRIÇÃO CONFIRMADA" : "INSCRIÇÃO RECEBIDA"}</small><h2>{complete ? "Tudo certo!" : "Aguardando confirmação"}</h2><p>{complete ? "Guarde seu comprovante e apresente a credencial na entrada." : "Seu protocolo foi gerado. A credencial será liberada após o pagamento."}</p></div></S.ConfirmationHeader><S.ReceiptGrid><S.ReceiptCard><header><div><small>COMPROVANTE DE INSCRIÇÃO</small><strong>{checkout.eventName}</strong></div><Ticket /></header><dl><div><dt>Participante</dt><dd>{checkout.participantName}</dd></div><div><dt>Número</dt><dd>{checkout.registrationNumber}</dd></div><div><dt>Pagamento</dt><dd>{methodLabel(checkout.paymentMethod)}</dd></div><div><dt>Situação</dt><dd>{complete ? "Confirmada" : "Pendente"}</dd></div></dl><footer><span>Total</span><strong>{money(checkout.totalAmount)}</strong></footer></S.ReceiptCard><S.CredentialCard data-locked={!checkout.credentialToken}><header><small>CREDENCIAL DO EVENTO</small><strong>{checkout.eventName}</strong></header>{checkout.credentialToken ? <><QrCode value={checkout.credentialToken} size={176} /><h3>{checkout.participantName}</h3><p>{checkout.registrationNumber}{checkout.congregationName ? ` · ${checkout.congregationName}` : ""}</p><footer>Apresente esta credencial na entrada</footer></> : <S.CredentialLocked><span><LockKeyhole /></span><h3>Credencial aguardando liberação</h3><p>Ela ficará disponível assim que o pagamento for confirmado.</p></S.CredentialLocked>}</S.CredentialCard></S.ReceiptGrid><S.PublicPrimaryActions>{complete ? <div><Button variant="outline" onClick={() => window.print()}><Printer size={16} />Imprimir</Button><Button onClick={downloadReceipt} loading={pending}><Download size={16} />Baixar comprovante em PDF</Button></div> : <div>{manualWhatsapp?<S.PublicWhatsappLink href={manualWhatsapp} target="_blank" rel="noreferrer"><MessageCircle/>Combinar pelo WhatsApp</S.PublicWhatsappLink>:null}<Button onClick={refreshStatus} loading={pending}><RefreshCw size={16}/>Atualizar situação</Button></div>}</S.PublicPrimaryActions></S.ConfirmationPanel> : null}

@@ -3,11 +3,13 @@ import "server-only";
 import { createHash, createHmac } from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-export type PublicCheckoutRateLimitAction = "PIX_CREATE" | "PROVIDER_REFRESH";
+export type PublicCheckoutRateLimitAction = "PIX_CREATE" | "PROVIDER_REFRESH" | "STATIC_PIX_UPLOAD" | "STATIC_PIX_SUBMIT";
 
 const RATE_LIMITS: Record<PublicCheckoutRateLimitAction, { limit: number; windowSeconds: number }> = {
   PIX_CREATE: { limit: 6, windowSeconds: 600 },
   PROVIDER_REFRESH: { limit: 60, windowSeconds: 600 },
+  STATIC_PIX_UPLOAD: { limit: 10, windowSeconds: 900 },
+  STATIC_PIX_SUBMIT: { limit: 10, windowSeconds: 900 },
 };
 
 export class PublicCheckoutRateLimitError extends Error {

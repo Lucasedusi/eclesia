@@ -56,4 +56,16 @@ describe("public Pix payment route", () => {
     expect(mocks.consumePublicCheckoutRateLimit).toHaveBeenCalledWith("t".repeat(48), "PIX_CREATE");
     expect(mocks.createPublicPixPayment).not.toHaveBeenCalled();
   });
+
+  it("não mascara a rejeição de um checkout que não usa Pix automático", async () => {
+    mocks.createPublicPixPayment.mockRejectedValue(new Error("Esta inscrição não utiliza Pix automático."));
+    const response = await POST(new NextRequest("http://localhost/api/public/events/ABC123/evento/payments/pix", {
+      method: "POST",
+      body: JSON.stringify({ checkoutToken: "t".repeat(48), payerEmail: "pagador@example.com", payerCpf: "52998224725" }),
+      headers: { "content-type": "application/json" },
+    }), context);
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ message: "Esta inscrição não utiliza Pix automático." });
+  });
 });

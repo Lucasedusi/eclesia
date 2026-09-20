@@ -6,6 +6,7 @@ declare
   v_table text;
   v_policy_count integer;
   v_public_checkout_definition text;
+  v_static_receipt_definition text;
 begin
   foreach v_table in array array[
     'events','event_congregation_quotas','event_city_quotas',
@@ -126,6 +127,17 @@ begin
         'p_event_id uuid, p_checkout_id uuid, p_payload jsonb, p_idempotency_key text'
   ) then
     raise exception 'RPC de comprovante do Pix estático ausente';
+  end if;
+  select pg_get_functiondef(procedure.oid) into v_static_receipt_definition
+  from pg_proc procedure
+  join pg_namespace namespace on namespace.oid=procedure.pronamespace
+  where namespace.nspname='public'
+    and procedure.proname='submit_event_public_static_pix_receipt'
+    and pg_get_function_identity_arguments(procedure.oid) =
+      'p_event_id uuid, p_checkout_id uuid, p_payload jsonb, p_idempotency_key text';
+  if position('payment_channel' in v_static_receipt_definition)=0
+    or position('metadata->>''paymentFlow''' in v_static_receipt_definition)=0 then
+    raise exception 'RPC de comprovante do Pix estático não impede envios duplicados';
   end if;
   if has_function_privilege('anon', 'public.submit_event_public_static_pix_receipt(uuid,uuid,jsonb,text)', 'execute')
     or has_function_privilege('authenticated', 'public.submit_event_public_static_pix_receipt(uuid,uuid,jsonb,text)', 'execute')

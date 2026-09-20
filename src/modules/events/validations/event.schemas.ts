@@ -197,6 +197,24 @@ export const publicPixPaymentSchema = z.object({
   payerCpf: z.string().trim().refine(isValidCpf, "Informe um CPF válido.").transform((value) => value.replace(/\D/g, "")),
 });
 
+const publicStaticPixReceiptFileSchema = z.object({
+  fileName: z.string().trim().min(1).max(220),
+  mimeType: z.enum(["application/pdf", "image/jpeg", "image/png", "image/webp"]),
+  fileSize: z.coerce.number().int().positive().max(10 * 1024 * 1024),
+});
+
+export const publicStaticPixReceiptUploadSchema = publicStaticPixReceiptFileSchema.extend({
+  checkoutToken: z.string().trim().min(40).max(120).regex(/^[A-Za-z0-9_-]+$/),
+});
+
+export const publicStaticPixReceiptSchema = z.object({
+  checkoutToken: z.string().trim().min(40).max(120).regex(/^[A-Za-z0-9_-]+$/),
+  receiptPath: z.string().trim().min(20).max(900),
+  receiptFileName: publicStaticPixReceiptFileSchema.shape.fileName,
+  receiptMimeType: publicStaticPixReceiptFileSchema.shape.mimeType,
+  receiptFileSize: publicStaticPixReceiptFileSchema.shape.fileSize,
+});
+
 const caravanItemSchema = z.object({ itemId: z.uuid(), quantity: z.coerce.number().int().min(1) });
 
 const groupBaseSchema = z.object({

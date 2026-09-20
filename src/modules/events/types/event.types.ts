@@ -598,6 +598,7 @@ export type PublicCheckoutStatus = {
   registrationStatus: string;
   paymentStatus: string;
   paymentMethod: "PIX" | "CASH" | "DEBIT_CARD" | "CREDIT_CARD" | "NOT_APPLICABLE";
+  paymentFlow: IndividualPaymentFlow;
   checkoutStatus: string;
   totalAmount: number;
   items: PublicCheckoutItem[];
@@ -607,6 +608,7 @@ export type PublicCheckoutStatus = {
   providerStatus: string | null;
   paymentSimulationEnabled: boolean;
   isSimulatedPayment: boolean;
+  receiptSubmitted: boolean;
   pix?: {
     qrCode: string | null;
     qrCodeBase64: string | null;
