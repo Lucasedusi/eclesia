@@ -30,15 +30,18 @@ import { Toast, ToastViewport } from "@/components/ui/toast";
 import { createClient } from "@/lib/supabase/client";
 import {
   finalizeEventBannerAction,
+  finalizeEventIndividualPixQrAction,
   finalizeEventPixQrAction,
   prepareEventBannerAction,
+  prepareEventIndividualPixQrAction,
   prepareEventPixQrAction,
   removeEventBannerAction,
+  removeEventIndividualPixQrAction,
   removeEventPixQrAction,
   saveEventAction,
 } from "../actions/event.actions";
 import { EVENT_SCOPES, EVENT_TYPES, EVENT_VISIBILITIES, REGISTRATION_MODES, eventLabel } from "../constants/events";
-import type { EventDetail, EventRegistrationFieldRow, EventScope } from "../types/event.types";
+import type { EventDetail, EventRegistrationFieldRow, EventScope, IndividualPixMode } from "../types/event.types";
 import { orderRegistrationFields } from "../utils/registration-fields";
 import * as S from "./events.styles";
 
@@ -62,7 +65,7 @@ const fieldStep: Record<string, number> = {
   eventScope: 2, regionId: 2, congregationId: 2, ministryId: 2,
   registrationMode: 3, capacity: 3, registrationFields: 4,
   requiresGroupResponsible: 5, requiresPastorInfo: 5, requiresGenderTotals: 5,
-  requiresPayment: 6, notes: 7,
+  requiresPayment: 6, individualPaymentSettings: 6, individualPixKey: 6, individualPixHolderName: 6, individualWhatsappNumber: 6, individualPaymentInstructions: 6, notes: 7,
 };
 
 const defaultRegistrationFields: EventRegistrationFieldRow[] = [
@@ -111,19 +114,26 @@ export function EventForm({ initial, options }: Props) {
   const [allowParticipantList,setAllowParticipantList]=useState(initial?.paymentSettings.allowParticipantList??true);
   const [pixEnabled,setPixEnabled]=useState(initial?.paymentSettings.pixEnabled??false);
   const [cashEnabled,setCashEnabled]=useState(initial?.paymentSettings.cashEnabled??false);
+  const [individualPixMode,setIndividualPixMode]=useState<IndividualPixMode>(initial?.paymentSettings.individual.pixMode??"AUTOMATIC");
+  const [individualCashEnabled,setIndividualCashEnabled]=useState(initial?.paymentSettings.individual.cashEnabled??false);
+  const [individualCardEnabled,setIndividualCardEnabled]=useState(initial?.paymentSettings.individual.cardEnabled??false);
   const [notice, setNotice] = useState<{ message: string; danger?: boolean } | null>(null);
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [banner, setBanner] = useState<File | null>(null);
   const [removeBanner, setRemoveBanner] = useState(false);
   const [pixQr,setPixQr]=useState<File|null>(null);
   const [removePixQr,setRemovePixQr]=useState(false);
+  const [individualPixQr,setIndividualPixQr]=useState<File|null>(null);
+  const [removeIndividualPixQr,setRemoveIndividualPixQr]=useState(false);
   const [registrationFields, setRegistrationFields] = useState<EventRegistrationFieldRow[]>(() => orderRegistrationFields(initial?.registrationFields.length ? initial.registrationFields : defaultRegistrationFields));
   const activeCustomFieldCount = registrationFields.filter((field) => field.kind === "CUSTOM" && field.active && field.visibility !== "HIDDEN").length;
   const bannerPreview = useMemo(() => banner ? URL.createObjectURL(banner) : removeBanner ? null : initial?.bannerUrl ?? null, [banner, initial?.bannerUrl, removeBanner]);
   const pixQrPreview=useMemo(()=>pixQr?URL.createObjectURL(pixQr):removePixQr?null:initial?.paymentSettings.pixQrUrl??null,[initial?.paymentSettings.pixQrUrl,pixQr,removePixQr]);
+  const individualPixQrPreview=useMemo(()=>individualPixQr?URL.createObjectURL(individualPixQr):removeIndividualPixQr?null:initial?.paymentSettings.individual.pixQrUrl??null,[individualPixQr,initial?.paymentSettings,removeIndividualPixQr]);
 
   useEffect(() => () => { if (bannerPreview?.startsWith("blob:")) URL.revokeObjectURL(bannerPreview); }, [bannerPreview]);
   useEffect(()=>()=>{if(pixQrPreview?.startsWith("blob:"))URL.revokeObjectURL(pixQrPreview);},[pixQrPreview]);
+  useEffect(()=>()=>{if(individualPixQrPreview?.startsWith("blob:"))URL.revokeObjectURL(individualPixQrPreview);},[individualPixQrPreview]);
 
   function submit(formElement: HTMLFormElement) {
     setSubmitAttempted(true);
@@ -150,6 +160,15 @@ export function EventForm({ initial, options }: Props) {
       caravanRegistrationItemId:String(form.get("caravanRegistrationItemId")??""),
       pixKey:String(form.get("pixKey")??""),pixHolderName:String(form.get("pixHolderName")??""),
       whatsappNumber:String(form.get("whatsappNumber")??""),paymentInstructions:String(form.get("paymentInstructions")??""),
+    };
+    data.individualPaymentSettings={
+      pixMode:requiresPayment?individualPixMode:"DISABLED",
+      pixKey:String(form.get("individualPixKey")??""),
+      pixHolderName:String(form.get("individualPixHolderName")??""),
+      cashEnabled:requiresPayment&&individualCashEnabled,
+      cardEnabled:requiresPayment&&individualCardEnabled,
+      whatsappNumber:String(form.get("individualWhatsappNumber")??""),
+      paymentInstructions:String(form.get("individualPaymentInstructions")??""),
     };
     data.registrationFields = registrationFields.map((field, index) => ({ ...field, sortOrder: (index + 1) * 10, helpText: field.helpText ?? "" }));
 
@@ -204,6 +223,19 @@ export function EventForm({ initial, options }: Props) {
         const upload=await createClient().storage.from("event-public-media").uploadToSignedUrl(prepared.data.path,prepared.data.token,pixQr,{contentType:pixQr.type});
         if(upload.error){setNotice({message:"Evento salvo, mas não foi possível enviar o QR Code Pix.",danger:true});return;}
         const finalized=await finalizeEventPixQrAction(id,prepared.data.path,pixQr.name);
+        if(finalized.status==="error"){setNotice({message:finalized.message,danger:true});return;}
+      }
+      const shouldRemoveIndividualQr=removeIndividualPixQr||individualPixMode!=="STATIC";
+      if(shouldRemoveIndividualQr&&initial?.paymentSettings.individual.pixQrUrl){
+        const removed=await removeEventIndividualPixQrAction(id);
+        if(removed.status==="error"){setNotice({message:`Evento salvo, mas o QR Code Pix individual não foi removido: ${removed.message}`,danger:true});return;}
+      }
+      if(individualPixMode==="STATIC"&&individualPixQr){
+        const prepared=await prepareEventIndividualPixQrAction(id,{name:individualPixQr.name,type:individualPixQr.type,size:individualPixQr.size});
+        if(prepared.status==="error"){setNotice({message:`Evento salvo, mas o QR Code Pix individual falhou: ${prepared.message}`,danger:true});return;}
+        const upload=await createClient().storage.from("event-public-media").uploadToSignedUrl(prepared.data.path,prepared.data.token,individualPixQr,{contentType:individualPixQr.type});
+        if(upload.error){setNotice({message:"Evento salvo, mas não foi possível enviar o QR Code Pix individual.",danger:true});return;}
+        const finalized=await finalizeEventIndividualPixQrAction(id,prepared.data.path,individualPixQr.name);
         if(finalized.status==="error"){setNotice({message:finalized.message,danger:true});return;}
       }
       router.push(`/eventos/${id}`);
@@ -371,8 +403,7 @@ export function EventForm({ initial, options }: Props) {
                 </S.FieldGrid>
                 {!options.items.length?<S.InfoBox><Info/><div><strong>Item principal</strong><p>Salve o evento, cadastre os itens no workspace e volte à edição para escolher qual item acompanhará automaticamente o total da caravana.</p></div></S.InfoBox>:null}
               </>:<>
-                <S.InfoBox><Users/><div><strong>Evento somente individual</strong><p>Informe o contato que será exibido depois da inscrição para combinar pagamentos presenciais.</p></div></S.InfoBox>
-                <S.FieldGrid><S.Field><span>WhatsApp do evento{requiresPayment?" *":""}</span><input name="whatsappNumber" inputMode="tel" required={requiresPayment} defaultValue={initial?.paymentSettings.whatsappNumber??""}/></S.Field></S.FieldGrid>
+                <S.InfoBox><Users/><div><strong>Evento somente individual</strong><p>As configurações de caravana não se aplicam. As formas de pagamento individual são definidas na próxima etapa.</p></div></S.InfoBox>
               </>}
               <input type="hidden" name="requiresGroupResponsible" value={registrationMode==="MIXED"?"true":"false"}/><input type="hidden" name="requiresPastorInfo" value={registrationMode==="MIXED"?"true":"false"}/><input type="hidden" name="requiresGenderTotals" value={registrationMode==="MIXED"?"true":"false"}/>
             </S.StepPanel>
@@ -381,7 +412,26 @@ export function EventForm({ initial, options }: Props) {
               <S.CardChoices>
                 <S.OptionCard $selected={requiresPayment}><input type="checkbox" checked={requiresPayment} onChange={(event) => setRequiresPayment(event.target.checked)} /><span><CreditCard /></span><div><strong>Evento exige pagamento</strong><small>Permite informar a forma preferida na inscrição e registrar pagamentos individuais.</small></div><Check /></S.OptionCard>
               </S.CardChoices>
-              <S.InfoBox><CreditCard /><div><strong>Configuração simplificada</strong><p>Itens são cadastrados no workspace. Não há lotes, parcelamento ou limite de parcelas.</p></div></S.InfoBox>
+              {requiresPayment?<>
+                <S.InfoBox><CreditCard/><div><strong>Formas de pagamento individual</strong><p>Escolha um único fluxo de Pix e, se desejar, também aceite dinheiro e cartão presencialmente.</p></div></S.InfoBox>
+                <S.CardChoices>
+                  <S.OptionCard $selected={individualPixMode==="DISABLED"}><input type="radio" name="individualPixMode" value="DISABLED" checked={individualPixMode==="DISABLED"} onChange={()=>setIndividualPixMode("DISABLED")}/><span><CreditCard/></span><div><strong>Sem Pix</strong><small>Não oferecer Pix para inscrições individuais.</small></div><Check/></S.OptionCard>
+                  <S.OptionCard $selected={individualPixMode==="STATIC"}><input type="radio" name="individualPixMode" value="STATIC" checked={individualPixMode==="STATIC"} onChange={()=>setIndividualPixMode("STATIC")}/><span><CreditCard/></span><div><strong>Pix estático</strong><small>Exibir chave e QR Code; o comprovante poderá ser enviado para análise.</small></div><Check/></S.OptionCard>
+                  <S.OptionCard $selected={individualPixMode==="AUTOMATIC"}><input type="radio" name="individualPixMode" value="AUTOMATIC" checked={individualPixMode==="AUTOMATIC"} onChange={()=>setIndividualPixMode("AUTOMATIC")}/><span><CreditCard/></span><div><strong>Pix automático</strong><small>Gerar a cobrança e confirmar o pagamento pelo Mercado Pago.</small></div><Check/></S.OptionCard>
+                  <S.OptionCard $selected={individualCashEnabled}><input type="checkbox" checked={individualCashEnabled} onChange={(event)=>setIndividualCashEnabled(event.target.checked)}/><span><CreditCard/></span><div><strong>Dinheiro</strong><small>Orientar o participante a procurar a organização.</small></div><Check/></S.OptionCard>
+                  <S.OptionCard $selected={individualCardEnabled}><input type="checkbox" checked={individualCardEnabled} onChange={(event)=>setIndividualCardEnabled(event.target.checked)}/><span><CreditCard/></span><div><strong>Cartão</strong><small>Oferecer débito e crédito com pagamento junto à organização.</small></div><Check/></S.OptionCard>
+                </S.CardChoices>
+                {individualPixMode==="STATIC"?<S.FieldGrid>
+                  <S.Field><span>Chave Pix individual *</span><input name="individualPixKey" required defaultValue={initial?.paymentSettings.individual.pixKey??""}/></S.Field>
+                  <S.Field><span>Titular da chave *</span><input name="individualPixHolderName" required defaultValue={initial?.paymentSettings.individual.pixHolderName??""}/></S.Field>
+                  <S.Wide><S.UploadBox>{individualPixQrPreview?<Image src={individualPixQrPreview} alt="Prévia do QR Code Pix individual" width={220} height={220} unoptimized/>:<span><ImageUp/><strong>QR Code Pix individual</strong><small>Imagem opcional em JPG, PNG ou WEBP de até 2 MB</small></span>}<div><label className="app-button-secondary"><ImageUp size={16}/>{individualPixQrPreview?"Substituir QR Code":"Selecionar QR Code"}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event)=>{setIndividualPixQr(event.target.files?.[0]??null);setRemoveIndividualPixQr(false);}}/></label>{individualPixQrPreview?<button type="button" className="app-button-secondary" onClick={()=>{setIndividualPixQr(null);setRemoveIndividualPixQr(true);}}><Trash2 size={15}/>Remover</button>:null}</div></S.UploadBox></S.Wide>
+                </S.FieldGrid>:null}
+                <S.FieldGrid>
+                  {individualCashEnabled||individualCardEnabled?<S.Field><span>WhatsApp da organização *</span><input name="individualWhatsappNumber" inputMode="tel" required defaultValue={initial?.paymentSettings.individual.whatsappNumber??""}/></S.Field>:null}
+                  <S.Wide><S.Field><span>Instruções de pagamento</span><textarea name="individualPaymentInstructions" maxLength={1500} defaultValue={initial?.paymentSettings.individual.paymentInstructions??""}/></S.Field></S.Wide>
+                </S.FieldGrid>
+              </>:<S.InfoBox><CreditCard/><div><strong>Evento gratuito</strong><p>Nenhuma forma de pagamento será exibida na inscrição individual.</p></div></S.InfoBox>}
+              <S.InfoBox><Info/><div><strong>Itens do evento</strong><p>Os itens são cadastrados no workspace. Não há lotes nem parcelamento.</p></div></S.InfoBox>
             </S.StepPanel>
 
             <S.StepPanel hidden={step !== 7}>

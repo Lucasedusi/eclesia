@@ -21,12 +21,14 @@ import {
   deleteEventExpense,
   discardPreparedEventExpenseReceipt,
   finalizeEventBanner,
+  finalizeEventIndividualPixQr,
   finalizeEventPixQr,
   finalizeEventDocument,
   getEventDocumentUrl,
   getEventExpenseReceiptUrl,
   getPaymentReceiptUrl,
   prepareEventBanner,
+  prepareEventIndividualPixQr,
   prepareEventPixQr,
   prepareEventDocument,
   prepareEventExpenseReceipt,
@@ -38,6 +40,7 @@ import {
   registerCheckin,
   reissueQr,
   removeEventBanner,
+  removeEventIndividualPixQr,
   removeEventPixQr,
   reverseCheckin,
   saveEvent,
@@ -305,3 +308,6 @@ export async function removeEventBannerAction(eventId: string): Promise<ActionRe
 export async function prepareEventPixQrAction(eventId:string,file:{name:string;type:string;size:number}):Promise<ActionResult<{path:string;token:string;fileName:string}>>{if(!["image/jpeg","image/png","image/webp"].includes(file.type)||file.size<=0||file.size>2*1024*1024)return{status:"error",message:"Envie um QR Code JPG, PNG ou WEBP de até 2 MB."};try{return{status:"success",message:"QR Code preparado.",data:await prepareEventPixQr(eventId,file.name,file.type)};}catch(error){return errorResult(error,"Não foi possível preparar o QR Code Pix.") as ActionResult<{path:string;token:string;fileName:string}>;}}
 export async function finalizeEventPixQrAction(eventId:string,path:string,fileName:string):Promise<ActionResult<{url:string}>>{try{const url=await finalizeEventPixQr(eventId,path,fileName);await refresh(eventId);return{status:"success",message:"QR Code Pix atualizado.",data:{url}};}catch(error){return errorResult(error,"Não foi possível confirmar o QR Code Pix.") as ActionResult<{url:string}>;}}
 export async function removeEventPixQrAction(eventId:string):Promise<ActionResult>{try{await removeEventPixQr(eventId);await refresh(eventId);return{status:"success",message:"QR Code Pix removido."};}catch(error){return errorResult(error,"Não foi possível remover o QR Code Pix.");}}
+export async function prepareEventIndividualPixQrAction(eventId:string,file:{name:string;type:string;size:number}):Promise<ActionResult<{path:string;token:string;fileName:string}>>{if(!["image/jpeg","image/png","image/webp"].includes(file.type)||file.size<=0||file.size>2*1024*1024)return{status:"error",message:"Envie um QR Code JPG, PNG ou WEBP de até 2 MB."};try{return{status:"success",message:"QR Code preparado.",data:await prepareEventIndividualPixQr(eventId,file.name,file.type)};}catch(error){return errorResult(error,"Não foi possível preparar o QR Code Pix individual.") as ActionResult<{path:string;token:string;fileName:string}>;}}
+export async function finalizeEventIndividualPixQrAction(eventId:string,path:string,fileName:string):Promise<ActionResult<{url:string}>>{try{const url=await finalizeEventIndividualPixQr(eventId,path,fileName);await refresh(eventId);return{status:"success",message:"QR Code Pix individual atualizado.",data:{url}};}catch(error){return errorResult(error,"Não foi possível confirmar o QR Code Pix individual.") as ActionResult<{url:string}>;}}
+export async function removeEventIndividualPixQrAction(eventId:string):Promise<ActionResult>{try{await removeEventIndividualPixQr(eventId);await refresh(eventId);return{status:"success",message:"QR Code Pix individual removido."};}catch(error){return errorResult(error,"Não foi possível remover o QR Code Pix individual.");}}

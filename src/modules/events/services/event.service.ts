@@ -38,6 +38,11 @@ import type {
   registrationSchema,
   updateRegistrationSchema,
 } from "../validations/event.schemas";
+import {
+  buildEventPaymentSettingsPayload,
+  defaultEventPaymentSettings,
+  eventPaymentSettingsFromRow,
+} from "../utils/event-payment-settings";
 import { buildRegistrationPaymentPayload, resolveRegistrationPaymentMethod, retryPublicCaravanStorageRead } from "../utils/payment-payload";
 import { createPublicMemberAttemptHash } from "./public-member-link";
 
@@ -134,6 +139,18 @@ function text(row: RecordValue, key: string) { const item = value(row, key); ret
 function number(row: RecordValue, key: string) { const item = Number(value(row, key) ?? 0); return Number.isFinite(item) ? item : 0; }
 function bool(row: RecordValue, key: string) { return Boolean(value(row, key)); }
 function nested(row: RecordValue, key: string) { const item = row[key]; return (Array.isArray(item) ? item[0] : item) as RecordValue | null | undefined; }
+function toPaymentSettings(row: RecordValue) {
+  const storage = createAdminClient().storage;
+  const publicUrl = (bucketKey: string, pathKey: string) => {
+    const path = text(row, pathKey);
+    if (!path) return null;
+    return storage.from(text(row, bucketKey) ?? "event-public-media").getPublicUrl(path).data.publicUrl;
+  };
+  return eventPaymentSettingsFromRow(row, {
+    caravanQrUrl: publicUrl("pix_qr_storage_bucket", "pix_qr_storage_path"),
+    individualQrUrl: publicUrl("individual_pix_qr_storage_bucket", "individual_pix_qr_storage_path"),
+  });
+}
 function roleDisplayName(role: RecordValue, gender?: string | null) {
   return gender === "FEMALE" ? text(role, "female_name") ?? String(role.name) : String(role.name);
 }
@@ -206,10 +223,7 @@ function toDetail(row: RecordValue, counts?: Map<string, number>): EventDetail {
     country: String(row.country ?? "Brasil"),
     notes: text(row, "notes"),
     settings: (row.settings ?? {}) as Record<string, unknown>,
-    paymentSettings: {
-      allowParticipantList: true, caravanRegistrationItemId: "", pixEnabled: false, pixKey: "", pixHolderName: "",
-      pixQrUrl: null, cashEnabled: false, whatsappNumber: "", paymentInstructions: "",
-    },
+    paymentSettings: defaultEventPaymentSettings(),
     registrationFields: [],
   };
 }
@@ -284,12 +298,7 @@ export async function getEvent(eventId: string) {
   if (fields.error || registrations.error || paymentSettings.error) fail(fields.error ?? registrations.error ?? paymentSettings.error, "Não foi possível carregar o formulário de inscrição.");
   const detail = toDetail(row);
   const setting = paymentSettings.data as RecordValue | null;
-  return { ...detail, hasRegistrations: (registrations.count ?? 0) > 0, registrationFields: ((fields.data ?? []) as RecordValue[]).map(toRegistrationField), paymentSettings: setting ? {
-    allowParticipantList: bool(setting,"allow_participant_list"), caravanRegistrationItemId: text(setting,"caravan_registration_item_id") ?? "",
-    pixEnabled: bool(setting,"pix_enabled"), pixKey: text(setting,"pix_key") ?? "", pixHolderName: text(setting,"pix_holder_name") ?? "",
-    pixQrUrl: text(setting,"pix_qr_storage_path") ? createAdminClient().storage.from(text(setting,"pix_qr_storage_bucket") ?? "event-public-media").getPublicUrl(String(setting.pix_qr_storage_path)).data.publicUrl : null,
-    cashEnabled: bool(setting,"cash_enabled"), whatsappNumber: text(setting,"whatsapp_number") ?? "", paymentInstructions: text(setting,"payment_instructions") ?? "",
-  } : detail.paymentSettings };
+  return { ...detail, hasRegistrations: (registrations.count ?? 0) > 0, registrationFields: ((fields.data ?? []) as RecordValue[]).map(toRegistrationField), paymentSettings: setting ? toPaymentSettings(setting) : detail.paymentSettings };
 }
 
 export async function getEventFormOptions(eventId?: string) {
@@ -375,10 +384,7 @@ export async function getEventWorkspace(eventId: string): Promise<EventWorkspace
   const baseDetail = toDetail(row,counts);
 
   return {
-    event: { ...baseDetail, hasRegistrations: registrationRows.length > 0 || ((groups.data ?? []).length > 0), registrationFields: ((registrationFields.data ?? []) as RecordValue[]).map(toRegistrationField), paymentSettings: setting ? {
-      allowParticipantList:bool(setting,"allow_participant_list"),caravanRegistrationItemId:text(setting,"caravan_registration_item_id")??"",pixEnabled:bool(setting,"pix_enabled"),pixKey:text(setting,"pix_key")??"",pixHolderName:text(setting,"pix_holder_name")??"",
-      pixQrUrl:text(setting,"pix_qr_storage_path")?createAdminClient().storage.from(text(setting,"pix_qr_storage_bucket")??"event-public-media").getPublicUrl(String(setting.pix_qr_storage_path)).data.publicUrl:null,cashEnabled:bool(setting,"cash_enabled"),whatsappNumber:text(setting,"whatsapp_number")??"",paymentInstructions:text(setting,"payment_instructions")??"",
-    }:baseDetail.paymentSettings },
+    event: { ...baseDetail, hasRegistrations: registrationRows.length > 0 || ((groups.data ?? []).length > 0), registrationFields: ((registrationFields.data ?? []) as RecordValue[]).map(toRegistrationField), paymentSettings: setting ? toPaymentSettings(setting) : baseDetail.paymentSettings },
     permissions: context.permissions,
     registrations: registrationRows.map((item): RegistrationRow => {
       const congregation = nested(item, "congregations");
@@ -492,21 +498,18 @@ export async function saveEvent(input: EventForm) {
       if (archived.error) fail(archived.error, "Não foi possível desativar os campos removidos.");
     }
   }
-  const caravanSettings = input.caravanSettings;
   const settingsResult = await supabase.from("event_payment_settings").upsert({
     church_id: context.church.id, event_id: eventId,
-    allow_participant_list: input.registrationMode === "MIXED" && caravanSettings.allowParticipantList,
-    caravan_registration_item_id: input.registrationMode === "MIXED" && caravanSettings.caravanRegistrationItemId ? caravanSettings.caravanRegistrationItemId : null,
-    pix_enabled: input.registrationMode === "MIXED" && caravanSettings.pixEnabled,
-    pix_key: input.registrationMode === "MIXED" && caravanSettings.pixEnabled ? caravanSettings.pixKey : null,
-    pix_holder_name: input.registrationMode === "MIXED" && caravanSettings.pixEnabled ? caravanSettings.pixHolderName : null,
-    cash_enabled: input.registrationMode === "MIXED" && caravanSettings.cashEnabled,
-    whatsapp_number: input.registrationMode === "MIXED" ? caravanSettings.whatsappNumber || null : null,
-    payment_instructions: input.registrationMode === "MIXED" ? caravanSettings.paymentInstructions || null : null,
+    ...buildEventPaymentSettingsPayload({
+      registrationMode: input.registrationMode,
+      requiresPayment: input.requiresPayment,
+      caravanSettings: input.caravanSettings,
+      individualPaymentSettings: input.individualPaymentSettings,
+    }),
     created_by: context.profile.id,
     updated_by: context.profile.id,
   }, { onConflict: "event_id" });
-  if (settingsResult.error) fail(settingsResult.error, "Não foi possível salvar a configuração de caravanas.");
+  if (settingsResult.error) fail(settingsResult.error, "Não foi possível salvar a configuração de pagamentos.");
   return eventId;
 }
 
@@ -685,12 +688,13 @@ export async function permanentlyDeleteEvent(eventId: string) {
   if (eventResult.error || !eventResult.data) fail(eventResult.error, "O evento precisa estar na lixeira para ser excluído definitivamente.");
 
   const admin = createAdminClient();
-  const [documents, receipts, expenseReceipts] = await Promise.all([
+  const [documents, receipts, expenseReceipts, paymentSettings] = await Promise.all([
     admin.from("event_documents").select("storage_bucket,storage_path").eq("event_id", eventId),
     admin.from("event_payments").select("receipt_storage_path").eq("event_id", eventId).not("receipt_storage_path", "is", null),
     admin.from("event_expenses").select("receipt_storage_bucket,receipt_storage_path").eq("event_id", eventId).not("receipt_storage_path", "is", null),
+    admin.from("event_payment_settings").select("pix_qr_storage_bucket,pix_qr_storage_path,individual_pix_qr_storage_bucket,individual_pix_qr_storage_path").eq("event_id", eventId).maybeSingle(),
   ]);
-  const lookupError = documents.error ?? receipts.error ?? expenseReceipts.error;
+  const lookupError = documents.error ?? receipts.error ?? expenseReceipts.error ?? paymentSettings.error;
   if (lookupError) fail(lookupError, "Não foi possível localizar os arquivos vinculados ao evento.");
 
   const pathsByBucket = new Map<string, Set<string>>();
@@ -704,6 +708,8 @@ export async function permanentlyDeleteEvent(eventId: string) {
   for (const document of documents.data ?? []) appendPath(document.storage_bucket, document.storage_path);
   for (const receipt of receipts.data ?? []) appendPath("event-documents", receipt.receipt_storage_path);
   for (const receipt of expenseReceipts.data ?? []) appendPath(receipt.receipt_storage_bucket ?? "event-documents", receipt.receipt_storage_path);
+  appendPath(paymentSettings.data?.pix_qr_storage_bucket, paymentSettings.data?.pix_qr_storage_path);
+  appendPath(paymentSettings.data?.individual_pix_qr_storage_bucket, paymentSettings.data?.individual_pix_qr_storage_path);
 
   for (const [bucket, pathSet] of pathsByBucket) {
     const paths = [...pathSet];
@@ -741,7 +747,7 @@ export async function getPublicEvent(publicCode: string, slug: string) {
   const setting=paymentSettings.data as RecordValue|null;
   const occupied=(individualCounts.count??0)+((caravanCounts.data??[]) as RecordValue[]).reduce((sum,item)=>sum+number(item,"total_registrations"),0);
   return {
-    event:{...event,occupied,paymentSettings:setting?{allowParticipantList:bool(setting,"allow_participant_list"),caravanRegistrationItemId:text(setting,"caravan_registration_item_id")??"",pixEnabled:bool(setting,"pix_enabled"),pixKey:text(setting,"pix_key")??"",pixHolderName:text(setting,"pix_holder_name")??"",pixQrUrl:text(setting,"pix_qr_storage_path")?admin.storage.from(text(setting,"pix_qr_storage_bucket")??"event-public-media").getPublicUrl(String(setting.pix_qr_storage_path)).data.publicUrl:null,cashEnabled:bool(setting,"cash_enabled"),whatsappNumber:text(setting,"whatsapp_number")??"",paymentInstructions:text(setting,"payment_instructions")??""}:event.paymentSettings},
+    event:{...event,occupied,paymentSettings:setting?toPaymentSettings(setting):event.paymentSettings},
     items: ((items.data ?? []) as RecordValue[]).sort((first, second) => Number(second.item_type === "REGISTRATION") - Number(first.item_type === "REGISTRATION")),
     congregations: ((congregations.data ?? []) as RecordValue[]).map((item) => ({ id: String(item.id), name: String(item.name), regionId: text(item, "region_id"), regionName: text(nested(item, "regions") ?? {}, "name") })),
     roles: ((roles.data ?? []) as RecordValue[]).map((item) => ({ id: String(item.id), name: String(item.name), femaleName: text(item, "female_name") })),
@@ -861,6 +867,15 @@ export async function finalizeEventPixQr(eventId:string,path:string,fileName:str
 }
 export async function removeEventPixQr(eventId:string){
   const {supabase}=await getEventRow(eventId,PERMISSIONS.eventsManage);const current=await supabase.from("event_payment_settings").select("pix_qr_storage_bucket,pix_qr_storage_path").eq("event_id",eventId).is("deleted_at",null).single();if(current.error)fail(current.error,"QR Code Pix não encontrado.");const updated=await supabase.from("event_payment_settings").update({pix_qr_storage_bucket:null,pix_qr_storage_path:null,pix_qr_file_name:null}).eq("event_id",eventId);if(updated.error)fail(updated.error,"Não foi possível remover o QR Code Pix.");if(current.data.pix_qr_storage_path)await supabase.storage.from(current.data.pix_qr_storage_bucket??"event-public-media").remove([current.data.pix_qr_storage_path]);
+}
+export async function prepareEventIndividualPixQr(eventId:string,fileName:string,mimeType:string){
+  const {supabase,row}=await getEventRow(eventId,PERMISSIONS.eventsManage);const extension=mimeType==="image/png"?"png":mimeType==="image/webp"?"webp":"jpg";const path=`${String(row.church_id)}/events/${eventId}/individual-pix/${randomUUID()}.${extension}`;const signed=await supabase.storage.from("event-public-media").createSignedUploadUrl(path);if(signed.error)fail(signed.error,"Não foi possível preparar o QR Code Pix individual.");return{path,token:signed.data.token,fileName};
+}
+export async function finalizeEventIndividualPixQr(eventId:string,path:string,fileName:string){
+  const {supabase,row}=await getEventRow(eventId,PERMISSIONS.eventsManage);const prefix=`${String(row.church_id)}/events/${eventId}/individual-pix/`;if(!path.startsWith(prefix))throw new EventServiceError("O QR Code não pertence a este evento.");const downloaded=await supabase.storage.from("event-public-media").download(path);if(downloaded.error||!downloaded.data)fail(downloaded.error,"Não foi possível validar o QR Code Pix individual.");const buffer=Buffer.from(await downloaded.data.arrayBuffer());const mime=path.endsWith(".png")?"image/png":path.endsWith(".webp")?"image/webp":"image/jpeg";if(buffer.length>2*1024*1024||!validUploadContent(buffer,mime)){await supabase.storage.from("event-public-media").remove([path]);throw new EventServiceError("Envie um QR Code JPG, PNG ou WEBP válido de até 2 MB.");}const current=await supabase.from("event_payment_settings").select("individual_pix_qr_storage_bucket,individual_pix_qr_storage_path").eq("event_id",eventId).is("deleted_at",null).single();if(current.error)fail(current.error,"Salve a configuração de pagamentos antes do QR Code.");const updated=await supabase.from("event_payment_settings").update({individual_pix_qr_storage_bucket:"event-public-media",individual_pix_qr_storage_path:path,individual_pix_qr_file_name:fileName}).eq("event_id",eventId);if(updated.error)fail(updated.error,"Não foi possível vincular o QR Code Pix individual.");if(current.data.individual_pix_qr_storage_path&&current.data.individual_pix_qr_storage_path!==path)await supabase.storage.from(current.data.individual_pix_qr_storage_bucket??"event-public-media").remove([current.data.individual_pix_qr_storage_path]);return supabase.storage.from("event-public-media").getPublicUrl(path).data.publicUrl;
+}
+export async function removeEventIndividualPixQr(eventId:string){
+  const {supabase}=await getEventRow(eventId,PERMISSIONS.eventsManage);const current=await supabase.from("event_payment_settings").select("individual_pix_qr_storage_bucket,individual_pix_qr_storage_path").eq("event_id",eventId).is("deleted_at",null).single();if(current.error)fail(current.error,"QR Code Pix individual não encontrado.");const updated=await supabase.from("event_payment_settings").update({individual_pix_qr_storage_bucket:null,individual_pix_qr_storage_path:null,individual_pix_qr_file_name:null}).eq("event_id",eventId);if(updated.error)fail(updated.error,"Não foi possível remover o QR Code Pix individual.");if(current.data.individual_pix_qr_storage_path)await supabase.storage.from(current.data.individual_pix_qr_storage_bucket??"event-public-media").remove([current.data.individual_pix_qr_storage_path]);
 }
 export async function finalizeEventDocument(eventId: string, documentId: string) {
   const supabase = await createClient();
