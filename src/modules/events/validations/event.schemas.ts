@@ -77,7 +77,7 @@ export const eventFormSchema = z.object({
   complement: optionalText,
   district: optionalText,
   city: optionalText,
-  state: z.string().trim().max(2).optional().default(""),
+  state: z.string().trim().max(2).optional().default("").transform((value) => value.toLocaleUpperCase("pt-BR")),
   country: z.string().trim().max(80).default("Brasil"),
   notes: z.string().trim().max(3000).optional().default(""),
   caravanSettings: z.object({

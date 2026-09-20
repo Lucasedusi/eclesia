@@ -113,6 +113,7 @@ export type RegistrationRow = {
   preferredPaymentMethod: string | null;
   status: string;
   paymentStatus: string;
+  paymentReceiptUnderReview: boolean;
   totalAmount: number;
   paidAmount: number;
   remainingAmount: number;
@@ -140,6 +141,7 @@ export type PaymentRow = {
   receiptFileSize: number | null;
   receiptStoragePath: string | null;
   source: "INTERNAL" | "PUBLIC";
+  paymentFlow: string | null;
   notes: string | null;
   createdAt: string;
   confirmedBy: string | null;

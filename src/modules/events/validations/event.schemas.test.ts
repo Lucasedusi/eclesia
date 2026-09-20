@@ -11,6 +11,7 @@ describe("eventListSchema",()=>{
 
 describe("eventFormSchema",()=>{
   it("aceita um rascunho coerente",()=>{expect(eventFormSchema.safeParse(baseEvent).success).toBe(true);});
+  it("normaliza a UF do evento para caixa alta",()=>{expect(eventFormSchema.parse({...baseEvent,state:"go"}).state).toBe("GO");});
   it("rejeita término anterior ao início",()=>{const result=eventFormSchema.safeParse({...baseEvent,endsAt:"2027-08-19T18:00"});expect(result.success).toBe(false);});
   it("exige alvo para escopo regional",()=>{const result=eventFormSchema.safeParse({...baseEvent,eventScope:"REGION",regionId:""});expect(result.success).toBe(false);});
   it("exige WhatsApp quando o pagamento em dinheiro de caravanas está ativo",()=>{const result=eventFormSchema.safeParse({...baseEvent,caravanSettings:{cashEnabled:true,whatsappNumber:"",allowParticipantList:true,pixEnabled:false,pixKey:"",pixHolderName:"",caravanRegistrationItemId:"",paymentInstructions:""}});expect(result.success).toBe(false);});

@@ -17,6 +17,7 @@ import {
   Eye,
   ImageUp,
   Info,
+  Loader2,
   Plus,
   Save,
   ShieldCheck,
@@ -28,6 +29,7 @@ import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { Toast, ToastViewport } from "@/components/ui/toast";
 import { createClient } from "@/lib/supabase/client";
+import { formatBrazilPhone, formatBrazilZipCode, normalizeBrazilWhatsapp } from "@/utils/input-masks";
 import {
   finalizeEventBannerAction,
   finalizeEventIndividualPixQrAction,
@@ -57,6 +59,12 @@ const steps = [
   { title: "Caravanas", description: "Cadastro e pagamento coletivo", icon: Users },
   { title: "Itens e pagamentos", description: "Cobranças do evento", icon: CreditCard },
   { title: "Página pública e revisão", description: "Banner e conferência final", icon: Eye },
+] as const;
+
+const brazilianStates = [
+  "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS",
+  "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC",
+  "SP", "SE", "TO",
 ] as const;
 
 const fieldStep: Record<string, number> = {
@@ -117,6 +125,19 @@ export function EventForm({ initial, options }: Props) {
   const [individualPixMode,setIndividualPixMode]=useState<IndividualPixMode>(initial?.paymentSettings.individual.pixMode??"AUTOMATIC");
   const [individualCashEnabled,setIndividualCashEnabled]=useState(initial?.paymentSettings.individual.cashEnabled??false);
   const [individualCardEnabled,setIndividualCardEnabled]=useState(initial?.paymentSettings.individual.cardEnabled??false);
+  const [addressFields, setAddressFields] = useState({
+    zipCode: formatBrazilZipCode(initial?.zipCode ?? ""),
+    address: initial?.address ?? "",
+    number: initial?.number ?? "",
+    complement: initial?.complement ?? "",
+    district: initial?.district ?? "",
+    city: initial?.city ?? "",
+    state: (initial?.state ?? "").toLocaleUpperCase("pt-BR"),
+  });
+  const [cepLoading, setCepLoading] = useState(false);
+  const [cepMessage, setCepMessage] = useState<{ text: string; danger?: boolean } | null>(null);
+  const cepTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cepRequest = useRef<AbortController | null>(null);
   const [notice, setNotice] = useState<{ message: string; danger?: boolean } | null>(null);
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [banner, setBanner] = useState<File | null>(null);
@@ -134,6 +155,57 @@ export function EventForm({ initial, options }: Props) {
   useEffect(() => () => { if (bannerPreview?.startsWith("blob:")) URL.revokeObjectURL(bannerPreview); }, [bannerPreview]);
   useEffect(()=>()=>{if(pixQrPreview?.startsWith("blob:"))URL.revokeObjectURL(pixQrPreview);},[pixQrPreview]);
   useEffect(()=>()=>{if(individualPixQrPreview?.startsWith("blob:"))URL.revokeObjectURL(individualPixQrPreview);},[individualPixQrPreview]);
+  useEffect(() => () => {
+    if (cepTimer.current) clearTimeout(cepTimer.current);
+    cepRequest.current?.abort();
+  }, []);
+
+  function updateAddressField(name: keyof typeof addressFields, value: string) {
+    setAddressFields((current) => ({ ...current, [name]: value }));
+  }
+
+  async function loadCep(cep: string) {
+    cepRequest.current?.abort();
+    const controller = new AbortController();
+    cepRequest.current = controller;
+    setCepLoading(true);
+    setCepMessage(null);
+
+    try {
+      const response = await fetch(`/api/address/cep/${cep}`, { signal: controller.signal });
+      const result = await response.json() as { message?: string; street?: string; district?: string; city?: string; state?: string };
+      if (!response.ok) throw new Error(result.message ?? "CEP não encontrado.");
+      setAddressFields((current) => ({
+        ...current,
+        address: result.street || current.address,
+        district: result.district || current.district,
+        city: result.city || current.city,
+        state: result.state?.toLocaleUpperCase("pt-BR") || current.state,
+      }));
+      setCepMessage({ text: "CEP localizado" });
+    } catch (error) {
+      if ((error as Error).name !== "AbortError") {
+        setCepMessage({ text: error instanceof Error ? error.message : "Não foi possível consultar o CEP.", danger: true });
+      }
+    } finally {
+      if (cepRequest.current === controller) setCepLoading(false);
+    }
+  }
+
+  function changeCep(value: string) {
+    const formatted = formatBrazilZipCode(value);
+    updateAddressField("zipCode", formatted);
+    setCepMessage(null);
+    if (cepTimer.current) clearTimeout(cepTimer.current);
+
+    const digits = formatted.replace(/\D/g, "");
+    if (digits.length === 8) {
+      cepTimer.current = setTimeout(() => void loadCep(digits), 350);
+    } else {
+      cepRequest.current?.abort();
+      setCepLoading(false);
+    }
+  }
 
   function submit(formElement: HTMLFormElement) {
     setSubmitAttempted(true);
@@ -159,7 +231,7 @@ export function EventForm({ initial, options }: Props) {
       allowParticipantList,pixEnabled,cashEnabled,
       caravanRegistrationItemId:String(form.get("caravanRegistrationItemId")??""),
       pixKey:String(form.get("pixKey")??""),pixHolderName:String(form.get("pixHolderName")??""),
-      whatsappNumber:String(form.get("whatsappNumber")??""),paymentInstructions:String(form.get("paymentInstructions")??""),
+      whatsappNumber:normalizeBrazilWhatsapp(String(form.get("whatsappNumber")??"")),paymentInstructions:String(form.get("paymentInstructions")??""),
     };
     data.individualPaymentSettings={
       pixMode:requiresPayment?individualPixMode:"DISABLED",
@@ -167,7 +239,7 @@ export function EventForm({ initial, options }: Props) {
       pixHolderName:String(form.get("individualPixHolderName")??""),
       cashEnabled:requiresPayment&&individualCashEnabled,
       cardEnabled:requiresPayment&&individualCardEnabled,
-      whatsappNumber:String(form.get("individualWhatsappNumber")??""),
+      whatsappNumber:normalizeBrazilWhatsapp(String(form.get("individualWhatsappNumber")??"")),
       paymentInstructions:String(form.get("individualPaymentInstructions")??""),
     };
     data.registrationFields = registrationFields.map((field, index) => ({ ...field, sortOrder: (index + 1) * 10, helpText: field.helpText ?? "" }));
@@ -332,13 +404,22 @@ export function EventForm({ initial, options }: Props) {
                 <S.Field><span>Início *</span><input type="datetime-local" name="startsAt" required defaultValue={localDate(initial?.startsAt)} /></S.Field>
                 <S.Field><span>Término</span><input type="datetime-local" name="endsAt" defaultValue={localDate(initial?.endsAt)} /></S.Field>
                 <S.Field><span>Local</span><input name="locationName" defaultValue={initial?.location ?? ""} placeholder="Ex.: Templo Central" /></S.Field>
-                <S.Field><span>CEP</span><input name="zipCode" defaultValue={initial?.zipCode ?? ""} /></S.Field>
-                <S.Field><span>Endereço</span><input name="address" defaultValue={initial?.address ?? ""} /></S.Field>
-                <S.Field><span>Número</span><input name="number" defaultValue={initial?.number ?? ""} /></S.Field>
-                <S.Field><span>Complemento</span><input name="complement" defaultValue={initial?.complement ?? ""} /></S.Field>
-                <S.Field><span>Bairro</span><input name="district" defaultValue={initial?.district ?? ""} /></S.Field>
-                <S.Field><span>Cidade</span><input name="city" defaultValue={initial?.city ?? ""} /></S.Field>
-                <S.Field><span>UF</span><input name="state" defaultValue={initial?.state ?? ""} maxLength={2} /></S.Field>
+                <S.Field>
+                  <S.FieldHeader>
+                    <span>CEP</span>
+                    {!cepLoading && cepMessage ? <S.LabelStatus role="status" $tone={cepMessage.danger ? "danger" : "success"} title={cepMessage.text}>{cepMessage.text}</S.LabelStatus> : null}
+                  </S.FieldHeader>
+                  <S.ControlShell>
+                    <S.CepControl $withInlineStatus={cepLoading} name="zipCode" value={addressFields.zipCode} onChange={(event) => changeCep(event.target.value)} placeholder="00000-000" inputMode="numeric" maxLength={9} />
+                    {cepLoading ? <S.InlineFieldStatus role="status"><Loader2 /> Buscando CEP...</S.InlineFieldStatus> : null}
+                  </S.ControlShell>
+                </S.Field>
+                <S.Field><span>Endereço</span><input name="address" value={addressFields.address} onChange={(event) => updateAddressField("address", event.target.value)} /></S.Field>
+                <S.Field><span>Número</span><input name="number" value={addressFields.number} onChange={(event) => updateAddressField("number", event.target.value)} /></S.Field>
+                <S.Field><span>Complemento</span><input name="complement" value={addressFields.complement} onChange={(event) => updateAddressField("complement", event.target.value)} /></S.Field>
+                <S.Field><span>Bairro</span><input name="district" value={addressFields.district} onChange={(event) => updateAddressField("district", event.target.value)} /></S.Field>
+                <S.Field><span>Cidade</span><input name="city" value={addressFields.city} onChange={(event) => updateAddressField("city", event.target.value)} /></S.Field>
+                <S.Field><span>UF</span><select name="state" value={addressFields.state} onChange={(event) => updateAddressField("state", event.target.value)}><option value="">Selecione</option>{brazilianStates.map((state) => <option key={state} value={state}>{state}</option>)}</select></S.Field>
                 <S.Field><span>País</span><input name="country" defaultValue={initial?.country ?? "Brasil"} /></S.Field>
               </S.FieldGrid>
             </S.StepPanel>
@@ -398,7 +479,7 @@ export function EventForm({ initial, options }: Props) {
                 <S.FieldGrid>
                   <S.Wide><S.Field><span>Item principal da caravana</span><select name="caravanRegistrationItemId" defaultValue={initial?.paymentSettings.caravanRegistrationItemId??options.items.find((item)=>item.item_type==="REGISTRATION")?.id??""}><option value="">Selecione após cadastrar os itens</option>{options.items.map((item)=><option key={item.id} value={item.id}>{item.name}</option>)}</select></S.Field></S.Wide>
                   {pixEnabled?<><S.Field><span>Chave Pix *</span><input name="pixKey" required defaultValue={initial?.paymentSettings.pixKey??""}/></S.Field><S.Field><span>Titular da chave *</span><input name="pixHolderName" required defaultValue={initial?.paymentSettings.pixHolderName??""}/></S.Field><S.Wide><S.UploadBox>{pixQrPreview?<Image src={pixQrPreview} alt="Prévia do QR Code Pix" width={220} height={220} unoptimized/>:<span><ImageUp/><strong>QR Code Pix do evento</strong><small>Imagem opcional em JPG, PNG ou WEBP de até 2 MB</small></span>}<div><label className="app-button-secondary"><ImageUp size={16}/>{pixQrPreview?"Substituir QR Code":"Selecionar QR Code"}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event)=>{setPixQr(event.target.files?.[0]??null);setRemovePixQr(false);}}/></label>{pixQrPreview?<button type="button" className="app-button-secondary" onClick={()=>{setPixQr(null);setRemovePixQr(true);}}><Trash2 size={15}/>Remover</button>:null}</div></S.UploadBox></S.Wide></>:null}
-                  <S.Field><span>WhatsApp do evento</span><input name="whatsappNumber" inputMode="tel" defaultValue={initial?.paymentSettings.whatsappNumber??""}/></S.Field>
+                  <S.Field><span>WhatsApp do evento</span><input name="whatsappNumber" inputMode="tel" maxLength={15} placeholder="(00) 00000-0000" defaultValue={formatBrazilPhone(initial?.paymentSettings.whatsappNumber??"")} onChange={(event)=>{event.currentTarget.value=formatBrazilPhone(event.currentTarget.value);}}/></S.Field>
                   <S.Wide><S.Field><span>Instruções de pagamento</span><textarea name="paymentInstructions" maxLength={1500} defaultValue={initial?.paymentSettings.paymentInstructions??""}/></S.Field></S.Wide>
                 </S.FieldGrid>
                 {!options.items.length?<S.InfoBox><Info/><div><strong>Item principal</strong><p>Salve o evento, cadastre os itens no workspace e volte à edição para escolher qual item acompanhará automaticamente o total da caravana.</p></div></S.InfoBox>:null}
@@ -427,7 +508,7 @@ export function EventForm({ initial, options }: Props) {
                   <S.Wide><S.UploadBox>{individualPixQrPreview?<Image src={individualPixQrPreview} alt="Prévia do QR Code Pix individual" width={220} height={220} unoptimized/>:<span><ImageUp/><strong>QR Code Pix individual</strong><small>Imagem opcional em JPG, PNG ou WEBP de até 2 MB</small></span>}<div><label className="app-button-secondary"><ImageUp size={16}/>{individualPixQrPreview?"Substituir QR Code":"Selecionar QR Code"}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event)=>{setIndividualPixQr(event.target.files?.[0]??null);setRemoveIndividualPixQr(false);}}/></label>{individualPixQrPreview?<button type="button" className="app-button-secondary" onClick={()=>{setIndividualPixQr(null);setRemoveIndividualPixQr(true);}}><Trash2 size={15}/>Remover</button>:null}</div></S.UploadBox></S.Wide>
                 </S.FieldGrid>:null}
                 <S.FieldGrid>
-                  {individualCashEnabled||individualCardEnabled?<S.Field><span>WhatsApp da organização *</span><input name="individualWhatsappNumber" inputMode="tel" required defaultValue={initial?.paymentSettings.individual.whatsappNumber??""}/></S.Field>:null}
+                  {individualCashEnabled||individualCardEnabled?<S.Field><span>WhatsApp da organização *</span><input name="individualWhatsappNumber" inputMode="tel" required maxLength={15} placeholder="(00) 00000-0000" defaultValue={formatBrazilPhone(initial?.paymentSettings.individual.whatsappNumber??"")} onChange={(event)=>{event.currentTarget.value=formatBrazilPhone(event.currentTarget.value);}}/></S.Field>:null}
                   <S.Wide><S.Field><span>Instruções de pagamento</span><textarea name="individualPaymentInstructions" maxLength={1500} defaultValue={initial?.paymentSettings.individual.paymentInstructions??""}/></S.Field></S.Wide>
                 </S.FieldGrid>
               </>:<S.InfoBox><CreditCard/><div><strong>Evento gratuito</strong><p>Nenhuma forma de pagamento será exibida na inscrição individual.</p></div></S.InfoBox>}

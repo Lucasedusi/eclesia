@@ -44,6 +44,7 @@ import {
   eventPaymentSettingsFromRow,
 } from "../utils/event-payment-settings";
 import { buildRegistrationPaymentPayload, resolveRegistrationPaymentMethod, retryPublicCaravanStorageRead } from "../utils/payment-payload";
+import { registrationsWithReceiptsUnderReview } from "../utils/registration-payment-status";
 import { createPublicMemberAttemptHash } from "./public-member-link";
 
 type RecordValue = Record<string, unknown>;
@@ -382,6 +383,17 @@ export async function getEventWorkspace(eventId: string): Promise<EventWorkspace
   const participantLists = new Map(documentRows.filter((item)=>item.document_type==="CARAVAN_PARTICIPANT_LIST" && item.event_group_id).map((item)=>[String(item.event_group_id),item]));
   const setting = paymentSettings.data as RecordValue | null;
   const baseDetail = toDetail(row,counts);
+  const paymentRows = ((payments.data ?? []) as RecordValue[]).map((item): PaymentRow => {
+    const metadata = (item.metadata ?? {}) as RecordValue;
+    return {
+      id: String(item.id), paymentNumber: text(item, "payment_number"), registrationId: text(item, "event_registration_id"), groupId: text(item, "event_group_id"),
+      method: String(item.payment_method), status: String(item.payment_status), amount: number(item, "amount"), paidAt: text(item, "paid_at"), payerName: text(item, "payer_name"),
+      receiptFileName: text(item, "receipt_file_name"), receiptMimeType: text(item, "receipt_mime_type"), receiptFileSize: item.receipt_file_size === null ? null : number(item, "receipt_file_size"),
+      receiptStoragePath: text(item, "receipt_storage_path"), source: metadata.source === "PUBLIC" ? "PUBLIC" : "INTERNAL", paymentFlow: text(metadata, "paymentFlow"),
+      notes: text(item, "notes"), createdAt: String(item.created_at), confirmedBy: text(item, "confirmed_by"),
+    };
+  });
+  const registrationsUnderReview = registrationsWithReceiptsUnderReview(paymentRows);
 
   return {
     event: { ...baseDetail, hasRegistrations: registrationRows.length > 0 || ((groups.data ?? []).length > 0), registrationFields: ((registrationFields.data ?? []) as RecordValue[]).map(toRegistrationField), paymentSettings: setting ? toPaymentSettings(setting) : baseDetail.paymentSettings },
@@ -399,6 +411,7 @@ export async function getEventWorkspace(eventId: string): Promise<EventWorkspace
         congregationId: text(item, "congregation_id"), congregationName: congregation ? text(congregation, "name") : null,
         regionId: congregation ? text(congregation, "region_id") : null, regionName: region ? text(region, "name") : null,
         preferredPaymentMethod: text(item, "preferred_payment_method"), status: String(item.status), paymentStatus: String(item.payment_status),
+        paymentReceiptUnderReview: registrationsUnderReview.has(String(item.id)),
         totalAmount: number(item, "total_amount"), paidAmount: number(item, "paid_amount"), remainingAmount: number(item, "remaining_amount"),
         registeredAt: String(item.registered_at), updatedAt: String(item.updated_at), groupId: text(item, "event_group_id"),
         itemIds: selectedItemsByRegistration.get(String(item.id))?.ids ?? [],
@@ -410,7 +423,7 @@ export async function getEventWorkspace(eventId: string): Promise<EventWorkspace
     groups: ((groups.data ?? []) as RecordValue[]).map((item): GroupRow => { const list=participantLists.get(String(item.id)); return { id:String(item.id),groupNumber:String(item.group_number??"Caravana"),source:String(item.source??"INTERNAL") as GroupRow["source"],responsibleName:String(item.responsible_name),responsiblePhone:String(item.responsible_phone??""),responsibleEmail:text(item,"responsible_email"),originChurchName:String(item.origin_church_name??""),originCity:String(item.origin_city),originState:String(item.origin_state),pastorName:String(item.pastor_name??""),pastorPhone:text(item,"pastor_phone"),total:number(item,"total_registrations"),maleCount:number(item,"male_count"),femaleCount:number(item,"female_count"),unspecifiedCount:number(item,"unspecified_count"),totalAmount:number(item,"total_amount"),paidAmount:number(item,"paid_amount"),remainingAmount:Math.max(number(item,"total_amount")-number(item,"paid_amount"),0),paymentStatus:String(item.payment_status??"PENDING"),status:String(item.status),notes:text(item,"notes"),createdAt:String(item.created_at),updatedAt:String(item.updated_at),items:selectedItemsByGroup.get(String(item.id))??[],listDocumentId:list?String(list.id):null,listFileName:list?String(list.file_name):null }; }),
     items: ((items.data ?? []) as RecordValue[]).map((item): EventItemRow => ({ id: String(item.id), name: String(item.name), description: text(item, "description"), type: String(item.item_type), price: number(item, "price"), required: bool(item, "is_required"), active: bool(item, "is_active"), allowQuantity: bool(item, "allow_quantity"), minQuantity: number(item, "min_quantity") || 1, maxQuantity: item.max_quantity === null ? null : number(item, "max_quantity"), availableQuantity: item.available_quantity === null ? null : number(item, "available_quantity") })),
     quotas: ((goals.data ?? []) as RecordValue[]).map((item): EventQuotaRow => ({ id: String(item.id), label: String(nested(item, "congregations")?.name ?? "Congregação"), quotaTotal: number(item, "quota_total"), used: usedByCongregation.get(String(item.congregation_id)) ?? 0, targetId: String(item.congregation_id) })),
-    payments: ((payments.data ?? []) as RecordValue[]).map((item): PaymentRow => {const metadata=(item.metadata??{}) as RecordValue;return { id: String(item.id), paymentNumber: text(item, "payment_number"), registrationId: text(item, "event_registration_id"), groupId: text(item, "event_group_id"), method: String(item.payment_method), status: String(item.payment_status), amount: number(item, "amount"), paidAt: text(item, "paid_at"), payerName: text(item, "payer_name"), receiptFileName: text(item, "receipt_file_name"), receiptMimeType: text(item, "receipt_mime_type"), receiptFileSize: item.receipt_file_size === null ? null : number(item, "receipt_file_size"), receiptStoragePath: text(item, "receipt_storage_path"),source:metadata.source==="PUBLIC"?"PUBLIC":"INTERNAL",notes:text(item,"notes"),createdAt:String(item.created_at),confirmedBy:text(item,"confirmed_by") };}),
+    payments: paymentRows,
     checkins: ((checkins.data ?? []) as RecordValue[]).map((item): CheckinRow => { const registration = nested(item, "event_registrations"); return { id: String(item.id), registrationId: String(item.event_registration_id), registrationNumber: registration ? text(registration, "registration_number") : null, participantName: String(registration?.participant_name ?? "Participante"), method: String(item.checkin_method), checkedInAt: text(item, "checked_in_at"), status: String(item.status) }; }),
     documents: documentRows.map((item): EventDocumentRow => ({ id:String(item.id),groupId:text(item,"event_group_id"),paymentId:text(item,"event_payment_id"),title:String(item.title),type:String(item.document_type),fileName:String(item.file_name),mimeType:text(item,"mime_type"),fileSize:item.file_size===null?null:number(item,"file_size"),uploadedAt:String(item.uploaded_at) })),
     expenses: ((expenses.data ?? []) as RecordValue[]).map((item): EventExpenseRow => ({ id: String(item.id), name: String(item.name), expenseDate: String(item.expense_date), amount: number(item, "amount"), receiptFileName: text(item, "receipt_file_name"), receiptMimeType: text(item, "receipt_mime_type"), receiptFileSize: item.receipt_file_size === null ? null : number(item, "receipt_file_size"), receiptStoragePath: text(item, "receipt_storage_path"), uploadStatus: String(item.upload_status) as EventExpenseRow["uploadStatus"], createdAt: String(item.created_at), updatedAt: String(item.updated_at) })),

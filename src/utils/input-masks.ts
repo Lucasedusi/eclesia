@@ -36,6 +36,11 @@ export function normalizeBrazilPhone(value: string) {
   return digits.startsWith("55") && digits.length > 11 ? digits.slice(2, 13) : digits.slice(0, 11);
 }
 
+export function normalizeBrazilWhatsapp(value: string) {
+  const localNumber = normalizeBrazilPhone(value);
+  return localNumber ? `55${localNumber}` : "";
+}
+
 export function formatBrazilCurrencyInput(value: string) {
   const digits = value.replace(/\D/g, "").slice(0, 13);
   const amount = Number(digits || "0") / 100;

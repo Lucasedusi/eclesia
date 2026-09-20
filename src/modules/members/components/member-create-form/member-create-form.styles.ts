@@ -63,7 +63,7 @@ export const StepDescription = styled.p`
 export const FieldsGrid = styled.div`
   display: grid;
   align-items: start;
-  gap: 15px;
+  gap: 22px;
 
   @media (min-width: 768px) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -144,7 +144,8 @@ export const FieldHeader = styled.span`
   justify-content: space-between;
   gap: 8px;
 
-  > span:first-child, > label:first-child {
+  > span:first-child,
+  > label:first-child {
     color: #475467;
     font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 700;
@@ -191,29 +192,43 @@ export const InlineFieldStatus = styled.small`
     animation: spin 800ms linear infinite;
   }
 
-  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
 `;
 
-export const Control = styled.input<{ $invalid?: boolean; $withInlineStatus?: boolean }>`
+export const Control = styled.input<{
+  $invalid?: boolean;
+  $withInlineStatus?: boolean;
+}>`
   width: 100%;
   min-height: 44px;
   border: 1px solid ${({ $invalid }) => ($invalid ? "#ef7770" : "#d9deea")};
   border-radius: 6px;
   outline: 0;
   background: #f8f9fc;
-  padding: 0 ${({ $withInlineStatus }) => ($withInlineStatus ? "150px" : "13px")} 0 13px;
+  padding: 0
+    ${({ $withInlineStatus }) => ($withInlineStatus ? "150px" : "13px")} 0 13px;
   color: #344054;
   font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 500;
   transition: 150ms ease;
 
-  &::placeholder { color: #98a2b3; font-weight: 400; }
+  &::placeholder {
+    color: #98a2b3;
+    font-weight: 400;
+  }
   &:focus {
     border-color: ${({ theme }) => theme.colors.brand.primary};
     background: #fff;
     box-shadow: ${({ theme }) => theme.shadows.focus};
   }
-  &:disabled { color: #98a2b3; cursor: not-allowed; }
+  &:disabled {
+    color: #98a2b3;
+    cursor: not-allowed;
+  }
 `;
 
 export const SelectControl = styled.select<{ $invalid?: boolean }>`

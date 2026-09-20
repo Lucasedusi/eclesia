@@ -407,7 +407,7 @@ export function EventWorkspace({ initial }: { initial: EventWorkspaceData }) {
               <td>{registration.regionName || "Sem regional"}<br /><small>{registration.congregationName || "Sem congregação"}</small></td>
               <td>{registration.itemNames.length ? registration.itemNames.join(", ") : "—"}</td>
               <td><strong>{money(registration.totalAmount)}</strong><br /><small>{money(registration.paidAmount)} recebido</small></td>
-              <td><S.StatusDot $tone={eventBadgeTone(registration.paymentStatus)}>{eventLabel(PAYMENT_STATUSES, registration.paymentStatus)}</S.StatusDot></td>
+              <td><S.StatusDot $tone={eventBadgeTone(registration.paymentStatus)}>{registration.paymentReceiptUnderReview ? "Comprovante em análise" : eventLabel(PAYMENT_STATUSES, registration.paymentStatus)}</S.StatusDot></td>
               <td><S.StatusDot $tone={eventBadgeTone(registration.status)}>{eventLabel(REGISTRATION_STATUSES, registration.status)}</S.StatusDot></td>
               <td><S.ActionButton type="button" aria-label={`Ações de ${registration.participantName}`} aria-haspopup="menu" aria-expanded={menu?.registrationId === registration.id} onClick={(click) => { const rect = click.currentTarget.getBoundingClientRect(); setMenu((currentMenu) => currentMenu?.registrationId === registration.id ? null : { registrationId: registration.id, left: Math.max(8, rect.right - 210), top: Math.min(window.innerHeight - 220, rect.bottom + 4) }); }}><EllipsisVertical /></S.ActionButton></td>
             </tr>)}

@@ -20,6 +20,22 @@ export const Field = styled.label`
   select{color:#344054;-webkit-text-fill-color:#344054;font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));font-weight:600;cursor:pointer;opacity:1;option{color:#344054;background:#fff;}}
   textarea{min-height:92px;padding:12px 13px;resize:vertical;line-height:1.55;}
 `;
+export const FieldHeader = styled.span`
+  &&{display:flex;min-width:0;min-height:16px;align-items:center;justify-content:space-between;gap:8px;}
+  >span:first-child{color:#475467;font-size:calc(10px + var(--eclesia-font-size-adjustment, 0px));font-weight:700;}
+`;
+export const LabelStatus = styled.small<{ $tone: "success" | "danger" }>`
+  min-width:0;overflow:hidden;color:${({$tone})=>$tone==="success"?"#267c5b":"#c84a44"};font-size:calc(9px + var(--eclesia-font-size-adjustment, 0px));font-weight:700;text-overflow:ellipsis;white-space:nowrap;
+`;
+export const ControlShell = styled.span`position:relative;display:block;min-width:0;`;
+export const CepControl = styled.input<{ $withInlineStatus?: boolean }>`
+  &&{padding-right:${({$withInlineStatus})=>$withInlineStatus?"150px":"13px"};}
+`;
+export const InlineFieldStatus = styled.small`
+  position:absolute;top:50%;right:12px;display:inline-flex;max-width:132px;align-items:center;gap:5px;overflow:hidden;color:#667085;font-size:calc(9px + var(--eclesia-font-size-adjustment, 0px));font-weight:600;text-overflow:ellipsis;white-space:nowrap;transform:translateY(-50%);
+  svg{width:13px;height:13px;flex:0 0 auto;color:#415ba5;animation:spin 800ms linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+`;
 export const Grid = styled.div`display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;@media(max-width:700px){grid-template-columns:1fr;}`;
 export const Wide = styled.div`grid-column:1/-1;`;
 export const Check = styled.label`display:flex;align-items:flex-start;gap:9px;padding:10px;border:1px solid #eaecf0;border-radius: 6px;color:#475467;font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px));line-height:1.5;input{margin-top:2px;}`;
