@@ -44,14 +44,31 @@ Se preferir Cloudflare Tunnel ou ngrok, o requisito é o mesmo: uma URL HTTPS p�
 
 ## Banco de dados
 
-As migrations desta entrega são:
+As migrations do checkout e das formas individuais são:
 
 1. `20260819143000_event_public_checkout_pix.sql`;
-2. `20260819150500_event_public_checkout_security_policies.sql`.
+2. `20260819150500_event_public_checkout_security_policies.sql`;
+3. `20260920175632_individual_event_payment_methods.sql`;
+4. `20260920182226_prevent_duplicate_static_pix_receipts.sql`.
 
-Elas criam a sessão opaca de checkout, campos de conciliação, histórico idempotente de Webhooks e funções transacionais. As tabelas sensíveis têm RLS ativo, negação explícita para `anon` e `authenticated` e acesso somente do backend via `service_role`.
+Elas criam a sessão opaca de checkout, campos de conciliação, histórico idempotente de Webhooks, configuração individual separada da caravana e funções transacionais. As tabelas sensíveis têm RLS ativo, negação explícita para `anon` e `authenticated` e acesso somente do backend via `service_role`.
 
 A migração da Payments API para a Orders API não exige alteração adicional de schema: `provider_payment_id` guarda o ID da order e o ID da transação é preservado no campo `metadata` já existente.
+
+## Configuração por evento
+
+Na etapa **Itens e pagamentos** do cadastro, habilite “Evento exige pagamento” e configure as formas aceitas para inscrições individuais:
+
+- **Sem Pix**, **Pix estático** ou **Pix automático**: são alternativas exclusivas; somente uma pode ficar ativa;
+- **Dinheiro**: encaminha o participante para combinar o pagamento com a organização;
+- **Cartão**: libera as opções Débito e Crédito na página pública e também encaminha para a organização;
+- Dinheiro ou Cartão exigem o WhatsApp da organização;
+- Pix estático exige chave e titular e aceita uma imagem opcional de QR Code;
+- Pix automático usa exclusivamente o Mercado Pago e o webhook descrito acima.
+
+Eventos mistos mantêm duas configurações independentes: a etapa **Caravanas** continua controlando o pagamento coletivo, enquanto **Itens e pagamentos** controla somente as inscrições individuais. Alterar uma delas não apaga nem reutiliza os dados da outra.
+
+O checkout registra um snapshot do fluxo escolhido (`AUTOMATIC_PIX`, `STATIC_PIX`, `MANUAL` ou `NOT_APPLICABLE`). Assim, um checkout em andamento não é convertido para outro gateway quando a configuração do evento é alterada posteriormente.
 
 ## Fluxos de teste
 
@@ -71,6 +88,17 @@ A migração da Payments API para a Orders API não exige alteração adicional 
 5. Aguarde o webhook de order ou use “Já paguei — verificar novamente”.
 6. Confirme que comprovante e credencial só aparecem após o status aprovado.
 7. Confirme no histórico de Webhooks do Mercado Pago que o endpoint respondeu com sucesso.
+
+### Pix estático
+
+1. Configure o evento com Pix estático, chave e titular; o QR Code é opcional.
+2. Na página pública, selecione Pix e conclua a inscrição.
+3. Confira que a chave e o QR Code configurados são exibidos sem criar cobrança no Mercado Pago.
+4. Conclua sem comprovante ou envie um PDF, JPG, PNG ou WEBP de até 10 MB.
+5. Confirme que o comprovante aparece como pagamento pendente para análise interna.
+6. Aprove o pagamento no módulo administrativo e atualize o acompanhamento público para liberar a credencial.
+
+O comprovante é opcional e nunca confirma a inscrição sozinho. Ele fica no bucket privado `event-documents`, tem caminho vinculado ao evento e ao checkout, e é validado por tamanho, tipo e assinatura do arquivo antes de ser associado ao pagamento.
 
 ### Pagamento presencial
 
@@ -92,10 +120,13 @@ A migração da Payments API para a Orders API não exige alteração adicional 
 - a chave idempotente da cobrança é calculada no servidor e muda somente quando uma nova tentativa é necessária após a cobrança anterior terminar;
 - os endpoints de pagamento e webhook limitam o corpo JSON a 16 KB;
 - a criação do Pix permite 6 tentativas por checkout a cada 10 minutos;
+- a preparação e a submissão de comprovante do Pix estático permitem 10 tentativas por checkout a cada 15 minutos;
 - a atualização no provedor permite 60 tentativas por checkout a cada 10 minutos, compatível com a consulta automática da tela;
 - excesso de tentativas retorna `429` e `Retry-After: 900`;
 - o webhook exige assinatura válida, é idempotente e nunca confia no status recebido no corpo: o pagamento é consultado novamente no Mercado Pago;
 - QR Code, CPF, Access Token e segredo do webhook não são gravados em logs.
+- métodos desabilitados no evento são rejeitados novamente dentro da transação do banco, mesmo que um cliente altere o formulário;
+- comprovantes estáticos repetidos são idempotentes e não criam pagamentos pendentes duplicados.
 
 ## Verificações recomendadas antes da produção
 
