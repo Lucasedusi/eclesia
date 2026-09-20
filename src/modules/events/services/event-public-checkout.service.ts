@@ -10,11 +10,12 @@ import { ensureEventCredential } from "./event-credential.service";
 import {
   createMercadoPagoPixCharge,
   getMercadoPagoPayment,
+  mercadoPagoPaymentMetadata,
   normalizeMercadoPagoStatus,
   publicPixData,
   type MercadoPagoPayment,
 } from "./mercado-pago-pix.service";
-import { createMercadoPagoPixIdempotencyKey, resolveMercadoPagoPixExpirationMinutes } from "../utils/mercado-pago-pix";
+import { createMercadoPagoPixExternalReference, createMercadoPagoPixIdempotencyKey, resolveMercadoPagoPixExpirationMinutes } from "../utils/mercado-pago-pix";
 import { buildPublicRegistrationPayload, resolvePublicMemberId } from "./public-member-link";
 
 type PublicRegistrationInput = z.infer<typeof publicRegistrationSchema>;
@@ -156,7 +157,7 @@ async function applyProviderPayment(payment: MercadoPagoPayment, extraMetadata: 
     p_provider_status: payment.status,
     p_normalized_status: normalized,
     p_paid_at: payment.date_approved ?? null,
-    p_metadata: { statusDetail: payment.status_detail ?? null, paymentMethodId: payment.payment_method_id ?? "pix", ...extraMetadata },
+    p_metadata: { ...mercadoPagoPaymentMetadata(payment), ...extraMetadata },
   });
   if (result.error) throw new PublicCheckoutError("Não foi possível atualizar a situação do pagamento.");
   return normalized;
@@ -262,7 +263,7 @@ export async function createPublicPixPayment(input: {
 
   const expirationMinutes = resolveMercadoPagoPixExpirationMinutes(process.env.MERCADO_PAGO_PIX_EXPIRATION_MINUTES);
   const expiresAt = new Date(Date.now() + expirationMinutes * 60_000).toISOString();
-  const externalReference = `event:${rows.event.id}:registration:${rows.registration.id}`;
+  const externalReference = createMercadoPagoPixExternalReference(String(rows.registration.id));
   const checkoutSecret = process.env.EVENT_CHECKOUT_SECRET?.trim();
   if (!checkoutSecret || checkoutSecret.length < 32) {
     throw new PublicCheckoutError("O checkout público ainda não está configurado para este ambiente.");
@@ -288,7 +289,6 @@ export async function createPublicPixPayment(input: {
       participantName: String(rows.registration.participant_name),
       payerEmail: input.payerEmail,
       payerCpf: input.payerCpf,
-      eventName: String(rows.event.name),
       externalReference,
       idempotencyKey: paymentIdempotencyKey,
       expiresAt,
@@ -478,8 +478,8 @@ export async function getPublicTrackingStatus(
   return { kind: "CARAVAN", status, data };
 }
 
-export async function reconcileMercadoPagoPayment(providerPaymentId: string) {
-  const payment = await getMercadoPagoPayment(providerPaymentId);
+export async function reconcileMercadoPagoOrder(orderId: string) {
+  const payment = await getMercadoPagoPayment(orderId);
   return applyProviderPayment(payment);
 }
 
@@ -508,7 +508,7 @@ export async function cleanupExpiredPublicEventCheckouts() {
       continue;
     }
     const remote = await getMercadoPagoPayment(String(payment.data.provider_payment_id));
-    await applyProviderPayment({ ...remote, date_of_expiration: remote.date_of_expiration ?? new Date(0).toISOString() });
+    await applyProviderPayment(remote);
     reconciled += 1;
   }
   return { examined: expired.data?.length ?? 0, reconciled,expiredCaravanDrafts:draftIds.length };

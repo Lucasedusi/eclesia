@@ -12,6 +12,14 @@ export function createMercadoPagoPixIdempotencyKey(
     .digest("hex");
 }
 
+export function createMercadoPagoPixExternalReference(registrationId: string) {
+  const compactId = registrationId.replaceAll("-", "").toLowerCase();
+  if (!/^[a-f0-9]{32}$/.test(compactId)) {
+    throw new Error("Identificador de inscrição inválido.");
+  }
+  return `event_${compactId}`;
+}
+
 export function resolveMercadoPagoPixExpirationMinutes(value: unknown) {
   const parsed = Number(value ?? 31);
   if (!Number.isFinite(parsed)) return 31;
@@ -19,10 +27,11 @@ export function resolveMercadoPagoPixExpirationMinutes(value: unknown) {
 }
 
 export function normalizeMercadoPagoStatus(status: string, expiresAt?: string | null): NormalizedPaymentStatus {
-  if (status === "approved") return "CONFIRMED";
+  if (status === "approved" || status === "processed") return "CONFIRMED";
   if (status === "refunded" || status === "charged_back") return "REFUNDED";
-  if (status === "cancelled") return "CANCELLED";
-  if (status === "rejected") return "FAILED";
+  if (status === "cancelled" || status === "canceled") return "CANCELLED";
+  if (status === "rejected" || status === "failed") return "FAILED";
+  if (status === "expired") return "EXPIRED";
   if (expiresAt && Date.parse(expiresAt) <= Date.now()) return "EXPIRED";
   return "PENDING";
 }

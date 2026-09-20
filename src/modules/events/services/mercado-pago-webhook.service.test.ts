@@ -36,14 +36,14 @@ describe("registerMercadoPagoWebhookEvent", () => {
   });
 
   it("reivindica uma notificação nova com um único insert", async () => {
-    await expect(registerMercadoPagoWebhookEvent({ eventId: "notification-1", paymentId: "123" }))
+    await expect(registerMercadoPagoWebhookEvent({ eventId: "order:notification-1", orderId: "ORD01ORDER" }))
       .resolves.toBe(true);
 
     expect(mocks.insert).toHaveBeenCalledWith({
       provider: "MERCADO_PAGO",
-      provider_event_id: "notification-1",
-      provider_payment_id: "123",
-      payload: { topic: "payment" },
+      provider_event_id: "order:notification-1",
+      provider_payment_id: "ORD01ORDER",
+      payload: { topic: "order" },
     });
     expect(mocks.update).not.toHaveBeenCalled();
   });
@@ -51,7 +51,7 @@ describe("registerMercadoPagoWebhookEvent", () => {
   it("ignora atomicamente uma entrega concorrente já em processamento", async () => {
     mocks.insert.mockResolvedValue({ error: { code: "23505" } });
 
-    await expect(registerMercadoPagoWebhookEvent({ eventId: "notification-1", paymentId: "123" }))
+    await expect(registerMercadoPagoWebhookEvent({ eventId: "order:notification-1", orderId: "ORD01ORDER" }))
       .resolves.toBe(false);
 
     expect(mocks.update).toHaveBeenCalledWith({ processing_status: "PROCESSING", processed_at: null });
@@ -62,14 +62,14 @@ describe("registerMercadoPagoWebhookEvent", () => {
     mocks.insert.mockResolvedValue({ error: { code: "23505" } });
     mocks.maybeSingle.mockResolvedValue({ data: { id: "webhook-row" }, error: null });
 
-    await expect(registerMercadoPagoWebhookEvent({ eventId: "notification-1", paymentId: "123" }))
+    await expect(registerMercadoPagoWebhookEvent({ eventId: "order:notification-1", orderId: "ORD01ORDER" }))
       .resolves.toBe(true);
   });
 
   it("retorna erro genérico quando não consegue registrar a notificação", async () => {
     mocks.insert.mockResolvedValue({ error: { code: "42501" } });
 
-    await expect(registerMercadoPagoWebhookEvent({ eventId: "notification-1", paymentId: "123" }))
+    await expect(registerMercadoPagoWebhookEvent({ eventId: "order:notification-1", orderId: "ORD01ORDER" }))
       .rejects.toThrow("Não foi possível registrar a notificação.");
   });
 });

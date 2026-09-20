@@ -4,10 +4,9 @@
 
 Copie as variáveis documentadas em `.env.example` para o ambiente de execução:
 
-- `MERCADO_PAGO_ENV=test` como identificação operacional durante desenvolvimento e homologação; quem determina o ambiente do Mercado Pago é a credencial usada;
+- `MERCADO_PAGO_ENV=test` durante desenvolvimento e homologação; nesse modo a aplicação confirma em `/users/me` que a credencial pertence a um `test_user` e usa os dados predefinidos exigidos pelo sandbox;
 - `MERCADO_PAGO_ACCESS_TOKEN`: Access Token da aplicação Mercado Pago, somente no servidor;
 - `MERCADO_PAGO_WEBHOOK_SECRET`: assinatura secreta configurada em Webhooks;
-- `MERCADO_PAGO_WEBHOOK_URL`: URL HTTPS pública do endpoint de notificação;
 - `MERCADO_PAGO_PIX_EXPIRATION_MINUTES=30` (a aplicação aceita de 30 a 60 minutos e acrescenta uma margem mínima efetiva de 1 minuto para a latência da chamada);
 - `EVENT_CREDENTIAL_SECRET`: segredo aleatório com pelo menos 32 caracteres, independente dos demais segredos;
 - `EVENT_CHECKOUT_SECRET`: segredo aleatório com pelo menos 32 caracteres para os tokens opacos de checkout;
@@ -24,7 +23,9 @@ Cadastre no painel do Mercado Pago:
 https://SEU-DOMINIO/api/payments/webhooks/mercado-pago
 ```
 
-Selecione notificações de pagamentos. A rota valida `x-signature`, `x-request-id` e `data.id`, consulta novamente o pagamento no provedor e só então atualiza a inscrição.
+Selecione o evento **Order (Mercado Pago)**. O evento **Pagamentos (legacy)** não é usado pelas cobranças novas. A rota valida `x-signature`, `x-request-id` e `data.id`, consulta novamente a order no provedor e só então atualiza a inscrição.
+
+As cobranças Pix são criadas pela Orders API (`POST /v1/orders`). O identificador `ORD...` é mantido como recurso principal do provedor e o identificador da transação `PAY...` fica nos metadados do pagamento para auditoria e conciliação. Pagamentos antigos com ID numérico continuam consultáveis pela Payments API apenas para compatibilidade.
 
 ## Teste local com URL pública HTTPS
 
@@ -33,13 +34,13 @@ O simulador local continua disponível para desenvolver a interface sem chamar o
 1. Inicie a aplicação com `npm run dev`.
 2. Em outro terminal, abra um túnel com `ssh -R 80:localhost:3000 nokey@localhost.run`.
 3. Copie a URL HTTPS informada pelo túnel, sem reutilizar uma URL antiga.
-4. No `.env.local`, configure `NEXT_PUBLIC_SITE_URL` com essa origem e `MERCADO_PAGO_WEBHOOK_URL` com a origem seguida de `/api/payments/webhooks/mercado-pago`.
-5. Defina `EVENT_PAYMENT_MOCK_ENABLED=false` e mantenha somente o Access Token de teste.
-6. Cadastre a mesma URL de webhook no painel do Mercado Pago e reinicie `npm run dev` para recarregar o ambiente.
+4. No `.env.local`, configure `NEXT_PUBLIC_SITE_URL` com essa origem.
+5. Defina `EVENT_PAYMENT_MOCK_ENABLED=false`, `MERCADO_PAGO_ENV=test` e mantenha somente o Access Token do usuário de teste.
+6. Cadastre a mesma URL de webhook no painel do Mercado Pago, selecione **Order (Mercado Pago)** e reinicie `npm run dev` para recarregar o ambiente.
 
 O túnel torna o servidor local acessível pela internet. Mantenha-o ativo apenas durante o teste e nunca coloque tokens, segredos, CPF ou código Pix na linha de comando ou em logs.
 
-Se preferir Cloudflare Tunnel ou ngrok, o requisito é o mesmo: uma URL HTTPS pública encaminhada para `http://localhost:3000` e cadastrada tanto no ambiente quanto no painel do Mercado Pago.
+Se preferir Cloudflare Tunnel ou ngrok, o requisito é o mesmo: uma URL HTTPS pública encaminhada para `http://localhost:3000`, usada como origem da aplicação e cadastrada no painel do Mercado Pago com o caminho `/api/payments/webhooks/mercado-pago`.
 
 ## Banco de dados
 
@@ -49,6 +50,8 @@ As migrations desta entrega são:
 2. `20260819150500_event_public_checkout_security_policies.sql`.
 
 Elas criam a sessão opaca de checkout, campos de conciliação, histórico idempotente de Webhooks e funções transacionais. As tabelas sensíveis têm RLS ativo, negação explícita para `anon` e `authenticated` e acesso somente do backend via `service_role`.
+
+A migração da Payments API para a Orders API não exige alteração adicional de schema: `provider_payment_id` guarda o ID da order e o ID da transação é preservado no campo `metadata` já existente.
 
 ## Fluxos de teste
 
@@ -62,10 +65,10 @@ Elas criam a sessão opaca de checkout, campos de conciliação, histórico idem
 ### Pix em teste
 
 1. Use um evento público com inscrições abertas e item com valor.
-2. Selecione Pix, conclua os dados e informe e-mail e CPF válidos de teste.
+2. Selecione Pix, conclua os dados e informe e-mail e CPF válidos. Com `MERCADO_PAGO_ENV=test`, a aplicação envia ao sandbox o e-mail `test_user_br@testuser.com` e o nome de aprovação `APRO`, mantendo o e-mail informado apenas na inscrição local.
 3. Gere o QR Code e valide código Copia e Cola, valor e vencimento.
-4. Conclua o pagamento no ambiente de teste do Mercado Pago.
-5. Aguarde a atualização automática ou use “Já paguei — verificar novamente”.
+4. Aguarde a aprovação automática da order de teste pelo Mercado Pago.
+5. Aguarde o webhook de order ou use “Já paguei — verificar novamente”.
 6. Confirme que comprovante e credencial só aparecem após o status aprovado.
 7. Confirme no histórico de Webhooks do Mercado Pago que o endpoint respondeu com sucesso.
 
@@ -96,8 +99,8 @@ Elas criam a sessão opaca de checkout, campos de conciliação, histórico idem
 
 ## Verificações recomendadas antes da produção
 
-- trocar credenciais de teste por credenciais de produção apenas no gerenciador seguro do ambiente;
-- manter o Webhook em HTTPS e validar a entrega no painel do Mercado Pago;
+- trocar `MERCADO_PAGO_ENV` para `production` e usar credenciais de produção apenas no gerenciador seguro do ambiente;
+- manter o Webhook em HTTPS, selecionar **Order (Mercado Pago)** e validar a entrega no painel do Mercado Pago;
 - agendar a limpeza de eventos/checkouts;
 - testar aprovação, rejeição, expiração e estorno;
 - confirmar que Access Token, segredo do Webhook, CPF e código Pix não aparecem em logs;

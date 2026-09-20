@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { reconcileMercadoPagoPayment } from "@/modules/events/services/event-public-checkout.service";
+import { reconcileMercadoPagoOrder } from "@/modules/events/services/event-public-checkout.service";
 import { finishMercadoPagoWebhookEvent, registerMercadoPagoWebhookEvent } from "@/modules/events/services/mercado-pago-webhook.service";
 import { verifyMercadoPagoWebhookSignature } from "@/modules/events/services/mercado-pago-pix.service";
 import { PublicRequestBodyError, readBoundedJsonBody } from "@/modules/events/utils/public-request";
@@ -13,13 +13,15 @@ export async function POST(request: NextRequest) {
   if (!verifyMercadoPagoWebhookSignature({ signature, requestId, dataId })) return NextResponse.json({ message: "Assinatura inválida." }, { status: 401 });
   try {
     const body = await readBoundedJsonBody(request, MAX_BODY_SIZE) as { id?: string | number; type?: string; action?: string; data?: { id?: string | number } };
-    if (body.type && body.type !== "payment") return NextResponse.json({ received: true });
-    const paymentId = String(dataId || body.data?.id || "");
-    if (!/^\d+$/.test(paymentId)) return NextResponse.json({ received: true });
-    const eventId = String(body.id ?? `${requestId}:${paymentId}:${body.action ?? "payment.updated"}`);
-    if (!await registerMercadoPagoWebhookEvent({ eventId, paymentId })) return NextResponse.json({ received: true, duplicate: true });
+    const topic = body.type ?? request.nextUrl.searchParams.get("type");
+    if (topic !== "order") return NextResponse.json({ received: true });
+    const orderId = String(dataId || body.data?.id || "");
+    if (!/^ORD[A-Z0-9]+$/i.test(orderId)) return NextResponse.json({ received: true });
+    const notificationId = String(body.id ?? `${requestId}:${orderId}:${body.action ?? "order.updated"}`);
+    const eventId = `order:${notificationId}`;
+    if (!await registerMercadoPagoWebhookEvent({ eventId, orderId })) return NextResponse.json({ received: true, duplicate: true });
     try {
-      await reconcileMercadoPagoPayment(paymentId);
+      await reconcileMercadoPagoOrder(orderId);
       await finishMercadoPagoWebhookEvent(eventId, "PROCESSED");
     } catch (error) {
       await finishMercadoPagoWebhookEvent(eventId, "FAILED");

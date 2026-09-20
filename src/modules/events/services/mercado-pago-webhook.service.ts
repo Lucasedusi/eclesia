@@ -9,13 +9,13 @@ export class MercadoPagoWebhookError extends Error {
   }
 }
 
-export async function registerMercadoPagoWebhookEvent(input: { eventId: string; paymentId: string }) {
+export async function registerMercadoPagoWebhookEvent(input: { eventId: string; orderId: string }) {
   const admin = createAdminClient();
   const inserted = await admin.from("event_payment_webhook_events").insert({
     provider: "MERCADO_PAGO",
     provider_event_id: input.eventId,
-    provider_payment_id: input.paymentId,
-    payload: { topic: "payment" },
+    provider_payment_id: input.orderId,
+    payload: { topic: "order" },
   });
 
   if (!inserted.error) return true;

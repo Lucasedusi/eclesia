@@ -9,6 +9,8 @@ const API_URL = "https://api.mercadopago.com";
 
 export type MercadoPagoPayment = {
   id: number | string;
+  provider_order_id?: string;
+  provider_transaction_id?: string;
   status: string;
   status_detail?: string;
   transaction_amount: number;
@@ -24,6 +26,34 @@ export type MercadoPagoPayment = {
       ticket_url?: string;
     };
   };
+};
+
+type MercadoPagoOrderPayment = {
+  id: string;
+  amount: number | string;
+  status: string;
+  status_detail?: string;
+  date_created?: string;
+  date_approved?: string | null;
+  date_of_expiration?: string | null;
+  payment_method?: {
+    id?: string;
+    type?: string;
+    qr_code?: string;
+    qr_code_base64?: string;
+    ticket_url?: string;
+  };
+};
+
+type MercadoPagoOrder = {
+  id: string;
+  status?: string;
+  status_detail?: string;
+  total_amount: number | string;
+  external_reference?: string | null;
+  created_date?: string;
+  last_updated_date?: string;
+  transactions?: { payments?: MercadoPagoOrderPayment[] };
 };
 
 export class MercadoPagoPixError extends Error {
@@ -58,49 +88,144 @@ async function mercadoPagoRequest<T>(path: string, init?: RequestInit) {
   return payload;
 }
 
+function orderExpirationDuration(expiresAt: string) {
+  const expiration = Date.parse(expiresAt);
+  if (!Number.isFinite(expiration)) {
+    throw new MercadoPagoPixError("O vencimento do Pix é inválido.");
+  }
+  const minutes = Math.min(Math.max(Math.ceil((expiration - Date.now()) / 60_000), 30), 30 * 24 * 60);
+  return `PT${minutes}M`;
+}
+
+async function assertTestCredential() {
+  const account = await mercadoPagoRequest<{ tags?: string[] }>("/users/me");
+  if (!account.tags?.includes("test_user")) {
+    throw new MercadoPagoPixError("A credencial configurada não pertence a uma conta de teste.");
+  }
+}
+
+function paymentFromOrder(order: MercadoPagoOrder, expiresAt?: string): MercadoPagoPayment {
+  const transaction = order.transactions?.payments?.[0];
+  if (!order.id) {
+    throw new MercadoPagoPixError("O Mercado Pago retornou uma order inválida.");
+  }
+  const amount = Number(transaction?.amount ?? order.total_amount);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    throw new MercadoPagoPixError("O Mercado Pago retornou um valor de pagamento inválido.");
+  }
+  const method = transaction?.payment_method;
+  const status = transaction?.status ?? order.status ?? "processing";
+  return {
+    id: order.id,
+    provider_order_id: order.id,
+    ...(transaction?.id ? { provider_transaction_id: transaction.id } : {}),
+    status,
+    status_detail: transaction?.status_detail ?? order.status_detail,
+    transaction_amount: amount,
+    external_reference: order.external_reference,
+    date_created: transaction?.date_created ?? order.created_date,
+    date_approved: transaction?.date_approved
+      ?? (status === "processed" ? order.last_updated_date ?? null : null),
+    date_of_expiration: transaction?.date_of_expiration ?? expiresAt,
+    payment_method_id: method?.id ?? "pix",
+    point_of_interaction: {
+      transaction_data: {
+        qr_code: method?.qr_code,
+        qr_code_base64: method?.qr_code_base64,
+        ticket_url: method?.ticket_url,
+      },
+    },
+  };
+}
+
+function mergeCreatedOrder(createdOrder: MercadoPagoOrder, refreshedOrder: MercadoPagoOrder): MercadoPagoOrder {
+  return {
+    ...createdOrder,
+    ...refreshedOrder,
+    id: refreshedOrder.id || createdOrder.id,
+    total_amount: refreshedOrder.total_amount ?? createdOrder.total_amount,
+    external_reference: refreshedOrder.external_reference ?? createdOrder.external_reference,
+    created_date: refreshedOrder.created_date ?? createdOrder.created_date,
+    last_updated_date: refreshedOrder.last_updated_date ?? createdOrder.last_updated_date,
+    transactions: refreshedOrder.transactions ?? createdOrder.transactions,
+  };
+}
+
 export async function createMercadoPagoPixCharge(input: {
   amount: number;
   participantName: string;
   payerEmail: string;
   payerCpf: string;
-  eventName: string;
   externalReference: string;
   idempotencyKey: string;
   expiresAt: string;
 }) {
   const [firstName, ...lastNameParts] = input.participantName.trim().split(/\s+/);
-  const notificationUrl = process.env.MERCADO_PAGO_WEBHOOK_URL?.trim()
-    || `${process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? ""}/api/payments/webhooks/mercado-pago`;
-  if (!notificationUrl.startsWith("https://")) {
-    throw new MercadoPagoPixError("Configure uma URL HTTPS para receber as confirmações do Pix.");
+  if (!/^[A-Za-z0-9_-]{1,64}$/.test(input.externalReference)) {
+    throw new MercadoPagoPixError("A referência externa do Pix é inválida.");
   }
-
-  return mercadoPagoRequest<MercadoPagoPayment>("/v1/payments", {
+  const amount = input.amount.toFixed(2);
+  const testEnvironment = process.env.MERCADO_PAGO_ENV?.trim().toLowerCase() === "test";
+  if (testEnvironment) await assertTestCredential();
+  const payer = testEnvironment
+    ? { email: "test_user_br@testuser.com", first_name: "APRO" }
+    : {
+      email: input.payerEmail,
+      first_name: firstName,
+      last_name: lastNameParts.join(" ") || firstName,
+      identification: { type: "CPF", number: input.payerCpf.replace(/\D/g, "") },
+    };
+  const createdOrder = await mercadoPagoRequest<MercadoPagoOrder>("/v1/orders", {
     method: "POST",
     headers: {
       "content-type": "application/json",
       "x-idempotency-key": input.idempotencyKey,
     },
     body: JSON.stringify({
-      transaction_amount: Number(input.amount.toFixed(2)),
-      description: `EKLESIA EVENTOS — ${input.eventName}`.slice(0, 255),
-      payment_method_id: "pix",
+      type: "online",
+      total_amount: amount,
       external_reference: input.externalReference,
-      notification_url: notificationUrl,
-      date_of_expiration: input.expiresAt,
-      payer: {
-        email: input.payerEmail,
-        first_name: firstName,
-        last_name: lastNameParts.join(" ") || firstName,
-        identification: { type: "CPF", number: input.payerCpf.replace(/\D/g, "") },
+      processing_mode: "automatic",
+      transactions: {
+        payments: [{
+          amount,
+          payment_method: { id: "pix", type: "bank_transfer" },
+          expiration_time: orderExpirationDuration(input.expiresAt),
+        }],
       },
+      payer,
     }),
   });
+  let order = createdOrder;
+  if (!createdOrder.transactions?.payments?.[0]?.id && createdOrder.id) {
+    try {
+      const refreshedOrder = await mercadoPagoRequest<MercadoPagoOrder>(`/v1/orders/${createdOrder.id}`);
+      order = mergeCreatedOrder(createdOrder, refreshedOrder);
+    } catch {
+      order = createdOrder;
+    }
+  }
+  return paymentFromOrder(order, input.expiresAt);
 }
 
 export function getMercadoPagoPayment(providerPaymentId: string) {
-  if (!/^\d+$/.test(providerPaymentId)) throw new MercadoPagoPixError("Identificador de pagamento inválido.");
-  return mercadoPagoRequest<MercadoPagoPayment>(`/v1/payments/${providerPaymentId}`);
+  if (/^ORD[A-Z0-9]+$/i.test(providerPaymentId)) {
+    return mercadoPagoRequest<MercadoPagoOrder>(`/v1/orders/${providerPaymentId}`)
+      .then((order) => paymentFromOrder(order));
+  }
+  if (/^\d+$/.test(providerPaymentId)) {
+    return mercadoPagoRequest<MercadoPagoPayment>(`/v1/payments/${providerPaymentId}`);
+  }
+  throw new MercadoPagoPixError("Identificador de pagamento inválido.");
+}
+
+export function mercadoPagoPaymentMetadata(payment: MercadoPagoPayment) {
+  return {
+    statusDetail: payment.status_detail ?? null,
+    paymentMethodId: payment.payment_method_id ?? "pix",
+    ...(payment.provider_order_id ? { providerOrderId: payment.provider_order_id } : {}),
+    ...(payment.provider_transaction_id ? { providerTransactionId: payment.provider_transaction_id } : {}),
+  };
 }
 
 export function publicPixData(payment: MercadoPagoPayment) {
