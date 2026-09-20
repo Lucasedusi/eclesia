@@ -42,6 +42,7 @@ export async function getInternalRegistrationReceipt(eventId: string, registrati
     checkoutStatus: status, totalAmount: number(registration.total_amount), items, expiresAt: null, credentialToken,
     providerPaymentId: paymentResult.data?.provider_payment_id ? String(paymentResult.data.provider_payment_id) : null,
     providerStatus: paymentResult.data?.provider_status ? String(paymentResult.data.provider_status) : null,
-    paymentSimulationEnabled: false, isSimulatedPayment: false, receiptSubmitted: Boolean(paymentResult.data?.receipt_storage_path), pix: null,
+    paymentSimulationEnabled: false, isSimulatedPayment: false, receiptSubmitted: Boolean(paymentResult.data?.receipt_storage_path),
+    staticPix: null, manualPayment: null, pix: null,
   };
 }

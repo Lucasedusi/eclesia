@@ -609,6 +609,16 @@ export type PublicCheckoutStatus = {
   paymentSimulationEnabled: boolean;
   isSimulatedPayment: boolean;
   receiptSubmitted: boolean;
+  staticPix: {
+    key: string;
+    holderName: string;
+    qrUrl: string | null;
+    paymentInstructions: string;
+  } | null;
+  manualPayment: {
+    whatsappNumber: string;
+    paymentInstructions: string;
+  } | null;
   pix?: {
     qrCode: string | null;
     qrCodeBase64: string | null;

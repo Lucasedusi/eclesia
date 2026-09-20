@@ -116,7 +116,8 @@ function IndividualTracking({ status, data, whatsappNumber, onRefresh, onDownloa
   const [pixCopied, setPixCopied] = useState(false);
   const state = publicTrackingState(status);
   const complete = state.complete;
-  const whatsapp = !complete && !state.failed && isPublicManualPaymentMethod(data.paymentMethod) && whatsappNumber ? `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`Olá! Gostaria de combinar o pagamento ${data.paymentMethod === "CASH" ? "em dinheiro" : `presencial por ${paymentMethod(data.paymentMethod).toLocaleLowerCase("pt-BR")}`} da inscrição ${data.registrationNumber} de ${data.participantName} para o evento ${data.eventName}. Total: ${money(data.totalAmount)}.`)}` : "";
+  const checkoutWhatsappNumber = (data.manualPayment?.whatsappNumber ?? whatsappNumber).replace(/\D/g, "");
+  const whatsapp = !complete && !state.failed && isPublicManualPaymentMethod(data.paymentMethod) && checkoutWhatsappNumber ? `https://wa.me/${checkoutWhatsappNumber}?text=${encodeURIComponent(`Olá! Gostaria de combinar o pagamento ${data.paymentMethod === "CASH" ? "em dinheiro" : `presencial por ${paymentMethod(data.paymentMethod).toLocaleLowerCase("pt-BR")}`} da inscrição ${data.registrationNumber} de ${data.participantName} para o evento ${data.eventName}. Total: ${money(data.totalAmount)}.`)}` : "";
   const trackingPix = shouldShowTrackingPix({ registrationStatus: data.registrationStatus, paymentMethod: data.paymentMethod, hasPixCode: Boolean(data.pix?.qrCode) }) ? data.pix : null;
   async function copyPix() {
     if (!trackingPix?.qrCode) return;

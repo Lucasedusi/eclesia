@@ -1,12 +1,13 @@
 -- Verificação pós-migração do módulo de Eventos.
--- Execute em uma sessão administrativa. O script é somente leitura e falha
--- imediatamente quando uma garantia estrutural não estiver presente.
+-- Execute em uma sessão administrativa. O script não altera dados da aplicação;
+-- usa apenas uma tabela temporária e falha quando uma garantia não estiver presente.
 do $$
 declare
   v_table text;
   v_policy_count integer;
   v_public_checkout_definition text;
   v_static_receipt_definition text;
+  v_static_receipt_access_definition text;
 begin
   foreach v_table in array array[
     'events','event_congregation_quotas','event_city_quotas',
@@ -109,13 +110,30 @@ begin
   end if;
   if not exists (
     select 1 from pg_constraint
+    where conname='event_public_checkouts_payment_flow_check'
+      and position('checkout_type' in pg_get_constraintdef(oid))>0
+      and position('CARAVAN' in pg_get_constraintdef(oid))>0
+      and position('INDIVIDUAL' in pg_get_constraintdef(oid))>0
+  ) then
+    raise exception 'Constraint do fluxo individual interfere no checkout de caravanas';
+  end if;
+  if exists (
+    select 1 from public.event_public_checkouts
+    where checkout_type='CARAVAN' and payment_flow<>'NOT_APPLICABLE'
+  ) then
+    raise exception 'Checkout histórico de caravana manteve fluxo de pagamento individual';
+  end if;
+  if not exists (
+    select 1 from pg_constraint
     where conname='event_payment_settings_individual_valid_check'
   ) then
     raise exception 'Configuração individual não possui constraint de integridade';
   end if;
   if position('individual_pix_mode' in v_public_checkout_definition) = 0
     or position('payment_flow' in v_public_checkout_definition) = 0
-    or position('EVENT_PAYMENT_METHOD_DISABLED' in v_public_checkout_definition) = 0 then
+    or position('EVENT_PAYMENT_METHOD_DISABLED' in v_public_checkout_definition) = 0
+    or position('paymentSnapshot' in v_public_checkout_definition) = 0
+    or position('draft_payload' in v_public_checkout_definition) = 0 then
     raise exception 'Checkout público não valida a configuração individual do evento';
   end if;
   if not exists (
@@ -136,13 +154,35 @@ begin
     and pg_get_function_identity_arguments(procedure.oid) =
       'p_event_id uuid, p_checkout_id uuid, p_payload jsonb, p_idempotency_key text';
   if position('payment_channel' in v_static_receipt_definition)=0
-    or position('metadata->>''paymentFlow''' in v_static_receipt_definition)=0 then
+    or position('metadata->>''paymentFlow''' in v_static_receipt_definition)=0
+    or position('v_receipt_suffix' in v_static_receipt_definition)=0 then
     raise exception 'RPC de comprovante do Pix estático não impede envios duplicados';
   end if;
   if has_function_privilege('anon', 'public.submit_event_public_static_pix_receipt(uuid,uuid,jsonb,text)', 'execute')
     or has_function_privilege('authenticated', 'public.submit_event_public_static_pix_receipt(uuid,uuid,jsonb,text)', 'execute')
     or not has_function_privilege('service_role', 'public.submit_event_public_static_pix_receipt(uuid,uuid,jsonb,text)', 'execute') then
     raise exception 'Privilégios do comprovante público de Pix estático estão divergentes';
+  end if;
+  if not exists (
+    select 1 from pg_policies
+    where schemaname='storage' and tablename='objects'
+      and policyname='event_documents_storage_select'
+      and position('public-individuals' in coalesce(qual,''))>0
+      and position('can_access_event_static_receipt' in coalesce(qual,''))>0
+  ) then
+    raise exception 'Organização não pode consultar comprovantes do Pix estático individual';
+  end if;
+  select pg_get_functiondef(procedure.oid) into v_static_receipt_access_definition
+  from pg_proc procedure
+  join pg_namespace namespace on namespace.oid=procedure.pronamespace
+  where namespace.nspname='private'
+    and procedure.proname='can_access_event_static_receipt'
+    and pg_get_function_identity_arguments(procedure.oid)='p_object_name text';
+  if v_static_receipt_access_definition is null
+    or position('receipt_storage_path' in v_static_receipt_access_definition)=0
+    or position('events.payments.view' in v_static_receipt_access_definition)=0
+    or position('event.church_id' in v_static_receipt_access_definition)=0 then
+    raise exception 'Acesso ao comprovante estático não valida igreja, checkout, pagamento e permissão';
   end if;
   if not exists (
     select 1 from public.permissions
@@ -215,5 +255,39 @@ begin
     raise exception 'Normalização da forma de pagamento da inscrição ausente';
   end if;
 end $$;
+
+-- Probe the installed constraints with the same shape produced when a paid
+-- caravan is completed. The temporary row has no effect on application data.
+create temporary table event_public_checkout_constraint_probe
+  (like public.event_public_checkouts including defaults including constraints);
+insert into event_public_checkout_constraint_probe (
+  church_id,event_id,registration_id,group_id,access_token_hash,status,
+  payment_method,payment_flow,idempotency_key,checkout_type,draft_payload
+) values (
+  '11111111-1111-4111-8111-111111111111',
+  '22222222-2222-4222-8222-222222222222',
+  null,
+  '33333333-3333-4333-8333-333333333333',
+  repeat('a',64),
+  'COMPLETED',
+  'PIX',
+  'NOT_APPLICABLE',
+  'caravan-constraint-probe',
+  'CARAVAN',
+  '{}'::jsonb
+), (
+  '11111111-1111-4111-8111-111111111111',
+  '22222222-2222-4222-8222-222222222222',
+  null,
+  '44444444-4444-4444-8444-444444444444',
+  repeat('b',64),
+  'COMPLETED',
+  'CASH',
+  'NOT_APPLICABLE',
+  'caravan-cash-constraint-probe',
+  'CARAVAN',
+  '{}'::jsonb
+);
+drop table event_public_checkout_constraint_probe;
 
 select 'events_module_verification_ok' as result;

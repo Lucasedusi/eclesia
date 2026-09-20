@@ -20,7 +20,7 @@ Permitir que cada evento configure, de forma independente, quais formas de pagam
 
 ## Arquitetura
 
-As configurações individuais serão colunas próprias de `event_payment_settings`; as colunas atuais de Pix/Dinheiro permanecem exclusivas de caravanas. O checkout gravará um snapshot `payment_flow` (`AUTOMATIC_PIX`, `STATIC_PIX`, `MANUAL` ou `NOT_APPLICABLE`) e o banco validará o método escolhido contra a configuração do evento.
+As configurações individuais serão colunas próprias de `event_payment_settings`; as colunas atuais de Pix/Dinheiro permanecem exclusivas de caravanas. O checkout gravará um snapshot `payment_flow` (`AUTOMATIC_PIX`, `STATIC_PIX`, `MANUAL` ou `NOT_APPLICABLE`) e dos dados necessários para concluir o pagamento, e o banco validará o método escolhido contra a configuração do evento.
 
 O comprovante do Pix estático será enviado ao bucket privado `event-documents`, validado no servidor e vinculado a um `event_payments` pendente. A aprovação interna já existente confirmará esse pagamento e atualizará a inscrição.
 
@@ -28,6 +28,5 @@ O comprovante do Pix estático será enviado ao bucket privado `event-documents`
 
 - Checkouts existentes com Pix serão migrados para `AUTOMATIC_PIX`.
 - Eventos existentes preservam Pix automático como modo individual padrão.
-- Dinheiro e Cartão só serão habilitados automaticamente na migração quando já houver um contato individual utilizável; contatos perdidos pelo defeito anterior não podem ser reconstruídos.
+- Dinheiro e Cartão serão preservados nos eventos legados que já expunham essas opções por meio do WhatsApp compartilhado; eventos novos usam exclusivamente a configuração individual.
 - Nenhuma credencial ou dado sensível será exposto ao cliente ou registrado em logs.
-

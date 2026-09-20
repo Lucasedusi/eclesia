@@ -49,7 +49,8 @@ As migrations do checkout e das formas individuais são:
 1. `20260819143000_event_public_checkout_pix.sql`;
 2. `20260819150500_event_public_checkout_security_policies.sql`;
 3. `20260920175632_individual_event_payment_methods.sql`;
-4. `20260920182226_prevent_duplicate_static_pix_receipts.sql`.
+4. `20260920182226_prevent_duplicate_static_pix_receipts.sql`;
+5. `20260920183016_scope_individual_checkout_payment_flow.sql`.
 
 Elas criam a sessão opaca de checkout, campos de conciliação, histórico idempotente de Webhooks, configuração individual separada da caravana e funções transacionais. As tabelas sensíveis têm RLS ativo, negação explícita para `anon` e `authenticated` e acesso somente do backend via `service_role`.
 
@@ -68,7 +69,7 @@ Na etapa **Itens e pagamentos** do cadastro, habilite “Evento exige pagamento�
 
 Eventos mistos mantêm duas configurações independentes: a etapa **Caravanas** continua controlando o pagamento coletivo, enquanto **Itens e pagamentos** controla somente as inscrições individuais. Alterar uma delas não apaga nem reutiliza os dados da outra.
 
-O checkout registra um snapshot do fluxo escolhido (`AUTOMATIC_PIX`, `STATIC_PIX`, `MANUAL` ou `NOT_APPLICABLE`). Assim, um checkout em andamento não é convertido para outro gateway quando a configuração do evento é alterada posteriormente.
+O checkout registra um snapshot do fluxo escolhido (`AUTOMATIC_PIX`, `STATIC_PIX`, `MANUAL` ou `NOT_APPLICABLE`) e dos dados necessários para concluí-lo. A chave, o titular e o QR Code do Pix estático, assim como o contato e as instruções dos pagamentos presenciais, permanecem válidos para a inscrição mesmo que a configuração do evento seja alterada posteriormente.
 
 ## Fluxos de teste
 
@@ -126,7 +127,8 @@ O comprovante é opcional e nunca confirma a inscrição sozinho. Ele fica no bu
 - o webhook exige assinatura válida, é idempotente e nunca confia no status recebido no corpo: o pagamento é consultado novamente no Mercado Pago;
 - QR Code, CPF, Access Token e segredo do webhook não são gravados em logs.
 - métodos desabilitados no evento são rejeitados novamente dentro da transação do banco, mesmo que um cliente altere o formulário;
-- comprovantes estáticos repetidos são idempotentes e não criam pagamentos pendentes duplicados.
+- comprovantes estáticos repetidos são idempotentes e não criam pagamentos pendentes duplicados;
+- o caminho do comprovante aceita apenas a estrutura canônica emitida pelo servidor, e a leitura interna exige vínculo entre igreja, evento, checkout e pagamento.
 
 ## Verificações recomendadas antes da produção
 

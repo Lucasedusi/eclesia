@@ -82,7 +82,6 @@ export function PublicRegistration({ event, items, congregations, roles, fields,
   const effectiveMethod: PaymentMethod = selectedTotal <= 0 ? "NOT_APPLICABLE" : paymentMethod;
   const activeMethod: PaymentMethod = checkout?.paymentMethod ?? effectiveMethod;
   const orderedFields = useMemo(() => visibleRegistrationFields(fields), [fields]);
-  const whatsappNumber = (event.paymentSettings.individual.whatsappNumber ?? "").replace(/\D/g, "");
   const availableMethodValues = new Set(configuredPaymentOptions.map((option) => option.value));
   const availableMethodOptions = methodOptions
     .filter((method) => availableMethodValues.has(method.value))
@@ -236,6 +235,17 @@ export function PublicRegistration({ event, items, congregations, roles, fields,
   const complete = checkout?.registrationStatus === "CONFIRMED";
   const automaticPix = activeMethod === "PIX" && checkout?.paymentFlow === "AUTOMATIC_PIX";
   const staticPix = activeMethod === "PIX" && checkout?.paymentFlow === "STATIC_PIX";
+  const staticPixDetails = checkout?.staticPix ?? {
+    key: event.paymentSettings.individual.pixKey,
+    holderName: event.paymentSettings.individual.pixHolderName,
+    qrUrl: event.paymentSettings.individual.pixQrUrl,
+    paymentInstructions: event.paymentSettings.individual.paymentInstructions,
+  };
+  const manualPaymentDetails = checkout?.manualPayment ?? {
+    whatsappNumber: event.paymentSettings.individual.whatsappNumber,
+    paymentInstructions: event.paymentSettings.individual.paymentInstructions,
+  };
+  const whatsappNumber = manualPaymentDetails.whatsappNumber.replace(/\D/g, "");
   const manualWhatsapp = checkout && isPublicManualPaymentMethod(activeMethod) && whatsappNumber
     ? `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`Olá! Gostaria de combinar o pagamento ${activeMethod === "CASH" ? "em dinheiro" : `presencial por ${methodLabel(activeMethod).toLocaleLowerCase("pt-BR")}`} da inscrição ${checkout.registrationNumber} de ${checkout.participantName} para o evento ${event.name}. Total: ${money(checkout.totalAmount)}.`)}`
     : "";
@@ -306,14 +316,14 @@ export function PublicRegistration({ event, items, congregations, roles, fields,
           <Button type="button" fullWidth loading={pending} onClick={secondsLeft <= 0 ? () => setPix(null) : pix.isSimulated ? approveSimulatedPayment : refreshStatus}>{secondsLeft <= 0 ? <><QrCodeIcon size={16}/>Gerar novo Pix</> : pix.isSimulated ? <><CheckCircle2 size={16}/>Seguir e aprovar pagamento de teste</> : <><RefreshCw size={16}/>{pixReady ? "Já paguei — verificar novamente" : "Verificar QR Code"}</>}</Button>
         </S.PixCodePanel></S.PixLayout> : staticPix ? <S.PixLayout><S.PixCodePanel>
           <S.PixStatus><span><Clock3/></span><div><small>SITUAÇÃO</small><strong>{checkout?.receiptSubmitted?"Comprovante enviado":"Aguardando pagamento"}</strong></div></S.PixStatus>
-          {event.paymentSettings.individual.pixQrUrl?<Image unoptimized width={180} height={180} src={event.paymentSettings.individual.pixQrUrl} alt="QR Code Pix do evento"/>:<QrCodeIcon size={64}/>}
-          <h3>{event.paymentSettings.individual.pixHolderName}</h3>
+          {staticPixDetails.qrUrl?<Image unoptimized width={180} height={180} src={staticPixDetails.qrUrl} alt="QR Code Pix do evento"/>:<QrCodeIcon size={64}/>}
+          <h3>{staticPixDetails.holderName}</h3>
           <p>Faça o pagamento para a chave abaixo. A inscrição será confirmada pela organização após a conferência.</p>
-          <S.PixKeyInput><input readOnly value={event.paymentSettings.individual.pixKey} aria-label="Chave Pix do evento"/><button type="button" onClick={()=>copyPixValue(event.paymentSettings.individual.pixKey)} aria-label={pixCopied?"Chave Pix copiada":"Copiar chave Pix"}>{pixCopied?<Check/>:<Copy/>}</button></S.PixKeyInput>
-          {event.paymentSettings.individual.paymentInstructions?<S.ManualPaymentHint><Info/><span>{event.paymentSettings.individual.paymentInstructions}</span></S.ManualPaymentHint>:null}
+          <S.PixKeyInput><input readOnly value={staticPixDetails.key} aria-label="Chave Pix do evento"/><button type="button" onClick={()=>copyPixValue(staticPixDetails.key)} aria-label={pixCopied?"Chave Pix copiada":"Copiar chave Pix"}>{pixCopied?<Check/>:<Copy/>}</button></S.PixKeyInput>
+          {staticPixDetails.paymentInstructions?<S.ManualPaymentHint><Info/><span>{staticPixDetails.paymentInstructions}</span></S.ManualPaymentHint>:null}
           {!checkout?.receiptSubmitted?<S.UploadBox><span><UploadCloud/><strong>Comprovante opcional</strong><small>PDF, JPG, PNG ou WEBP de até 10 MB</small></span><div><label className="app-button-secondary"><UploadCloud size={16}/>{staticPixReceipt?"Trocar comprovante":"Selecionar comprovante"}<input type="file" accept="application/pdf,image/jpeg,image/png,image/webp" onChange={(change)=>setStaticPixReceipt(change.target.files?.[0]??null)}/></label></div>{staticPixReceipt?<small>{staticPixReceipt.name}</small>:null}</S.UploadBox>:<S.ManualPaymentHint><CheckCircle2/><span>O comprovante foi recebido e aguarda análise da organização.</span></S.ManualPaymentHint>}
           <S.PublicPrimaryActions>{staticPixReceipt&&!checkout?.receiptSubmitted?<Button type="button" onClick={submitStaticPixReceipt} loading={pending}><UploadCloud size={16}/>Enviar comprovante</Button>:null}<Button type="button" variant="outline" onClick={()=>{setStep(3);window.scrollTo({top:0,behavior:"smooth"});}}><CheckCircle2 size={16}/>{checkout?.receiptSubmitted?"Continuar":"Concluir sem comprovante"}</Button></S.PublicPrimaryActions>
-        </S.PixCodePanel></S.PixLayout> : <><S.ManualPayment><span><Banknote /></span><h3>Pagamento presencial</h3><p>{PUBLIC_MANUAL_PAYMENT_SUBTITLE}</p>{event.paymentSettings.individual.paymentInstructions?<S.ManualPaymentHint><Info/><span>{event.paymentSettings.individual.paymentInstructions}</span></S.ManualPaymentHint>:null}<S.ManualPaymentHint><LockKeyhole /><span>Nenhum comprovante é necessário. A credencial será liberada após a confirmação do pagamento.</span></S.ManualPaymentHint></S.ManualPayment><S.PublicPrimaryActions><Button onClick={openTracking}><CheckCircle2 size={16} />Concluir inscrição</Button></S.PublicPrimaryActions></>}
+        </S.PixCodePanel></S.PixLayout> : <><S.ManualPayment><span><Banknote /></span><h3>Pagamento presencial</h3><p>{PUBLIC_MANUAL_PAYMENT_SUBTITLE}</p>{manualPaymentDetails.paymentInstructions?<S.ManualPaymentHint><Info/><span>{manualPaymentDetails.paymentInstructions}</span></S.ManualPaymentHint>:null}<S.ManualPaymentHint><LockKeyhole /><span>Nenhum comprovante é necessário. A credencial será liberada após a confirmação do pagamento.</span></S.ManualPaymentHint></S.ManualPayment><S.PublicPrimaryActions><Button onClick={openTracking}><CheckCircle2 size={16} />Concluir inscrição</Button></S.PublicPrimaryActions></>}
       </S.CheckoutPanel> : null}
 
       {step === 3 && checkout ? <S.ConfirmationPanel><S.ConfirmationHeader data-pending={!complete}><span>{complete ? <CheckCircle2 /> : <Clock3 />}</span><div><small>{complete ? "INSCRIÇÃO CONFIRMADA" : "INSCRIÇÃO RECEBIDA"}</small><h2>{complete ? "Tudo certo!" : "Aguardando confirmação"}</h2><p>{complete ? "Guarde seu comprovante e apresente a credencial na entrada." : "Seu protocolo foi gerado. A credencial será liberada após o pagamento."}</p></div></S.ConfirmationHeader><S.ReceiptGrid><S.ReceiptCard><header><div><small>COMPROVANTE DE INSCRIÇÃO</small><strong>{checkout.eventName}</strong></div><Ticket /></header><dl><div><dt>Participante</dt><dd>{checkout.participantName}</dd></div><div><dt>Número</dt><dd>{checkout.registrationNumber}</dd></div><div><dt>Pagamento</dt><dd>{methodLabel(checkout.paymentMethod)}</dd></div><div><dt>Situação</dt><dd>{complete ? "Confirmada" : "Pendente"}</dd></div></dl><footer><span>Total</span><strong>{money(checkout.totalAmount)}</strong></footer></S.ReceiptCard><S.CredentialCard data-locked={!checkout.credentialToken}><header><small>CREDENCIAL DO EVENTO</small><strong>{checkout.eventName}</strong></header>{checkout.credentialToken ? <><QrCode value={checkout.credentialToken} size={176} /><h3>{checkout.participantName}</h3><p>{checkout.registrationNumber}{checkout.congregationName ? ` · ${checkout.congregationName}` : ""}</p><footer>Apresente esta credencial na entrada</footer></> : <S.CredentialLocked><span><LockKeyhole /></span><h3>Credencial aguardando liberação</h3><p>Ela ficará disponível assim que o pagamento for confirmado.</p></S.CredentialLocked>}</S.CredentialCard></S.ReceiptGrid><S.PublicPrimaryActions>{complete ? <div><Button variant="outline" onClick={() => window.print()}><Printer size={16} />Imprimir</Button><Button onClick={downloadReceipt} loading={pending}><Download size={16} />Baixar comprovante em PDF</Button></div> : <div>{manualWhatsapp?<S.PublicWhatsappLink href={manualWhatsapp} target="_blank" rel="noreferrer"><MessageCircle/>Combinar pelo WhatsApp</S.PublicWhatsappLink>:null}<Button onClick={refreshStatus} loading={pending}><RefreshCw size={16}/>Atualizar situação</Button></div>}</S.PublicPrimaryActions></S.ConfirmationPanel> : null}

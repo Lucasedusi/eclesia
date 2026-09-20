@@ -688,13 +688,14 @@ export async function permanentlyDeleteEvent(eventId: string) {
   if (eventResult.error || !eventResult.data) fail(eventResult.error, "O evento precisa estar na lixeira para ser excluído definitivamente.");
 
   const admin = createAdminClient();
-  const [documents, receipts, expenseReceipts, paymentSettings] = await Promise.all([
+  const [documents, receipts, expenseReceipts, paymentSettings, individualPixQrFiles] = await Promise.all([
     admin.from("event_documents").select("storage_bucket,storage_path").eq("event_id", eventId),
     admin.from("event_payments").select("receipt_storage_path").eq("event_id", eventId).not("receipt_storage_path", "is", null),
     admin.from("event_expenses").select("receipt_storage_bucket,receipt_storage_path").eq("event_id", eventId).not("receipt_storage_path", "is", null),
     admin.from("event_payment_settings").select("pix_qr_storage_bucket,pix_qr_storage_path,individual_pix_qr_storage_bucket,individual_pix_qr_storage_path").eq("event_id", eventId).maybeSingle(),
+    admin.storage.from("event-public-media").list(`${context.church.id}/events/${eventId}/individual-pix`, { limit: 1000 }),
   ]);
-  const lookupError = documents.error ?? receipts.error ?? expenseReceipts.error ?? paymentSettings.error;
+  const lookupError = documents.error ?? receipts.error ?? expenseReceipts.error ?? paymentSettings.error ?? individualPixQrFiles.error;
   if (lookupError) fail(lookupError, "Não foi possível localizar os arquivos vinculados ao evento.");
 
   const pathsByBucket = new Map<string, Set<string>>();
@@ -710,6 +711,9 @@ export async function permanentlyDeleteEvent(eventId: string) {
   for (const receipt of expenseReceipts.data ?? []) appendPath(receipt.receipt_storage_bucket ?? "event-documents", receipt.receipt_storage_path);
   appendPath(paymentSettings.data?.pix_qr_storage_bucket, paymentSettings.data?.pix_qr_storage_path);
   appendPath(paymentSettings.data?.individual_pix_qr_storage_bucket, paymentSettings.data?.individual_pix_qr_storage_path);
+  for (const file of individualPixQrFiles.data ?? []) {
+    appendPath("event-public-media", `${context.church.id}/events/${eventId}/individual-pix/${file.name}`);
+  }
 
   for (const [bucket, pathSet] of pathsByBucket) {
     const paths = [...pathSet];
@@ -872,10 +876,10 @@ export async function prepareEventIndividualPixQr(eventId:string,fileName:string
   const {supabase,row}=await getEventRow(eventId,PERMISSIONS.eventsManage);const extension=mimeType==="image/png"?"png":mimeType==="image/webp"?"webp":"jpg";const path=`${String(row.church_id)}/events/${eventId}/individual-pix/${randomUUID()}.${extension}`;const signed=await supabase.storage.from("event-public-media").createSignedUploadUrl(path);if(signed.error)fail(signed.error,"Não foi possível preparar o QR Code Pix individual.");return{path,token:signed.data.token,fileName};
 }
 export async function finalizeEventIndividualPixQr(eventId:string,path:string,fileName:string){
-  const {supabase,row}=await getEventRow(eventId,PERMISSIONS.eventsManage);const prefix=`${String(row.church_id)}/events/${eventId}/individual-pix/`;if(!path.startsWith(prefix))throw new EventServiceError("O QR Code não pertence a este evento.");const downloaded=await supabase.storage.from("event-public-media").download(path);if(downloaded.error||!downloaded.data)fail(downloaded.error,"Não foi possível validar o QR Code Pix individual.");const buffer=Buffer.from(await downloaded.data.arrayBuffer());const mime=path.endsWith(".png")?"image/png":path.endsWith(".webp")?"image/webp":"image/jpeg";if(buffer.length>2*1024*1024||!validUploadContent(buffer,mime)){await supabase.storage.from("event-public-media").remove([path]);throw new EventServiceError("Envie um QR Code JPG, PNG ou WEBP válido de até 2 MB.");}const current=await supabase.from("event_payment_settings").select("individual_pix_qr_storage_bucket,individual_pix_qr_storage_path").eq("event_id",eventId).is("deleted_at",null).single();if(current.error)fail(current.error,"Salve a configuração de pagamentos antes do QR Code.");const updated=await supabase.from("event_payment_settings").update({individual_pix_qr_storage_bucket:"event-public-media",individual_pix_qr_storage_path:path,individual_pix_qr_file_name:fileName}).eq("event_id",eventId);if(updated.error)fail(updated.error,"Não foi possível vincular o QR Code Pix individual.");if(current.data.individual_pix_qr_storage_path&&current.data.individual_pix_qr_storage_path!==path)await supabase.storage.from(current.data.individual_pix_qr_storage_bucket??"event-public-media").remove([current.data.individual_pix_qr_storage_path]);return supabase.storage.from("event-public-media").getPublicUrl(path).data.publicUrl;
+  const {supabase,row}=await getEventRow(eventId,PERMISSIONS.eventsManage);const prefix=`${String(row.church_id)}/events/${eventId}/individual-pix/`;if(!path.startsWith(prefix))throw new EventServiceError("O QR Code não pertence a este evento.");const downloaded=await supabase.storage.from("event-public-media").download(path);if(downloaded.error||!downloaded.data)fail(downloaded.error,"Não foi possível validar o QR Code Pix individual.");const buffer=Buffer.from(await downloaded.data.arrayBuffer());const mime=path.endsWith(".png")?"image/png":path.endsWith(".webp")?"image/webp":"image/jpeg";if(buffer.length>2*1024*1024||!validUploadContent(buffer,mime)){await supabase.storage.from("event-public-media").remove([path]);throw new EventServiceError("Envie um QR Code JPG, PNG ou WEBP válido de até 2 MB.");}const updated=await supabase.from("event_payment_settings").update({individual_pix_qr_storage_bucket:"event-public-media",individual_pix_qr_storage_path:path,individual_pix_qr_file_name:fileName}).eq("event_id",eventId);if(updated.error)fail(updated.error,"Não foi possível vincular o QR Code Pix individual.");return supabase.storage.from("event-public-media").getPublicUrl(path).data.publicUrl;
 }
 export async function removeEventIndividualPixQr(eventId:string){
-  const {supabase}=await getEventRow(eventId,PERMISSIONS.eventsManage);const current=await supabase.from("event_payment_settings").select("individual_pix_qr_storage_bucket,individual_pix_qr_storage_path").eq("event_id",eventId).is("deleted_at",null).single();if(current.error)fail(current.error,"QR Code Pix individual não encontrado.");const updated=await supabase.from("event_payment_settings").update({individual_pix_qr_storage_bucket:null,individual_pix_qr_storage_path:null,individual_pix_qr_file_name:null}).eq("event_id",eventId);if(updated.error)fail(updated.error,"Não foi possível remover o QR Code Pix individual.");if(current.data.individual_pix_qr_storage_path)await supabase.storage.from(current.data.individual_pix_qr_storage_bucket??"event-public-media").remove([current.data.individual_pix_qr_storage_path]);
+  const {supabase}=await getEventRow(eventId,PERMISSIONS.eventsManage);const updated=await supabase.from("event_payment_settings").update({individual_pix_qr_storage_bucket:null,individual_pix_qr_storage_path:null,individual_pix_qr_file_name:null}).eq("event_id",eventId);if(updated.error)fail(updated.error,"Não foi possível remover o QR Code Pix individual.");
 }
 export async function finalizeEventDocument(eventId: string, documentId: string) {
   const supabase = await createClient();

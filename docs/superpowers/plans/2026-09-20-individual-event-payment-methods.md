@@ -119,4 +119,3 @@
 - [ ] **Step 3: Executar a verificação SQL local e revisar o diff por segredos, dados pessoais e alterações não relacionadas.**
 - [ ] **Step 4: Solicitar revisão independente do branch e corrigir achados importantes com RED→GREEN.**
 - [ ] **Step 5: Commitar documentação ou correções finais necessárias.**
-

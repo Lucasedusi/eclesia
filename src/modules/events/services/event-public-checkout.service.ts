@@ -18,6 +18,8 @@ import {
 } from "./mercado-pago-pix.service";
 import { createMercadoPagoPixExternalReference, createMercadoPagoPixIdempotencyKey, resolveMercadoPagoPixExpirationMinutes } from "../utils/mercado-pago-pix";
 import { buildPublicRegistrationPayload, resolvePublicMemberId } from "./public-member-link";
+import { readCheckoutPaymentSnapshot } from "../utils/checkout-payment-snapshot";
+import { isStaticPixReceiptPath, safeStaticPixReceiptName } from "../utils/static-pix-receipt";
 
 type PublicRegistrationInput = z.infer<typeof publicRegistrationSchema>;
 type PublicStaticPixReceiptInput = z.infer<typeof publicStaticPixReceiptSchema>;
@@ -130,16 +132,18 @@ async function checkoutRows(checkoutToken: string, publicCode: string, slug: str
   if (!validCheckoutToken(checkoutToken)) throw new PublicCheckoutError("Sessão de inscrição inválida.");
   const admin = createAdminClient();
   const checkoutResult = await admin.from("event_public_checkouts")
-    .select("id,event_id,registration_id,status,payment_method,payment_flow,expires_at")
+    .select("id,event_id,registration_id,status,payment_method,payment_flow,expires_at,draft_payload")
     .eq("access_token_hash", tokenHash(checkoutToken)).maybeSingle();
   if (checkoutResult.error || !checkoutResult.data) throw new PublicCheckoutError("Sessão de inscrição não encontrada.");
-  const [eventResult, registrationResult, itemResult, paymentResult] = await Promise.all([
+  const [eventResult, registrationResult, itemResult, paymentResult, staticReceiptResult] = await Promise.all([
     admin.from("events").select("id,church_id,name,public_code,slug,starts_at,location_name,city,state").eq("id", checkoutResult.data.event_id).eq("public_code", publicCode).eq("slug", slug).eq("visibility", "PUBLIC").is("deleted_at", null).maybeSingle(),
     admin.from("event_registrations").select("id,registration_number,participant_name,congregation_id,status,payment_status,total_amount,registered_at,confirmed_at,credential_version,congregations!event_registrations_congregation_tenant_fkey(name,regions(name))").eq("id", checkoutResult.data.registration_id).is("deleted_at", null).maybeSingle(),
     admin.from("event_registration_items").select("event_item_id,item_name,quantity,unit_price,total_price").eq("event_registration_id", checkoutResult.data.registration_id).is("deleted_at", null).order("created_at"),
-    admin.from("event_payments").select("id,provider,provider_payment_id,provider_status,payment_status,amount,external_reference,expires_at,created_at,paid_at,receipt_storage_path,payment_channel").eq("event_registration_id", checkoutResult.data.registration_id).is("deleted_at", null).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+    admin.from("event_payments").select("id,provider,provider_payment_id,provider_status,payment_status,amount,external_reference,expires_at,created_at,paid_at,receipt_storage_path").eq("event_registration_id", checkoutResult.data.registration_id).is("deleted_at", null).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+    admin.from("event_payments").select("receipt_storage_path").eq("event_registration_id", checkoutResult.data.registration_id).eq("payment_method", "PIX").eq("payment_channel", "INTERNAL_MANUAL").contains("metadata", { paymentFlow: "STATIC_PIX" }).is("deleted_at", null).order("created_at", { ascending: true }).limit(1).maybeSingle(),
   ]);
-  if (eventResult.error || !eventResult.data || registrationResult.error || !registrationResult.data) {
+  if (eventResult.error || !eventResult.data || registrationResult.error || !registrationResult.data
+    || itemResult.error || paymentResult.error || staticReceiptResult.error) {
     throw new PublicCheckoutError("Esta inscrição não está mais disponível.");
   }
   return {
@@ -149,6 +153,7 @@ async function checkoutRows(checkoutToken: string, publicCode: string, slug: str
     registration: registrationResult.data as AnyRow,
     items: (itemResult.data ?? []) as AnyRow[],
     payment: (paymentResult.data ?? null) as AnyRow | null,
+    staticReceipt: (staticReceiptResult.data ?? null) as AnyRow | null,
   };
 }
 
@@ -399,6 +404,16 @@ export async function getPublicCheckoutStatus(
     unitPrice: number(item.unit_price),
     totalPrice: number(item.total_price) || number(item.unit_price) * number(item.quantity),
   }));
+  const paymentSnapshot = readCheckoutPaymentSnapshot(rows.checkout.draft_payload);
+  const staticPix = paymentSnapshot.staticPix ? {
+    key: paymentSnapshot.staticPix.key,
+    holderName: paymentSnapshot.staticPix.holderName,
+    qrUrl: paymentSnapshot.staticPix.qrStorageBucket === "event-public-media"
+      && paymentSnapshot.staticPix.qrStoragePath?.startsWith(`${String(rows.event.church_id)}/events/${String(rows.event.id)}/individual-pix/`)
+      ? rows.admin.storage.from("event-public-media").getPublicUrl(paymentSnapshot.staticPix.qrStoragePath).data.publicUrl
+      : null,
+    paymentInstructions: paymentSnapshot.staticPix.paymentInstructions,
+  } : null;
   return {
     checkoutId: String(rows.checkout.id),
     eventId: String(rows.event.id),
@@ -425,7 +440,9 @@ export async function getPublicCheckoutStatus(
     providerStatus: providerPayment?.status ?? (rows.payment?.provider_status ? String(rows.payment.provider_status) : null),
     paymentSimulationEnabled: isPaymentSimulationEnabled(),
     isSimulatedPayment: simulatedPayment,
-    receiptSubmitted: rows.checkout.payment_flow === "STATIC_PIX" && Boolean(rows.payment?.receipt_storage_path),
+    receiptSubmitted: rows.checkout.payment_flow === "STATIC_PIX" && Boolean(rows.staticReceipt?.receipt_storage_path),
+    staticPix,
+    manualPayment: paymentSnapshot.manualPayment,
     pix: providerPayment ? {
       qrCode: providerPayment.point_of_interaction?.transaction_data?.qr_code ?? null,
       qrCodeBase64: providerPayment.point_of_interaction?.transaction_data?.qr_code_base64 ?? null,
@@ -446,7 +463,7 @@ export async function preparePublicStaticPixReceiptUpload(input: {
   if (rows.registration.status !== "PENDING" || rows.registration.payment_status !== "PENDING") {
     throw new PublicCheckoutError("Esta inscrição não aceita mais comprovantes.");
   }
-  const safeName = input.fileName.replace(/[^a-zA-Z0-9._-]/g, "_").slice(-180);
+  const safeName = safeStaticPixReceiptName(input.fileName);
   const path = `${String(rows.event.church_id)}/events/${String(rows.event.id)}/public-individuals/${String(rows.checkout.id)}/static-pix/${randomUUID()}/${safeName}`;
   const signed = await rows.admin.storage.from("event-documents").createSignedUploadUrl(path);
   if (signed.error) throw new PublicCheckoutError("Não foi possível preparar o comprovante.");
@@ -463,13 +480,12 @@ export async function submitPublicStaticPixReceipt(input: {
     throw new PublicCheckoutError("Esta inscrição não utiliza Pix estático.");
   }
   const expectedPrefix = `${String(rows.event.church_id)}/events/${String(rows.event.id)}/public-individuals/${String(rows.checkout.id)}/static-pix/`;
-  if (!input.receiptPath.startsWith(expectedPrefix)) throw new PublicCheckoutError("O comprovante não pertence a esta inscrição.");
+  if (!isStaticPixReceiptPath(input.receiptPath, expectedPrefix)) throw new PublicCheckoutError("O comprovante não pertence a esta inscrição.");
 
   const downloaded = await rows.admin.storage.from("event-documents").download(input.receiptPath);
   if (downloaded.error || !downloaded.data) throw new PublicCheckoutError("Não foi possível validar o comprovante enviado.");
   const buffer = Buffer.from(await downloaded.data.arrayBuffer());
   if (buffer.length !== input.receiptFileSize || buffer.length > 10 * 1024 * 1024 || !validStaticPixReceiptContent(buffer, input.receiptMimeType)) {
-    await rows.admin.storage.from("event-documents").remove([input.receiptPath]);
     throw new PublicCheckoutError("O conteúdo do comprovante não corresponde ao formato informado.");
   }
 
@@ -485,10 +501,6 @@ export async function submitPublicStaticPixReceipt(input: {
     p_idempotency_key: input.idempotencyKey,
   });
   if (result.error) throw new PublicCheckoutError("Não foi possível registrar o comprovante.");
-  const persisted = result.data as AnyRow | null;
-  if (persisted?.receipt_storage_path && persisted.receipt_storage_path !== input.receiptPath) {
-    await rows.admin.storage.from("event-documents").remove([input.receiptPath]);
-  }
   return getPublicCheckoutStatus(input.publicCode, input.slug, input.checkoutToken, false);
 }
 
