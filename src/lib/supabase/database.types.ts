@@ -7,10 +7,30 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.5"
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   public: {
     Tables: {
@@ -2128,6 +2148,16 @@ export type Database = {
           deleted_by: string | null
           event_id: string
           id: string
+          individual_card_enabled: boolean
+          individual_cash_enabled: boolean
+          individual_payment_instructions: string | null
+          individual_pix_holder_name: string | null
+          individual_pix_key: string | null
+          individual_pix_mode: string
+          individual_pix_qr_file_name: string | null
+          individual_pix_qr_storage_bucket: string | null
+          individual_pix_qr_storage_path: string | null
+          individual_whatsapp_number: string | null
           max_file_size: number
           payment_instructions: string | null
           pix_enabled: boolean
@@ -2152,6 +2182,16 @@ export type Database = {
           deleted_by?: string | null
           event_id: string
           id?: string
+          individual_card_enabled?: boolean
+          individual_cash_enabled?: boolean
+          individual_payment_instructions?: string | null
+          individual_pix_holder_name?: string | null
+          individual_pix_key?: string | null
+          individual_pix_mode?: string
+          individual_pix_qr_file_name?: string | null
+          individual_pix_qr_storage_bucket?: string | null
+          individual_pix_qr_storage_path?: string | null
+          individual_whatsapp_number?: string | null
           max_file_size?: number
           payment_instructions?: string | null
           pix_enabled?: boolean
@@ -2176,6 +2216,16 @@ export type Database = {
           deleted_by?: string | null
           event_id?: string
           id?: string
+          individual_card_enabled?: boolean
+          individual_cash_enabled?: boolean
+          individual_payment_instructions?: string | null
+          individual_pix_holder_name?: string | null
+          individual_pix_key?: string | null
+          individual_pix_mode?: string
+          individual_pix_qr_file_name?: string | null
+          individual_pix_qr_storage_bucket?: string | null
+          individual_pix_qr_storage_path?: string | null
+          individual_whatsapp_number?: string | null
           max_file_size?: number
           payment_instructions?: string | null
           pix_enabled?: boolean
@@ -2556,6 +2606,7 @@ export type Database = {
           group_id: string | null
           id: string
           idempotency_key: string
+          payment_flow: string
           payment_method: string
           registration_id: string | null
           status: string
@@ -2573,6 +2624,7 @@ export type Database = {
           group_id?: string | null
           id?: string
           idempotency_key: string
+          payment_flow?: string
           payment_method: string
           registration_id?: string | null
           status?: string
@@ -2590,6 +2642,7 @@ export type Database = {
           group_id?: string | null
           id?: string
           idempotency_key?: string
+          payment_flow?: string
           payment_method?: string
           registration_id?: string | null
           status?: string
@@ -7525,6 +7578,70 @@ export type Database = {
         }
         Returns: Json
       }
+      submit_event_public_static_pix_receipt: {
+        Args: {
+          p_checkout_id: string
+          p_event_id: string
+          p_idempotency_key: string
+          p_payload: Json
+        }
+        Returns: {
+          amount: number
+          cancel_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          church_id: string
+          confirmed_by: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          due_date: string | null
+          event_group_id: string | null
+          event_id: string
+          event_registration_id: string | null
+          expires_at: string | null
+          external_reference: string | null
+          failed_at: string | null
+          failed_by: string | null
+          failure_reason: string | null
+          financial_transaction_id: string | null
+          id: string
+          idempotency_key: string | null
+          installment_number: number
+          installments_total: number
+          metadata: Json
+          notes: string | null
+          paid_at: string | null
+          payer_document: string | null
+          payer_name: string | null
+          payment_channel: string
+          payment_method: string
+          payment_number: string | null
+          payment_status: string
+          provider: string
+          provider_payment_id: string | null
+          provider_status: string | null
+          provider_status_updated_at: string | null
+          receipt_file_name: string | null
+          receipt_file_size: number | null
+          receipt_file_url: string | null
+          receipt_mime_type: string | null
+          receipt_storage_path: string | null
+          refund_reason: string | null
+          refunded_at: string | null
+          refunded_by: string | null
+          transaction_reference: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "event_payments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       update_administrative_document_metadata: {
         Args: {
           p_description?: string
@@ -7720,6 +7837,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },

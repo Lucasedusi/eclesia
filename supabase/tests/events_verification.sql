@@ -12,7 +12,8 @@ begin
     'event_registration_batches','event_groups','event_items',
     'event_registrations','event_registration_items','event_payments',
     'event_checkins','event_documents','event_expenses',
-    'event_registration_fields','event_registration_field_values'
+    'event_registration_fields','event_registration_field_values',
+    'event_payment_settings'
   ] loop
     if not exists (
       select 1 from pg_class c join pg_namespace n on n.oid = c.relnamespace
@@ -83,6 +84,53 @@ begin
     or has_function_privilege('authenticated', 'public.start_event_public_checkout(uuid,jsonb,text,text)', 'execute')
     or not has_function_privilege('service_role', 'public.start_event_public_checkout(uuid,jsonb,text,text)', 'execute') then
     raise exception 'Privilégios do checkout público estão divergentes';
+  end if;
+  if not exists (
+    select 1
+    from information_schema.columns
+    where table_schema='public' and table_name='event_payment_settings'
+      and column_name in (
+        'individual_pix_mode','individual_pix_key','individual_pix_holder_name',
+        'individual_pix_qr_storage_bucket','individual_pix_qr_storage_path','individual_pix_qr_file_name',
+        'individual_cash_enabled','individual_card_enabled','individual_whatsapp_number',
+        'individual_payment_instructions'
+      )
+    having count(*) = 10
+  ) then
+    raise exception 'Configuração individual de pagamentos incompleta';
+  end if;
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema='public' and table_name='event_public_checkouts'
+      and column_name='payment_flow' and column_default='''NOT_APPLICABLE''::text'
+  ) then
+    raise exception 'Snapshot do fluxo de pagamento ausente no checkout público';
+  end if;
+  if not exists (
+    select 1 from pg_constraint
+    where conname='event_payment_settings_individual_valid_check'
+  ) then
+    raise exception 'Configuração individual não possui constraint de integridade';
+  end if;
+  if position('individual_pix_mode' in v_public_checkout_definition) = 0
+    or position('payment_flow' in v_public_checkout_definition) = 0
+    or position('EVENT_PAYMENT_METHOD_DISABLED' in v_public_checkout_definition) = 0 then
+    raise exception 'Checkout público não valida a configuração individual do evento';
+  end if;
+  if not exists (
+    select 1 from pg_proc procedure
+    join pg_namespace namespace on namespace.oid=procedure.pronamespace
+    where namespace.nspname='public'
+      and procedure.proname='submit_event_public_static_pix_receipt'
+      and pg_get_function_identity_arguments(procedure.oid) =
+        'p_event_id uuid, p_checkout_id uuid, p_payload jsonb, p_idempotency_key text'
+  ) then
+    raise exception 'RPC de comprovante do Pix estático ausente';
+  end if;
+  if has_function_privilege('anon', 'public.submit_event_public_static_pix_receipt(uuid,uuid,jsonb,text)', 'execute')
+    or has_function_privilege('authenticated', 'public.submit_event_public_static_pix_receipt(uuid,uuid,jsonb,text)', 'execute')
+    or not has_function_privilege('service_role', 'public.submit_event_public_static_pix_receipt(uuid,uuid,jsonb,text)', 'execute') then
+    raise exception 'Privilégios do comprovante público de Pix estático estão divergentes';
   end if;
   if not exists (
     select 1 from public.permissions
