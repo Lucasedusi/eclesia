@@ -80,6 +80,7 @@ export type MemberCapabilities = {
   viewRoles: boolean;
   manageRoles: boolean;
   import: boolean;
+  issueCredential: boolean;
 };
 
 export type MemberCoreDetails = {

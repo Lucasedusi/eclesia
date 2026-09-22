@@ -28,6 +28,7 @@ export const PERMISSIONS = {
   membersRestore: "members.restore",
   membersExport: "members.export",
   membersImport: "members.import",
+  membersCredentialIssue: "members.credentials.issue",
   membersViewSensitiveIdentity: "members.view_sensitive_identity",
   membersManageSensitiveIdentity: "members.manage_sensitive_identity",
   membersManageDocuments: "members.manage_documents",

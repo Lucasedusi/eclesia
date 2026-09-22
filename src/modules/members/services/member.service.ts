@@ -92,6 +92,7 @@ export function getMemberCapabilities(context: AuthContext): MemberCapabilities 
     viewRoles: can(PERMISSIONS.memberRolesView),
     manageRoles: can(PERMISSIONS.memberRolesManage),
     import: can(PERMISSIONS.membersImport),
+    issueCredential: can(PERMISSIONS.membersCredentialIssue),
   };
 }
 
