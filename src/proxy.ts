@@ -9,6 +9,7 @@ const PUBLIC_PATHS = [
   "/auth/callback",
   "/convite",
   "/inscricoes",
+  "/verificar/membro",
   "/api/public/events",
   "/api/cron/documents/cleanup",
   "/api/cron/events/cleanup",
@@ -43,6 +44,10 @@ function finalizeResponse(
   startedAt: number,
 ) {
   response.headers.set("X-Content-Type-Options", "nosniff");
+  if (pathname === "/verificar/membro" || pathname.startsWith("/verificar/membro/")) {
+    response.headers.set("Cache-Control", "no-store");
+    response.headers.set("Pragma", "no-cache");
+  }
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   response.headers.set(
     "Permissions-Policy",

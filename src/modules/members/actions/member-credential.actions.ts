@@ -3,7 +3,11 @@
 import { PERMISSIONS } from "@/modules/auth/constants/permissions";
 import { requireAccessContext } from "@/modules/auth/services/access-context.service";
 import { isCredentialMemberId } from "../services/member-credential.logic";
-import { loadMemberCredentialPreview } from "../services/member-credential.service";
+import {
+  assertMemberCredentialAccessible,
+  loadMemberCredentialPreview,
+} from "../services/member-credential.service";
+import { revokeMemberCredentialToken } from "../services/member-credential-token.service";
 import { MemberCredentialError } from "../types/member-credential.types";
 
 const credentialMessages = {
@@ -43,5 +47,24 @@ export async function getMemberCredentialPreviewAction(memberId: string) {
     };
   } catch (error) {
     return { success: false as const, message: credentialMessage(error) };
+  }
+}
+
+export async function revokeMemberCredentialAction(memberId: string) {
+  const context = await requireAccessContext(
+    PERMISSIONS.membersCredentialIssue,
+  );
+  if (!isCredentialMemberId(memberId)) {
+    return { success: false as const, message: credentialMessages.MEMBER_CREDENTIAL_NOT_FOUND };
+  }
+  try {
+    await assertMemberCredentialAccessible(context, memberId);
+    await revokeMemberCredentialToken(context, memberId);
+    return { success: true as const };
+  } catch {
+    return {
+      success: false as const,
+      message: "Não foi possível revogar a credencial agora.",
+    };
   }
 }

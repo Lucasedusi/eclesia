@@ -6,36 +6,55 @@ import type { MemberCredentialPreview } from "../types/member-credential.types";
 const mocks = vi.hoisted(() => ({
   requireAccessContext: vi.fn(),
   loadPreview: vi.fn(),
+  assertAccessible: vi.fn(),
+  revokeToken: vi.fn(),
 }));
 
 vi.mock("@/modules/auth/services/access-context.service", () => ({
   requireAccessContext: mocks.requireAccessContext,
 }));
 vi.mock("../services/member-credential.service", () => ({
+  assertMemberCredentialAccessible: mocks.assertAccessible,
   loadMemberCredentialPreview: mocks.loadPreview,
 }));
+vi.mock("../services/member-credential-token.service", () => ({
+  revokeMemberCredentialToken: mocks.revokeToken,
+}));
 
-import { getMemberCredentialPreviewAction } from "./member-credential.actions";
+import {
+  getMemberCredentialPreviewAction,
+  revokeMemberCredentialAction,
+} from "./member-credential.actions";
 
 const memberId = "11111111-1111-4111-8111-111111111111";
 const preview = {
   issuedAt: "2026-09-21T12:00:00.000Z",
+  issuedDate: "21/09/2026",
   fileName: "credencial-MEM000123.pdf",
   church: {
     name: "Igreja Batista Central",
-    primaryColor: "#415BA5",
-    primaryDarkColor: "#354B8E",
-    foregroundColor: "#FFFFFF",
+    logoDataUri: null,
+    addressLine: "Rua das Flores, 123 - Centro - Goiânia/GO",
+    phone: "(62) 99999-8888",
+    document: "01.185.743/0001-46",
   },
   member: {
-    id: memberId,
     fullName: "Maria de Souza",
     roleName: "Diaconisa",
     memberCode: "MEM000123",
     congregationName: "Congregação Central",
+    cpf: "123.456.789-09",
+    birthDate: "15/04/1980",
     baptismDate: "10/04/2018",
     motherName: "Ana",
     fatherName: "José",
+    naturality: "Goiânia - GO",
+  },
+  validation: {
+    token: "a".repeat(43),
+    url: `https://example.com/verificar/membro/${"a".repeat(43)}`,
+    qrMatrix: [[true]],
+    activeIssuedAt: null,
   },
   warnings: [],
 } satisfies MemberCredentialPreview;
@@ -100,5 +119,32 @@ describe("getMemberCredentialPreviewAction", () => {
       message: "Não foi possível preparar a credencial agora.",
     });
     expect(JSON.stringify(result)).not.toContain("provider details");
+  });
+});
+
+describe("revokeMemberCredentialAction", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.requireAccessContext.mockResolvedValue({ church: { id: "church-1" } });
+    mocks.assertAccessible.mockResolvedValue(undefined);
+    mocks.revokeToken.mockResolvedValue(undefined);
+  });
+
+  it("repete autorização e escopo do membro antes da revogação privilegiada", async () => {
+    await expect(revokeMemberCredentialAction(memberId)).resolves.toEqual({ success: true });
+    expect(mocks.requireAccessContext).toHaveBeenCalledWith(PERMISSIONS.membersCredentialIssue);
+    expect(mocks.assertAccessible).toHaveBeenCalledWith({ church: { id: "church-1" } }, memberId);
+    expect(mocks.assertAccessible.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.revokeToken.mock.invocationCallOrder[0],
+    );
+  });
+
+  it("não revoga quando o membro está fora do escopo", async () => {
+    mocks.assertAccessible.mockRejectedValue(new MemberCredentialError("MEMBER_CREDENTIAL_NOT_FOUND"));
+    await expect(revokeMemberCredentialAction(memberId)).resolves.toEqual({
+      success: false,
+      message: "Não foi possível revogar a credencial agora.",
+    });
+    expect(mocks.revokeToken).not.toHaveBeenCalled();
   });
 });

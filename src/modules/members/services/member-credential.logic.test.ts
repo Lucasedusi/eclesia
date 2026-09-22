@@ -3,13 +3,23 @@ import type { MemberCredentialSource } from "../types/member-credential.types";
 import {
   buildMemberCredentialPreview,
   isCredentialMemberId,
-  normalizeCredentialColor,
 } from "./member-credential.logic";
 
 const sourceFixture: MemberCredentialSource = {
   issuedAt: "2026-09-21T12:00:00.000Z",
+  credentialToken: "opaque-token",
+  validationUrl: "https://eclesias.app/verificar/membro/opaque-token",
+  qrMatrix: [[true, false], [false, true]],
+  activeCredentialIssuedAt: null,
   churchName: "Igreja Batista Central",
-  primaryColor: "#415BA5",
+  churchLogoDataUri: "data:image/png;base64,bG9nbw==",
+  churchAddress: "Rua das Flores",
+  churchNumber: "123",
+  churchDistrict: "Centro",
+  churchCity: "Goiânia",
+  churchState: "GO",
+  churchPhone: "62999998888",
+  churchDocument: "01185743000146",
   member: {
     id: "11111111-1111-4111-8111-111111111111",
     fullName: "Maria de Souza",
@@ -19,9 +29,13 @@ const sourceFixture: MemberCredentialSource = {
     memberType: "MEMBER",
     deletedAt: null,
     congregationName: "Congregação Central",
+    cpf: "12345678909",
+    birthDate: "1980-04-15",
     baptismDate: "2018-04-10",
     motherName: null,
     fatherName: null,
+    naturalCity: "Goiânia",
+    naturalState: "GO",
     activeRole: {
       titleVariant: "AUTO",
       name: "Diácono",
@@ -31,34 +45,12 @@ const sourceFixture: MemberCredentialSource = {
 };
 
 function validInput(
-  override: Partial<MemberCredentialSource["member"]> & {
-    primaryColor?: string | null;
-  } = {},
+  override: Partial<MemberCredentialSource["member"]> = {},
 ): MemberCredentialSource {
-  const { primaryColor = sourceFixture.primaryColor, ...memberOverride } =
-    override;
   return {
     ...sourceFixture,
-    primaryColor,
-    member: { ...sourceFixture.member, ...memberOverride },
+    member: { ...sourceFixture.member, ...override },
   };
-}
-
-function luminance(hex: string) {
-  const channels = [1, 3, 5].map((index) =>
-    Number.parseInt(hex.slice(index, index + 2), 16) / 255,
-  );
-  const linear = channels.map((channel) =>
-    channel <= 0.04045
-      ? channel / 12.92
-      : ((channel + 0.055) / 1.055) ** 2.4,
-  );
-  return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
-}
-
-function contrast(first: string, second: string) {
-  const values = [luminance(first), luminance(second)].sort((a, b) => b - a);
-  return (values[0] + 0.05) / (values[1] + 0.05);
 }
 
 describe("buildMemberCredentialPreview", () => {
@@ -70,9 +62,25 @@ describe("buildMemberCredentialPreview", () => {
       roleName: "Diaconisa",
       memberCode: "MEM000123",
       congregationName: "Congregação Central",
+      cpf: "123.456.789-09",
+      birthDate: "15/04/1980",
       baptismDate: "10/04/2018",
       motherName: "Não informado",
       fatherName: "Não informado",
+      naturality: "Goiânia - GO",
+    });
+    expect(result.church).toMatchObject({
+      name: "Igreja Batista Central",
+      addressLine: "Rua das Flores, 123 - Centro - Goiânia/GO",
+      phone: "(62) 99999-8888",
+      document: "01.185.743/0001-46",
+    });
+    expect(result.issuedDate).toBe("21/09/2026");
+    expect(result.validation).toEqual({
+      token: "opaque-token",
+      url: "https://eclesias.app/verificar/membro/opaque-token",
+      qrMatrix: [[true, false], [false, true]],
+      activeIssuedAt: null,
     });
     expect(result.warnings).toEqual([
       "MISSING_MOTHER_NAME",
@@ -81,56 +89,42 @@ describe("buildMemberCredentialPreview", () => {
     expect(result.fileName).toBe("credencial-MEM000123.pdf");
   });
 
-  it("informa todos os campos opcionais ausentes sem bloquear", () => {
+  it("informa campos opcionais ausentes sem bloquear", () => {
     const result = buildMemberCredentialPreview(
-      validInput({ activeRole: null, baptismDate: null }),
+      {
+        ...sourceFixture,
+        churchLogoDataUri: null,
+        churchAddress: null,
+        churchPhone: null,
+        churchDocument: null,
+        member: {
+          ...sourceFixture.member,
+          activeRole: null,
+          cpf: null,
+          birthDate: null,
+          baptismDate: null,
+          naturalCity: null,
+          naturalState: null,
+        },
+      },
     );
     expect(result.member.roleName).toBe("Sem cargo cadastrado");
     expect(result.member.baptismDate).toBe("Não informado");
     expect(result.warnings).toEqual([
+      "MISSING_CHURCH_LOGO",
+      "MISSING_CHURCH_ADDRESS",
+      "MISSING_CHURCH_PHONE",
+      "MISSING_CHURCH_DOCUMENT",
       "MISSING_ROLE",
+      "MISSING_CPF",
+      "MISSING_BIRTH_DATE",
       "MISSING_BAPTISM_DATE",
       "MISSING_MOTHER_NAME",
       "MISSING_FATHER_NAME",
+      "MISSING_NATURALITY",
     ]);
-  });
-
-  it.each(["", "#fff", "white"])(
-    "usa fallback para cor inválida: %s",
-    (color) => {
-      expect(
-        buildMemberCredentialPreview(validInput({ primaryColor: color })).church
-          .primaryColor,
-      ).toBe("#415BA5");
-    },
-  );
-
-  it.each(["#FFFFFF", "#F2F4F7"])(
-    "preserva cor clara com texto escuro: %s",
-    (color) => {
-      const result = buildMemberCredentialPreview(
-        validInput({ primaryColor: color }),
-      );
-      expect(result.church.primaryColor).toBe(color);
-      expect(result.church.foregroundColor).toBe("#101828");
-    },
-  );
-
-  it.each(["#FFFFFF", "#101828", "#7A6EAA"])(
-    "mantém contraste mínimo no cabeçalho: %s",
-    (color) => {
-      const result = normalizeCredentialColor(color);
-      expect(
-        contrast(result.primaryDarkColor, result.foregroundColor),
-      ).toBeGreaterThanOrEqual(4.5);
-    },
-  );
-
-  it("usa o azul-escuro institucional com a cor primária de fallback", () => {
-    expect(normalizeCredentialColor(null)).toMatchObject({
-      primaryColor: "#415BA5",
-      primaryDarkColor: "#354B8E",
-    });
+    expect(result.church.logoDataUri).toBeNull();
+    expect(result.member.cpf).toBe("Não informado");
   });
 
   it.each([
@@ -164,6 +158,11 @@ describe("buildMemberCredentialPreview", () => {
     });
     expect(result.church.name).toHaveLength(100);
     expect(result.member.fullName).toHaveLength(120);
+  });
+
+  it("não inclui o ID interno do membro no DTO da prévia", () => {
+    const result = buildMemberCredentialPreview(sourceFixture);
+    expect(result.member).not.toHaveProperty("id");
   });
 
   it("sanitiza e limita a matrícula no nome do arquivo", () => {

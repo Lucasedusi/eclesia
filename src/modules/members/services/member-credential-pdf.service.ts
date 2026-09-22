@@ -1,328 +1,280 @@
 import "server-only";
 
-import {
-  PDFDocument,
-  StandardFonts,
-  rgb,
-  type PDFFont,
-  type PDFPage,
-} from "pdf-lib";
-import type { MemberCredentialPreview } from "../types/member-credential.types";
-import { FAKE_QR_PATTERN } from "./member-credential.logic";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import { Resvg } from "@resvg/resvg-js";
+import fontkit from "@pdf-lib/fontkit";
+import { PDFDocument, PDFFont, PDFPage, StandardFonts, rgb } from "pdf-lib";
+import type { MemberCredentialPdfFormat, MemberCredentialPreview } from "../types/member-credential.types";
+import { renderMemberCredentialPrintSvg } from "./member-credential-svg.service";
 
 const MM_TO_PT = 72 / 25.4;
-export const CR80_WIDTH_PT = 85.6 * MM_TO_PT;
-export const CR80_HEIGHT_PT = 53.98 * MM_TO_PT;
-const SAFE = 3.2 * MM_TO_PT;
-const HEADER_HEIGHT = 12 * MM_TO_PT;
-const INK = rgb(16 / 255, 24 / 255, 40 / 255);
-const MUTED = rgb(71 / 255, 84 / 255, 103 / 255);
-const SURFACE = rgb(242 / 255, 244 / 255, 247 / 255);
+const mm = (value: number) => value * MM_TO_PT;
+const BLEED_MM = 3;
+const PRINT_DPI = 600;
+const CARD_WIDTH_MM = 85.6;
+const CARD_HEIGHT_MM = 53.98;
+const FOLD_WIDTH_MM = CARD_WIDTH_MM * 2;
+const FOLD_LEFT_MM = (210 - FOLD_WIDTH_MM) / 2;
+const FOLD_BOTTOM_MM = 175;
 
-type Fonts = { regular: PDFFont; bold: PDFFont };
+export const PRINT_BLEED_PT = mm(BLEED_MM);
+export const CR80_WIDTH_PT = mm(CARD_WIDTH_MM);
+export const CR80_HEIGHT_PT = mm(CARD_HEIGHT_MM);
+export const A4_WIDTH_PT = mm(210);
+export const A4_HEIGHT_PT = mm(297);
 
-function hexToRgb(hex: string) {
+const FONT_FILES = [
+  path.join(process.cwd(), "public/fonts/credential/Rubik-400.ttf"),
+  path.join(process.cwd(), "public/fonts/credential/Rubik-500.ttf"),
+  path.join(process.cwd(), "public/fonts/credential/Rubik-550.ttf"),
+  path.join(process.cwd(), "public/fonts/credential/Rubik-600.ttf"),
+  path.join(process.cwd(), "public/fonts/credential/Rubik-650.ttf"),
+  path.join(process.cwd(), "public/fonts/credential/Rubik-750.ttf"),
+];
+const FONT_WEIGHTS = [400, 500, 550, 600, 650, 750] as const;
+let fontBytesPromise: Promise<Buffer[]> | null = null;
+
+function loadFontBytes() {
+  fontBytesPromise ??= Promise.all([
+    readFile(path.join(process.cwd(), "public/fonts/credential/Rubik-400.ttf")),
+    readFile(path.join(process.cwd(), "public/fonts/credential/Rubik-500.ttf")),
+    readFile(path.join(process.cwd(), "public/fonts/credential/Rubik-550.ttf")),
+    readFile(path.join(process.cwd(), "public/fonts/credential/Rubik-600.ttf")),
+    readFile(path.join(process.cwd(), "public/fonts/credential/Rubik-650.ttf")),
+    readFile(path.join(process.cwd(), "public/fonts/credential/Rubik-750.ttf")),
+  ]);
+  return fontBytesPromise;
+}
+
+type SvgText = {
+  value: string;
+  x: number;
+  y: number;
+  size: number;
+  weight: number;
+  fill: string;
+  anchor: string;
+  tracking: number;
+  textLength?: number;
+};
+
+function unescapeXml(value: string) {
+  return value
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&amp;/g, "&");
+}
+
+function takeVectorElements(svg: string) {
+  const texts: SvgText[] = [];
+  let backgroundSvg = svg.replace(/<text\b([^>]*)>([\s\S]*?)<\/text>/g, (_, attrs: string, value: string) => {
+    const attributes = Object.fromEntries(
+      Array.from(attrs.matchAll(/([\w-]+)="([^"]*)"/g), ([, key, content]) => [key, content]),
+    );
+    texts.push({
+      value: unescapeXml(value),
+      x: Number(attributes.x),
+      y: Number(attributes.y),
+      size: Number(attributes["font-size"]),
+      weight: Number(attributes["font-weight"]),
+      fill: attributes.fill,
+      anchor: attributes["text-anchor"],
+      tracking: Number(attributes["letter-spacing"] ?? 0),
+      textLength: attributes.textLength ? Number(attributes.textLength) : undefined,
+    });
+    return "";
+  });
+  backgroundSvg = backgroundSvg.replace(/<g fill="#000">[\s\S]*?<\/g>/, "");
+  return { backgroundSvg, texts };
+}
+
+function svgColor(value: string) {
+  const hex = value.replace("#", "");
   return rgb(
-    Number.parseInt(hex.slice(1, 3), 16) / 255,
-    Number.parseInt(hex.slice(3, 5), 16) / 255,
-    Number.parseInt(hex.slice(5, 7), 16) / 255,
+    parseInt(hex.slice(0, 2), 16) / 255,
+    parseInt(hex.slice(2, 4), 16) / 255,
+    parseInt(hex.slice(4, 6), 16) / 255,
   );
 }
 
-function cleanText(text: string) {
-  return text
-    .normalize("NFC")
-    .replace(/[\u2010-\u2015]/g, "-")
-    .replace(/[\u2018\u2019]/g, "'")
-    .replace(/[\u201C\u201D]/g, '"')
-    .replace(/\u2026/g, "...")
-    .replace(/\u2022/g, "-")
-    .replace(/[^\u0009\u000A\u000D\u0020-\u007E\u00A0-\u00FF]/g, "?");
+async function embedCredentialFonts(document: PDFDocument) {
+  document.registerFontkit(fontkit);
+  const bytes = await loadFontBytes();
+  const fonts = await Promise.all(bytes.map((data) => document.embedFont(data, { subset: true })));
+  return new Map<number, PDFFont>(FONT_WEIGHTS.map((weight, index) => [weight, fonts[index]]));
 }
 
-function fitText(text: string, font: PDFFont, size: number, maxWidth: number) {
-  const clean = cleanText(text);
-  if (font.widthOfTextAtSize(clean, size) <= maxWidth) return clean;
-  let value = clean;
-  while (
-    value.length &&
-    font.widthOfTextAtSize(`${value}...`, size) > maxWidth
-  ) {
-    value = value.slice(0, -1);
-  }
-  return `${value}...`;
-}
-
-function wrapText(
-  text: string,
-  font: PDFFont,
-  size: number,
-  width: number,
-  maxLines: number,
+function drawSvgTexts(
+  page: PDFPage,
+  texts: SvgText[],
+  fonts: Map<number, PDFFont>,
+  trimLeft: number,
+  trimBottom: number,
 ) {
-  const words = cleanText(text).trim().split(/\s+/).filter(Boolean);
-  const lines: string[] = [];
-  for (const word of words) {
-    const candidate = lines.length ? `${lines.at(-1)} ${word}` : word;
-    if (font.widthOfTextAtSize(candidate, size) <= width) {
-      if (lines.length) lines[lines.length - 1] = candidate;
-      else lines.push(candidate);
-    } else if (lines.length < maxLines) {
-      lines.push(fitText(word, font, size, width));
-    } else {
-      lines[lines.length - 1] = fitText(
-        `${lines.at(-1)} ${word}`,
-        font,
-        size,
-        width,
-      );
+  for (const item of texts) {
+    const font = fonts.get(item.weight) ?? fonts.get(600)!;
+    const size = mm(item.size / 10);
+    const tracking = mm(item.tracking / 10);
+    const characters = Array.from(item.value);
+    const naturalWidth = font.widthOfTextAtSize(item.value, size) + tracking * Math.max(0, characters.length - 1);
+    const targetWidth = item.textLength ? mm(item.textLength / 10) : naturalWidth;
+    let x = trimLeft + mm(item.x / 10);
+    if (item.anchor === "middle") x -= targetWidth / 2;
+    if (item.anchor === "end") x -= targetWidth;
+    const y = trimBottom + CR80_HEIGHT_PT - mm(item.y / 10);
+    const color = svgColor(item.fill);
+    if (item.tracking === 0 && !item.textLength) {
+      page.drawText(item.value, { x, y, size, font, color });
+      continue;
+    }
+    const scale = item.textLength && naturalWidth > 0 ? targetWidth / naturalWidth : 1;
+    for (const character of characters) {
+      page.drawText(character, { x, y, size, font, color });
+      x += (font.widthOfTextAtSize(character, size) + tracking) * scale;
     }
   }
-  return lines.slice(0, maxLines);
 }
 
-function drawDecorativeCurves(
-  page: PDFPage,
-  preview: MemberCredentialPreview,
-) {
-  page.drawEllipse({
-    x: CR80_WIDTH_PT - 8,
-    y: 9,
-    xScale: 44,
-    yScale: 28,
-    color: hexToRgb(preview.church.primaryColor),
-    opacity: 0.08,
-  });
-  page.drawEllipse({
-    x: 8,
-    y: CR80_HEIGHT_PT - HEADER_HEIGHT - 5,
-    xScale: 32,
-    yScale: 18,
-    color: hexToRgb(preview.church.primaryDarkColor),
-    opacity: 0.06,
-  });
-}
-
-function drawHeader(
-  page: PDFPage,
-  preview: MemberCredentialPreview,
-  fonts: Fonts,
-) {
-  const background = hexToRgb(preview.church.primaryDarkColor);
-  const foreground = hexToRgb(preview.church.foregroundColor);
-  page.drawRectangle({
-    x: 0,
-    y: CR80_HEIGHT_PT - HEADER_HEIGHT,
-    width: CR80_WIDTH_PT,
-    height: HEADER_HEIGHT,
-    color: background,
-  });
-  page.drawText(
-    fitText(
-      preview.church.name.toUpperCase(),
-      fonts.bold,
-      8.2,
-      CR80_WIDTH_PT - SAFE * 2,
-    ),
-    {
-      x: SAFE,
-      y: CR80_HEIGHT_PT - HEADER_HEIGHT + 12,
-      size: 8.2,
-      font: fonts.bold,
-      color: foreground,
-    },
-  );
-}
-
-function drawFakeQr(page: PDFPage, x: number, y: number, size: number) {
-  const moduleSize = size / FAKE_QR_PATTERN.length;
-  page.drawRectangle({
-    x,
-    y,
-    width: size,
-    height: size,
-    color: rgb(1, 1, 1),
-    borderColor: INK,
-    borderWidth: 0.6,
-  });
-  FAKE_QR_PATTERN.forEach((row, rowIndex) =>
-    row.forEach((filled, columnIndex) => {
-      if (!filled) return;
+function drawQr(page: PDFPage, preview: MemberCredentialPreview, trimLeft: number, trimBottom: number) {
+  const matrix = preview.validation.qrMatrix;
+  if (!matrix.length) return;
+  const moduleSize = 204 / (matrix.length + 8);
+  for (let row = 0; row < matrix.length; row += 1) {
+    for (let column = 0; column < matrix[row].length; column += 1) {
+      if (!matrix[row][column]) continue;
       page.drawRectangle({
-        x: x + columnIndex * moduleSize,
-        y: y + size - (rowIndex + 1) * moduleSize,
-        width: moduleSize,
-        height: moduleSize,
-        color: INK,
+        x: trimLeft + mm((54 + (column + 4) * moduleSize) / 10),
+        y: trimBottom + CR80_HEIGHT_PT - mm((254 + (row + 5) * moduleSize) / 10),
+        width: mm((moduleSize + 0.04) / 10),
+        height: mm((moduleSize + 0.04) / 10),
+        color: rgb(0, 0, 0),
       });
-    }),
-  );
+    }
+  }
 }
 
-function drawLabelValue(
-  page: PDFPage,
-  fonts: Fonts,
-  label: string,
-  value: string,
-  x: number,
-  y: number,
-  width: number,
-) {
-  page.drawText(cleanText(label).toUpperCase(), {
-    x,
-    y,
-    size: 4.5,
-    font: fonts.bold,
-    color: MUTED,
-  });
-  page.drawText(fitText(value, fonts.bold, 7.2, width), {
-    x,
-    y: y - 9,
-    size: 7.2,
-    font: fonts.bold,
-    color: INK,
-  });
+function renderSvgToPng(svg: string, widthMm: number) {
+  return new Resvg(svg, {
+    fitTo: { mode: "width", value: Math.round((widthMm / 25.4) * PRINT_DPI) },
+    font: {
+      fontFiles: FONT_FILES,
+      loadSystemFonts: false,
+      defaultFontFamily: "CredentialRubik",
+    },
+    shapeRendering: 2,
+    textRendering: 1,
+    imageRendering: 0,
+  }).render().asPng();
 }
 
-function drawFront(
-  page: PDFPage,
-  preview: MemberCredentialPreview,
-  fonts: Fonts,
-) {
-  page.drawRectangle({
-    x: 0,
-    y: 0,
-    width: CR80_WIDTH_PT,
-    height: CR80_HEIGHT_PT,
-    color: rgb(1, 1, 1),
-  });
-  drawDecorativeCurves(page, preview);
-  drawHeader(page, preview, fonts);
-
-  const contentTop = CR80_HEIGHT_PT - HEADER_HEIGHT - 9;
-  const leftWidth = (CR80_WIDTH_PT - SAFE * 2) * 0.67;
-  const nameLines = wrapText(
-    preview.member.fullName,
-    fonts.bold,
-    10.5,
-    leftWidth,
-    2,
-  );
-  nameLines.forEach((line, index) =>
-    page.drawText(line, {
-      x: SAFE,
-      y: contentTop - index * 11,
-      size: 10.5,
-      font: fonts.bold,
-      color: INK,
-    }),
-  );
-
-  const detailsTop = contentTop - nameLines.length * 11 - 3;
-  drawLabelValue(
-    page,
-    fonts,
-    "Cargo",
-    preview.member.roleName,
-    SAFE,
-    detailsTop,
-    leftWidth,
-  );
-  drawLabelValue(
-    page,
-    fonts,
-    "Matrícula",
-    preview.member.memberCode,
-    SAFE,
-    detailsTop - 22,
-    leftWidth * 0.42,
-  );
-  drawLabelValue(
-    page,
-    fonts,
-    "Congregação",
-    preview.member.congregationName,
-    SAFE + leftWidth * 0.46,
-    detailsTop - 22,
-    leftWidth * 0.54,
-  );
-
-  const qrSize = 42;
-  const qrX = CR80_WIDTH_PT - SAFE - qrSize;
-  drawFakeQr(page, qrX, 37, qrSize);
-  page.drawText("VALIDAÇÃO EM BREVE", {
-    x: qrX - 1,
-    y: 27,
-    size: 4.2,
-    font: fonts.bold,
-    color: MUTED,
+function mark(page: PDFPage, x1: number, y1: number, x2: number, y2: number) {
+  page.drawLine({
+    start: { x: mm(x1), y: mm(y1) },
+    end: { x: mm(x2), y: mm(y2) },
+    thickness: 0.35,
+    color: rgb(0.11, 0.18, 0.29),
   });
 }
 
-function drawBack(
-  page: PDFPage,
-  preview: MemberCredentialPreview,
-  fonts: Fonts,
-) {
-  page.drawRectangle({
-    x: 0,
-    y: 0,
-    width: CR80_WIDTH_PT,
-    height: CR80_HEIGHT_PT,
-    color: SURFACE,
+function addCutAndFoldMarks(page: PDFPage) {
+  const left = FOLD_LEFT_MM;
+  const right = FOLD_LEFT_MM + FOLD_WIDTH_MM;
+  const bottom = FOLD_BOTTOM_MM;
+  const top = FOLD_BOTTOM_MM + CARD_HEIGHT_MM;
+  for (const x of [left, right]) {
+    for (const y of [bottom, top]) {
+      const directionX = x === left ? -1 : 1;
+      const directionY = y === bottom ? -1 : 1;
+      mark(page, x + directionX * 4, y, x + directionX * 8, y);
+      mark(page, x, y + directionY * 4, x, y + directionY * 8);
+    }
+  }
+  const fold = left + CARD_WIDTH_MM;
+  mark(page, fold, top + 4, fold, top + 8);
+  mark(page, fold, bottom - 8, fold, bottom - 4);
+}
+
+async function addFoldSheet(document: PDFDocument, preview: MemberCredentialPreview, fonts: Map<number, PDFFont>) {
+  const page = document.addPage([A4_WIDTH_PT, A4_HEIGHT_PT]);
+  const backSvg = renderMemberCredentialPrintSvg(preview, "back", {
+    left: BLEED_MM, right: 0, top: BLEED_MM, bottom: BLEED_MM,
   });
-  drawDecorativeCurves(page, preview);
-  drawHeader(page, preview, fonts);
-  const width = CR80_WIDTH_PT - SAFE * 2;
-  drawLabelValue(
-    page,
-    fonts,
-    "Data do batismo",
-    preview.member.baptismDate,
-    SAFE,
-    105,
-    width,
-  );
-  drawLabelValue(
-    page,
-    fonts,
-    "Nome da mãe",
-    preview.member.motherName,
-    SAFE,
-    76,
-    width,
-  );
-  drawLabelValue(
-    page,
-    fonts,
-    "Nome do pai",
-    preview.member.fatherName,
-    SAFE,
-    47,
-    width,
-  );
-  page.drawText("Documento de identificação eclesiástica", {
-    x: SAFE,
-    y: SAFE,
-    size: 4.5,
-    font: fonts.regular,
-    color: MUTED,
+  const frontSvg = renderMemberCredentialPrintSvg(preview, "front", {
+    left: 0, right: BLEED_MM, top: BLEED_MM, bottom: BLEED_MM,
   });
+  const backArt = takeVectorElements(backSvg);
+  const frontArt = takeVectorElements(frontSvg);
+  const [back, front] = await Promise.all([
+    document.embedPng(renderSvgToPng(backArt.backgroundSvg, CARD_WIDTH_MM + BLEED_MM)),
+    document.embedPng(renderSvgToPng(frontArt.backgroundSvg, CARD_WIDTH_MM + BLEED_MM)),
+  ]);
+  page.drawImage(back, {
+    x: mm(FOLD_LEFT_MM - BLEED_MM),
+    y: mm(FOLD_BOTTOM_MM - BLEED_MM),
+    width: mm(CARD_WIDTH_MM + BLEED_MM),
+    height: mm(CARD_HEIGHT_MM + BLEED_MM * 2),
+  });
+  page.drawImage(front, {
+    x: mm(FOLD_LEFT_MM + CARD_WIDTH_MM),
+    y: mm(FOLD_BOTTOM_MM - BLEED_MM),
+    width: mm(CARD_WIDTH_MM + BLEED_MM),
+    height: mm(CARD_HEIGHT_MM + BLEED_MM * 2),
+  });
+  drawSvgTexts(page, backArt.texts, fonts, mm(FOLD_LEFT_MM), mm(FOLD_BOTTOM_MM));
+  drawSvgTexts(page, frontArt.texts, fonts, mm(FOLD_LEFT_MM + CARD_WIDTH_MM), mm(FOLD_BOTTOM_MM));
+  drawQr(page, preview, mm(FOLD_LEFT_MM + CARD_WIDTH_MM), mm(FOLD_BOTTOM_MM));
+  addCutAndFoldMarks(page);
+
+  const font = await document.embedFont(StandardFonts.Helvetica);
+  const ink = rgb(0.16, 0.23, 0.36);
+  const label = "DOBRA";
+  const labelSize = 7;
+  const labelWidth = font.widthOfTextAtSize(label, labelSize);
+  page.drawText(label, {
+    x: mm(FOLD_LEFT_MM + CARD_WIDTH_MM) - labelWidth / 2,
+    y: mm(FOLD_BOTTOM_MM + CARD_HEIGHT_MM + 10.5),
+    size: labelSize, font, color: ink,
+  });
+  page.drawText("Imprima em tamanho real (100%), sem ajustar à página.", {
+    x: mm(FOLD_LEFT_MM), y: mm(FOLD_BOTTOM_MM - 19), size: 8.5, font, color: ink,
+  });
+  page.drawText("Recorte nas marcas externas e dobre na marca central, com a arte para fora.", {
+    x: mm(FOLD_LEFT_MM), y: mm(FOLD_BOTTOM_MM - 25), size: 8.5, font, color: ink,
+  });
+}
+
+async function addPvcPages(document: PDFDocument, preview: MemberCredentialPreview, fonts: Map<number, PDFFont>) {
+  const width = CARD_WIDTH_MM + BLEED_MM * 2;
+  const height = CARD_HEIGHT_MM + BLEED_MM * 2;
+  for (const side of ["front", "back"] as const) {
+    const svg = renderMemberCredentialPrintSvg(preview, side, {
+      left: BLEED_MM, right: BLEED_MM, top: BLEED_MM, bottom: BLEED_MM,
+    });
+    const art = takeVectorElements(svg);
+    const image = await document.embedPng(renderSvgToPng(art.backgroundSvg, width));
+    const page = document.addPage([mm(width), mm(height)]);
+    page.drawImage(image, { x: 0, y: 0, width: mm(width), height: mm(height) });
+    drawSvgTexts(page, art.texts, fonts, PRINT_BLEED_PT, PRINT_BLEED_PT);
+    if (side === "front") drawQr(page, preview, PRINT_BLEED_PT, PRINT_BLEED_PT);
+    page.setTrimBox(PRINT_BLEED_PT, PRINT_BLEED_PT, CR80_WIDTH_PT, CR80_HEIGHT_PT);
+    page.setBleedBox(0, 0, mm(width), mm(height));
+  }
 }
 
 export async function createMemberCredentialPdf(
   preview: MemberCredentialPreview,
+  format: MemberCredentialPdfFormat = "fold",
 ): Promise<Uint8Array> {
   const document = await PDFDocument.create();
-  const fonts = {
-    regular: await document.embedFont(StandardFonts.Helvetica),
-    bold: await document.embedFont(StandardFonts.HelveticaBold),
-  };
-  const front = document.addPage([CR80_WIDTH_PT, CR80_HEIGHT_PT]);
-  const back = document.addPage([CR80_WIDTH_PT, CR80_HEIGHT_PT]);
-
-  drawFront(front, preview, fonts);
-  drawBack(back, preview, fonts);
+  const fonts = await embedCredentialFonts(document);
+  if (format === "pvc") {
+    await addPvcPages(document, preview, fonts);
+  } else {
+    await addFoldSheet(document, preview, fonts);
+  }
 
   document.setTitle("Credencial física de membro");
   document.setAuthor("Eclésias");
@@ -331,5 +283,5 @@ export async function createMemberCredentialPdf(
   document.setProducer("Eclésias");
   document.setCreationDate(new Date(preview.issuedAt));
 
-  return document.save();
+  return document.save({ useObjectStreams: false });
 }

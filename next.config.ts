@@ -13,7 +13,7 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "6mb",
     },
   },
-  serverExternalPackages: ["exceljs"],
+  serverExternalPackages: ["exceljs", "@resvg/resvg-js"],
 };
 
 export default nextConfig;

@@ -7,30 +7,10 @@ export type Json =
   | Json[]
 
 export type Database = {
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -4519,6 +4499,83 @@ export type Database = {
           },
         ]
       }
+      member_credential_tokens: {
+        Row: {
+          church_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          issued_at: string | null
+          member_id: string
+          pending_expires_at: string
+          revocation_reason: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          status: string
+          token_hash: string
+          updated_at: string
+        }
+        Insert: {
+          church_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          issued_at?: string | null
+          member_id: string
+          pending_expires_at: string
+          revocation_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          status?: string
+          token_hash: string
+          updated_at?: string
+        }
+        Update: {
+          church_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          issued_at?: string | null
+          member_id?: string
+          pending_expires_at?: string
+          revocation_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          status?: string
+          token_hash?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_credential_tokens_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_credential_tokens_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_credential_tokens_member_same_church_fk"
+            columns: ["church_id", "member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "member_credential_tokens_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       member_documents: {
         Row: {
           church_id: string
@@ -6408,6 +6465,16 @@ export type Database = {
     }
     Functions: {
       accept_church_invitation: { Args: { p_token: string }; Returns: string }
+      activate_member_credential_token: {
+        Args: {
+          p_actor_id: string
+          p_church_id: string
+          p_issued_at: string
+          p_member_id: string
+          p_token_hash: string
+        }
+        Returns: boolean
+      }
       apply_event_provider_payment: {
         Args: {
           p_metadata?: Json
@@ -7517,6 +7584,15 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      revoke_member_credential_token: {
+        Args: {
+          p_actor_id: string
+          p_church_id: string
+          p_member_id: string
+          p_revoked_at: string
+        }
+        Returns: boolean
+      }
       rollback_member_import: { Args: { p_batch_id: string }; Returns: Json }
       safe_uuid: { Args: { p_value: string }; Returns: string }
       search_administrative_documents: {
@@ -7837,9 +7913,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {},
   },

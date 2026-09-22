@@ -1,3 +1,4 @@
+import { formatBrazilPhone, formatCnpj, formatCpf } from "@/utils/input-masks";
 import type {
   MemberCredentialPreview,
   MemberCredentialSource,
@@ -5,99 +6,17 @@ import type {
 } from "../types/member-credential.types";
 import { MemberCredentialError } from "../types/member-credential.types";
 
-const FALLBACK_PRIMARY = "#415BA5";
-const FALLBACK_DARK = "#354B8E";
 const FALLBACK_TEXT = "Não informado";
-const DARK_TEXT = "#101828" as const;
-const LIGHT_TEXT = "#FFFFFF" as const;
 
-function channels(hex: string) {
-  return [1, 3, 5].map((index) =>
-    Number.parseInt(hex.slice(index, index + 2), 16),
-  ) as [number, number, number];
-}
-
-function toHex(values: [number, number, number]) {
-  return `#${values
-    .map((value) => Math.max(0, Math.min(255, Math.round(value))).toString(16).padStart(2, "0"))
-    .join("")}`.toUpperCase();
-}
-
-function relativeLuminance(hex: string) {
-  const linear = channels(hex).map((value) => {
-    const channel = value / 255;
-    return channel <= 0.04045
-      ? channel / 12.92
-      : ((channel + 0.055) / 1.055) ** 2.4;
-  });
-  return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
-}
-
-function contrastRatio(first: string, second: string) {
-  const [lighter, darker] = [relativeLuminance(first), relativeLuminance(second)].sort(
-    (a, b) => b - a,
-  );
-  return (lighter + 0.05) / (darker + 0.05);
-}
-
-function darken(hex: string, factor = 0.82) {
-  return toHex(channels(hex).map((value) => value * factor) as [number, number, number]);
-}
-
-export function normalizeCredentialColor(value: string | null): {
-  primaryColor: string;
-  primaryDarkColor: string;
-  foregroundColor: "#FFFFFF" | "#101828";
-} {
-  const candidate = value?.trim() ?? "";
-  const primaryColor = /^#[0-9a-f]{6}$/i.test(candidate)
-    ? candidate.toUpperCase()
-    : FALLBACK_PRIMARY;
-  let primaryDarkColor =
-    primaryColor === FALLBACK_PRIMARY ? FALLBACK_DARK : darken(primaryColor);
-  let lightContrast = contrastRatio(primaryDarkColor, LIGHT_TEXT);
-  let darkContrast = contrastRatio(primaryDarkColor, DARK_TEXT);
-
-  while (lightContrast < 4.5 && darkContrast < 4.5) {
-    primaryDarkColor = darken(primaryDarkColor, 0.9);
-    lightContrast = contrastRatio(primaryDarkColor, LIGHT_TEXT);
-    darkContrast = contrastRatio(primaryDarkColor, DARK_TEXT);
-  }
-
-  return {
-    primaryColor,
-    primaryDarkColor,
-    foregroundColor: darkContrast >= lightContrast ? DARK_TEXT : LIGHT_TEXT,
-  };
-}
-
-function buildFakeQrPattern(size = 21) {
-  const pattern = Array.from({ length: size }, (_, row) =>
-    Array.from({ length: size }, (_, column) =>
-      ((row * 7 + column * 11 + row * column) % 5) < 2,
-    ),
-  );
-  const drawFinder = (top: number, left: number) => {
-    for (let row = 0; row < 7; row += 1) {
-      for (let column = 0; column < 7; column += 1) {
-        const border = row === 0 || row === 6 || column === 0 || column === 6;
-        const center = row >= 2 && row <= 4 && column >= 2 && column <= 4;
-        pattern[top + row][left + column] = border || center;
-      }
-    }
-  };
-  drawFinder(0, 0);
-  drawFinder(0, size - 7);
-  drawFinder(size - 7, 0);
-  for (let index = 8; index < 13; index += 1) {
-    pattern[10][index] = index % 2 === 0;
-    pattern[index][10] = index % 2 !== 0;
-  }
-  return pattern;
-}
-
-export const FAKE_QR_PATTERN: readonly (readonly boolean[])[] =
-  buildFakeQrPattern();
+export const MEMBER_CREDENTIAL_COLORS = {
+  navy: "#082A5B",
+  navyDeep: "#041D43",
+  gold: "#D4A72C",
+  goldLight: "#F0D26F",
+  lightBlue: "#68C6E8",
+  ivory: "#FBF8F0",
+  white: "#FFFFFF",
+} as const;
 
 export function isCredentialMemberId(value: string) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
@@ -115,6 +34,10 @@ function cleanRequired(value: string | null) {
   return value?.trim() ?? "";
 }
 
+function cleanOptional(value: string | null) {
+  return value?.trim() || FALLBACK_TEXT;
+}
+
 function credentialFileName(memberCode: string) {
   const safeCode = memberCode
     .replace(/[^A-Za-z0-9_-]/g, "-")
@@ -122,6 +45,26 @@ function credentialFileName(memberCode: string) {
     .replace(/^-|-$/g, "")
     .slice(0, 48);
   return `credencial-${safeCode}.pdf`;
+}
+
+function addressLine(source: MemberCredentialSource) {
+  const street = source.churchAddress?.trim();
+  if (!street) return FALLBACK_TEXT;
+  const streetAndNumber = source.churchNumber?.trim()
+    ? `${street}, ${source.churchNumber.trim()}`
+    : street;
+  const district = source.churchDistrict?.trim();
+  const city = source.churchCity?.trim();
+  const state = source.churchState?.trim();
+  const cityState = city && state ? `${city}/${state}` : city || state;
+  return [streetAndNumber, district, cityState].filter(Boolean).join(" - ");
+}
+
+function naturality(city: string | null, state: string | null) {
+  const cleanCity = city?.trim();
+  const cleanState = state?.trim();
+  if (!cleanCity && !cleanState) return FALLBACK_TEXT;
+  return [cleanCity, cleanState].filter(Boolean).join(" - ");
 }
 
 export function buildMemberCredentialPreview(
@@ -144,10 +87,19 @@ export function buildMemberCredentialPreview(
   }
 
   const warnings: MemberCredentialWarning[] = [];
+  if (!source.churchLogoDataUri) warnings.push("MISSING_CHURCH_LOGO");
+  if (!source.churchAddress?.trim()) warnings.push("MISSING_CHURCH_ADDRESS");
+  if (!source.churchPhone?.trim()) warnings.push("MISSING_CHURCH_PHONE");
+  if (!source.churchDocument?.trim()) warnings.push("MISSING_CHURCH_DOCUMENT");
   if (!member.activeRole) warnings.push("MISSING_ROLE");
+  if (!member.cpf?.trim()) warnings.push("MISSING_CPF");
+  if (!member.birthDate) warnings.push("MISSING_BIRTH_DATE");
   if (!member.baptismDate) warnings.push("MISSING_BAPTISM_DATE");
   if (!member.motherName?.trim()) warnings.push("MISSING_MOTHER_NAME");
   if (!member.fatherName?.trim()) warnings.push("MISSING_FATHER_NAME");
+  if (!member.naturalCity?.trim() && !member.naturalState?.trim()) {
+    warnings.push("MISSING_NATURALITY");
+  }
 
   const role = member.activeRole;
   const useFemaleTitle =
@@ -161,20 +113,36 @@ export function buildMemberCredentialPreview(
 
   return {
     issuedAt: source.issuedAt,
+    issuedDate: formatDateOnly(source.issuedAt),
     fileName: credentialFileName(memberCode),
     church: {
       name: source.churchName.trim(),
-      ...normalizeCredentialColor(source.primaryColor),
+      logoDataUri: source.churchLogoDataUri,
+      addressLine: addressLine(source),
+      phone: source.churchPhone?.trim()
+        ? formatBrazilPhone(source.churchPhone)
+        : FALLBACK_TEXT,
+      document: source.churchDocument?.trim()
+        ? formatCnpj(source.churchDocument)
+        : FALLBACK_TEXT,
     },
     member: {
-      id: member.id,
       fullName,
       roleName,
       memberCode,
       congregationName,
+      cpf: member.cpf?.trim() ? formatCpf(member.cpf) : FALLBACK_TEXT,
+      birthDate: formatDateOnly(member.birthDate),
       baptismDate: formatDateOnly(member.baptismDate),
-      motherName: member.motherName?.trim() || FALLBACK_TEXT,
-      fatherName: member.fatherName?.trim() || FALLBACK_TEXT,
+      motherName: cleanOptional(member.motherName),
+      fatherName: cleanOptional(member.fatherName),
+      naturality: naturality(member.naturalCity, member.naturalState),
+    },
+    validation: {
+      token: source.credentialToken,
+      url: source.validationUrl,
+      qrMatrix: source.qrMatrix,
+      activeIssuedAt: source.activeCredentialIssuedAt,
     },
     warnings,
   };

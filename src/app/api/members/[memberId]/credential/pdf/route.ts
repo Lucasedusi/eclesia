@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { PERMISSIONS } from "@/modules/auth/constants/permissions";
 import { resolveAccessContext } from "@/modules/auth/services/access-context.service";
 import { isCredentialMemberId } from "@/modules/members/services/member-credential.logic";
@@ -34,11 +35,19 @@ function credentialHttpError(error: unknown) {
       message: "Preencha nome, matrícula e congregação antes de emitir a credencial.",
     };
   }
+  if (error.code === "MEMBER_CREDENTIAL_TOKEN_INVALID") {
+    return { status: 409, message: "A prévia expirou. Abra a credencial novamente." };
+  }
   return { status: 500, message: "Não foi possível gerar a credencial agora." };
 }
 
-export async function GET(
-  _request: Request,
+const requestSchema = z.object({
+  token: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
+  format: z.enum(["fold", "pvc"]).default("fold"),
+}).strict();
+
+export async function POST(
+  request: Request,
   { params }: { params: Promise<{ memberId: string }> },
 ) {
   const access = await resolveAccessContext();
@@ -57,9 +66,19 @@ export async function GET(
     if (!isCredentialMemberId(memberId)) {
       return errorResponse(404, "Membro não encontrado ou fora do seu escopo.");
     }
+    const contentLength = Number(request.headers.get("content-length") ?? "0");
+    if (contentLength > 4_096) {
+      return errorResponse(413, "Requisição inválida.");
+    }
+    const parsed = requestSchema.safeParse(await request.json().catch(() => null));
+    if (!parsed.success) {
+      return errorResponse(400, "Requisição inválida.");
+    }
     const result = await generateMemberCredentialDownload(
       access.context,
       memberId,
+      parsed.data.token,
+      parsed.data.format,
     );
     return new NextResponse(new Uint8Array(result.body), {
       headers: {

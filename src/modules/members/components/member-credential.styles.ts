@@ -7,15 +7,6 @@ export const Content = styled.div`
   gap: 16px;
 `;
 
-export const Loading = styled.div`
-  display: grid;
-  min-height: 280px;
-  place-items: center;
-  color: #415ba5;
-  svg { animation: credential-spin 800ms linear infinite; }
-  @keyframes credential-spin { to { transform: rotate(360deg); } }
-`;
-
 export const ErrorNotice = styled.div`
   border: 1px solid #f2cbc8;
   border-radius: 8px;
@@ -27,209 +18,194 @@ export const ErrorNotice = styled.div`
   line-height: 1.5;
 `;
 
-export const PreviewGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
-  @media (max-width: 760px) { grid-template-columns: 1fr; }
+export const Feedback = styled.div`
+  border: 1px solid #b9d6c5;
+  border-radius: 8px;
+  background: #f1fbf5;
+  padding: 12px 14px;
+  color: #245c3d;
+  font-size: calc(10px + var(--eclesia-font-size-adjustment, 0px));
+  font-weight: 600;
 `;
 
-export const FaceGroup = styled.section`
+export const PreviewStage = styled.div`
   display: grid;
-  gap: 7px;
-  > h3 {
-    margin: 0;
-    color: #475467;
-    font-size: calc(9px + var(--eclesia-font-size-adjustment, 0px));
-    font-weight: 700;
-    letter-spacing: .04em;
-    text-transform: uppercase;
-  }
+  justify-items: center;
+  gap: 12px;
+  padding: 6px;
 `;
 
-export const Card = styled.article`
-  position: relative;
-  display: grid;
+export const SkeletonCard = styled.div`
+  width: 100%;
+  max-width: 592px;
   aspect-ratio: 85.6 / 53.98;
   overflow: hidden;
-  border: 1px solid rgba(16, 24, 40, .12);
-  border-radius: 16px;
-  background: #fff;
-  box-shadow: 0 14px 32px rgba(16, 24, 40, .13);
-  color: #101828;
-  isolation: isolate;
-  &:after {
-    position: absolute;
-    right: -11%;
-    bottom: -20%;
-    z-index: -1;
-    width: 44%;
+  border-radius: clamp(12px, 2.4vw, 24px);
+  background: #fbf8f0;
+  box-shadow: rgba(99, 99, 99, 0.2) 0 2px 8px;
+
+  .credential-skeleton-header {
+    display: flex;
+    height: 29%;
+    align-items: center;
+    gap: 4%;
+    background: #082a5b;
+    padding: 4% 5%;
+  }
+
+  .credential-skeleton-logo {
+    width: 16%;
+    flex: 0 0 16%;
     aspect-ratio: 1;
     border-radius: 50%;
-    background: var(--credential-primary);
-    content: "";
-    opacity: .07;
+    background: #dce5f1;
   }
-`;
 
-export const Header = styled.header`
-  display: flex;
-  min-height: 23%;
-  align-items: center;
-  background: var(--credential-dark);
-  padding: 0 5.2%;
-  color: var(--credential-foreground);
-  font-size: clamp(10px, 1.32vw, 16px);
-  font-weight: 800;
-  letter-spacing: .015em;
-  line-height: 1.15;
-  text-transform: uppercase;
-  span {
-    display: -webkit-box;
-    overflow: hidden;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
+  .credential-skeleton-church {
+    display: grid;
+    width: 72%;
+    gap: clamp(4px, 1vw, 9px);
   }
-`;
 
-export const FrontBody = styled.div`
-  display: grid;
-  min-height: 0;
-  grid-template-columns: minmax(0, 67fr) minmax(70px, 25fr);
-  justify-content: space-between;
-  gap: 6%;
-  padding: 5% 5.2% 4.5%;
-`;
-
-export const Identity = styled.div`
-  display: grid;
-  min-width: 0;
-  align-content: start;
-  gap: 3.5%;
-`;
-
-export const MemberName = styled.strong`
-  display: -webkit-box;
-  overflow: hidden;
-  color: #101828;
-  font-size: clamp(15px, 2.05vw, 25px);
-  font-weight: 800;
-  line-height: 1.03;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow-wrap: anywhere;
-`;
-
-export const Role = styled.p`
-  overflow: hidden;
-  margin: 0;
-  color: #344054;
-  font-size: clamp(9px, 1.15vw, 14px);
-  font-weight: 700;
-  line-height: 1.2;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-`;
-
-export const CompactFields = styled.dl`
-  display: grid;
-  grid-template-columns: minmax(0, .7fr) minmax(0, 1.3fr);
-  gap: 6%;
-  margin: auto 0 0;
-`;
-
-export const Field = styled.div`
-  min-width: 0;
-  dt {
-    color: #667085;
-    font-size: clamp(6px, .72vw, 9px);
-    font-weight: 800;
-    letter-spacing: .045em;
-    text-transform: uppercase;
+  .credential-skeleton-church span {
+    height: clamp(5px, 1vw, 10px);
+    background: #b7c5dc;
   }
-  dd {
-    overflow: hidden;
-    margin: 2px 0 0;
-    color: #101828;
-    font-size: clamp(8px, 1vw, 12px);
-    font-weight: 700;
-    line-height: 1.15;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+
+  .credential-skeleton-church span:nth-child(2) { width: 82%; }
+  .credential-skeleton-church span:nth-child(3) { width: 62%; }
+
+  .credential-skeleton-gold {
+    height: 3%;
+    background: linear-gradient(90deg, #d4a72c, #f0d26f, #d4a72c);
   }
-`;
 
-export const QrArea = styled.div`
-  display: grid;
-  min-width: 0;
-  align-content: end;
-  gap: 6px;
-  small {
-    color: #475467;
-    font-size: clamp(5px, .59vw, 7px);
-    font-weight: 800;
-    letter-spacing: .02em;
-    text-align: center;
-    white-space: nowrap;
+  .credential-skeleton-body {
+    display: grid;
+    height: 68%;
+    grid-template-columns: 28% minmax(0, 1fr);
+    align-items: center;
+    gap: 5%;
+    padding: 6% 7%;
   }
-`;
 
-export const QrGrid = styled.div`
-  display: grid;
-  width: 100%;
-  max-width: 112px;
-  aspect-ratio: 1;
-  grid-template-columns: repeat(21, 1fr);
-  overflow: hidden;
-  border: 3px solid #fff;
-  outline: 1px solid #d0d5dd;
-  background: #fff;
-`;
+  .credential-skeleton-qr {
+    width: 100%;
+    aspect-ratio: 1;
+    border: 5px solid #e9edf3;
+    border-radius: 8px;
+  }
 
-export const QrCell = styled.span<{ $filled: boolean }>`
-  background: ${({ $filled }) => ($filled ? "#101828" : "#fff")};
-`;
-
-export const BackBody = styled.dl`
-  display: grid;
-  min-height: 0;
-  align-content: stretch;
-  gap: 0;
-  margin: 0;
-  padding: 2.5% 5.2% 6%;
-  > div {
+  .credential-skeleton-fields {
     display: grid;
     align-content: center;
-    border-bottom: 1px solid #e4e7ec;
+    gap: clamp(4px, 1vw, 9px);
   }
-  > div:last-of-type { border-bottom: 0; }
-  dt {
-    color: #667085;
-    font-size: clamp(6px, .72vw, 9px);
-    font-weight: 800;
-    letter-spacing: .045em;
-    text-transform: uppercase;
+
+  .credential-skeleton-fields .app-skeleton-block {
+    height: clamp(5px, 1.2vw, 12px);
   }
-  dd {
-    overflow: hidden;
-    margin: 2px 0 0;
-    color: #101828;
-    font-size: clamp(9px, 1.15vw, 14px);
-    font-weight: 700;
-    line-height: 1.2;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+
+  .credential-skeleton-name { width: 94%; }
+  .credential-skeleton-role { width: 53%; }
+  .credential-skeleton-label { width: 40%; }
+  .credential-skeleton-value { width: 73%; }
+
+  .credential-skeleton-rule {
+    height: 1px;
+    margin: 2px 0;
+    background: #e8d5a9;
   }
 `;
 
-export const Footnote = styled.p`
+export const SkeletonHint = styled.span`
+  width: 135px;
+  height: 12px;
+`;
+
+export const FlipCard = styled.span<{ $flipped: boolean }>`
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform: ${({ $flipped }) =>
+    $flipped ? "rotateY(180deg)" : "rotateY(0deg)"};
+  transform-style: preserve-3d;
+  transition: transform 550ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+
+  @media (prefers-reduced-motion: reduce) {
+    transition-duration: 1ms;
+  }
+`;
+
+export const FlipButton = styled.button`
+  display: block;
+  width: 100%;
+  max-width: 592px;
+  aspect-ratio: 85.6 / 53.98;
+  border: 0;
+  border-radius: clamp(12px, 2.4vw, 24px);
+  outline: 3px solid transparent;
+  outline-offset: 5px;
+  background: transparent;
+  padding: 0;
+  perspective: 1600px;
+  cursor: pointer;
+  transition:
+    transform 180ms ease,
+    outline-color 180ms ease;
+
+  &:hover {
+    transform: translateY(-2px);
+  }
+
+  &:focus-visible {
+    outline-color: #415ba5;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+    &:hover {
+      transform: none;
+    }
+  }
+`;
+
+export const CardFace = styled.span<{ $back?: boolean }>`
   position: absolute;
-  bottom: 3.5%;
-  left: 5.2%;
+  inset: 0;
+  display: block;
+  overflow: hidden;
+  border-radius: clamp(12px, 2.4vw, 24px);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: ${({ $back }) => ($back ? "rotateY(180deg)" : "rotateY(0deg)")};
+  box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px;
+  line-height: 0;
+
+  svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+`;
+
+export const FlipHint = styled.p`
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   margin: 0;
   color: #667085;
-  font-size: clamp(5px, .62vw, 8px);
-  font-weight: 600;
+  font-size: calc(10px + var(--eclesia-font-size-adjustment, 0px));
+  font-weight: 500;
+
+  svg {
+    width: 14px;
+    height: 14px;
+    color: #415ba5;
+    stroke-width: 1.8;
+  }
 `;
 
 export const Warnings = styled.div`
@@ -243,6 +219,7 @@ export const Warnings = styled.div`
   h3 {
     margin: 0;
     font-size: calc(10px + var(--eclesia-font-size-adjustment, 0px));
+    font-weight: 600;
   }
   ul {
     display: grid;
@@ -256,12 +233,19 @@ export const Warnings = styled.div`
 
 export const FooterActions = styled.div`
   display: flex;
+  width: 100%;
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
-  @media (max-width: 520px) {
-    width: 100%;
+  button:first-child:last-of-type {
+    margin-left: auto;
+  }
+  @media (max-width: 620px) {
     flex-direction: column-reverse;
-    button, a { width: 100%; justify-content: center; }
+    button,
+    a {
+      width: 100%;
+      justify-content: center;
+    }
   }
 `;

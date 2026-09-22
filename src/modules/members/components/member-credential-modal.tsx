@@ -1,100 +1,74 @@
 "use client";
 
-import { type CSSProperties, useEffect, useState } from "react";
-import { Download, IdCard, Loader2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Download, IdCard, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { getMemberCredentialPreviewAction } from "../actions/member-credential.actions";
-import { FAKE_QR_PATTERN } from "../services/member-credential.logic";
+import { renderMemberCredentialSvg } from "../services/member-credential-svg.service";
 import type { MemberCredentialPreview } from "../types/member-credential.types";
+import type { MemberCredentialPdfFormat } from "../types/member-credential.types";
 import {
   type CredentialPreviewState,
+  type CredentialSide,
   credentialDownloadUrl,
+  credentialPdfFileName,
+  credentialFlipView,
   credentialWarningLabel,
   resolveCredentialPreviewState,
 } from "../utils/member-credential-view";
 import * as S from "./member-credential.styles";
+import { MemberCredentialSkeleton } from "./member-credential-skeleton";
 
 type Props = { memberId: string; onClose: () => void };
 
-function FaceHeader({ preview }: { preview: MemberCredentialPreview }) {
-  return (
-    <S.Header>
-      <span>{preview.church.name}</span>
-    </S.Header>
+function CredentialFlipper({ preview }: { preview: MemberCredentialPreview }) {
+  const [side, setSide] = useState<CredentialSide>("front");
+  const frontSvg = useMemo(
+    () => renderMemberCredentialSvg(preview, "front"),
+    [preview],
   );
-}
-
-function Front({ preview }: { preview: MemberCredentialPreview }) {
-  return (
-    <S.FaceGroup aria-label="Frente da credencial">
-      <h3>Frente</h3>
-      <S.Card>
-        <FaceHeader preview={preview} />
-        <S.FrontBody>
-          <S.Identity>
-            <S.MemberName>{preview.member.fullName}</S.MemberName>
-            <S.Role>{preview.member.roleName}</S.Role>
-            <S.CompactFields>
-              <S.Field>
-                <dt>Matrícula</dt>
-                <dd>{preview.member.memberCode}</dd>
-              </S.Field>
-              <S.Field>
-                <dt>Congregação</dt>
-                <dd>{preview.member.congregationName}</dd>
-              </S.Field>
-            </S.CompactFields>
-          </S.Identity>
-          <S.QrArea>
-            <S.QrGrid aria-hidden="true">
-              {FAKE_QR_PATTERN.flatMap((row, rowIndex) =>
-                row.map((filled, columnIndex) => (
-                  <S.QrCell
-                    key={`${rowIndex}-${columnIndex}`}
-                    $filled={filled}
-                  />
-                )),
-              )}
-            </S.QrGrid>
-            <small>VALIDAÇÃO EM BREVE</small>
-          </S.QrArea>
-        </S.FrontBody>
-      </S.Card>
-    </S.FaceGroup>
+  const backSvg = useMemo(
+    () => renderMemberCredentialSvg(preview, "back"),
+    [preview],
   );
-}
+  const flipView = credentialFlipView(side);
 
-function Back({ preview }: { preview: MemberCredentialPreview }) {
   return (
-    <S.FaceGroup aria-label="Verso da credencial">
-      <h3>Verso</h3>
-      <S.Card>
-        <FaceHeader preview={preview} />
-        <S.BackBody>
-          <div>
-            <dt>Data do batismo</dt>
-            <dd>{preview.member.baptismDate}</dd>
-          </div>
-          <div>
-            <dt>Nome da mãe</dt>
-            <dd>{preview.member.motherName}</dd>
-          </div>
-          <div>
-            <dt>Nome do pai</dt>
-            <dd>{preview.member.fatherName}</dd>
-          </div>
-        </S.BackBody>
-        <S.Footnote>Documento de identificação eclesiástica</S.Footnote>
-      </S.Card>
-    </S.FaceGroup>
+    <S.PreviewStage>
+      <S.FlipButton
+        type="button"
+        aria-label={flipView.buttonLabel}
+        onClick={() =>
+          setSide((currentSide) => credentialFlipView(currentSide).nextSide)
+        }
+      >
+        <S.FlipCard $flipped={side === "back"}>
+          <S.CardFace
+            aria-hidden={side !== "front"}
+            dangerouslySetInnerHTML={{ __html: frontSvg }}
+          />
+          <S.CardFace
+            $back
+            aria-hidden={side !== "back"}
+            dangerouslySetInnerHTML={{ __html: backSvg }}
+          />
+        </S.FlipCard>
+      </S.FlipButton>
+      <S.FlipHint aria-live="polite">
+        <RefreshCw aria-hidden="true" />
+        <span>{flipView.hint}</span>
+      </S.FlipHint>
+    </S.PreviewStage>
   );
 }
 
 export function MemberCredentialModal({ memberId, onClose }: Props) {
-  const [state, setState] = useState<CredentialPreviewState>({ status: "loading" });
-  const [downloading, setDownloading] = useState(false);
-  const [downloadError, setDownloadError] = useState("");
+  const [state, setState] = useState<CredentialPreviewState>({
+    status: "loading",
+  });
+  const [downloading, setDownloading] = useState<MemberCredentialPdfFormat | null>(null);
+  const [feedback, setFeedback] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -109,14 +83,16 @@ export function MemberCredentialModal({ memberId, onClose }: Props) {
     };
   }, [memberId]);
 
-  async function download(preview: MemberCredentialPreview) {
-    setDownloading(true);
-    setDownloadError("");
+  async function download(preview: MemberCredentialPreview, format: MemberCredentialPdfFormat) {
+    setDownloading(format);
+    setFeedback("");
     try {
       const response = await fetch(credentialDownloadUrl(memberId), {
-        method: "GET",
+        method: "POST",
         cache: "no-store",
         credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: preview.validation.token, format }),
       });
       if (!response.ok) {
         const payload = (await response.json().catch(() => null)) as {
@@ -129,73 +105,67 @@ export function MemberCredentialModal({ memberId, onClose }: Props) {
       const url = URL.createObjectURL(await response.blob());
       const anchor = document.createElement("a");
       anchor.href = url;
-      anchor.download = preview.fileName;
+      anchor.download = credentialPdfFileName(preview.fileName, format);
       anchor.click();
       window.setTimeout(() => URL.revokeObjectURL(url), 0);
+      setFeedback("Credencial emitida com validação pública ativa.");
     } catch (error) {
-      setDownloadError(
+      setFeedback(
         error instanceof Error
           ? error.message
           : "Não foi possível baixar a credencial.",
       );
     } finally {
-      setDownloading(false);
+      setDownloading(null);
     }
   }
 
   const preview = state.status === "ready" ? state.preview : null;
-  const cardStyle = preview
-    ? ({
-        "--credential-primary": preview.church.primaryColor,
-        "--credential-dark": preview.church.primaryDarkColor,
-        "--credential-foreground": preview.church.foregroundColor,
-      } as CSSProperties)
-    : undefined;
 
   return (
     <Modal
       open
       title="Gerar credencial de membro"
-      description="Confira frente e verso antes de baixar o PDF para impressão."
+      description="Clique na carteirinha para alternar entre frente e verso."
       icon={<IdCard />}
-      size="xl"
+      size="sm"
       onClose={onClose}
-      busy={downloading}
+      busy={downloading !== null}
       footer={
         <S.FooterActions>
-          <Button variant="ghost" onClick={onClose} disabled={downloading}>
-            Cancelar
-          </Button>
           {preview && (
-            <Button
-              onClick={() => void download(preview)}
-              loading={downloading}
-            >
-              <Download size={16} /> Baixar PDF
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                onClick={() => void download(preview, "pvc")}
+                loading={downloading === "pvc"}
+                disabled={downloading !== null}
+              >
+                <Download size={16} /> PDF para gráfica/PVC
+              </Button>
+              <Button
+                onClick={() => void download(preview, "fold")}
+                loading={downloading === "fold"}
+                disabled={downloading !== null}
+              >
+                <Download size={16} /> Imprimir e dobrar (A4)
+              </Button>
+            </>
           )}
         </S.FooterActions>
       }
     >
-      <S.Content style={cardStyle}>
-        {state.status === "loading" && (
-          <S.Loading role="status" aria-live="polite">
-            <Loader2 aria-hidden="true" />
-            <span>Preparando a credencial...</span>
-          </S.Loading>
-        )}
+      <S.Content>
+        {state.status === "loading" && <MemberCredentialSkeleton />}
         {state.status === "error" && (
           <S.ErrorNotice role="alert">{state.message}</S.ErrorNotice>
         )}
         {preview && (
           <>
-            <S.PreviewGrid>
-              <Front preview={preview} />
-              <Back preview={preview} />
-            </S.PreviewGrid>
+            <CredentialFlipper key={memberId} preview={preview} />
             {preview.warnings.length > 0 && (
               <S.Warnings>
-                <h3>Informações exibidas com fallback</h3>
+                <h3>informações Vazias</h3>
                 <ul>
                   {preview.warnings.map((warning) => (
                     <li key={warning}>{credentialWarningLabel(warning)}</li>
@@ -205,10 +175,10 @@ export function MemberCredentialModal({ memberId, onClose }: Props) {
             )}
           </>
         )}
-        {downloadError && (
-          <S.ErrorNotice role="alert" aria-live="assertive">
-            {downloadError}
-          </S.ErrorNotice>
+        {feedback && (
+          <S.Feedback role="status" aria-live="polite">
+            {feedback}
+          </S.Feedback>
         )}
       </S.Content>
     </Modal>
