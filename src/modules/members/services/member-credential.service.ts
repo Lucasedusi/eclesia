@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { AuthContext } from "@/modules/auth/types/auth.types";
 import { MemberCredentialError } from "../types/member-credential.types";
 import { buildMemberCredentialPreview } from "./member-credential.logic";
+import { createMemberCredentialPdf } from "./member-credential-pdf.service";
 
 // Relation shapes are dynamic because the shared client is not parameterized
 // with the generated database type. Keep the cast isolated at this boundary.
@@ -92,4 +93,30 @@ export async function loadMemberCredentialPreview(
         : null,
     },
   });
+}
+
+export async function generateMemberCredentialDownload(
+  context: AuthContext,
+  memberId: string,
+) {
+  const preview = await loadMemberCredentialPreview(context, memberId);
+  const body = await createMemberCredentialPdf(preview);
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("log_audit", {
+    p_church_id: context.church.id,
+    p_module: "MEMBERS",
+    p_action: "ISSUE_MEMBER_PHYSICAL_CREDENTIAL",
+    p_entity_type: "MEMBER",
+    p_entity_id: memberId,
+    p_entity_label: null,
+    p_description: "Credencial física de membro emitida",
+    p_old_values: null,
+    p_new_values: null,
+    p_metadata: { format: "pdf", sides: 2, qr_mode: "DEMONSTRATIVE" },
+    p_severity: "INFO",
+  });
+  if (error) {
+    throw new MemberCredentialError("MEMBER_CREDENTIAL_AUDIT_FAILED");
+  }
+  return { body, fileName: preview.fileName };
 }

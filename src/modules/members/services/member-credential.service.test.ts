@@ -5,11 +5,19 @@ vi.mock("server-only", () => ({}));
 
 const mocks = vi.hoisted(() => ({
   createClient: vi.fn(),
+  createPdf: vi.fn(),
+  auditRpc: vi.fn(),
 }));
 
 vi.mock("@/lib/supabase/server", () => ({ createClient: mocks.createClient }));
+vi.mock("./member-credential-pdf.service", () => ({
+  createMemberCredentialPdf: mocks.createPdf,
+}));
 
-import { loadMemberCredentialPreview } from "./member-credential.service";
+import {
+  generateMemberCredentialDownload,
+  loadMemberCredentialPreview,
+} from "./member-credential.service";
 
 const memberId = "11111111-1111-4111-8111-111111111111";
 const context = {
@@ -97,12 +105,17 @@ function setupQueries(options?: {
     from: vi.fn((table: string) =>
       table === "members" ? memberQuery : settingsQuery,
     ),
+    rpc: mocks.auditRpc,
   });
   return { memberQuery, settingsQuery };
 }
 
 describe("loadMemberCredentialPreview", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.createPdf.mockResolvedValue(new Uint8Array([37, 80, 68, 70]));
+    mocks.auditRpc.mockResolvedValue({ error: null });
+  });
 
   it("consulta apenas o membro do tenant e mapeia o DTO mínimo", async () => {
     const { memberQuery, settingsQuery } = setupQueries();
@@ -155,5 +168,63 @@ describe("loadMemberCredentialPreview", () => {
     await expect(loadMemberCredentialPreview(context, memberId)).rejects.toThrowError(
       "MEMBER_CREDENTIAL_LOAD_FAILED",
     );
+  });
+});
+
+describe("generateMemberCredentialDownload", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.createPdf.mockResolvedValue(new Uint8Array([37, 80, 68, 70]));
+    mocks.auditRpc.mockResolvedValue({ error: null });
+  });
+
+  it("gera o PDF antes de registrar uma auditoria sem dados pessoais", async () => {
+    setupQueries();
+    const result = await generateMemberCredentialDownload(context, memberId);
+
+    expect(result).toEqual({
+      body: new Uint8Array([37, 80, 68, 70]),
+      fileName: "credencial-MEM000123.pdf",
+    });
+    expect(mocks.createPdf.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.auditRpc.mock.invocationCallOrder[0],
+    );
+    expect(mocks.auditRpc).toHaveBeenCalledWith("log_audit", {
+      p_church_id: "church-1",
+      p_module: "MEMBERS",
+      p_action: "ISSUE_MEMBER_PHYSICAL_CREDENTIAL",
+      p_entity_type: "MEMBER",
+      p_entity_id: memberId,
+      p_entity_label: null,
+      p_description: "Credencial física de membro emitida",
+      p_old_values: null,
+      p_new_values: null,
+      p_metadata: { format: "pdf", sides: 2, qr_mode: "DEMONSTRATIVE" },
+      p_severity: "INFO",
+    });
+  });
+
+  it("não audita quando a geração do PDF falha", async () => {
+    setupQueries();
+    mocks.createPdf.mockRejectedValue(new Error("pdf failed"));
+    await expect(
+      generateMemberCredentialDownload(context, memberId),
+    ).rejects.toThrow("pdf failed");
+    expect(mocks.auditRpc).not.toHaveBeenCalled();
+  });
+
+  it("falha sem entregar o PDF quando a auditoria falha", async () => {
+    setupQueries();
+    mocks.auditRpc.mockResolvedValue({ error: { message: "audit failed" } });
+    await expect(
+      generateMemberCredentialDownload(context, memberId),
+    ).rejects.toThrow("MEMBER_CREDENTIAL_AUDIT_FAILED");
+  });
+
+  it("registra uma auditoria por download bem-sucedido", async () => {
+    setupQueries();
+    await generateMemberCredentialDownload(context, memberId);
+    await generateMemberCredentialDownload(context, memberId);
+    expect(mocks.auditRpc).toHaveBeenCalledTimes(2);
   });
 });
