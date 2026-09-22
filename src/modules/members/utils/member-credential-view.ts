@@ -1,4 +1,16 @@
-import type { MemberCredentialWarning } from "../types/member-credential.types";
+import type {
+  MemberCredentialPreview,
+  MemberCredentialWarning,
+} from "../types/member-credential.types";
+
+export type CredentialPreviewState =
+  | { status: "loading" }
+  | { status: "error"; message: string }
+  | { status: "ready"; preview: MemberCredentialPreview };
+
+type CredentialPreviewActionResult =
+  | { success: true; data: MemberCredentialPreview }
+  | { success: false; message: string };
 
 const WARNING_LABELS: Record<MemberCredentialWarning, string> = {
   MISSING_ROLE: "Cargo não cadastrado",
@@ -13,4 +25,20 @@ export function credentialWarningLabel(warning: MemberCredentialWarning) {
 
 export function credentialDownloadUrl(memberId: string) {
   return `/api/members/${encodeURIComponent(memberId)}/credential/pdf`;
+}
+
+export async function resolveCredentialPreviewState(
+  request: Promise<CredentialPreviewActionResult>,
+): Promise<CredentialPreviewState> {
+  try {
+    const result = await request;
+    return result.success
+      ? { status: "ready", preview: result.data }
+      : { status: "error", message: result.message };
+  } catch {
+    return {
+      status: "error",
+      message: "Não foi possível preparar a credencial agora.",
+    };
+  }
 }

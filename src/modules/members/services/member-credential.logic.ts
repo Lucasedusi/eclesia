@@ -6,6 +6,7 @@ import type {
 import { MemberCredentialError } from "../types/member-credential.types";
 
 const FALLBACK_PRIMARY = "#415BA5";
+const FALLBACK_DARK = "#354B8E";
 const FALLBACK_TEXT = "Não informado";
 const DARK_TEXT = "#101828" as const;
 const LIGHT_TEXT = "#FFFFFF" as const;
@@ -52,7 +53,8 @@ export function normalizeCredentialColor(value: string | null): {
   const primaryColor = /^#[0-9a-f]{6}$/i.test(candidate)
     ? candidate.toUpperCase()
     : FALLBACK_PRIMARY;
-  let primaryDarkColor = darken(primaryColor);
+  let primaryDarkColor =
+    primaryColor === FALLBACK_PRIMARY ? FALLBACK_DARK : darken(primaryColor);
   let lightContrast = contrastRatio(primaryDarkColor, LIGHT_TEXT);
   let darkContrast = contrastRatio(primaryDarkColor, DARK_TEXT);
 

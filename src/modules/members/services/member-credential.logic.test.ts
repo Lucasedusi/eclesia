@@ -126,6 +126,13 @@ describe("buildMemberCredentialPreview", () => {
     },
   );
 
+  it("usa o azul-escuro institucional com a cor primária de fallback", () => {
+    expect(normalizeCredentialColor(null)).toMatchObject({
+      primaryColor: "#415BA5",
+      primaryDarkColor: "#354B8E",
+    });
+  });
+
   it.each([
     { memberStatus: "INACTIVE", memberType: "MEMBER", deletedAt: null },
     { memberStatus: "ACTIVE", memberType: "VISITOR", deletedAt: null },

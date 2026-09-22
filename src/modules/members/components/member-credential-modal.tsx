@@ -8,15 +8,12 @@ import { getMemberCredentialPreviewAction } from "../actions/member-credential.a
 import { FAKE_QR_PATTERN } from "../services/member-credential.logic";
 import type { MemberCredentialPreview } from "../types/member-credential.types";
 import {
+  type CredentialPreviewState,
   credentialDownloadUrl,
   credentialWarningLabel,
+  resolveCredentialPreviewState,
 } from "../utils/member-credential-view";
 import * as S from "./member-credential.styles";
-
-type CredentialModalState =
-  | { status: "loading" }
-  | { status: "error"; message: string }
-  | { status: "ready"; preview: MemberCredentialPreview };
 
 type Props = { memberId: string; onClose: () => void };
 
@@ -95,19 +92,17 @@ function Back({ preview }: { preview: MemberCredentialPreview }) {
 }
 
 export function MemberCredentialModal({ memberId, onClose }: Props) {
-  const [state, setState] = useState<CredentialModalState>({ status: "loading" });
+  const [state, setState] = useState<CredentialPreviewState>({ status: "loading" });
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState("");
 
   useEffect(() => {
     let active = true;
-    void getMemberCredentialPreviewAction(memberId).then((result) => {
+    void resolveCredentialPreviewState(
+      getMemberCredentialPreviewAction(memberId),
+    ).then((nextState) => {
       if (!active) return;
-      setState(
-        result.success
-          ? { status: "ready", preview: result.data }
-          : { status: "error", message: result.message },
-      );
+      setState(nextState);
     });
     return () => {
       active = false;

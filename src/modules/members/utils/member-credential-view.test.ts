@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   credentialDownloadUrl,
   credentialWarningLabel,
+  resolveCredentialPreviewState,
 } from "./member-credential-view";
 
 describe("member credential view helpers", () => {
@@ -18,5 +19,16 @@ describe("member credential view helpers", () => {
     expect(credentialDownloadUrl("member 1")).toBe(
       "/api/members/member%201/credential/pdf",
     );
+  });
+
+  it("transforma rejeição da ação em erro visível", async () => {
+    await expect(
+      resolveCredentialPreviewState(
+        Promise.reject(new Error("network details must remain private")),
+      ),
+    ).resolves.toEqual({
+      status: "error",
+      message: "Não foi possível preparar a credencial agora.",
+    });
   });
 });
