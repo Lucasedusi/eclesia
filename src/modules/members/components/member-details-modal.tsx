@@ -13,6 +13,7 @@ import {
   FileText,
   FolderOpen,
   Image as ImageIcon,
+  IdCard,
   Loader2,
   MessageCircle,
   Paperclip,
@@ -73,6 +74,7 @@ import {
   receivedByLabels,
 } from "../utils/member-formatters";
 import * as M from "./members.styles";
+import { MemberCredentialModal } from "./member-credential-modal";
 import * as S from "./member-details.styles";
 
 type Tab = "data" | "history" | "events" | "finance" | "documents";
@@ -244,6 +246,7 @@ export function MemberDetailsModal({
   const [replacementFile, setReplacementFile] = useState<File | null>(null);
   const [showHistoryForm, setShowHistoryForm] = useState(false);
   const [showRoleEditor, setShowRoleEditor] = useState(false);
+  const [showCredential, setShowCredential] = useState(false);
   const [roleId, setRoleId] = useState("");
   const [roleStartDate, setRoleStartDate] = useState("");
   const [roleNotes, setRoleNotes] = useState("");
@@ -674,13 +677,25 @@ export function MemberDetailsModal({
 
   const deleteDocument = documents?.find((document) => document.id === deleteId);
   const footer =
-    details && capabilities.update ? (
-      <Link
-        href={`/membros/${memberId}/editar`}
-        className="app-button-primary"
-      >
-        <Pencil size={16} /> Editar cadastro
-      </Link>
+    details && (capabilities.issueCredential || capabilities.update) ? (
+      <S.FooterActions>
+        {capabilities.issueCredential && (
+          <Button
+            variant="secondary"
+            onClick={() => setShowCredential(true)}
+          >
+            <IdCard size={16} /> Gerar credencial
+          </Button>
+        )}
+        {capabilities.update && (
+          <Link
+            href={`/membros/${memberId}/editar`}
+            className="app-button-primary"
+          >
+            <Pencil size={16} /> Editar cadastro
+          </Link>
+        )}
+      </S.FooterActions>
     ) : undefined;
 
   return (
@@ -1248,6 +1263,13 @@ export function MemberDetailsModal({
           </>
         )}
       </Modal>
+
+      {showCredential && (
+        <MemberCredentialModal
+          memberId={memberId}
+          onClose={() => setShowCredential(false)}
+        />
+      )}
 
       {showRoleEditor && details && (
         <Modal
