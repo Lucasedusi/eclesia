@@ -2,6 +2,7 @@ import "server-only";
 
 import QRCode from "qrcode";
 import { createClient } from "@/lib/supabase/server";
+import { loadChurchLogoDataUri } from "@/modules/auth/services/church-logo.service";
 import type { AuthContext } from "@/modules/auth/types/auth.types";
 import type { MemberCredentialPdfFormat, MemberCredentialSource } from "../types/member-credential.types";
 import { MemberCredentialError } from "../types/member-credential.types";
@@ -38,9 +39,6 @@ const MEMBER_CREDENTIAL_SELECT = [
   "active_roles:member_roles!member_roles_member_id_fkey(status, deleted_at, title_variant, role:roles!member_roles_role_id_fkey(name, female_name))",
 ].join(", ");
 
-const LOGO_MAX_BYTES = 2 * 1024 * 1024;
-const ALLOWED_LOGO_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
-
 function first<T>(value: T | T[] | null | undefined): T | null {
   return Array.isArray(value) ? value[0] ?? null : value ?? null;
 }
@@ -55,65 +53,6 @@ function qrMatrix(value: string) {
     }
   }
   return result;
-}
-
-function allowedLogoHost(url: URL) {
-  try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    return Boolean(supabaseUrl && url.host === new URL(supabaseUrl).host);
-  } catch {
-    return false;
-  }
-}
-
-async function loadLogoDataUri(value: string | null) {
-  if (!value) return null;
-  if (/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(value)) {
-    if (value.length > LOGO_MAX_BYTES * 1.4) return null;
-    const [header, payload] = value.split(",", 2);
-    const mimeType = header.slice(5, header.indexOf(";"));
-    const bytes = Buffer.from(payload, "base64");
-    return hasImageSignature(bytes, mimeType) ? value : null;
-  }
-  let url: URL;
-  try {
-    url = new URL(value);
-  } catch {
-    return null;
-  }
-  if (url.protocol !== "https:" || !allowedLogoHost(url)) return null;
-
-  try {
-    const response = await fetch(url, {
-      cache: "no-store",
-      signal: AbortSignal.timeout(4_000),
-    });
-    const contentType = response.headers.get("content-type")?.split(";")[0] ?? "";
-    const contentLength = Number(response.headers.get("content-length") ?? "0");
-    if (!response.ok || !ALLOWED_LOGO_TYPES.has(contentType) || contentLength > LOGO_MAX_BYTES) {
-      return null;
-    }
-    const bytes = new Uint8Array(await response.arrayBuffer());
-    if (bytes.byteLength > LOGO_MAX_BYTES || !hasImageSignature(bytes, contentType)) return null;
-    return `data:${contentType};base64,${Buffer.from(bytes).toString("base64")}`;
-  } catch {
-    return null;
-  }
-}
-
-function hasImageSignature(bytes: Uint8Array, mimeType: string) {
-  if (mimeType === "image/png") {
-    return bytes.length >= 8 && [137, 80, 78, 71, 13, 10, 26, 10]
-      .every((value, index) => bytes[index] === value);
-  }
-  if (mimeType === "image/jpeg") {
-    return bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
-  }
-  if (mimeType === "image/webp") {
-    return bytes.length >= 12 && Buffer.from(bytes.slice(0, 4)).toString("ascii") === "RIFF"
-      && Buffer.from(bytes.slice(8, 12)).toString("ascii") === "WEBP";
-  }
-  return false;
 }
 
 type CredentialPresentation = {
@@ -176,8 +115,10 @@ async function loadMemberCredentialSource(
     (link) => link.status === "ACTIVE" && !link.deleted_at,
   );
   const role = first<AnyRow>(activeRoleLink?.role);
-  const logoDataUri = await loadLogoDataUri(
+  const logoDataUri = await loadChurchLogoDataUri(
     settings.logo_url?.trim() || church.logo_url?.trim() || context.church.logoUrl,
+    context.church.id,
+    supabase,
   );
 
   return {

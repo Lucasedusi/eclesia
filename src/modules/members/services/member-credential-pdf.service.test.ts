@@ -1,6 +1,8 @@
 import { mkdir, writeFile } from "node:fs/promises";
-import { PDFDict, PDFDocument, PDFName } from "pdf-lib";
+import { decodePDFRawStream, PDFDict, PDFDocument, PDFName, PDFRawStream } from "pdf-lib";
+import { Resvg } from "@resvg/resvg-js";
 import QRCode from "qrcode";
+import sharp from "sharp";
 import { describe, expect, it, vi } from "vitest";
 import type { MemberCredentialPreview } from "../types/member-credential.types";
 
@@ -57,6 +59,57 @@ const preview: MemberCredentialPreview = {
 };
 
 describe("createMemberCredentialPdf", () => {
+  it("imprime a logo WebP na frente e como marca d'água no verso do PVC", async () => {
+    const logo = await sharp({
+      create: { width: 40, height: 40, channels: 4, background: "#ff00ff" },
+    }).webp().toBuffer();
+    const bytes = await createMemberCredentialPdf({
+      ...preview,
+      church: { ...preview.church, logoDataUri: `data:image/webp;base64,${logo.toString("base64")}` },
+    }, "pvc");
+    const document = await PDFDocument.load(bytes);
+
+    const hasLogoColor = (pageIndex: number, watermark: boolean) => {
+      const xObjects = document.getPage(pageIndex).node.Resources()?.lookupMaybe(PDFName.of("XObject"), PDFDict);
+      if (!xObjects) return false;
+      return xObjects.keys().some((name) => {
+        const stream = document.context.lookup(xObjects.get(name));
+        if (!(stream instanceof PDFRawStream)) return false;
+        const pixels = decodePDFRawStream(stream).decode();
+        for (let index = 0; index + 2 < pixels.length; index += 3) {
+          const [red, green, blue] = pixels.subarray(index, index + 3);
+          if (watermark
+            ? red > 245 && green >= 225 && green < 245 && blue > 245
+            : red > 240 && green < 20 && blue > 240) return true;
+        }
+        return false;
+      });
+    };
+
+    expect(hasLogoColor(0, false)).toBe(true);
+    expect(hasLogoColor(1, true)).toBe(true);
+    if (process.env.GENERATE_CREDENTIAL_QA === "1") {
+      await mkdir("tmp/pdfs", { recursive: true });
+      await writeFile("tmp/pdfs/member-credential-webp-pvc-qa.pdf", bytes);
+      await writeFile("tmp/pdfs/member-credential-webp-fold-qa.pdf", await createMemberCredentialPdf({
+        ...preview,
+        church: { ...preview.church, logoDataUri: `data:image/webp;base64,${logo.toString("base64")}` },
+      }, "fold"));
+    }
+  });
+
+  it("renderiza a logo da frente e a marca d'água do verso no arquivo PVC", async () => {
+    const logo = new Resvg('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600"><circle cx="300" cy="300" r="260" fill="#d4a72c"/><text x="300" y="410" text-anchor="middle" font-size="330" fill="#082a5b">E</text></svg>').render().asPng();
+    const bytes = await createMemberCredentialPdf({
+      ...preview,
+      church: { ...preview.church, logoDataUri: `data:image/png;base64,${Buffer.from(logo).toString("base64")}` },
+    }, "pvc");
+    expect((await PDFDocument.load(bytes)).getPages()).toHaveLength(2);
+    if (process.env.GENERATE_CREDENTIAL_QA === "1") {
+      await mkdir("tmp/pdfs", { recursive: true });
+      await writeFile("tmp/pdfs/member-credential-logo-qa.pdf", bytes);
+    }
+  });
   it("gera uma folha A4 com as duas faces lado a lado para dobrar", async () => {
     const bytes = await createMemberCredentialPdf(preview);
     const document = await PDFDocument.load(bytes);

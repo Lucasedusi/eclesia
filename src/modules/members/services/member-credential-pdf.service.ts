@@ -5,6 +5,7 @@ import path from "node:path";
 import { Resvg } from "@resvg/resvg-js";
 import fontkit from "@pdf-lib/fontkit";
 import { PDFDocument, PDFFont, PDFPage, StandardFonts, rgb } from "pdf-lib";
+import sharp from "sharp";
 import type { MemberCredentialPdfFormat, MemberCredentialPreview } from "../types/member-credential.types";
 import { renderMemberCredentialPrintSvg } from "./member-credential-svg.service";
 
@@ -34,6 +35,19 @@ const FONT_FILES = [
 ];
 const FONT_WEIGHTS = [400, 500, 550, 600, 650, 750] as const;
 let fontBytesPromise: Promise<Buffer[]> | null = null;
+
+async function preparePrintPreview(preview: MemberCredentialPreview): Promise<MemberCredentialPreview> {
+  const logo = preview.church.logoDataUri;
+  const prefix = "data:image/webp;base64,";
+  if (!logo?.startsWith(prefix)) return preview;
+  const png = await sharp(Buffer.from(logo.slice(prefix.length), "base64"), {
+    limitInputPixels: 20_000_000,
+  }).resize(1200, 1200, { fit: "inside", withoutEnlargement: true }).png().toBuffer();
+  return {
+    ...preview,
+    church: { ...preview.church, logoDataUri: `data:image/png;base64,${png.toString("base64")}` },
+  };
+}
 
 function loadFontBytes() {
   fontBytesPromise ??= Promise.all([
@@ -268,12 +282,13 @@ export async function createMemberCredentialPdf(
   preview: MemberCredentialPreview,
   format: MemberCredentialPdfFormat = "fold",
 ): Promise<Uint8Array> {
+  const printPreview = await preparePrintPreview(preview);
   const document = await PDFDocument.create();
   const fonts = await embedCredentialFonts(document);
   if (format === "pvc") {
-    await addPvcPages(document, preview, fonts);
+    await addPvcPages(document, printPreview, fonts);
   } else {
-    await addFoldSheet(document, preview, fonts);
+    await addFoldSheet(document, printPreview, fonts);
   }
 
   document.setTitle("Credencial física de membro");

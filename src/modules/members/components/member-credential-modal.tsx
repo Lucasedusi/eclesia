@@ -67,7 +67,8 @@ export function MemberCredentialModal({ memberId, onClose }: Props) {
   const [state, setState] = useState<CredentialPreviewState>({
     status: "loading",
   });
-  const [downloading, setDownloading] = useState<MemberCredentialPdfFormat | null>(null);
+  const [downloading, setDownloading] =
+    useState<MemberCredentialPdfFormat | null>(null);
   const [feedback, setFeedback] = useState("");
 
   useEffect(() => {
@@ -83,7 +84,10 @@ export function MemberCredentialModal({ memberId, onClose }: Props) {
     };
   }, [memberId]);
 
-  async function download(preview: MemberCredentialPreview, format: MemberCredentialPdfFormat) {
+  async function download(
+    preview: MemberCredentialPreview,
+    format: MemberCredentialPdfFormat,
+  ) {
     setDownloading(format);
     setFeedback("");
     try {
@@ -128,7 +132,7 @@ export function MemberCredentialModal({ memberId, onClose }: Props) {
       title="Gerar credencial de membro"
       description="Clique na carteirinha para alternar entre frente e verso."
       icon={<IdCard />}
-      size="sm"
+      size="md"
       onClose={onClose}
       busy={downloading !== null}
       footer={

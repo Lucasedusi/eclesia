@@ -50,7 +50,7 @@ function query(result: unknown) {
 }
 
 function setupQueries(
-  options?: { member?: unknown; memberError?: unknown },
+  options?: { member?: unknown; memberError?: unknown; logoUrl?: string },
   includePreflight = true,
 ) {
   const preflight = query({ data: { id: memberId }, error: null });
@@ -64,11 +64,12 @@ function setupQueries(
     },
     error: options?.memberError ?? null,
   });
-  const settings = query({ data: { display_church_name: "Igreja Batista Central", logo_url: null }, error: null });
+  const settings = query({ data: { display_church_name: "Igreja Batista Central", logo_url: options?.logoUrl ?? null }, error: null });
   const church = query({ data: { name: "Igreja", logo_url: null, address: "Rua das Flores", number: "123", district: "Centro", city: "Goiânia", state: "GO", phone: "62999998888", document: "01185743000146" }, error: null });
   const identity = query({ data: { cpf: "12345678909" }, error: null });
   let memberCalls = 0;
   const client = {
+    storage: { from: vi.fn(() => ({ download: vi.fn().mockResolvedValue({ data: new Blob([Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10])]), error: null }) })) },
     from: vi.fn((table: string) => {
       if (table === "members") {
         if (includePreflight && memberCalls === 0) {
@@ -111,6 +112,15 @@ describe("member credential service", () => {
       validation: { token, url: validationUrl },
     });
     expect(result.member).not.toHaveProperty("id");
+  });
+
+  it("incorpora a logo privada da igreja na prévia", async () => {
+    const churchId = "11111111-1111-4111-8111-111111111111";
+    const logoUrl = `church-logos/${churchId}/22222222-2222-4222-8222-222222222222.png`;
+    const queries = setupQueries({ logoUrl });
+    const result = await loadMemberCredentialPreview({ ...context, church: { ...context.church, id: churchId } }, memberId);
+    expect(result.church.logoDataUri).toBe("data:image/png;base64,iVBORw0KGgo=");
+    expect(queries.settings.eq.mock.calls).toContainEqual(["church_id", churchId]);
   });
 
   it("rejeita membro fora do tenant antes de criar token", async () => {

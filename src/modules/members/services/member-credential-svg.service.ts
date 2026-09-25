@@ -5,7 +5,12 @@ export const MEMBER_CREDENTIAL_SVG_WIDTH = 856;
 export const MEMBER_CREDENTIAL_SVG_HEIGHT = 539.8;
 
 type Side = "front" | "back";
-export type CredentialBleed = { left: number; right: number; top: number; bottom: number };
+export type CredentialBleed = {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+};
 
 function escapeXml(value: string) {
   return value
@@ -108,7 +113,7 @@ function qrSvg(matrix: boolean[][], x: number, y: number, size: number) {
 
 function logo(preview: MemberCredentialPreview) {
   if (preview.church.logoDataUri) {
-    return `<circle cx="92" cy="78" r="52" fill="#fff" stroke="${C.gold}" stroke-width="3.5"/><image href="${escapeXml(preview.church.logoDataUri)}" x="49" y="35" width="86" height="86" preserveAspectRatio="xMidYMid meet"/>`;
+    return `<circle cx="92" cy="95" r="52" fill="#fff" stroke="${C.gold}" stroke-width="3.5"/><image href="${escapeXml(preview.church.logoDataUri)}" x="49" y="52" width="86" height="86" preserveAspectRatio="xMidYMid meet"/>`;
   }
   const initials =
     preview.church.name
@@ -118,10 +123,13 @@ function logo(preview: MemberCredentialPreview) {
       .map((word) => word[0])
       .join("")
       .toUpperCase() || "EC";
-  return `<circle cx="92" cy="78" r="52" fill="#fff" stroke="${C.gold}" stroke-width="3.5"/>${text(initials, 92, 91, 36, 25, 70, { weight: 750, fill: C.navy, anchor: "middle" })}`;
+  return `<circle cx="92" cy="95" r="52" fill="#fff" stroke="${C.gold}" stroke-width="3.5"/>${text(initials, 92, 108, 36, 25, 70, { weight: 750, fill: C.navy, anchor: "middle" })}`;
 }
 
-function renderFront(preview: MemberCredentialPreview, bleed?: CredentialBleed) {
+function renderFront(
+  preview: MemberCredentialPreview,
+  bleed?: CredentialBleed,
+) {
   const left = (bleed?.left ?? 0) * 10;
   const right = (bleed?.right ?? 0) * 10;
   const top = (bleed?.top ?? 0) * 10;
@@ -130,20 +138,19 @@ function renderFront(preview: MemberCredentialPreview, bleed?: CredentialBleed) 
     ? `<rect x="${-left}" y="${-top}" width="${856 + left + right}" height="${539.8 + top + bottom}" fill="url(#ivory-gradient)"/>`
     : '<rect width="856" height="539.8" fill="url(#ivory-gradient)"/>';
   const navy = bleed
-    ? `M${-left} ${-top}H${856 + right}V194H856C736 130 648 145 540 173C389 211 243 152 0 151H${-left}Z`
-    : "M0 0H856V194C736 130 648 145 540 173C389 211 243 152 0 151Z";
+    ? `<rect x="${-left}" y="${-top}" width="${856 + left + right}" height="${190 + top}" fill="url(#navy-gradient)"/>`
+    : '<rect width="856" height="190" fill="url(#navy-gradient)"/>';
   const gold = bleed
-    ? `M${-left} 151H0C235 151 380 216 542 177C662 148 746 135 856 190H${856 + right}V206H856C739 153 655 168 548 194C383 234 231 169 0 171H${-left}Z`
-    : "M0 151C235 151 380 216 542 177C662 148 746 135 856 190V206C739 153 655 168 548 194C383 234 231 169 0 171Z";
+    ? `<rect x="${-left}" y="190" width="${856 + left + right}" height="12" fill="url(#gold-gradient)"/>`
+    : '<rect y="190" width="856" height="12" fill="url(#gold-gradient)"/>';
   return `<g${bleed ? "" : ' clip-path="url(#card-clip)"'}>
     ${canvas}
-    <path d="${navy}" fill="url(#navy-gradient)"/>
-    <path d="${gold}" fill="url(#gold-gradient)"/>
-    <path d="M0 398C143 521 312 483 458 503C594 522 719 504 856 397V539.8H0Z" fill="#F5F0E5" opacity=".48"/>
+    ${navy}
+    ${gold}
     ${logo(preview)}
-    ${text(preview.church.name.toUpperCase(), 160, 68, 31, 18, 648, { weight: 750, fill: C.white })}
-    ${text(preview.church.addressLine, 160, 102, 18, 12, 648, { weight: 400, fill: C.white })}
-    ${text(`Fone: ${preview.church.phone}  •  CNPJ: ${preview.church.document}`, 160, 130, 16, 11, 648, { weight: 400, fill: C.white })}
+    ${text(preview.church.name.toUpperCase(), 160, 70, 31, 18, 648, { weight: 750, fill: C.white })}
+    ${text(preview.church.addressLine, 160, 107, 22, 17, 648, { weight: 400, fill: C.white })}
+    ${text(`Fone: ${preview.church.phone} • CNPJ: ${preview.church.document}`, 160, 145, 20, 14, 648, { weight: 400, fill: C.white })}
     ${qrSvg(preview.validation.qrMatrix, 54, 254, 204)}
     ${text("VALIDAR CREDENCIAL", 156, 480, 12, 9, 180, { weight: 500, fill: C.navy, anchor: "middle", tracking: 0.6 })}
     <g clip-path="url(#front-name-clip)">${text(preview.member.fullName.toUpperCase(), 306, 276, 24, 16, 500, { weight: 750 })}</g>
@@ -163,8 +170,9 @@ function renderFront(preview: MemberCredentialPreview, bleed?: CredentialBleed) 
 }
 
 function renderBack(preview: MemberCredentialPreview, bleed?: CredentialBleed) {
-  const footer =
-    "Este cartão é nominal e intransferível. Seu titular poderá portá-lo enquanto proceder de acordo com os princípios da Palavra de Deus";
+  const noticeFirstLine = "Este cartão é nominal e intransferível.";
+  const noticeSecondLine =
+    "Seu titular poderá portá-lo enquanto proceder de acordo com os princípios da Palavra de Deus";
   const left = (bleed?.left ?? 0) * 10;
   const right = (bleed?.right ?? 0) * 10;
   const top = (bleed?.top ?? 0) * 10;
@@ -182,7 +190,9 @@ function renderBack(preview: MemberCredentialPreview, bleed?: CredentialBleed) {
     ${canvas}
     ${navy}
     ${gold}
-    ${exactWidthText(footer, 428, 39, 11.5, 760)}
+    ${text(noticeFirstLine, 428, 34, 17, 17, 760, { weight: 400, fill: C.white, anchor: "middle" })}
+    ${exactWidthText(noticeSecondLine, 428, 58, 17, 760)}
+    ${preview.church.logoDataUri ? `<image href="${escapeXml(preview.church.logoDataUri)}" x="248" y="110" width="360" height="360" preserveAspectRatio="xMidYMid meet" opacity="0.08"/>` : ""}
     ${label("PAI", 58, 116, 740)}
     ${text(preview.member.fatherName, 58, 150, 27, 15, 740, { weight: 550 })}
     <path d="M58 168H798" stroke="${C.lightBlue}" stroke-width="1.2"/>
@@ -220,6 +230,7 @@ export function renderMemberCredentialPrintSvg(
   const bottom = bleed.bottom * 10;
   const width = MEMBER_CREDENTIAL_SVG_WIDTH + left + right;
   const height = MEMBER_CREDENTIAL_SVG_HEIGHT + top + bottom;
-  const content = side === "front" ? renderFront(preview, bleed) : renderBack(preview, bleed);
+  const content =
+    side === "front" ? renderFront(preview, bleed) : renderBack(preview, bleed);
   return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${85.6 + bleed.left + bleed.right}mm" height="${53.98 + bleed.top + bleed.bottom}mm" viewBox="${-left} ${-top} ${width} ${height}">${sharedDefs()}${content}</svg>`;
 }
