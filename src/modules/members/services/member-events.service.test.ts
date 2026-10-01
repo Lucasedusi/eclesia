@@ -10,7 +10,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/lib/supabase/server", () => ({ createClient: mocks.createClient }));
 
-import { getMemberEvents } from "./member.service";
+import { getMemberEvents, getMemberHistory } from "./member.service";
 
 const context = {
   church: { id: "church-1", name: "Igreja", logoUrl: null },
@@ -73,5 +73,18 @@ describe("getMemberEvents", () => {
     await expect(getMemberEvents({ ...context, permissions: [PERMISSIONS.eventsView] }, "member-1"))
       .rejects.toThrow("MEMBER_EVENTS_PERMISSION_DENIED");
     expect(mocks.createClient).not.toHaveBeenCalled();
+  });
+});
+
+describe("getMemberHistory para impressão", () => {
+  it("filtra sensíveis no banco e usa ordenação determinística antes de paginar", async () => {
+    const query = chain({ select: vi.fn(), eq: vi.fn(), is: vi.fn(), neq: vi.fn(), order: vi.fn(), range: vi.fn() }, ["select", "eq", "is", "neq", "order"]);
+    query.range.mockResolvedValue({ data: [], count: 0, error: null });
+    mocks.createClient.mockResolvedValue({ from: vi.fn(() => query) });
+    await getMemberHistory(context, "member-1", 2, false);
+    expect(query.eq).toHaveBeenCalledWith("is_sensitive", false);
+    expect(query.eq).toHaveBeenCalledWith("church_id", "church-1");
+    expect(query.order).toHaveBeenCalledWith("id", { ascending: false });
+    expect(query.range).toHaveBeenCalledWith(20, 39);
   });
 });

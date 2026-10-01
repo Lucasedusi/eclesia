@@ -81,6 +81,7 @@ export type MemberCapabilities = {
   manageRoles: boolean;
   import: boolean;
   issueCredential: boolean;
+  exportSheet: boolean;
 };
 
 export type MemberCoreDetails = {

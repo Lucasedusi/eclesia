@@ -31,6 +31,10 @@ const baseContext = {
 } satisfies AuthContext;
 
 describe("getMemberCapabilities", () => {
+  it("permite PDF apenas com cadastro completo e exportação", () => {
+    expect(getMemberCapabilities({ ...baseContext, permissions: [PERMISSIONS.membersExport] }).exportSheet).toBe(false);
+    expect(getMemberCapabilities({ ...baseContext, permissions: [PERMISSIONS.membersViewBasic, PERMISSIONS.membersViewFull, PERMISSIONS.membersExport] }).exportSheet).toBe(true);
+  });
   it("expõe emissão somente com members.credentials.issue", () => {
     expect(getMemberCapabilities(baseContext).issueCredential).toBe(false);
     expect(
