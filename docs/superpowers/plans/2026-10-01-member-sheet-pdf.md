@@ -57,7 +57,7 @@
 - [x] Implementar endpoint e modal com seleções desmarcadas, feedback e bloqueio durante geração.
 - [ ] Testar navegador: abrir ficha, baixar básica/complementada, opções condicionadas às permissões, falha recuperável e dispositivo estreito.
 - [x] Rodar lint, typecheck, suite, build e E2E; revisar o diff e as exclusões de dados.
-- [ ] Criar ZIP do projeto e verificar integridade e exclusão de segredos/arquivos locais.
+- [x] Criar ZIP do projeto e verificar integridade e exclusão de segredos/arquivos locais.
 
 ## Resultado da execução
 
