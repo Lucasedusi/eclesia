@@ -3,12 +3,13 @@ import { PERMISSIONS } from "@/modules/auth/constants/permissions";
 import type { AuthContext } from "@/modules/auth/types/auth.types";
 
 vi.mock("server-only", () => ({}));
-const mocks = vi.hoisted(() => ({ createClient: vi.fn(), history: vi.fn(), events: vi.fn(), logo: vi.fn() }));
+const mocks = vi.hoisted(() => ({ createClient: vi.fn(), history: vi.fn(), events: vi.fn(), logo: vi.fn(), pdf: vi.fn() }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: mocks.createClient }));
 vi.mock("./member.service", () => ({ getMemberHistory: mocks.history, getMemberEvents: mocks.events }));
 vi.mock("@/modules/auth/services/church-logo.service", () => ({ loadChurchLogoDataUri: mocks.logo }));
+vi.mock("./member-sheet-pdf.service", () => ({ createMemberSheetPdf: mocks.pdf }));
 
-import { loadMemberSheetDocument } from "./member-sheet.service";
+import { generateMemberSheetDownload, loadMemberSheetDocument } from "./member-sheet.service";
 
 const memberId = "9ed2934a-8326-4abd-8c59-e4b0865acb95";
 const context = {
@@ -49,7 +50,8 @@ function database(overrides: Record<string, unknown> = {}, errorTable?: string) 
     queries.set(table, query);
     return query;
   });
-  const rpc = vi.fn(async () => ({ data: true, error: null }));
+  const rpc = vi.fn<(name: string, args?: Record<string, unknown>) => Promise<{ data: boolean; error: { message: string } | null }>>()
+    .mockResolvedValue({ data: true, error: null });
   mocks.createClient.mockResolvedValue({ from, rpc });
   return { from, queries, rpc };
 }
@@ -58,6 +60,7 @@ describe("loadMemberSheetDocument", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.logo.mockResolvedValue(null);
+    mocks.pdf.mockResolvedValue(new Uint8Array([37, 80, 68, 70]));
     mocks.history.mockResolvedValue({ items: [], total: 0, page: 1, pageCount: 0 });
     mocks.events.mockResolvedValue({ items: [], total: 0, page: 1, pageCount: 0 });
   });
@@ -117,6 +120,15 @@ describe("loadMemberSheetDocument", () => {
     expect(result.member.role).toBeNull();
   });
 
+  it("seleciona o cargo ativo mais recente, como na consulta do cadastro", async () => {
+    const db = database();
+    await loadMemberSheetDocument(context, memberId, basic);
+    const roles = db.queries.get("member_roles")!;
+    expect(roles.eq).toHaveBeenCalledWith("status", "ACTIVE");
+    expect(roles.order).toHaveBeenCalledWith("start_date", { ascending: false });
+    expect(roles.limit).toHaveBeenCalledWith(1);
+  });
+
   it("nega membro inexistente, arquivado ou invisível pela RLS", async () => {
     database({ members: null });
     await expect(loadMemberSheetDocument(context, memberId, basic)).rejects.toThrow("MEMBER_SHEET_NOT_FOUND");
@@ -133,12 +145,15 @@ describe("loadMemberSheetDocument", () => {
   it("carrega todas as páginas e exclui histórico sensível também na projeção", async () => {
     database();
     const historyItem = { id: "h1", title: "Alteração", eventDate: "2026-01-01", type: "STATUS_CHANGED", oldValue: "INACTIVE", newValue: "ACTIVE", description: "Retorno", sensitive: false };
-    mocks.history.mockResolvedValueOnce({ items: [historyItem, { ...historyItem, id: "secret", sensitive: true, description: "SEGREDO" }], total: 21, page: 1, pageCount: 2 })
+    const historyPage = Array.from({ length: 19 }, (_, index) => ({ ...historyItem, id: `h${index + 1}` }));
+    mocks.history.mockResolvedValueOnce({ items: [...historyPage, { ...historyItem, id: "secret", sensitive: true, description: "SEGREDO" }], total: 21, page: 1, pageCount: 2 })
       .mockResolvedValueOnce({ items: [{ ...historyItem, id: "h21", title: "Último histórico" }], total: 21, page: 2, pageCount: 2 });
-    mocks.events.mockResolvedValueOnce({ items: [{ id: "e1", name: "Primeiro evento", startsAt: "2026-01-01T22:00:00Z", location: "Templo" }], total: 21, page: 1, pageCount: 2 })
+    const eventPage = Array.from({ length: 20 }, (_, index) => ({ id: `e${index + 1}`, name: "Evento", startsAt: "2026-01-01T22:00:00Z", location: "Templo" }));
+    mocks.events.mockResolvedValueOnce({ items: eventPage, total: 21, page: 1, pageCount: 2 })
       .mockResolvedValueOnce({ items: [{ id: "e21", name: "Último evento", startsAt: "2026-01-02T22:00:00Z", location: "Templo" }], total: 21, page: 2, pageCount: 2 });
     const result = await loadMemberSheetDocument(context, memberId, { includeHistory: true, includeEvents: true });
-    expect(result.history).toHaveLength(2);
+    expect(result.history).toHaveLength(20);
+    expect(result.events).toHaveLength(21);
     expect(result.history?.at(-1)?.title).toBe("Último histórico");
     expect(result.history?.[0].change).toBe("Inativo → Ativo");
     expect(result.events?.at(-1)?.name).toBe("Último evento");
@@ -150,5 +165,42 @@ describe("loadMemberSheetDocument", () => {
   it("não produz uma ficha parcial quando uma consulta falha", async () => {
     database({}, "member_sensitive_identity");
     await expect(loadMemberSheetDocument(context, memberId, basic)).rejects.toThrow("MEMBER_SHEET_LOAD_FAILED");
+  });
+
+  it("recusa uma exportação acima do limite sem carregar as próximas páginas", async () => {
+    database();
+    mocks.history.mockResolvedValue({ items: [], total: 10_001, page: 1, pageCount: 501 });
+    await expect(loadMemberSheetDocument(context, memberId, { ...basic, includeHistory: true })).rejects.toThrow("MEMBER_SHEET_TOO_LARGE");
+    expect(mocks.history).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    { items: [], total: 21, page: 2, pageCount: 2 },
+    { items: [{ id: "e1" }], total: 21, page: 2, pageCount: 2 },
+    { items: [{ id: "e21" }], total: 22, page: 2, pageCount: 2 },
+  ])("recusa paginação incompleta ou alterada durante a emissão: %j", async (secondPage) => {
+    database();
+    mocks.events.mockResolvedValueOnce({ items: Array.from({ length: 20 }, (_, index) => ({ id: `e${index + 1}`, name: "Evento", startsAt: "2026-01-01T22:00:00Z", location: "Templo" })), total: 21, page: 1, pageCount: 2 })
+      .mockResolvedValueOnce({ ...secondPage, items: secondPage.items.map((item) => ({ ...item, name: "Evento", startsAt: "2026-01-01T22:00:00Z", location: "Templo" })) });
+    await expect(loadMemberSheetDocument(context, memberId, { ...basic, includeEvents: true })).rejects.toThrow("MEMBER_SHEET_LOAD_FAILED");
+  });
+
+  it("registra auditoria sem dados pessoais antes de devolver o PDF", async () => {
+    const db = database();
+    const result = await generateMemberSheetDownload(context, memberId, basic);
+    expect(result.fileName).toBe("ficha-membro-MEM0042.pdf");
+    expect(result.body).toEqual(new Uint8Array([37, 80, 68, 70]));
+    const audit = db.rpc.mock.calls.find(([name]) => name === "log_audit");
+    expect(audit).toBeDefined();
+    expect(JSON.stringify(audit)).not.toContain(member.full_name);
+    expect(JSON.stringify(audit)).not.toContain(member.email);
+    expect(JSON.stringify(audit)).not.toContain("00000000000");
+    expect(audit?.[1]).toMatchObject({ p_church_id: context.church.id, p_entity_id: memberId, p_action: "EXPORT_MEMBER_SHEET" });
+  });
+
+  it("não libera download quando a auditoria falha", async () => {
+    const db = database();
+    db.rpc.mockImplementation(async (name: string) => ({ data: true, error: name === "log_audit" ? { message: "private" } : null }));
+    await expect(generateMemberSheetDownload(context, memberId, basic)).rejects.toThrow("MEMBER_SHEET_AUDIT_FAILED");
   });
 });

@@ -9,6 +9,7 @@ import { MemberSheetError, type MemberSheetDocument, type MemberSheetOptions } f
 import type { MemberStatus, PaginatedTab } from "../types/member.types";
 import { formatDateOnly, formatGender, formatMaritalStatus, formatMemberHistoryValue, memberStatusLabels, receivedByLabels } from "../utils/member-formatters";
 import { getMemberEvents, getMemberHistory } from "./member.service";
+import { createMemberSheetPdf } from "./member-sheet-pdf.service";
 
 // Explicit projection: internal notes, document metadata and finance are never loaded.
 const MEMBER_SELECT = [
@@ -27,6 +28,34 @@ function first(value: unknown): Row {
 const text = (value: string | null | undefined) => value?.trim() || "Não informado";
 const date = (value: string) => text(formatDateOnly(value));
 
+export async function generateMemberSheetDownload(context: AuthContext, memberId: string, options: MemberSheetOptions) {
+  const document = await loadMemberSheetDocument(context, memberId, options);
+  const body = await createMemberSheetPdf(document);
+  try {
+    const supabase = await createClient();
+    const { error } = await supabase.rpc("log_audit", {
+      p_church_id: context.church.id,
+      p_module: "members",
+      p_action: "EXPORT_MEMBER_SHEET",
+      p_entity_type: "member",
+      p_entity_id: memberId,
+      p_description: "Emissão de ficha do membro em PDF.",
+      p_metadata: {
+        format: "pdf",
+        include_history: options.includeHistory,
+        include_events: options.includeEvents,
+        history_count: document.history?.length ?? 0,
+        events_count: document.events?.length ?? 0,
+      },
+      p_severity: "INFO",
+    });
+    if (error) throw error;
+  } catch {
+    throw new MemberSheetError("MEMBER_SHEET_AUDIT_FAILED");
+  }
+  return { body, fileName: document.fileName };
+}
+
 function assertPermissions(context: AuthContext, options: MemberSheetOptions) {
   const required: string[] = [PERMISSIONS.membersViewBasic, PERMISSIONS.membersViewFull, PERMISSIONS.membersExport];
   if (options.includeHistory) required.push(PERMISSIONS.memberHistoryView);
@@ -36,15 +65,18 @@ function assertPermissions(context: AuthContext, options: MemberSheetOptions) {
   }
 }
 
-async function allPages<T>(load: (page: number) => Promise<PaginatedTab<T>>): Promise<T[]> {
+async function allPages<T extends { id: string }>(load: (page: number) => Promise<PaginatedTab<T>>): Promise<T[]> {
   const firstPage = await load(1);
   // Never silently truncate an export when the history grows beyond a safe request size.
   if (firstPage.total > 10_000) throw new MemberSheetError("MEMBER_SHEET_TOO_LARGE");
   const items = [...firstPage.items];
   for (let page = 2; page <= firstPage.pageCount; page += 1) {
     const next = await load(page);
-    if (!next.items.length) throw new MemberSheetError("MEMBER_SHEET_LOAD_FAILED");
+    if (!next.items.length || next.total !== firstPage.total) throw new MemberSheetError("MEMBER_SHEET_LOAD_FAILED");
     items.push(...next.items);
+  }
+  if (items.length !== firstPage.total || new Set(items.map((item) => item.id)).size !== items.length) {
+    throw new MemberSheetError("MEMBER_SHEET_LOAD_FAILED");
   }
   return items;
 }
@@ -80,6 +112,7 @@ export async function loadMemberSheetDocument(
         : Promise.resolve({ data: null, error: null }),
       canRoles ? supabase.from("member_roles").select("status, title_variant, role:roles!member_roles_role_id_fkey(name, female_name)")
         .eq("church_id", context.church.id).eq("member_id", memberId).eq("status", "ACTIVE").is("deleted_at", null)
+        .order("start_date", { ascending: false }).order("id", { ascending: false }).limit(1)
         : Promise.resolve({ data: [], error: null }),
       options.includeHistory ? allPages((page) => getMemberHistory(context, memberId, page, false)) : null,
       options.includeEvents ? allPages((page) => getMemberEvents(context, memberId, page)) : null,

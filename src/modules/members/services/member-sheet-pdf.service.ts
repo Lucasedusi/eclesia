@@ -69,7 +69,7 @@ export async function createMemberSheetPdf(data: MemberSheetDocument): Promise<U
   const regular = await document.embedFont(regularBytes, { subset: true });
   const bold = await document.embedFont(boldBytes, { subset: true });
   const logo = await embedLogo(document, data.church.logoDataUri);
-  let page: PDFPage;
+  let page!: PDFPage;
   let cursor = 0;
 
   function draw(text: string, x: number, top: number, size = 10, font = regular, color = NAVY) {

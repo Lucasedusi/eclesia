@@ -31,10 +31,10 @@
 
 **Interfaces:** produzir `MemberSheetOptions`, `MemberSheetDocument`, `MemberSheetError`, `loadMemberSheetDocument(context, memberId, options)`; manter `getMemberEvents` compartilhado e acrescentar `includeSensitive` opcional em `getMemberHistory`.
 
-- [ ] Escrever testes para seleção padrão, permissão da ficha/seções, campos permitidos, igreja/membro/soft delete, histórico não sensível, paginação integral e falhas de consulta.
-- [ ] Executar os testes e observar falhas por comportamento ausente.
-- [ ] Implementar schema, DTO e serviço sem buscar notas/documentos/financeiro.
-- [ ] Rodar testes focados e suite; registrar resultado.
+- [x] Escrever testes para seleção padrão, permissão da ficha/seções, campos permitidos, igreja/membro/soft delete, histórico não sensível, paginação integral e falhas de consulta.
+- [x] Executar os testes e observar falhas por comportamento ausente.
+- [x] Implementar schema, DTO e serviço sem buscar notas/documentos/financeiro.
+- [x] Rodar testes focados e suite; registrar resultado.
 
 ### Task 2: PDF A4
 
@@ -42,10 +42,10 @@
 
 **Interfaces:** consumir `MemberSheetDocument`; produzir `createMemberSheetPdf(document): Promise<Uint8Array>`.
 
-- [ ] Testar PDF A4, conteúdo selecionado, ausência das seções não selecionadas, caracteres acentuados, textos longos e múltiplas páginas.
-- [ ] Observar os testes falharem; implementar o renderer com fontes locais e layout baseado no modelo.
-- [ ] Renderizar PDFs sintéticos e inspecionar as páginas; verificar sem logotipo e com PNG/WebP.
-- [ ] Rodar testes focados e suite; registrar resultado.
+- [x] Testar PDF A4, conteúdo selecionado, ausência das seções não selecionadas, caracteres acentuados, textos longos e múltiplas páginas.
+- [x] Observar os testes falharem; implementar o renderer com fontes locais e layout baseado no modelo.
+- [x] Renderizar PDFs sintéticos e inspecionar as páginas; verificar sem logotipo e com PNG/WebP.
+- [x] Rodar testes focados e suite; registrar resultado.
 
 ### Task 3: Download, interface e entrega
 
@@ -53,8 +53,12 @@
 
 **Interfaces:** POST `{ includeHistory: boolean, includeEvents: boolean }`; resposta `application/pdf` com nome seguro e `private, no-store`. Serviço de download registra auditoria existente após gerar o arquivo.
 
-- [ ] Testar autenticação, origem, validação/limite de corpo, erros genéricos, opções e cabeçalhos; observar falhas antes da implementação.
-- [ ] Implementar endpoint e modal com seleções desmarcadas, feedback e bloqueio durante geração.
+- [x] Testar autenticação, origem, validação/limite de corpo, erros genéricos, opções e cabeçalhos; observar falhas antes da implementação.
+- [x] Implementar endpoint e modal com seleções desmarcadas, feedback e bloqueio durante geração.
 - [ ] Testar navegador: abrir ficha, baixar básica/complementada, opções condicionadas às permissões, falha recuperável e dispositivo estreito.
-- [ ] Rodar lint, typecheck, suite, build e E2E; revisar o diff e as exclusões de dados.
+- [x] Rodar lint, typecheck, suite, build e E2E; revisar o diff e as exclusões de dados.
 - [ ] Criar ZIP do projeto e verificar integridade e exclusão de segredos/arquivos locais.
+
+## Resultado da execução
+
+Execução nativa sem subagentes. Os testes de navegador foram preparados, mas permanecem pendentes: faltam sessão e membro de teste autorizados; banco local e prévia local não tiveram autorização para iniciar. O build padrão foi bloqueado pelo ambiente; a compilação foi validada com Webpack. Ver `docs/member-sheet-pdf.md` para resultados e instruções de uso.

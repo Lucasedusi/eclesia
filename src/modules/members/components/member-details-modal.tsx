@@ -75,6 +75,7 @@ import {
 } from "../utils/member-formatters";
 import * as M from "./members.styles";
 import { MemberCredentialModal } from "./member-credential-modal";
+import { MemberSheetModal } from "./member-sheet-modal";
 import * as S from "./member-details.styles";
 
 type Tab = "data" | "history" | "events" | "finance" | "documents";
@@ -247,6 +248,7 @@ export function MemberDetailsModal({
   const [showHistoryForm, setShowHistoryForm] = useState(false);
   const [showRoleEditor, setShowRoleEditor] = useState(false);
   const [showCredential, setShowCredential] = useState(false);
+  const [showSheet, setShowSheet] = useState(false);
   const [roleId, setRoleId] = useState("");
   const [roleStartDate, setRoleStartDate] = useState("");
   const [roleNotes, setRoleNotes] = useState("");
@@ -677,8 +679,13 @@ export function MemberDetailsModal({
 
   const deleteDocument = documents?.find((document) => document.id === deleteId);
   const footer =
-    details && (capabilities.issueCredential || capabilities.update) ? (
+    details && (capabilities.issueCredential || capabilities.update || (capabilities.exportSheet && !details.archived)) ? (
       <S.FooterActions>
+        {capabilities.exportSheet && !details.archived && (
+          <Button variant="outline" onClick={() => setShowSheet(true)}>
+            <FileText size={16} /> Baixar ficha em PDF
+          </Button>
+        )}
         {capabilities.issueCredential && (
           <Button
             variant="secondary"
@@ -701,7 +708,7 @@ export function MemberDetailsModal({
   return (
     <>
       <Modal
-        open
+        open={!showSheet}
         title="Ficha do membro"
         description="Consulta cadastral, eclesiástica, de eventos, financeira e documental."
         icon={<UserRound />}
@@ -1264,6 +1271,15 @@ export function MemberDetailsModal({
         )}
       </Modal>
 
+      {showSheet && details && (
+        <MemberSheetModal
+          memberId={memberId}
+          memberName={details.fullName}
+          canHistory={capabilities.viewHistory}
+          canEvents={capabilities.viewEvents}
+          onClose={() => setShowSheet(false)}
+        />
+      )}
       {showCredential && (
         <MemberCredentialModal
           memberId={memberId}
