@@ -93,6 +93,7 @@ export function getMemberCapabilities(context: AuthContext): MemberCapabilities 
     manageRoles: can(PERMISSIONS.memberRolesManage),
     import: can(PERMISSIONS.membersImport),
     issueCredential: can(PERMISSIONS.membersCredentialIssue),
+    exportSheet: can(PERMISSIONS.membersExport) && can(PERMISSIONS.membersViewBasic) && can(PERMISSIONS.membersViewFull),
   };
 }
 
@@ -324,15 +325,17 @@ export async function getMemberCoreDetails(context: AuthContext, memberId: strin
   };
 }
 
-export async function getMemberHistory(context: AuthContext, memberId: string, page = 1): Promise<PaginatedTab<MemberHistoryItem>> {
+export async function getMemberHistory(context: AuthContext, memberId: string, page = 1, includeSensitive = true): Promise<PaginatedTab<MemberHistoryItem>> {
   const supabase = await createClient();
   const pageSize = 20;
   const from = (Math.max(1, page) - 1) * pageSize;
-  const { data, count, error } = await supabase.from("member_history")
+  let query = supabase.from("member_history")
     .select("id, history_type, title, description, old_value, new_value, metadata, event_date, is_sensitive, created_at", { count: "exact" })
     .eq("member_id", memberId).eq("church_id", context.church.id).is("deleted_at", null)
-    .neq("history_type", "MEMBER_CREATED")
-    .order("event_date", { ascending: false }).order("created_at", { ascending: false }).range(from, from + pageSize - 1);
+    .neq("history_type", "MEMBER_CREATED");
+  if (!includeSensitive) query = query.eq("is_sensitive", false);
+  const { data, count, error } = await query
+    .order("event_date", { ascending: false }).order("created_at", { ascending: false }).order("id", { ascending: false }).range(from, from + pageSize - 1);
   if (error) throw new Error(error.message);
   const rows = (data ?? []) as unknown as AnyRow[];
   const roleIds = new Set<string>();
@@ -346,7 +349,8 @@ export async function getMemberHistory(context: AuthContext, memberId: string, p
   });
   const roleMap = new Map<string, string>();
   if (roleIds.size) {
-    const { data: roles } = await supabase.from("roles").select("id, name").in("id", [...roleIds]);
+    const { data: roles, error: rolesError } = await supabase.from("roles").select("id, name").eq("church_id", context.church.id).is("deleted_at", null).in("id", [...roleIds]);
+    if (rolesError) throw new Error(rolesError.message);
     (roles ?? []).forEach((role) => roleMap.set(role.id, role.name));
   }
   const items = rows.map((row) => {

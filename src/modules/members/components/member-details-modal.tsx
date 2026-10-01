@@ -75,6 +75,7 @@ import {
 } from "../utils/member-formatters";
 import * as M from "./members.styles";
 import { MemberCredentialModal } from "./member-credential-modal";
+import { MemberSheetModal } from "./member-sheet-modal";
 import * as S from "./member-details.styles";
 
 type Tab = "data" | "history" | "events" | "finance" | "documents";
@@ -232,21 +233,24 @@ export function MemberDetailsModal({
     useState<PaginatedTab<MemberHistoryItem> | null>(null);
   const [finance, setFinance] =
     useState<PaginatedTab<MemberFinanceItem> | null>(null);
-  const [events, setEvents] =
-    useState<PaginatedTab<MemberEventItem> | null>(null);
+  const [events, setEvents] = useState<PaginatedTab<MemberEventItem> | null>(
+    null,
+  );
   const [documents, setDocuments] = useState<MemberDocumentItem[] | null>(null);
   const [tabLoading, setTabLoading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [documentBusy, setDocumentBusy] = useState<DocumentBusy>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [editDocument, setEditDocument] =
-    useState<MemberDocumentItem | null>(null);
+  const [editDocument, setEditDocument] = useState<MemberDocumentItem | null>(
+    null,
+  );
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [replacementFile, setReplacementFile] = useState<File | null>(null);
   const [showHistoryForm, setShowHistoryForm] = useState(false);
   const [showRoleEditor, setShowRoleEditor] = useState(false);
   const [showCredential, setShowCredential] = useState(false);
+  const [showSheet, setShowSheet] = useState(false);
   const [roleId, setRoleId] = useState("");
   const [roleStartDate, setRoleStartDate] = useState("");
   const [roleNotes, setRoleNotes] = useState("");
@@ -347,9 +351,10 @@ export function MemberDetailsModal({
     const fileError = validateBrowserFile(selectedFile);
     if (fileError || !selectedFile) {
       setNotice({
-        title: selectedFile?.size && selectedFile.size > MEMBER_DOCUMENT_MAX_SIZE
-          ? "Arquivo muito grande"
-          : "Revise o documento",
+        title:
+          selectedFile?.size && selectedFile.size > MEMBER_DOCUMENT_MAX_SIZE
+            ? "Arquivo muito grande"
+            : "Revise o documento",
         description: fileError ?? "Selecione um arquivo.",
         variant: "danger",
       });
@@ -369,7 +374,9 @@ export function MemberDetailsModal({
       fileSize: selectedFile.size,
     };
     let result: Awaited<ReturnType<typeof finalizeMemberDocumentUploadAction>>;
-    let prepared: Awaited<ReturnType<typeof prepareMemberDocumentUploadAction>> | null = null;
+    let prepared: Awaited<
+      ReturnType<typeof prepareMemberDocumentUploadAction>
+    > | null = null;
 
     try {
       prepared = await prepareMemberDocumentUploadAction(metadata);
@@ -423,7 +430,10 @@ export function MemberDetailsModal({
           fileSize: selectedFile.size,
         });
       }
-      result = { success: false, message: "Não foi possível anexar o documento." };
+      result = {
+        success: false,
+        message: "Não foi possível anexar o documento.",
+      };
     } finally {
       setBusy(false);
     }
@@ -470,9 +480,7 @@ export function MemberDetailsModal({
     setDocumentBusy(null);
     setDeleteId(null);
     setNotice({
-      title: result.success
-        ? "Documento excluído"
-        : "Não foi possível excluir",
+      title: result.success ? "Documento excluído" : "Não foi possível excluir",
       description: result.message,
       variant: result.success ? "success" : "danger",
     });
@@ -490,9 +498,10 @@ export function MemberDetailsModal({
       : null;
     if (fileError) {
       setNotice({
-        title: replacementFile && replacementFile.size > MEMBER_DOCUMENT_MAX_SIZE
-          ? "Arquivo muito grande"
-          : "Revise o documento",
+        title:
+          replacementFile && replacementFile.size > MEMBER_DOCUMENT_MAX_SIZE
+            ? "Arquivo muito grande"
+            : "Revise o documento",
         description: fileError,
         variant: "danger",
       });
@@ -510,7 +519,9 @@ export function MemberDetailsModal({
       sensitive: form.get("sensitive") === "true",
     };
     let result: Awaited<ReturnType<typeof updateMemberDocumentAction>>;
-    let prepared: Awaited<ReturnType<typeof prepareMemberDocumentUploadAction>> | null = null;
+    let prepared: Awaited<
+      ReturnType<typeof prepareMemberDocumentUploadAction>
+    > | null = null;
 
     try {
       if (!replacementFile) {
@@ -573,7 +584,10 @@ export function MemberDetailsModal({
           fileSize: replacementFile.size,
         });
       }
-      result = { success: false, message: "Não foi possível atualizar o documento." };
+      result = {
+        success: false,
+        message: "Não foi possível atualizar o documento.",
+      };
     } finally {
       setDocumentBusy(null);
     }
@@ -675,15 +689,22 @@ export function MemberDetailsModal({
     }
   }
 
-  const deleteDocument = documents?.find((document) => document.id === deleteId);
+  const deleteDocument = documents?.find(
+    (document) => document.id === deleteId,
+  );
   const footer =
-    details && (capabilities.issueCredential || capabilities.update) ? (
+    details &&
+    (capabilities.issueCredential ||
+      capabilities.update ||
+      (capabilities.exportSheet && !details.archived)) ? (
       <S.FooterActions>
+        {capabilities.exportSheet && !details.archived && (
+          <Button variant="secondary" onClick={() => setShowSheet(true)}>
+            <FileText size={16} /> Baixar ficha em PDF
+          </Button>
+        )}
         {capabilities.issueCredential && (
-          <Button
-            variant="secondary"
-            onClick={() => setShowCredential(true)}
-          >
+          <Button variant="secondary" onClick={() => setShowCredential(true)}>
             <IdCard size={16} /> Gerar credencial
           </Button>
         )}
@@ -701,7 +722,7 @@ export function MemberDetailsModal({
   return (
     <>
       <Modal
-        open
+        open={!showSheet}
         title="Ficha do membro"
         description="Consulta cadastral, eclesiástica, de eventos, financeira e documental."
         icon={<UserRound />}
@@ -826,7 +847,10 @@ export function MemberDetailsModal({
                 <S.TabHeader>
                   <div>
                     <h4>Cargo</h4>
-                    <p>Um único Cargo atual, com os vínculos anteriores preservados.</p>
+                    <p>
+                      Um único Cargo atual, com os vínculos anteriores
+                      preservados.
+                    </p>
                   </div>
                   {capabilities.manageRoles && (
                     <Button
@@ -852,8 +876,8 @@ export function MemberDetailsModal({
                             )}
                           </h5>
                           <p>
-                            {memberRoleStatusLabels[role.status] ?? role.status} ·{" "}
-                            {date(role.startDate)}
+                            {memberRoleStatusLabels[role.status] ?? role.status}{" "}
+                            · {date(role.startDate)}
                             {role.endDate ? ` até ${date(role.endDate)}` : ""}
                           </p>
                         </div>
@@ -865,12 +889,18 @@ export function MemberDetailsModal({
                 <S.Divider />
                 <h4>Histórico de fé</h4>
                 <S.Grid>
-                  <Field label="Conversão" value={date(details.conversionDate)} />
+                  <Field
+                    label="Conversão"
+                    value={date(details.conversionDate)}
+                  />
                   <Field
                     label="Batismo nas águas"
                     value={date(details.baptismDate)}
                   />
-                  <Field label="Igreja do batismo" value={details.baptismChurch} />
+                  <Field
+                    label="Igreja do batismo"
+                    value={details.baptismChurch}
+                  />
                   <Field
                     label="Batismo com Espírito Santo"
                     value={
@@ -1027,7 +1057,9 @@ export function MemberDetailsModal({
                             <td>{date(item.transactionDate)}</td>
                             <td>{item.category}</td>
                             <td>
-                              {item.description || item.transactionNumber || "—"}
+                              {item.description ||
+                                item.transactionNumber ||
+                                "—"}
                             </td>
                             <td>{money(item.amount)}</td>
                             <td>{item.status}</td>
@@ -1043,7 +1075,9 @@ export function MemberDetailsModal({
             {!tabLoading && tab === "events" && (
               <S.Section>
                 {!events?.items.length ? (
-                  <S.Empty>Nenhuma inscrição em evento vinculada ao membro.</S.Empty>
+                  <S.Empty>
+                    Nenhuma inscrição em evento vinculada ao membro.
+                  </S.Empty>
                 ) : (
                   <>
                     <S.SimpleTable>
@@ -1068,8 +1102,24 @@ export function MemberDetailsModal({
                     </S.SimpleTable>
                     {events.pageCount > 1 && (
                       <S.Pager>
-                        <Button type="button" size="sm" variant="secondary" disabled={events.page <= 1} onClick={() => void changeEventsPage(events.page - 1)}>Anterior</Button>
-                        <Button type="button" size="sm" variant="secondary" disabled={events.page >= events.pageCount} onClick={() => void changeEventsPage(events.page + 1)}>Próxima</Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="secondary"
+                          disabled={events.page <= 1}
+                          onClick={() => void changeEventsPage(events.page - 1)}
+                        >
+                          Anterior
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="secondary"
+                          disabled={events.page >= events.pageCount}
+                          onClick={() => void changeEventsPage(events.page + 1)}
+                        >
+                          Próxima
+                        </Button>
                       </S.Pager>
                     )}
                   </>
@@ -1104,7 +1154,11 @@ export function MemberDetailsModal({
                         </D.Field>
                         <D.Field>
                           <span>Tipo *</span>
-                          <D.Select name="type" defaultValue="OTHER" disabled={busy}>
+                          <D.Select
+                            name="type"
+                            defaultValue="OTHER"
+                            disabled={busy}
+                          >
                             {MEMBER_DOCUMENT_TYPES.map(([value, label]) => (
                               <option key={value} value={value}>
                                 {label}
@@ -1174,7 +1228,9 @@ export function MemberDetailsModal({
                           <Paperclip />
                         </span>
                         <h4>Nenhum documento anexado</h4>
-                        <p>Os documentos enviados aparecerão organizados aqui.</p>
+                        <p>
+                          Os documentos enviados aparecerão organizados aqui.
+                        </p>
                       </div>
                     </D.EmptyState>
                   ) : (
@@ -1264,6 +1320,15 @@ export function MemberDetailsModal({
         )}
       </Modal>
 
+      {showSheet && details && (
+        <MemberSheetModal
+          memberId={memberId}
+          memberName={details.fullName}
+          canHistory={capabilities.viewHistory}
+          canEvents={capabilities.viewEvents}
+          onClose={() => setShowSheet(false)}
+        />
+      )}
       {showCredential && (
         <MemberCredentialModal
           memberId={memberId}
@@ -1285,10 +1350,14 @@ export function MemberDetailsModal({
             {roleSaved ? (
               <>
                 <S.RoleSuccess role="status">
-                  Cargo atualizado com sucesso. A ficha e o Histórico Eclesiástico já estão atualizados.
+                  Cargo atualizado com sucesso. A ficha e o Histórico
+                  Eclesiástico já estão atualizados.
                 </S.RoleSuccess>
                 <S.FormActions>
-                  <Button type="button" onClick={() => setShowRoleEditor(false)}>
+                  <Button
+                    type="button"
+                    onClick={() => setShowRoleEditor(false)}
+                  >
                     Concluir
                   </Button>
                 </S.FormActions>
@@ -1296,8 +1365,8 @@ export function MemberDetailsModal({
             ) : (
               <>
                 <S.RoleNotice>
-                  Ao trocar o Cargo, o vínculo atual será encerrado e permanecerá
-                  disponível no Histórico Eclesiástico.
+                  Ao trocar o Cargo, o vínculo atual será encerrado e
+                  permanecerá disponível no Histórico Eclesiástico.
                 </S.RoleNotice>
                 <S.FormField>
                   <span>Cargo</span>
