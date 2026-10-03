@@ -2,7 +2,7 @@
 
 Consolidação de 3 de outubro de 2026 das decisões aprovadas na conversa sobre o módulo financeiro do Eclesias. O objetivo é agilizar lançamentos, preservar a rastreabilidade dos valores e orientar a entrega mensal das congregações por meio de um demonstrativo descritivo.
 
-Os requisitos funcionais foram aprovados por blocos. Em 3 de outubro de 2026, o usuário também aprovou a direção dos ajustes no banco e as regras complementares de vigência mensal, valores negativos, correção por contribuição e arredondamento. As duas referências visuais foram recebidas; a direção visual descrita ao final está em proposta para revisão antes do fechamento desta especificação. Este documento não autoriza a execução de migrações remotas.
+Os requisitos funcionais foram aprovados por blocos. Em 3 de outubro de 2026, o usuário também aprovou a direção dos ajustes no banco e as regras complementares de vigência mensal, valores negativos, correção por contribuição e arredondamento. A direção visual e a prévia interativa foram aprovadas. O usuário confirmou a continuidade para o plano de implementação após esclarecer que os cadastros completos e a busca e vinculação de pessoas estarão na versão final. Esta especificação está consolidada para esse planejamento. Este documento não autoriza a execução de migrações remotas.
 
 ## Escopo e prioridades aprovados
 
@@ -73,7 +73,7 @@ A limpeza só ocorre após a confirmação do salvamento. Erros preservam o pree
 
 ## Atendimento dedicado e contribuições múltiplas
 
-A tela de atendimento é uma interface própria, com layout a ser revisado com o usuário, campos legíveis e operação rápida pelo teclado. Ela reutiliza as regras financeiras do lançamento comum.
+A tela de atendimento é uma interface própria, com direção visual aprovada na prévia, campos legíveis e operação rápida pelo teclado. Ela reutiliza as regras financeiras do lançamento comum.
 
 O tesoureiro define o contexto da sessão: congregação, departamento, caixa, forma de pagamento e categoria padrão. Esses valores ficam visíveis e podem ser alterados. A identificação ocorre por nome, CPF, número de cadastro ou QR Code da credencial. Depois da busca, o operador confere nome, congregação e classificação sugerida. A leitura de uma credencial não salva uma contribuição automaticamente.
 
@@ -242,7 +242,7 @@ O usuário forneceu as imagens `1.webp` e `2222.webp` como referências de palet
 
 O usuário quer uma paleta própria no financeiro, integrada à identidade do restante do produto, e mantém a prioridade de excelente layout e usabilidade na tela dedicada de atendimento. A proposta é combinar a organização e o destaque esmeralda da primeira referência com o verde profundo e os acentos claros da segunda.
 
-### Paleta proposta
+### Paleta aprovada para a prévia
 
 As cores abaixo são uma seleção de projeto inspirada nas referências, não uma extração exata das imagens.
 
@@ -275,6 +275,10 @@ A inspeção local encontrou um tema global azul em `src/styles/theme.ts`, a fon
 
 O limite visual precisa incluir os elementos abertos em portais, como painéis e modais, para que usem o mesmo tema da área financeira. O provedor atual de portais e o shell autenticado serão considerados na implementação dessa delimitação. Essa solução é uma direção de arquitetura; nenhum componente de aplicação foi alterado nesta etapa.
 
-A direção dos ajustes no banco e as regras complementares estão aprovadas. O próximo passo visual é revisar esta proposta e apresentar uma prévia da página principal e da tela dedicada de atendimento. A especificação consolidada será então revisada pelo usuário antes da elaboração do plano de implementação.
+A direção dos ajustes no banco, as regras complementares e a direção visual estão aprovadas. Foi preparada uma prévia interativa da página principal e da tela dedicada de atendimento, com dados fictícios, edição de contribuições, comprovante agrupado e demonstrativo descritivo. Os acessos secundários são apenas ilustrativos. A prévia não acessa o banco nem realiza impressão física; as operações simuladas duram somente na sessão da prévia.
+
+A conferência da prévia cobriu os totais, inclusão de contribuições, meios de pagamento conforme o caixa, comprovante agrupado, inclusão simulada de lançamento, pesquisa, fechamento de painel por teclado e ausência de transbordamento horizontal nas larguras de 320, 375 e 1040 pixels. A validação visual e das interações do produto completo será feita durante a implementação. Após aprovar a prévia, o usuário autorizou elaborar o plano detalhado para aprovação antes do desenvolvimento.
+
+As simplificações da prévia não reduzem o escopo: haverá cadastros completos nas configurações, busca e vínculo de membro no lançamento comum, identificação própria para pessoa sem cadastro, departamento por contribuição e classificação do dízimo. Os gráficos por categoria da especificação permanecem previstos; a composição por departamento da prévia é uma referência visual de distribuição.
 
 As alterações de esquema futuras devem usar novas migrações, preservar a história existente, ser verificadas em ambiente local ou de desenvolvimento aprovado e atualizar os tipos gerados. As aprovações funcionais e documentais desta etapa não substituem autorização explícita para aplicar mudanças em um banco remoto.
