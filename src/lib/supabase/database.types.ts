@@ -7,10 +7,30 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.5"
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   public: {
     Tables: {
@@ -3732,6 +3752,232 @@ export type Database = {
           },
         ]
       }
+      financial_attendances: {
+        Row: {
+          cancel_reason: string | null
+          cashbox_id: string
+          church_id: string
+          congregation_id: string
+          contributor_kind: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          member_id: string | null
+          payment_method_id: string
+          person_name: string | null
+          revision: number
+          status: string
+          transaction_date: string
+          updated_at: string
+        }
+        Insert: {
+          cancel_reason?: string | null
+          cashbox_id: string
+          church_id: string
+          congregation_id: string
+          contributor_kind: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          member_id?: string | null
+          payment_method_id: string
+          person_name?: string | null
+          revision?: number
+          status?: string
+          transaction_date: string
+          updated_at?: string
+        }
+        Update: {
+          cancel_reason?: string | null
+          cashbox_id?: string
+          church_id?: string
+          congregation_id?: string
+          contributor_kind?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          member_id?: string | null
+          payment_method_id?: string
+          person_name?: string | null
+          revision?: number
+          status?: string
+          transaction_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_attendances_church_id_cashbox_id_payment_method__fkey"
+            columns: ["church_id", "cashbox_id", "payment_method_id"]
+            isOneToOne: false
+            referencedRelation: "financial_cashbox_payment_methods"
+            referencedColumns: ["church_id", "cashbox_id", "payment_method_id"]
+          },
+          {
+            foreignKeyName: "financial_attendances_church_id_congregation_id_fkey"
+            columns: ["church_id", "congregation_id"]
+            isOneToOne: false
+            referencedRelation: "congregations"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "financial_attendances_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_attendances_church_id_member_id_fkey"
+            columns: ["church_id", "member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "financial_attendances_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_balance_adjustments: {
+        Row: {
+          amount: number
+          cashbox_id: string
+          church_id: string
+          congregation_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          reason: string
+          transaction_date: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          cashbox_id: string
+          church_id: string
+          congregation_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          reason: string
+          transaction_date: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          cashbox_id?: string
+          church_id?: string
+          congregation_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          reason?: string
+          transaction_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_balance_adjustments_church_id_cashbox_id_fkey"
+            columns: ["church_id", "cashbox_id"]
+            isOneToOne: false
+            referencedRelation: "financial_cashboxes"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "financial_balance_adjustments_church_id_congregation_id_fkey"
+            columns: ["church_id", "congregation_id"]
+            isOneToOne: false
+            referencedRelation: "congregations"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "financial_balance_adjustments_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_balance_adjustments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_cashbox_payment_methods: {
+        Row: {
+          cashbox_id: string
+          church_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          payment_method_id: string
+          updated_at: string
+        }
+        Insert: {
+          cashbox_id: string
+          church_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          payment_method_id: string
+          updated_at?: string
+        }
+        Update: {
+          cashbox_id?: string
+          church_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          payment_method_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_cashbox_payment_meth_church_id_payment_method_id_fkey"
+            columns: ["church_id", "payment_method_id"]
+            isOneToOne: false
+            referencedRelation: "financial_payment_methods"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "financial_cashbox_payment_methods_church_id_cashbox_id_fkey"
+            columns: ["church_id", "cashbox_id"]
+            isOneToOne: false
+            referencedRelation: "financial_cashboxes"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "financial_cashbox_payment_methods_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_cashbox_payment_methods_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       financial_cashboxes: {
         Row: {
           account_number: string | null
@@ -3750,6 +3996,7 @@ export type Database = {
           is_default: boolean
           name: string
           opening_balance: number
+          opening_date: string | null
           pix_key: string | null
           sort_order: number
           status: string
@@ -3772,6 +4019,7 @@ export type Database = {
           is_default?: boolean
           name: string
           opening_balance?: number
+          opening_date?: string | null
           pix_key?: string | null
           sort_order?: number
           status?: string
@@ -3794,12 +4042,20 @@ export type Database = {
           is_default?: boolean
           name?: string
           opening_balance?: number
+          opening_date?: string | null
           pix_key?: string | null
           sort_order?: number
           status?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "finance_cashbox_unit_fk"
+            columns: ["church_id", "congregation_id"]
+            isOneToOne: false
+            referencedRelation: "congregations"
+            referencedColumns: ["church_id", "id"]
+          },
           {
             foreignKeyName: "financial_cashboxes_church_id_fkey"
             columns: ["church_id"]
@@ -3895,6 +4151,20 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "finance_category_department_fk"
+            columns: ["church_id", "department_id"]
+            isOneToOne: false
+            referencedRelation: "financial_departments"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "finance_category_parent_fk"
+            columns: ["church_id", "parent_id"]
+            isOneToOne: false
+            referencedRelation: "financial_categories"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
             foreignKeyName: "financial_categories_church_id_fkey"
             columns: ["church_id"]
             isOneToOne: false
@@ -3920,6 +4190,70 @@ export type Database = {
             columns: ["parent_id"]
             isOneToOne: false
             referencedRelation: "financial_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_department_base_versions: {
+        Row: {
+          church_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          department_id: string
+          effective_month: string
+          id: string
+          participates_in_base: boolean
+          reason: string | null
+          revision: number
+          updated_at: string
+        }
+        Insert: {
+          church_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          department_id: string
+          effective_month: string
+          id?: string
+          participates_in_base: boolean
+          reason?: string | null
+          revision: number
+          updated_at?: string
+        }
+        Update: {
+          church_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          department_id?: string
+          effective_month?: string
+          id?: string
+          participates_in_base?: boolean
+          reason?: string | null
+          revision?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_department_base_versions_church_id_department_id_fkey"
+            columns: ["church_id", "department_id"]
+            isOneToOne: false
+            referencedRelation: "financial_departments"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "financial_department_base_versions_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_department_base_versions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -4118,6 +4452,256 @@ export type Database = {
           },
         ]
       }
+      financial_ledger_entries: {
+        Row: {
+          adjustment_id: string | null
+          amount: number
+          cashbox_id: string
+          church_id: string
+          congregation_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          entry_kind: string
+          financial_date: string
+          id: string
+          operation_id: string | null
+          reverses_entry_id: string | null
+          source_revision: number
+          transaction_id: string | null
+          transfer_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          adjustment_id?: string | null
+          amount: number
+          cashbox_id: string
+          church_id: string
+          congregation_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          entry_kind: string
+          financial_date: string
+          id?: string
+          operation_id?: string | null
+          reverses_entry_id?: string | null
+          source_revision?: number
+          transaction_id?: string | null
+          transfer_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          adjustment_id?: string | null
+          amount?: number
+          cashbox_id?: string
+          church_id?: string
+          congregation_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          entry_kind?: string
+          financial_date?: string
+          id?: string
+          operation_id?: string | null
+          reverses_entry_id?: string | null
+          source_revision?: number
+          transaction_id?: string | null
+          transfer_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_ledger_entries_church_id_adjustment_id_fkey"
+            columns: ["church_id", "adjustment_id"]
+            isOneToOne: false
+            referencedRelation: "financial_balance_adjustments"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "financial_ledger_entries_church_id_cashbox_id_fkey"
+            columns: ["church_id", "cashbox_id"]
+            isOneToOne: false
+            referencedRelation: "financial_cashboxes"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "financial_ledger_entries_church_id_congregation_id_fkey"
+            columns: ["church_id", "congregation_id"]
+            isOneToOne: false
+            referencedRelation: "congregations"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "financial_ledger_entries_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_ledger_entries_church_id_operation_id_fkey"
+            columns: ["church_id", "operation_id"]
+            isOneToOne: false
+            referencedRelation: "financial_operations"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "financial_ledger_entries_church_id_reverses_entry_id_fkey"
+            columns: ["church_id", "reverses_entry_id"]
+            isOneToOne: false
+            referencedRelation: "financial_ledger_entries"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "financial_ledger_entries_church_id_transaction_id_fkey"
+            columns: ["church_id", "transaction_id"]
+            isOneToOne: false
+            referencedRelation: "financial_transactions"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "financial_ledger_entries_church_id_transfer_id_fkey"
+            columns: ["church_id", "transfer_id"]
+            isOneToOne: false
+            referencedRelation: "financial_transfers"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "financial_ledger_entries_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_operational_assignments: {
+        Row: {
+          access_id: string
+          church_id: string
+          congregation_id: string
+          created_at: string
+          created_by: string
+          deleted_at: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          access_id: string
+          church_id: string
+          congregation_id: string
+          created_at?: string
+          created_by: string
+          deleted_at?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          access_id?: string
+          church_id?: string
+          congregation_id?: string
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_operational_assignment_church_id_congregation_id_fkey"
+            columns: ["church_id", "congregation_id"]
+            isOneToOne: false
+            referencedRelation: "congregations"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "financial_operational_assignments_church_id_access_id_fkey"
+            columns: ["church_id", "access_id"]
+            isOneToOne: false
+            referencedRelation: "user_church_access"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "financial_operational_assignments_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_operational_assignments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_operations: {
+        Row: {
+          church_id: string
+          congregation_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          kind: string
+          operation_key: string
+          payload_hash: string
+          result: Json | null
+          updated_at: string
+        }
+        Insert: {
+          church_id: string
+          congregation_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          kind: string
+          operation_key: string
+          payload_hash: string
+          result?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          church_id?: string
+          congregation_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          kind?: string
+          operation_key?: string
+          payload_hash?: string
+          result?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_operations_church_id_congregation_id_fkey"
+            columns: ["church_id", "congregation_id"]
+            isOneToOne: false
+            referencedRelation: "congregations"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "financial_operations_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_operations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       financial_payment_methods: {
         Row: {
           church_id: string
@@ -4187,9 +4771,155 @@ export type Database = {
           },
         ]
       }
+      financial_period_revisions: {
+        Row: {
+          church_id: string
+          congregation_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          month: string
+          revision: number
+          updated_at: string
+        }
+        Insert: {
+          church_id: string
+          congregation_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          month: string
+          revision?: number
+          updated_at?: string
+        }
+        Update: {
+          church_id?: string
+          congregation_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          month?: string
+          revision?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_period_revisions_church_id_congregation_id_fkey"
+            columns: ["church_id", "congregation_id"]
+            isOneToOne: false
+            referencedRelation: "congregations"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "financial_period_revisions_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_period_revisions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_receipt_items: {
+        Row: {
+          amount: number
+          category_name: string
+          church_id: string
+          classification_name: string | null
+          congregation_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          department_name: string
+          id: string
+          receipt_id: string
+          sort_order: number
+          transaction_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          category_name: string
+          church_id: string
+          classification_name?: string | null
+          congregation_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          department_name: string
+          id?: string
+          receipt_id: string
+          sort_order: number
+          transaction_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          category_name?: string
+          church_id?: string
+          classification_name?: string | null
+          congregation_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          department_name?: string
+          id?: string
+          receipt_id?: string
+          sort_order?: number
+          transaction_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_receipt_items_church_id_congregation_id_fkey"
+            columns: ["church_id", "congregation_id"]
+            isOneToOne: false
+            referencedRelation: "congregations"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "financial_receipt_items_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_receipt_items_church_id_receipt_id_fkey"
+            columns: ["church_id", "receipt_id"]
+            isOneToOne: false
+            referencedRelation: "financial_receipts"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "financial_receipt_items_church_id_transaction_id_fkey"
+            columns: ["church_id", "transaction_id"]
+            isOneToOne: false
+            referencedRelation: "financial_transactions"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "financial_receipt_items_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       financial_receipts: {
         Row: {
           amount: number
+          attendance_id: string | null
           cancel_reason: string | null
           cancelled_at: string | null
           cancelled_by: string | null
@@ -4198,7 +4928,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           deleted_at: string | null
-          financial_transaction_id: string
+          financial_transaction_id: string | null
           id: string
           issued_at: string
           metadata: Json
@@ -4213,10 +4943,14 @@ export type Database = {
           receipt_status: string
           receipt_title: string | null
           receipt_type: string
+          revision: number
+          snapshot: Json | null
+          supersedes_id: string | null
           updated_at: string
         }
         Insert: {
           amount?: number
+          attendance_id?: string | null
           cancel_reason?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
@@ -4225,7 +4959,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
-          financial_transaction_id: string
+          financial_transaction_id?: string | null
           id?: string
           issued_at?: string
           metadata?: Json
@@ -4240,10 +4974,14 @@ export type Database = {
           receipt_status?: string
           receipt_title?: string | null
           receipt_type?: string
+          revision?: number
+          snapshot?: Json | null
+          supersedes_id?: string | null
           updated_at?: string
         }
         Update: {
           amount?: number
+          attendance_id?: string | null
           cancel_reason?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
@@ -4252,7 +4990,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
-          financial_transaction_id?: string
+          financial_transaction_id?: string | null
           id?: string
           issued_at?: string
           metadata?: Json
@@ -4267,9 +5005,33 @@ export type Database = {
           receipt_status?: string
           receipt_title?: string | null
           receipt_type?: string
+          revision?: number
+          snapshot?: Json | null
+          supersedes_id?: string | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "finance_receipt_attendance"
+            columns: ["church_id", "attendance_id"]
+            isOneToOne: false
+            referencedRelation: "financial_attendances"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "finance_receipt_previous"
+            columns: ["church_id", "supersedes_id"]
+            isOneToOne: false
+            referencedRelation: "financial_receipts"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "finance_receipt_transaction"
+            columns: ["church_id", "financial_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "financial_transactions"
+            referencedColumns: ["church_id", "id"]
+          },
           {
             foreignKeyName: "financial_receipts_cancelled_by_fkey"
             columns: ["cancelled_by"]
@@ -4314,22 +5076,170 @@ export type Database = {
           },
         ]
       }
+      financial_tithe_classifications: {
+        Row: {
+          church_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          name: string
+          role_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          church_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          name: string
+          role_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          church_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          name?: string
+          role_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_tithe_classifications_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_tithe_classifications_church_id_role_id_fkey"
+            columns: ["church_id", "role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "financial_tithe_classifications_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_transaction_revisions: {
+        Row: {
+          church_id: string
+          congregation_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          new_values: Json
+          previous_values: Json | null
+          reason: string
+          revision: number
+          transaction_id: string | null
+          transfer_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          church_id: string
+          congregation_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          new_values: Json
+          previous_values?: Json | null
+          reason: string
+          revision: number
+          transaction_id?: string | null
+          transfer_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          church_id?: string
+          congregation_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          new_values?: Json
+          previous_values?: Json | null
+          reason?: string
+          revision?: number
+          transaction_id?: string | null
+          transfer_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_transaction_revisions_church_id_congregation_id_fkey"
+            columns: ["church_id", "congregation_id"]
+            isOneToOne: false
+            referencedRelation: "congregations"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "financial_transaction_revisions_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_transaction_revisions_church_id_transaction_id_fkey"
+            columns: ["church_id", "transaction_id"]
+            isOneToOne: false
+            referencedRelation: "financial_transactions"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "financial_transaction_revisions_church_id_transfer_id_fkey"
+            columns: ["church_id", "transfer_id"]
+            isOneToOne: false
+            referencedRelation: "financial_transfers"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "financial_transaction_revisions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       financial_transactions: {
         Row: {
           amount: number
+          attendance_id: string | null
+          beneficiary_name: string | null
           cancel_reason: string | null
           cancelled_at: string | null
           cancelled_by: string | null
           cashbox_id: string | null
           category_id: string
+          category_name: string | null
           church_id: string
+          classification_name: string | null
           confirmed_at: string | null
           confirmed_by: string | null
           congregation_id: string | null
+          contributor_kind: string | null
           created_at: string
           created_by: string | null
           deleted_at: string | null
           department_id: string | null
+          department_name: string | null
           description: string | null
           document_number: string | null
           generate_receipt: boolean
@@ -4345,8 +5255,10 @@ export type Database = {
           receipt_printed: boolean
           reference_month: number | null
           reference_year: number | null
+          revision: number
           source_type: string
           status: string
+          tithe_classification_id: string | null
           transaction_date: string
           transaction_number: string | null
           transaction_type: string
@@ -4354,19 +5266,25 @@ export type Database = {
         }
         Insert: {
           amount?: number
+          attendance_id?: string | null
+          beneficiary_name?: string | null
           cancel_reason?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
           cashbox_id?: string | null
           category_id: string
+          category_name?: string | null
           church_id: string
+          classification_name?: string | null
           confirmed_at?: string | null
           confirmed_by?: string | null
           congregation_id?: string | null
+          contributor_kind?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
           department_id?: string | null
+          department_name?: string | null
           description?: string | null
           document_number?: string | null
           generate_receipt?: boolean
@@ -4382,8 +5300,10 @@ export type Database = {
           receipt_printed?: boolean
           reference_month?: number | null
           reference_year?: number | null
+          revision?: number
           source_type?: string
           status?: string
+          tithe_classification_id?: string | null
           transaction_date?: string
           transaction_number?: string | null
           transaction_type: string
@@ -4391,19 +5311,25 @@ export type Database = {
         }
         Update: {
           amount?: number
+          attendance_id?: string | null
+          beneficiary_name?: string | null
           cancel_reason?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
           cashbox_id?: string | null
           category_id?: string
+          category_name?: string | null
           church_id?: string
+          classification_name?: string | null
           confirmed_at?: string | null
           confirmed_by?: string | null
           congregation_id?: string | null
+          contributor_kind?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
           department_id?: string | null
+          department_name?: string | null
           description?: string | null
           document_number?: string | null
           generate_receipt?: boolean
@@ -4419,14 +5345,65 @@ export type Database = {
           receipt_printed?: boolean
           reference_month?: number | null
           reference_year?: number | null
+          revision?: number
           source_type?: string
           status?: string
+          tithe_classification_id?: string | null
           transaction_date?: string
           transaction_number?: string | null
           transaction_type?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "finance_tx_attendance"
+            columns: ["church_id", "attendance_id"]
+            isOneToOne: false
+            referencedRelation: "financial_attendances"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "finance_tx_box_method"
+            columns: ["church_id", "cashbox_id", "payment_method_id"]
+            isOneToOne: false
+            referencedRelation: "financial_cashbox_payment_methods"
+            referencedColumns: ["church_id", "cashbox_id", "payment_method_id"]
+          },
+          {
+            foreignKeyName: "finance_tx_category"
+            columns: ["church_id", "category_id"]
+            isOneToOne: false
+            referencedRelation: "financial_categories"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "finance_tx_classification"
+            columns: ["church_id", "tithe_classification_id"]
+            isOneToOne: false
+            referencedRelation: "financial_tithe_classifications"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "finance_tx_department"
+            columns: ["church_id", "department_id"]
+            isOneToOne: false
+            referencedRelation: "financial_departments"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "finance_tx_member"
+            columns: ["church_id", "member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "finance_tx_unit"
+            columns: ["church_id", "congregation_id"]
+            isOneToOne: false
+            referencedRelation: "congregations"
+            referencedColumns: ["church_id", "id"]
+          },
           {
             foreignKeyName: "financial_transactions_cancelled_by_fkey"
             columns: ["cancelled_by"]
@@ -4495,6 +5472,96 @@ export type Database = {
             columns: ["payment_method_id"]
             isOneToOne: false
             referencedRelation: "financial_payment_methods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_transfers: {
+        Row: {
+          amount: number
+          cancel_reason: string | null
+          church_id: string
+          congregation_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          id: string
+          revision: number
+          source_cashbox_id: string
+          status: string
+          target_cashbox_id: string
+          transaction_date: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          cancel_reason?: string | null
+          church_id: string
+          congregation_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          revision?: number
+          source_cashbox_id: string
+          status?: string
+          target_cashbox_id: string
+          transaction_date: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          cancel_reason?: string | null
+          church_id?: string
+          congregation_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          revision?: number
+          source_cashbox_id?: string
+          status?: string
+          target_cashbox_id?: string
+          transaction_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_transfers_church_id_congregation_id_fkey"
+            columns: ["church_id", "congregation_id"]
+            isOneToOne: false
+            referencedRelation: "congregations"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "financial_transfers_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_transfers_church_id_source_cashbox_id_fkey"
+            columns: ["church_id", "source_cashbox_id"]
+            isOneToOne: false
+            referencedRelation: "financial_cashboxes"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "financial_transfers_church_id_target_cashbox_id_fkey"
+            columns: ["church_id", "target_cashbox_id"]
+            isOneToOne: false
+            referencedRelation: "financial_cashboxes"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "financial_transfers_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -5925,6 +6992,7 @@ export type Database = {
           rule_type: string
           sort_order: number
           updated_at: string
+          version_id: string | null
         }
         Insert: {
           affects_pastoral_prebend?: boolean
@@ -5959,6 +7027,7 @@ export type Database = {
           rule_type: string
           sort_order?: number
           updated_at?: string
+          version_id?: string | null
         }
         Update: {
           affects_pastoral_prebend?: boolean
@@ -5993,8 +7062,16 @@ export type Database = {
           rule_type?: string
           sort_order?: number
           updated_at?: string
+          version_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "finance_report_version"
+            columns: ["church_id", "version_id"]
+            isOneToOne: false
+            referencedRelation: "report_delivery_versions"
+            referencedColumns: ["church_id", "id"]
+          },
           {
             foreignKeyName: "report_delivery_items_category_id_fkey"
             columns: ["category_id"]
@@ -6053,6 +7130,70 @@ export type Database = {
           },
         ]
       }
+      report_delivery_rule_sets: {
+        Row: {
+          church_id: string
+          congregation_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          effective_month: string
+          id: string
+          items: Json
+          reason: string | null
+          revision: number
+          updated_at: string
+        }
+        Insert: {
+          church_id: string
+          congregation_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          effective_month: string
+          id?: string
+          items: Json
+          reason?: string | null
+          revision: number
+          updated_at?: string
+        }
+        Update: {
+          church_id?: string
+          congregation_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          effective_month?: string
+          id?: string
+          items?: Json
+          reason?: string | null
+          revision?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_delivery_rule_sets_church_id_congregation_id_fkey"
+            columns: ["church_id", "congregation_id"]
+            isOneToOne: false
+            referencedRelation: "congregations"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "report_delivery_rule_sets_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_delivery_rule_sets_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       report_delivery_rules: {
         Row: {
           affects_pastoral_prebend: boolean
@@ -6080,6 +7221,7 @@ export type Database = {
           name: string
           percentage_value: number | null
           rule_nature: string
+          rule_set_id: string | null
           rule_type: string
           sort_order: number
           status: string
@@ -6111,6 +7253,7 @@ export type Database = {
           name: string
           percentage_value?: number | null
           rule_nature?: string
+          rule_set_id?: string | null
           rule_type?: string
           sort_order?: number
           status?: string
@@ -6142,12 +7285,20 @@ export type Database = {
           name?: string
           percentage_value?: number | null
           rule_nature?: string
+          rule_set_id?: string | null
           rule_type?: string
           sort_order?: number
           status?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "finance_rule_set"
+            columns: ["church_id", "rule_set_id"]
+            isOneToOne: false
+            referencedRelation: "report_delivery_rule_sets"
+            referencedColumns: ["church_id", "id"]
+          },
           {
             foreignKeyName: "report_delivery_rules_category_id_fkey"
             columns: ["category_id"]
@@ -6171,6 +7322,93 @@ export type Database = {
           },
           {
             foreignKeyName: "report_delivery_rules_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      report_delivery_versions: {
+        Row: {
+          church_id: string
+          configuration_hash: string
+          congregation_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          month: string
+          report_delivery_id: string
+          revision: number
+          rule_set_id: string
+          snapshot: Json
+          source_revision: number
+          updated_at: string
+        }
+        Insert: {
+          church_id: string
+          configuration_hash: string
+          congregation_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          month: string
+          report_delivery_id: string
+          revision: number
+          rule_set_id: string
+          snapshot: Json
+          source_revision: number
+          updated_at?: string
+        }
+        Update: {
+          church_id?: string
+          configuration_hash?: string
+          congregation_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          month?: string
+          report_delivery_id?: string
+          revision?: number
+          rule_set_id?: string
+          snapshot?: Json
+          source_revision?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_delivery_versions_church_id_congregation_id_fkey"
+            columns: ["church_id", "congregation_id"]
+            isOneToOne: false
+            referencedRelation: "congregations"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "report_delivery_versions_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_delivery_versions_church_id_report_delivery_id_fkey"
+            columns: ["church_id", "report_delivery_id"]
+            isOneToOne: false
+            referencedRelation: "report_deliveries"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "report_delivery_versions_church_id_rule_set_id_fkey"
+            columns: ["church_id", "rule_set_id"]
+            isOneToOne: false
+            referencedRelation: "report_delivery_rule_sets"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "report_delivery_versions_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -7116,6 +8354,7 @@ export type Database = {
         Returns: boolean
       }
       is_valid_cpf: { Args: { p_value: string }; Returns: boolean }
+      list_finance_units: { Args: { p_church_id: string }; Returns: Json }
       log_audit: {
         Args: {
           p_action: string
@@ -7595,6 +8834,10 @@ export type Database = {
       }
       rollback_member_import: { Args: { p_batch_id: string }; Returns: Json }
       safe_uuid: { Args: { p_value: string }; Returns: string }
+      save_finance_catalog: {
+        Args: { p_church_id: string; p_payload: Json }
+        Returns: Json
+      }
       search_administrative_documents: {
         Args: {
           p_category_id?: string
@@ -7913,7 +9156,11 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },
 } as const
+
