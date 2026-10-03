@@ -8303,6 +8303,10 @@ export type Database = {
         Args: { p_event_id: string; p_payment_id: string }
         Returns: string
       }
+      execute_finance_command: {
+        Args: { p_church_id: string; p_payload: Json }
+        Returns: Json
+      }
       execute_member_import: { Args: { p_batch_id: string }; Returns: Json }
       expire_event_reservations: {
         Args: { p_event_id: string }

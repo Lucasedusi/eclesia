@@ -13,3 +13,10 @@ describe("cacheTags", () => {
     expect(cacheTags.documentReferences(churchId)).toBe(`document-references:${churchId}`);
   });
 });
+
+// Financial data must never share keys across units or periods.
+it("isolates financial cache tags by church, unit and month", () => {
+ expect(cacheTags.financeUnit("a","one")).not.toBe(cacheTags.financeUnit("a","two"));
+ expect(cacheTags.financePeriod("a","one","2026-09")).not.toBe(cacheTags.financePeriod("a","one","2026-10"));
+ expect(cacheTags.financeCatalogs("a")).not.toBe(cacheTags.financeCatalogs("b"));
+});

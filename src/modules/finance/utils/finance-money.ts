@@ -20,3 +20,9 @@ export function percentageCents(base: number, percentage: string): number {
  return Number((BigInt(base)*scaled+BigInt(500000))/BigInt(1000000));
 }
 export function formatMoney(cents: number) { return new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(cents/100); }
+
+export function parseMoneyInput(value: string): number {
+ const normalized=value.trim();if(!/^-?(?:\d+|\d{1,3}(?:\.\d{3})+)(?:,\d{1,2})?$/.test(normalized)) throw new Error("INVALID_INPUT");
+ return decimalToCents(normalized.replaceAll(".","").replace(",","."));
+}
+export const toSqlAmount=centsToDecimal;
