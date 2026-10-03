@@ -4331,6 +4331,89 @@ export type Database = {
           },
         ]
       }
+      financial_document_uploads: {
+        Row: {
+          church_id: string
+          congregation_id: string
+          content_hash: string | null
+          created_at: string
+          created_by: string
+          deleted_at: string | null
+          file_name: string
+          file_size: number
+          id: string
+          mime_type: string
+          pending_path: string
+          status: string
+          storage_path: string
+          transaction_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          church_id: string
+          congregation_id: string
+          content_hash?: string | null
+          created_at?: string
+          created_by: string
+          deleted_at?: string | null
+          file_name: string
+          file_size: number
+          id?: string
+          mime_type: string
+          pending_path: string
+          status?: string
+          storage_path: string
+          transaction_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          church_id?: string
+          congregation_id?: string
+          content_hash?: string | null
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          file_name?: string
+          file_size?: number
+          id?: string
+          mime_type?: string
+          pending_path?: string
+          status?: string
+          storage_path?: string
+          transaction_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_document_uploads_church_id_congregation_id_fkey"
+            columns: ["church_id", "congregation_id"]
+            isOneToOne: false
+            referencedRelation: "congregations"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "financial_document_uploads_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_document_uploads_church_id_transaction_id_fkey"
+            columns: ["church_id", "transaction_id"]
+            isOneToOne: false
+            referencedRelation: "financial_transactions"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "financial_document_uploads_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       financial_documents: {
         Row: {
           accounts_payable_id: string | null
@@ -4354,6 +4437,7 @@ export type Database = {
           storage_path: string
           title: string
           updated_at: string
+          upload_id: string | null
           uploaded_at: string
           uploaded_by: string | null
         }
@@ -4379,6 +4463,7 @@ export type Database = {
           storage_path: string
           title: string
           updated_at?: string
+          upload_id?: string | null
           uploaded_at?: string
           uploaded_by?: string | null
         }
@@ -4404,10 +4489,39 @@ export type Database = {
           storage_path?: string
           title?: string
           updated_at?: string
+          upload_id?: string | null
           uploaded_at?: string
           uploaded_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "finance_document_receipt_fk"
+            columns: ["church_id", "financial_receipt_id"]
+            isOneToOne: false
+            referencedRelation: "financial_receipts"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "finance_document_tx_fk"
+            columns: ["church_id", "financial_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "financial_transactions"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "finance_document_unit_fk"
+            columns: ["church_id", "congregation_id"]
+            isOneToOne: false
+            referencedRelation: "congregations"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "finance_document_upload_fk"
+            columns: ["church_id", "upload_id"]
+            isOneToOne: false
+            referencedRelation: "financial_document_uploads"
+            referencedColumns: ["church_id", "id"]
+          },
           {
             foreignKeyName: "financial_documents_accounts_payable_id_fkey"
             columns: ["accounts_payable_id"]
@@ -8313,6 +8427,10 @@ export type Database = {
         Args: { p_event_id: string; p_payment_id: string }
         Returns: string
       }
+      discard_finance_upload: {
+        Args: { p_church_id: string; p_unit: string; p_upload_id: string }
+        Returns: Json
+      }
       execute_finance_command: {
         Args: { p_church_id: string; p_payload: Json }
         Returns: Json
@@ -8398,6 +8516,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      lookup_finance_contributors: {
+        Args: {
+          p_church_id: string
+          p_kind: string
+          p_unit: string
+          p_value: string
+        }
+        Returns: Json
+      }
       manage_member_role: {
         Args: {
           p_end_date?: string
@@ -8414,6 +8541,16 @@ export type Database = {
       normalize_member_import_name: {
         Args: { p_value: string }
         Returns: string
+      }
+      prepare_finance_upload: {
+        Args: {
+          p_church_id: string
+          p_name: string
+          p_size: number
+          p_type: string
+          p_unit: string
+        }
+        Returns: Json
       }
       prepare_member_import: {
         Args: { p_items: Json; p_payload: Json }
