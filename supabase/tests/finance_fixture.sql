@@ -5,7 +5,7 @@ insert into auth.users(id,email) values
  ('10000000-0000-4000-8000-000000000002','finance-treasurer@example.invalid'),
  ('10000000-0000-4000-8000-000000000003','finance-secretary@example.invalid'),
  ('10000000-0000-4000-8000-000000000004','finance-observer@example.invalid');
-insert into public.profiles(id,full_name,status) select id,'Finance fixture','ACTIVE' from auth.users where email like 'finance-%@example.invalid' on conflict(id) do update set status='ACTIVE';
+insert into public.profiles(id,full_name,status) select id,'Finance fixture','ACTIVE' from auth.users where id in ('10000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000002','10000000-0000-4000-8000-000000000003','10000000-0000-4000-8000-000000000004') on conflict(id) do update set status='ACTIVE';
 insert into public.churches(id,name) values
  ('20000000-0000-4000-8000-000000000001','Finance Field A'),('20000000-0000-4000-8000-000000000002','Finance Field B');
 insert into public.regions(id,church_id,name) values

@@ -38,5 +38,12 @@ const corrections=await Promise.allSettled([command(correction),command({...corr
 assert.equal(corrections.filter(r=>r.status==="fulfilled").length,1);assert.ok(corrections.some(r=>r.status==="rejected"&&r.reason.message.includes("CONFLICT")));
 const separate=await Promise.all([command({...record,operationKey:randomUUID()}),command({...record,operationKey:randomUUID()})]);assert.notEqual(separate[0].operationId,separate[1].operationId);
 const balance=await sql(`select current_balance from public.financial_cashboxes where church_id='${church}' and id='${refs.cashboxId}';`);assert.equal(Number(balance),400);
+await sql(`begin;${auth}set local role authenticated;select public.save_finance_statement_rules('${church}',${quote(JSON.stringify({congregationId:unit,effectiveMonth:"2026-10",items:[{name:"Repasse",destination:"CATHEDRAL",role:"DISTRIBUTION",calculation:"ELIGIBLE_INCOME_PERCENT",percentage:"30"}]}))}::jsonb);commit;`);
+const [generation]=await Promise.all([sql(`begin;${auth}set local role authenticated;select public.generate_finance_statement('${church}','${unit}','2026-10','${randomUUID()}');commit;`),command({...record,operationKey:randomUUID()})]);
+const snapshot=JSON.parse(generation.split("\n").find(s=>s.startsWith("{")));
+assert.ok([40000,55000].includes(snapshot.eligibleIncomeCents));
+const sourceIds=snapshot.sources.map(v=>quote(v.id)).join(",");
+const sourceTotal=await sql(`select sum(amount)*100 from public.financial_transactions where church_id='${church}' and id in (${sourceIds});`);
+assert.equal(Number(sourceTotal),snapshot.eligibleIncomeCents);
 mkdirSync("tmp",{recursive:true});writeFileSync("tmp/finance-concurrency-fixture.json",JSON.stringify({church,unit,user,...refs}));
-console.log("PASS: concurrent retry, stale revision conflict, separate contributions; final balance R$ 400.00. Fictional data retained only in disposable local DB.");
+console.log("PASS: concurrent retry, stale revision conflict, separate contributions; balance reconciled and statement snapshot consistent. Fictional data retained only in disposable local DB.");

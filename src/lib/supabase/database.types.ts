@@ -8235,6 +8235,16 @@ export type Database = {
         }
         Returns: boolean
       }
+      copy_finance_statement_rules: {
+        Args: {
+          p_church_id: string
+          p_from: string
+          p_month: string
+          p_reason?: string
+          p_to: string
+        }
+        Returns: Json
+      }
       create_church_invitation: {
         Args: {
           p_church_id: string
@@ -8312,6 +8322,15 @@ export type Database = {
         Args: { p_event_id: string }
         Returns: number
       }
+      generate_finance_statement: {
+        Args: {
+          p_church_id: string
+          p_month: string
+          p_operation_key: string
+          p_unit: string
+        }
+        Returns: Json
+      }
       get_administrative_document_references: {
         Args: { p_church_id: string }
         Returns: Json
@@ -8327,6 +8346,10 @@ export type Database = {
         }[]
       }
       get_event_stats: { Args: { p_church_id: string }; Returns: Json }
+      get_finance_statement: {
+        Args: { p_church_id: string; p_version_id: string }
+        Returns: Json
+      }
       get_member_import_duplicate_candidates: {
         Args: { p_candidates: Json; p_church_id: string }
         Returns: {
@@ -8839,6 +8862,10 @@ export type Database = {
       rollback_member_import: { Args: { p_batch_id: string }; Returns: Json }
       safe_uuid: { Args: { p_value: string }; Returns: string }
       save_finance_catalog: {
+        Args: { p_church_id: string; p_payload: Json }
+        Returns: Json
+      }
+      save_finance_statement_rules: {
         Args: { p_church_id: string; p_payload: Json }
         Returns: Json
       }
