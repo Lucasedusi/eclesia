@@ -2,7 +2,7 @@
 
 Consolidação de 3 de outubro de 2026 das decisões aprovadas na conversa sobre o módulo financeiro do Eclesias. O objetivo é agilizar lançamentos, preservar a rastreabilidade dos valores e orientar a entrega mensal das congregações por meio de um demonstrativo descritivo.
 
-Os requisitos funcionais foram aprovados por blocos. Em 3 de outubro de 2026, o usuário também aprovou a direção dos ajustes no banco e as regras complementares de vigência mensal, valores negativos, correção por contribuição e arredondamento. A etapa atual é incorporar a referência de layout que o usuário solicitou enviar antes da revisão final desta especificação. Este documento não autoriza a execução de migrações remotas.
+Os requisitos funcionais foram aprovados por blocos. Em 3 de outubro de 2026, o usuário também aprovou a direção dos ajustes no banco e as regras complementares de vigência mensal, valores negativos, correção por contribuição e arredondamento. As duas referências visuais foram recebidas; a direção visual descrita ao final está em proposta para revisão antes do fechamento desta especificação. Este documento não autoriza a execução de migrações remotas.
 
 ## Escopo e prioridades aprovados
 
@@ -238,8 +238,43 @@ Na implementação serão necessários testes focados das regras monetárias e d
 
 ## Referência visual e fechamento da especificação
 
-O usuário solicitou enviar um modelo de layout antes do fechamento final dos requisitos. A área financeira terá identidade visual própria dentro do sistema, e o atendimento terá uma tela dedicada com excelente usabilidade. O modelo deverá orientar a composição, os efeitos e a adaptação aos tamanhos de tela, preservando os fluxos aprovados.
+O usuário forneceu as imagens `1.webp` e `2222.webp` como referências de paleta e direção visual, explicitando que elas não representam todos os requisitos do módulo. A primeira apresenta fundo claro, cartões brancos, verde esmeralda em destaque e números grandes. A segunda combina verde profundo, verde claro de destaque e superfícies claras. Textos, marcas, dados, cartões bancários e funcionalidades das imagens são referências externas de composição, não novos requisitos do Eclesias.
 
-A direção dos ajustes no banco e as regras complementares estão aprovadas. O próximo passo é receber a referência visual do usuário, incorporá-la neste mesmo documento e apresentar a composição da página principal e da tela dedicada de atendimento. A especificação consolidada será então revisada pelo usuário antes da elaboração do plano de implementação.
+O usuário quer uma paleta própria no financeiro, integrada à identidade do restante do produto, e mantém a prioridade de excelente layout e usabilidade na tela dedicada de atendimento. A proposta é combinar a organização e o destaque esmeralda da primeira referência com o verde profundo e os acentos claros da segunda.
+
+### Paleta proposta
+
+As cores abaixo são uma seleção de projeto inspirada nas referências, não uma extração exata das imagens.
+
+| Uso | Cor proposta |
+| --- | --- |
+| Identidade principal e destaques de saldo | Verde profundo `#0B3D32` |
+| Ações principais e seleção | Esmeralda `#087F5B` |
+| Acentos pontuais e superfícies selecionadas | Verde claro `#B6E875`, com texto escuro |
+| Fundo da área financeira | Cinza com leve tom verde `#F5F7F6` |
+| Cartões e campos | Branco `#FFFFFF` |
+| Texto principal | Verde quase preto `#18352C` |
+| Divisórias e bordas | Cinza esverdeado `#E3EAE6` |
+| Identificação de saídas e valores negativos | Vermelho sóbrio `#B5474D`, acompanhado de texto ou sinal |
+
+Superfícies predominantemente claras, bordas discretas, sombras leves e cantos moderadamente arredondados. Verde claro terá uso pontual, especialmente com texto escuro; legibilidade de tabelas, valores, campos e estados de foco prevalece. As combinações finais de contraste serão verificadas na prévia. Manter a família Rubik existente e os padrões familiares de campos, ícones e mensagens para preservar continuidade com o Eclesias.
+
+### Composição proposta
+
+A área terá navegação financeira própria, identificação Eclesias Financeiro e acesso claro para voltar às demais áreas do sistema. Unidade e período continuam visíveis. A navegação organiza Visão geral, Lançamentos, Atendimento, Caixas e contas, Demonstrativos e Configurações, conforme as permissões já aprovadas.
+
+Na página principal, destacar saldo final em um cartão verde profundo, mantendo saldo inicial, entradas e saídas em cartões claros. Gráficos compactos precedem uma listagem ampla, com prioridade para a leitura e as ações de lançamento. O demonstrativo mensal recebe um acesso evidente pela importância declarada pelo usuário.
+
+No atendimento em tela larga, organizar identificação e itens de contribuição à esquerda e resumo do atendimento com total e ação de salvar e imprimir à direita. Em telas menores, reorganizar os mesmos elementos numa coluna, mantendo total e ação principal acessíveis sem encobrir campos ou o teclado virtual. A contribuição simples ocupa uma linha; itens adicionais aparecem conforme a necessidade.
+
+Efeitos propostos: abertura suave dos painéis, destaque breve após confirmação e transições curtas de seleção e foco. Valores financeiros permanecem legíveis e estáveis. Respeitar preferência de movimento reduzido e preservar navegação por teclado. A impressão usa composição limpa, própria para papel, sem depender de fundos coloridos ou efeitos.
+
+### Aplicação do tema financeiro
+
+A inspeção local encontrou um tema global azul em `src/styles/theme.ts`, a fonte Rubik no layout principal e estilos compartilhados por Styled Components e variáveis CSS. A proposta é definir uma variante de tema delimitada ao ambiente financeiro, abrangendo sua navegação, cabeçalho, conteúdo e painéis, com variáveis locais e reutilização dos componentes existentes. A variante não deverá substituir o tema global do produto.
+
+O limite visual precisa incluir os elementos abertos em portais, como painéis e modais, para que usem o mesmo tema da área financeira. O provedor atual de portais e o shell autenticado serão considerados na implementação dessa delimitação. Essa solução é uma direção de arquitetura; nenhum componente de aplicação foi alterado nesta etapa.
+
+A direção dos ajustes no banco e as regras complementares estão aprovadas. O próximo passo visual é revisar esta proposta e apresentar uma prévia da página principal e da tela dedicada de atendimento. A especificação consolidada será então revisada pelo usuário antes da elaboração do plano de implementação.
 
 As alterações de esquema futuras devem usar novas migrações, preservar a história existente, ser verificadas em ambiente local ou de desenvolvimento aprovado e atualizar os tipos gerados. As aprovações funcionais e documentais desta etapa não substituem autorização explícita para aplicar mudanças em um banco remoto.
