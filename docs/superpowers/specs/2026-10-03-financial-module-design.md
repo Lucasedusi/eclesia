@@ -2,7 +2,7 @@
 
 Consolidação de 3 de outubro de 2026 das decisões aprovadas na conversa sobre o módulo financeiro do Eclesias. O objetivo é agilizar lançamentos, preservar a rastreabilidade dos valores e orientar a entrega mensal das congregações por meio de um demonstrativo descritivo.
 
-Os requisitos funcionais abaixo foram aprovados por blocos. A revisão do banco e as decisões complementares estão apresentadas como propostas para a próxima aprovação. A aprovação final desta especificação também depende da incorporação da referência de layout que o usuário solicitou enviar. Este documento não autoriza a execução de migrações remotas.
+Os requisitos funcionais foram aprovados por blocos. Em 3 de outubro de 2026, o usuário também aprovou a direção dos ajustes no banco e as regras complementares de vigência mensal, valores negativos, correção por contribuição e arredondamento. A etapa atual é incorporar a referência de layout que o usuário solicitou enviar antes da revisão final desta especificação. Este documento não autoriza a execução de migrações remotas.
 
 ## Escopo e prioridades aprovados
 
@@ -161,9 +161,9 @@ Os filtros detalhados afetam a listagem. Resumo e gráficos permanecem vinculado
 
 A evidência desta revisão é o arquivo [FINANCE.MD](../../../FINANCE.MD), a [migração de estrutura inicial](../../../supabase/migrations/20260730000000_remote_clone_baseline.sql), a [restauração das permissões financeiras](../../../supabase/migrations/20260920214134_restore_member_and_finance_permissions.sql) e os tipos gerados locais. O estado aplicado no banco remoto não foi consultado. O FINANCE.MD documenta uma estrutura de partida; os requisitos aprovados nesta conversa definem os comportamentos novos.
 
-As tabelas de departamentos, caixas, formas de pagamento, categorias, lançamentos, documentos, recibos, regras e demonstrativos podem ser aproveitadas. Os ajustes abaixo são propostas técnicas para atender aos fluxos aprovados, não alterações já realizadas.
+As tabelas de departamentos, caixas, formas de pagamento, categorias, lançamentos, documentos, recibos, regras e demonstrativos serão aproveitadas conforme a direção aprovada pelo usuário. Os ajustes abaixo registram os requisitos de evolução do banco para a futura implementação.
 
-| Necessidade | Limitação observada | Ajuste proposto |
+| Necessidade | Limitação observada | Ajuste previsto |
 | --- | --- | --- |
 | Departamento participa da base | `financial_departments` não tem campo específico para essa escolha. | Registrar participação, histórico de vigência e sua cópia na versão do demonstrativo. |
 | Vários itens em um atendimento | `financial_transactions` não tem relação explícita com um atendimento. | Criar um registro de atendimento e relacionar suas contribuições, com salvamento integral e chave de repetição segura. |
@@ -182,7 +182,7 @@ As relações entre lançamento, caixa e atendimento devem garantir a mesma cong
 
 O esquema permite registros com campos financeiros opcionais e contém referências de exclusão que podem anular vínculos. A implementação deverá verificar os dados efetivamente existentes e sua compatibilidade antes de tornar campos obrigatórios ou mudar relações. Não presumir que campos nulos representam a Catedral e não classificar dados antigos por adivinhação.
 
-## Arquitetura proposta para atender aos requisitos
+## Direção técnica para atender aos requisitos
 
 Concentrar componentes, validações, ações e serviços em `src/modules/finance/`, seguindo a estrutura dos demais domínios. As páginas autenticam, resolvem contexto, orquestram consultas e renderizam. Os serviços financeiros ficam no servidor, com autenticação, permissões e validação de campo, congregação e recursos em cada operação.
 
@@ -196,13 +196,13 @@ As consultas respeitam `church_id`, congregação e exclusão lógica. Cancelame
 
 Documentos anexados usam armazenamento privado, validação de arquivo e acesso temporário autorizado. CPF, tokens de credencial e conteúdo dos comprovantes não entram em logs de operação. A consulta por CPF ou credencial usa os mecanismos existentes de identidade protegida e verifica a autorização do operador; o código lido não é tratado como permissão financeira.
 
-## Decisões complementares propostas para revisão
+## Regras complementares e consequências técnicas
 
-Estas escolhas detalham casos de limite e ainda precisam ser incluídas na aprovação técnica:
+Os itens 1 a 4 detalham as regras complementares aprovadas em 3 de outubro de 2026. Os itens 5 a 7 registram as consequências técnicas da impressão pelo navegador e das regras de transferência e administração já acordadas:
 
 1. Valores de contribuições e despesas são maiores que zero e expressos em centavos. Percentuais são calculados com precisão decimal e arredondamento para centavos por item; totais somam os itens apresentados. A prebenda líquida usa a prebenda bruta menos os descontos já arredondados.
 2. Mudanças das regras mensais e da participação de departamentos entram em vigor por mês de referência, evitando duas configurações para o mesmo mês. Uma revisão retroativa requer ação explícita do administrador, mantém as versões geradas e sinaliza os demonstrativos afetados.
-3. Saldo negativo ou restante negativo no demonstrativo é mostrado com destaque, permitindo registrar fielmente uma situação deficitária. A regra atual que exige restante não negativo no banco precisa ser revista se essa proposta for aprovada.
+3. Saldo negativo ou restante negativo no demonstrativo é mostrado com destaque, permitindo registrar fielmente uma situação deficitária. A regra atual que exige restante não negativo no banco deverá ser revista na implementação.
 4. Em um atendimento, corrigir ou cancelar um item preserva os demais itens e gera uma nova versão do comprovante do conjunto. Cancelar todo o atendimento cancela todos os itens válidos numa única operação. As ações seguem permissão e justificativa.
 5. A contabilização de impressão representa a solicitação ao navegador, não confirmação de que o papel saiu. A interface não afirma conhecer a impressora selecionada ou a conclusão física da impressão sem essa evidência.
 6. Transferências internas exigem caixas distintos da mesma congregação, valor positivo e registro único das duas pontas. Sua correção ou cancelamento ajusta ambas as pontas em conjunto.
@@ -240,6 +240,6 @@ Na implementação serão necessários testes focados das regras monetárias e d
 
 O usuário solicitou enviar um modelo de layout antes do fechamento final dos requisitos. A área financeira terá identidade visual própria dentro do sistema, e o atendimento terá uma tela dedicada com excelente usabilidade. O modelo deverá orientar a composição, os efeitos e a adaptação aos tamanhos de tela, preservando os fluxos aprovados.
 
-A próxima revisão cobre a proposta técnica do banco e as decisões complementares. Em seguida, a referência visual será incorporada neste mesmo documento, com apresentação do desenho correspondente. A especificação consolidada será então revisada pelo usuário antes da elaboração do plano de implementação.
+A direção dos ajustes no banco e as regras complementares estão aprovadas. O próximo passo é receber a referência visual do usuário, incorporá-la neste mesmo documento e apresentar a composição da página principal e da tela dedicada de atendimento. A especificação consolidada será então revisada pelo usuário antes da elaboração do plano de implementação.
 
 As alterações de esquema futuras devem usar novas migrações, preservar a história existente, ser verificadas em ambiente local ou de desenvolvimento aprovado e atualizar os tipos gerados. As aprovações funcionais e documentais desta etapa não substituem autorização explícita para aplicar mudanças em um banco remoto.
