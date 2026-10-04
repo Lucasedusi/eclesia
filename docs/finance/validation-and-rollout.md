@@ -40,6 +40,14 @@ Os Advisors online não reportaram nível ERROR. A triagem foi:
 
 Portanto, a triagem não equivale a declarar todos os Advisors sem avisos. Os alertas intencionais e os pontos gerais de manutenção estão registrados acima.
 
+## Integração local e dependências
+
+O módulo foi integrado por fast-forward à branch local `main`. A especificação aprovada foi preservada; o plano e a especificação originais também estão em uma cópia recuperável do Git e em `tmp/finance-planning-backup-20261004`. O arquivo pessoal `FINANCE.MD` permanece intacto e fora do commit.
+
+Após `npm ci`, os 399 testes e a verificação de tipos passaram no projeto principal. O lint inicialmente percorreu os artefatos gerados da área `.worktrees/`; essa cópia de trabalho foi adicionada às exclusões do lint para que a verificação considere apenas o projeto ativo. A nova execução do lint passou sem avisos.
+
+O `npm audit` identificou sete alertas (seis altos e um crítico) em dependências cujas versões são idênticas às do commit anterior ao financeiro. Nenhum envolve a nova dependência `jsqr`. O crítico refere-se ao Next.js e a `next/og ImageResponse` ([GHSA-vcvr-r3jv-pc5j](https://github.com/advisories/GHSA-vcvr-r3jv-pc5j)); os demais envolvem a árvore de ferramentas ESLint/glob. A atualização dessas dependências e sua validação geral ficam pendentes antes de publicar a aplicação. Não foi aplicado `npm audit fix --force`, que sugere inclusive alterações incompatíveis na configuração existente.
+
 ## Reconciliação e cálculo
 
 O saldo atual de cada caixa é a soma assinada do ledger: abertura + entradas − saídas + ajustes + transferências recebidas − transferências enviadas + reversões. Correção reverte o efeito anterior e acrescenta o novo. Nenhum registro do ledger é reescrito. A posição histórica filtra a data financeira; abertura dentro do mês aparece separadamente da arrecadação.
