@@ -2,7 +2,7 @@ import "server-only";
 import {createClient} from "@/lib/supabase/server";
 import {z} from "zod";
 import type {FinanceContext} from "../types/finance.types";
-import type {StatementRuleSet,StatementVersionDTO} from "../types/finance-statement.types";
+import type {StatementRuleSet,StatementVersionDTO,StatementListItem} from "../types/finance-statement.types";
 import {statementRulesSchema,copyStatementRulesSchema,generateStatementSchema} from "../validations/finance-statement.schemas";
 import {throwFinanceDatabaseError} from "../utils/finance-errors";
 export async function saveStatementRules(context:FinanceContext,input:z.infer<typeof statementRulesSchema>):Promise<{ruleSetId:string;revision:number}> {
@@ -31,4 +31,9 @@ export async function listStatementVersions(context:FinanceContext,month:string)
  generateStatementSchema.shape.month.parse(month);
  const c=await createClient();const {data,error}=await c.from("report_delivery_versions").select("id,revision,created_at").eq("church_id",context.churchId).eq("congregation_id",context.congregationId).eq("month",`${month}-01`).is("deleted_at",null).order("revision",{ascending:false}).limit(100);
  if(error) throwFinanceDatabaseError(error);return (data??[]).map(v=>({id:v.id,revision:v.revision,createdAt:v.created_at}));
+}
+
+export async function listStatements(context:FinanceContext,input:{month:string}):Promise<StatementListItem[]>{
+ if(!context.capabilities.view)throw new Error("FORBIDDEN");generateStatementSchema.shape.month.parse(input.month);const c=await createClient();
+ const {data,error}=await c.rpc("list_finance_statements",{p_church_id:context.churchId,p_unit:context.congregationId,p_month:input.month});if(error)throwFinanceDatabaseError(error);return data as StatementListItem[];
 }
