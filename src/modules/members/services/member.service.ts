@@ -3,6 +3,7 @@ import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
 import { cacheTags } from "@/lib/cache-tags";
 import { createClient } from "@/lib/supabase/server";
+import { listFinanceUnits } from "@/modules/finance/services/finance-access.service";
 import { measureServerOperation } from "@/lib/performance/server-performance";
 import { PERMISSIONS, hasPermission } from "@/modules/auth/constants/permissions";
 import type { AuthContext } from "@/modules/auth/types/auth.types";
@@ -370,13 +371,17 @@ export async function getMemberHistory(context: AuthContext, memberId: string, p
 }
 
 export async function getMemberFinance(context: AuthContext, memberId: string, page = 1): Promise<PaginatedTab<MemberFinanceItem>> {
+  if (!context.permissions.includes(PERMISSIONS.financeView)) throw new Error("MEMBER_FINANCE_PERMISSION_DENIED");
+  const units = await listFinanceUnits(context);
+  if (!units.length) return { items: [], total: 0, page: 1, pageCount: 0 };
+  page = Number.isSafeInteger(page) ? Math.max(1, page) : 1;
   const supabase = await createClient();
   const pageSize = 20;
   const from = (Math.max(1, page) - 1) * pageSize;
   const { data, count, error } = await supabase.from("financial_transactions")
     .select("id, transaction_number, transaction_type, description, amount, transaction_date, status, financial_categories(name), financial_payment_methods(name)", { count: "exact" })
-    .eq("member_id", memberId).eq("church_id", context.church.id).is("deleted_at", null)
-    .order("transaction_date", { ascending: false }).range(from, from + pageSize - 1);
+    .in("congregation_id", units.map(unit => unit.id)).eq("member_id", memberId).eq("church_id", context.church.id).is("deleted_at", null)
+    .order("transaction_date", { ascending: false }).order("id", { ascending: false }).range(from, from + pageSize - 1);
   if (error) throw new Error(error.message);
   const items = ((data ?? []) as unknown as AnyRow[]).map((row) => ({ id: row.id, transactionNumber: row.transaction_number,
     transactionType: row.transaction_type, description: row.description, amount: Number(row.amount), transactionDate: row.transaction_date,

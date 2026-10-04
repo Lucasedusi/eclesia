@@ -1,4 +1,6 @@
 import {Suspense} from "react";
 import {resolveFinancePage,type FinanceSearchParams} from "@/modules/finance/services/finance-page.service";
-async function Content({searchParams}:{searchParams:FinanceSearchParams}){const {month}=await resolveFinancePage(searchParams);return <div className="stack"><div><p className="eyebrow">Seu financeiro, em um só lugar</p><h1>Visão geral</h1><p className="muted">Acompanhe a movimentação de {month.split("-").reverse().join("/")}.</p></div></div>;}
+import {getFinanceOverview,listFinanceTransactions} from "@/modules/finance/services/finance-query.service";
+import {FinanceOverview} from "@/modules/finance/components/finance-overview";
+async function Content({searchParams}:{searchParams:FinanceSearchParams}){const {context,month}=await resolveFinancePage(searchParams);const [overview,recent]=await Promise.all([getFinanceOverview(context,{month}),listFinanceTransactions(context,{month})]);return <FinanceOverview overview={overview} recent={recent} unit={context.congregationId} month={month} canCreate={context.capabilities.create}/>;}
 export default function Page(props:{searchParams:FinanceSearchParams}){return <Suspense fallback={<p>Carregando resumo…</p>}><Content {...props}/></Suspense>;}

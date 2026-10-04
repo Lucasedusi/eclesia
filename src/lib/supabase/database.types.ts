@@ -8464,6 +8464,10 @@ export type Database = {
         }[]
       }
       get_event_stats: { Args: { p_church_id: string }; Returns: Json }
+      get_finance_overview: {
+        Args: { p_church_id: string; p_month: string; p_unit: string }
+        Returns: Json
+      }
       get_finance_statement: {
         Args: { p_church_id: string; p_version_id: string }
         Returns: Json
@@ -8499,6 +8503,10 @@ export type Database = {
         Returns: boolean
       }
       is_valid_cpf: { Args: { p_value: string }; Returns: boolean }
+      list_finance_transactions: {
+        Args: { p_church_id: string; p_filters: Json; p_unit: string }
+        Returns: Json
+      }
       list_finance_units: { Args: { p_church_id: string }; Returns: Json }
       log_audit: {
         Args: {
