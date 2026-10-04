@@ -1,14 +1,93 @@
 import { z } from "zod";
-import { isLocalDate,isMonth } from "../utils/finance-period";
+import { isLocalDate, isMonth } from "../utils/finance-period";
 import { MAX_AMOUNT_CENTS } from "../utils/finance-money";
-export const localDateSchema=z.string().refine(isLocalDate,"Informe uma data válida.");
-export const monthSchema=z.string().refine(isMonth,"Informe um mês válido.");
-export const centsSchema=z.number().int().min(1).max(MAX_AMOUNT_CENTS);
-const common={ id:z.uuid().optional(),congregationId:z.uuid(),name:z.string().trim().min(1).max(120),status:z.enum(["ACTIVE","INACTIVE"]).default("ACTIVE") };
-const department=z.object({...common,entity:z.literal("DEPARTMENT"),participatesInBase:z.boolean(),effectiveMonth:monthSchema,reason:z.string().trim().min(5).max(1000).optional()}).strict();
-const category=z.object({...common,entity:z.literal("CATEGORY"),direction:z.enum(["INCOME","EXPENSE","BOTH"]),departmentId:z.uuid().nullable().optional(),isTithe:z.boolean().default(false),isOffering:z.boolean().default(false),requiresPerson:z.boolean().default(false)}).strict().refine(v=>!v.isTithe||v.direction==="INCOME","Dízimo deve ser uma entrada.");
-const classification=z.object({...common,entity:z.literal("CLASSIFICATION"),roleId:z.uuid().nullable().optional()}).strict();
-const method=z.object({...common,entity:z.literal("PAYMENT_METHOD"),kind:z.enum(["CASH","PIX","DEBIT_CARD","CREDIT_CARD","BANK_TRANSFER","BANK_SLIP","CHECK","OTHER"])}).strict();
-const cashbox=z.object({...common,entity:z.literal("CASHBOX"),kind:z.enum(["CASH","BANK_ACCOUNT"]),openingCents:z.number().int().min(-MAX_AMOUNT_CENTS).max(MAX_AMOUNT_CENTS).optional(),openingDate:localDateSchema.optional(),paymentMethodIds:z.array(z.uuid()).min(1).max(30),bankName:z.string().trim().max(120).optional(),agency:z.string().trim().max(40).optional(),accountNumber:z.string().trim().max(40).optional()}).strict().refine(v=>Boolean(v.id)||(v.openingDate!==undefined&&v.openingCents!==undefined),"Informe a data e o saldo de abertura.");
-export const financeCatalogSchema=z.discriminatedUnion("entity",[department,category,classification,method,cashbox]);
-export type FinanceCatalogMutation=z.infer<typeof financeCatalogSchema>;
+export const localDateSchema = z
+  .string()
+  .refine(isLocalDate, "Informe uma data válida.");
+export const monthSchema = z.string().refine(isMonth, "Informe um mês válido.");
+export const centsSchema = z.number().int().min(1).max(MAX_AMOUNT_CENTS);
+const common = {
+  id: z.uuid().optional(),
+  congregationId: z.uuid(),
+  name: z.string().trim().min(1).max(120),
+  status: z.enum(["ACTIVE", "INACTIVE"]).default("ACTIVE"),
+};
+const department = z
+  .object({
+    ...common,
+    entity: z.literal("DEPARTMENT"),
+    participatesInBase: z.boolean(),
+    effectiveMonth: monthSchema,
+    reason: z.string().trim().min(5).max(1000).optional(),
+  })
+  .strict();
+const category = z
+  .object({
+    ...common,
+    entity: z.literal("CATEGORY"),
+    direction: z.enum(["INCOME", "EXPENSE", "BOTH"]),
+    departmentId: z.uuid().nullable().optional(),
+    isTithe: z.boolean().default(false),
+    isOffering: z.boolean().default(false),
+    requiresPerson: z.boolean().default(false),
+  })
+  .strict()
+  .refine(
+    (v) => !v.isTithe || v.direction === "INCOME",
+    "Dízimo deve ser uma entrada.",
+  );
+const classification = z
+  .object({
+    ...common,
+    entity: z.literal("CLASSIFICATION"),
+    roleId: z.uuid().nullable().optional(),
+  })
+  .strict();
+const method = z
+  .object({
+    ...common,
+    entity: z.literal("PAYMENT_METHOD"),
+    kind: z.enum([
+      "CASH",
+      "PIX",
+      "DEBIT_CARD",
+      "CREDIT_CARD",
+      "BANK_TRANSFER",
+      "BANK_SLIP",
+      "CHECK",
+      "OTHER",
+    ]),
+  })
+  .strict();
+const cashbox = z
+  .object({
+    ...common,
+    entity: z.literal("CASHBOX"),
+    kind: z.enum(["CASH", "BANK_ACCOUNT"]),
+    openingCents: z
+      .number()
+      .int()
+      .min(-MAX_AMOUNT_CENTS)
+      .max(MAX_AMOUNT_CENTS)
+      .optional(),
+    openingDate: localDateSchema.optional(),
+    paymentMethodIds: z.array(z.uuid()).min(1).max(30),
+    bankName: z.string().trim().max(120).optional(),
+    agency: z.string().trim().max(40).optional(),
+    accountNumber: z.string().trim().max(40).optional(),
+  })
+  .strict()
+  .refine(
+    (v) =>
+      Boolean(v.id) ||
+      (v.openingDate !== undefined && v.openingCents !== undefined),
+    "Informe a data e o saldo de abertura.",
+  );
+export const financeCatalogSchema = z.discriminatedUnion("entity", [
+  department,
+  category,
+  classification,
+  method,
+  cashbox,
+]);
+export type FinanceCatalogMutation = z.infer<typeof financeCatalogSchema>;

@@ -12,6 +12,10 @@
 
 **Estado:** aprovado em 2026-10-03. Execução direta autorizada, sem subagentes; revisão final pelo próprio implementador. Alterações necessárias no banco online autorizadas. O protótipo é referência visual, não código a importar para a aplicação. Sua publicação no Sites é independente deste desenvolvimento.
 
+## Resultado da execução — 4 de outubro de 2026
+
+As 12 tarefas foram entregues em execução direta, sem subagentes. O checklist abaixo preserva a descrição original do plano; a conclusão e as ressalvas verificadas estão no [relatório de validação e implantação](../../finance/validation-and-rollout.md). As 14 migrações foram aplicadas ao banco online autorizado. A publicação da aplicação não integra esta entrega.
+
 ## Global Constraints
 
 - “A contribuição pertence à unidade que a recebeu, mesmo quando o membro pertence a outra.”

@@ -1,9 +1,178 @@
 "use client";
-import {useState} from "react";
-import type {FinanceOverview} from "../types/finance-query.types";
-import {formatMoney} from "../utils/finance-money";
-export function FinanceCharts({overview}:{overview:FinanceOverview}){
- const [direction,setDirection]=useState("INCOME");const series=overview.dailySeries,max=Math.max(1,...series.flatMap(d=>[d.incomeCents,d.expenseCents])),categories=overview.categorySeries.filter(c=>c.direction===direction),total=categories.reduce((sum,c)=>sum+c.amountCents,0);
- return <div className="grid" style={{gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,330px),1fr))"}}><section className="card stack"><div className="row spread"><h2>Movimentação do mês</h2><div className="row muted"><span style={{color:"#087F5B"}}>● Entradas</span><span style={{color:"#B5474D"}}>● Saídas</span></div></div>{overview.incomeCents===0&&overview.expenseCents===0?<div className="empty">Os movimentos aparecerão aqui assim que forem registrados.</div>:<><svg viewBox="0 0 540 210" role="img" aria-label="Entradas e saídas por dia do mês" style={{width:"100%",overflow:"visible"}}>{[0,1,2,3].map(i=><g key={i}><line x1="0" y1={25+i*48} x2="540" y2={25+i*48} stroke="#EDF2EF"/><text x="0" y={19+i*48} fontSize="9" fill="#6D7F76">{formatMoney(Math.round(max*(3-i)/3))}</text></g>)}{series.map((d,i)=>{const x=30+i*(500/Math.max(series.length-1,1));return <g key={d.date}><title>{d.date.split("-").reverse().join("/")}: entradas {formatMoney(d.incomeCents)}, saídas {formatMoney(d.expenseCents)}</title><rect x={x-5} y={170-d.incomeCents/max*140} width="5" height={d.incomeCents/max*140} rx="2" fill="#087F5B"/><rect x={x+1} y={170-d.expenseCents/max*140} width="5" height={d.expenseCents/max*140} rx="2" fill="#D99C9F"/>{(i===0||i===series.length-1||i%5===0)&&<text x={x} y="194" textAnchor="middle" fontSize="10" fill="#6D7F76">{d.date.slice(8)}</text>}</g>;})}</svg><details className="muted"><summary>Ver valores por dia</summary><div className="table-scroll"><table><thead><tr><th>Dia</th><th>Entradas</th><th>Saídas</th></tr></thead><tbody>{series.filter(d=>d.incomeCents||d.expenseCents).map(d=><tr key={d.date}><td>{d.date.slice(8)}</td><td>{formatMoney(d.incomeCents)}</td><td>{formatMoney(d.expenseCents)}</td></tr>)}</tbody></table></div></details></>}</section>
- <section className="card stack"><div className="row spread"><h2>Por categoria</h2><select aria-label="Natureza do gráfico" value={direction} onChange={e=>setDirection(e.target.value)} style={{width:120}}><option value="INCOME">Entradas</option><option value="EXPENSE">Saídas</option></select></div>{categories.length===0?<div className="empty">Sem movimento nesta natureza.</div>:categories.slice(0,6).map(c=><div key={c.id}><div className="row spread" style={{fontSize:12,marginBottom:9}}><span>{c.name}</span><strong>{formatMoney(c.amountCents)}</strong></div><div style={{height:7,borderRadius:10,background:"#EDF2EF"}}><div style={{height:"100%",width:`${total?c.amountCents/total*100:0}%`,borderRadius:10,background:direction==="INCOME"?"#B6E875":"#D99C9F"}}/></div></div>)}{categories.length>6&&<details><summary className="muted">Todas as categorias</summary>{categories.slice(6).map(c=><p key={c.id} className="muted">{c.name}: {formatMoney(c.amountCents)}</p>)}</details>}</section></div>;
+import { useState } from "react";
+import type { FinanceOverview } from "../types/finance-query.types";
+import { formatMoney } from "../utils/finance-money";
+export function FinanceCharts({ overview }: { overview: FinanceOverview }) {
+  const [direction, setDirection] = useState("INCOME");
+  const series = overview.dailySeries,
+    max = Math.max(
+      1,
+      ...series.flatMap((d) => [d.incomeCents, d.expenseCents]),
+    ),
+    categories = overview.categorySeries.filter(
+      (c) => c.direction === direction,
+    ),
+    total = categories.reduce((sum, c) => sum + c.amountCents, 0);
+  return (
+    <div
+      className="grid"
+      style={{
+        gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,330px),1fr))",
+      }}
+    >
+      <section className="card stack">
+        <div className="row spread">
+          <h2>Movimentação do mês</h2>
+          <div className="row muted">
+            <span style={{ color: "#087F5B" }}>● Entradas</span>
+            <span style={{ color: "#B5474D" }}>● Saídas</span>
+          </div>
+        </div>
+        {overview.incomeCents === 0 && overview.expenseCents === 0 ? (
+          <div className="empty">
+            Os movimentos aparecerão aqui assim que forem registrados.
+          </div>
+        ) : (
+          <>
+            <svg
+              viewBox="0 0 540 210"
+              role="img"
+              aria-label="Entradas e saídas por dia do mês"
+              style={{ width: "100%", overflow: "visible" }}
+            >
+              {[0, 1, 2, 3].map((i) => (
+                <g key={i}>
+                  <line
+                    x1="0"
+                    y1={25 + i * 48}
+                    x2="540"
+                    y2={25 + i * 48}
+                    stroke="#EDF2EF"
+                  />
+                  <text x="0" y={19 + i * 48} fontSize="9" fill="#6D7F76">
+                    {formatMoney(Math.round((max * (3 - i)) / 3))}
+                  </text>
+                </g>
+              ))}
+              {series.map((d, i) => {
+                const x = 30 + i * (500 / Math.max(series.length - 1, 1));
+                return (
+                  <g key={d.date}>
+                    <title>
+                      {d.date.split("-").reverse().join("/")}: entradas{" "}
+                      {formatMoney(d.incomeCents)}, saídas{" "}
+                      {formatMoney(d.expenseCents)}
+                    </title>
+                    <rect
+                      x={x - 5}
+                      y={170 - (d.incomeCents / max) * 140}
+                      width="5"
+                      height={(d.incomeCents / max) * 140}
+                      rx="2"
+                      fill="#087F5B"
+                    />
+                    <rect
+                      x={x + 1}
+                      y={170 - (d.expenseCents / max) * 140}
+                      width="5"
+                      height={(d.expenseCents / max) * 140}
+                      rx="2"
+                      fill="#D99C9F"
+                    />
+                    {(i === 0 || i === series.length - 1 || i % 5 === 0) && (
+                      <text
+                        x={x}
+                        y="194"
+                        textAnchor="middle"
+                        fontSize="10"
+                        fill="#6D7F76"
+                      >
+                        {d.date.slice(8)}
+                      </text>
+                    )}
+                  </g>
+                );
+              })}
+            </svg>
+            <details className="muted">
+              <summary>Ver valores por dia</summary>
+              <div className="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Dia</th>
+                      <th>Entradas</th>
+                      <th>Saídas</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {series
+                      .filter((d) => d.incomeCents || d.expenseCents)
+                      .map((d) => (
+                        <tr key={d.date}>
+                          <td>{d.date.slice(8)}</td>
+                          <td>{formatMoney(d.incomeCents)}</td>
+                          <td>{formatMoney(d.expenseCents)}</td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            </details>
+          </>
+        )}
+      </section>
+      <section className="card stack">
+        <div className="row spread">
+          <h2>Por categoria</h2>
+          <select
+            aria-label="Natureza do gráfico"
+            value={direction}
+            onChange={(e) => setDirection(e.target.value)}
+            style={{ width: 120 }}
+          >
+            <option value="INCOME">Entradas</option>
+            <option value="EXPENSE">Saídas</option>
+          </select>
+        </div>
+        {categories.length === 0 ? (
+          <div className="empty">Sem movimento nesta natureza.</div>
+        ) : (
+          categories.slice(0, 6).map((c) => (
+            <div key={c.id}>
+              <div
+                className="row spread"
+                style={{ fontSize: 12, marginBottom: 9 }}
+              >
+                <span>{c.name}</span>
+                <strong>{formatMoney(c.amountCents)}</strong>
+              </div>
+              <div
+                style={{ height: 7, borderRadius: 10, background: "#EDF2EF" }}
+              >
+                <div
+                  style={{
+                    height: "100%",
+                    width: `${total ? (c.amountCents / total) * 100 : 0}%`,
+                    borderRadius: 10,
+                    background: direction === "INCOME" ? "#B6E875" : "#D99C9F",
+                  }}
+                />
+              </div>
+            </div>
+          ))
+        )}
+        {categories.length > 6 && (
+          <details>
+            <summary className="muted">Todas as categorias</summary>
+            {categories.slice(6).map((c) => (
+              <p key={c.id} className="muted">
+                {c.name}: {formatMoney(c.amountCents)}
+              </p>
+            ))}
+          </details>
+        )}
+      </section>
+    </div>
+  );
 }

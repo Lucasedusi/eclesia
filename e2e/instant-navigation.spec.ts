@@ -171,7 +171,9 @@ test.describe("navegação autenticada instantânea", () => {
     const search = page.getByRole("textbox", { name: "Buscar em Regionais" });
     await search.fill("central");
     await page.locator('a[href="/membros"]').filter({ visible: true }).first().click();
+    await expect(page).toHaveURL(/\/membros$/);
     await page.goBack();
+    await expect(page).toHaveURL(/\/estrutura-eclesiastica\/regionais$/);
     await expect(search).toHaveValue("central");
   });
 });
@@ -225,7 +227,7 @@ test.describe("regressões de feedback e modais", () => {
 
   test("logout não deixa a barra global ativa", async ({ page }) => {
     await page.goto("/");
-    await page.locator("header details > summary").click();
+    await page.locator("header details > summary").filter({visible:true}).click();
     await page.getByRole("button", { name: "Encerrar sessão" }).click();
     await page.waitForURL((url) => url.pathname === "/login");
 

@@ -7,6 +7,11 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.5"
+  }
   graphql_public: {
     Tables: {
       [_ in never]: never
@@ -7837,6 +7842,15 @@ export type Database = {
         }
         Returns: Json
       }
+      assign_finance_operator: {
+        Args: {
+          p_access_id: string
+          p_church_id: string
+          p_operating_unit: string
+          p_unit: string
+        }
+        Returns: undefined
+      }
       attach_event_pix_payment: {
         Args: {
           p_amount: number
@@ -8503,6 +8517,10 @@ export type Database = {
         Returns: boolean
       }
       is_valid_cpf: { Args: { p_value: string }; Returns: boolean }
+      list_finance_operators: {
+        Args: { p_church_id: string; p_unit: string }
+        Returns: Json
+      }
       list_finance_statements: {
         Args: { p_church_id: string; p_month: string; p_unit: string }
         Returns: Json
@@ -9347,4 +9365,3 @@ export const Constants = {
     Enums: {},
   },
 } as const
-

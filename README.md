@@ -59,6 +59,16 @@ Para instalar o banco em um novo ambiente, aplique em ordem as migrations de
 `supabase/migrations`. Os detalhes técnicos e as verificações realizadas estão em
 `RELATORIO_IMPLEMENTACAO_MODULO_DOCUMENTOS.md`.
 
+## Módulo financeiro
+
+A área `/financeiro` reúne lançamentos, atendimento com vínculo de pessoas,
+comprovantes térmicos, caixas, transferências, demonstrativos mensais e cadastros
+administrativos. Os demonstrativos calculam a distribuição por congregação sem
+criar despesas ou confirmar pagamentos automaticamente.
+
+As evidências de validação, decisões e orientações para configuração inicial
+estão em [docs/finance/validation-and-rollout.md](docs/finance/validation-and-rollout.md).
+
 ## Cadastro inicial controlado
 
 O cadastro público existe somente enquanto o sistema ainda não possui usuário,
