@@ -8503,6 +8503,10 @@ export type Database = {
         Returns: boolean
       }
       is_valid_cpf: { Args: { p_value: string }; Returns: boolean }
+      list_finance_statements: {
+        Args: { p_church_id: string; p_month: string; p_unit: string }
+        Returns: Json
+      }
       list_finance_transactions: {
         Args: { p_church_id: string; p_filters: Json; p_unit: string }
         Returns: Json
@@ -8832,6 +8836,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      record_finance_print_request: {
+        Args: { p_church_id: string; p_receipt_id: string }
+        Returns: undefined
       }
       register_event_checkin: {
         Args: {

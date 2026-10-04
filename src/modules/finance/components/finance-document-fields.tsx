@@ -1,0 +1,11 @@
+"use client";
+import {useState} from "react";
+import {Button} from "@/components/ui/button";
+import {createClient} from "@/lib/supabase/client";
+import {prepareFinanceDocumentAction,finalizeFinanceDocumentAction,discardFinanceDocumentAction} from "../actions/finance-document.actions";
+import {FINANCE_DOCUMENT_BUCKET,validateFinanceUpload} from "../utils/finance-documents";
+export type AttachedDocument={id:string;name:string};
+export function FinanceDocumentFields({unit,value,onChange,onBusy}:{unit:string;value:AttachedDocument[];onChange:(files:AttachedDocument[])=>void;onBusy:(busy:boolean)=>void}){
+ const [busy,setBusy]=useState(false),[error,setError]=useState("");
+ return <div className="stack"><label>Anexos (PDF, JPG ou PNG · até 10 MB)<input type="file" accept="application/pdf,image/jpeg,image/png" disabled={busy||value.length>=10} onChange={async e=>{const file=e.target.files?.[0];e.target.value="";if(!file)return;setBusy(true);onBusy(true);setError("");try{const valid=validateFinanceUpload({name:file.name,type:file.type,size:file.size});const prepared=await prepareFinanceDocumentAction(unit,{name:valid.name,type:valid.type,size:valid.size});if(!prepared.ok){setError(prepared.message);return;}const upload=await createClient().storage.from(FINANCE_DOCUMENT_BUCKET).uploadToSignedUrl(prepared.data.path,prepared.data.token,file,{contentType:valid.type});if(upload.error){setError("Não foi possível enviar o anexo. Tente novamente.");return;}const ready=await finalizeFinanceDocumentAction(unit,prepared.data.uploadId);if(!ready.ok){setError(ready.message);return;}onChange([...value,{id:ready.data.documentId,name:valid.name}]);}catch{setError("Arquivo inválido. Use PDF, JPG ou PNG de até 10 MB.");}finally{setBusy(false);onBusy(false);}}}/></label>{busy&&<p role="status">Enviando e verificando o anexo…</p>}{error&&<div role="alert">{error}</div>}{value.map(file=><div key={file.id} className="row"><span className="muted">{file.name}</span><Button size="sm" variant="outline" disabled={busy} onClick={async()=>{setBusy(true);onBusy(true);try{const result=await discardFinanceDocumentAction(unit,file.id);if(result.ok)onChange(value.filter(v=>v.id!==file.id));else setError(result.message);}catch{setError("Não foi possível remover o anexo.");}finally{setBusy(false);onBusy(false);}}}>Remover</Button></div>)}</div>;
+}
