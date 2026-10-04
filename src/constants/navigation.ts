@@ -44,6 +44,7 @@ export const mainNavigation = [
     label: "Financeiro",
     href: "/financeiro",
     icon: Wallet,
+    requiredPermission: PERMISSIONS.financeView,
   },
   {
     label: "Documentos",

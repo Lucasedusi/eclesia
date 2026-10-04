@@ -88,4 +88,5 @@ export const theme = {
   },
 } as const;
 
-export type AppTheme = typeof theme;
+type ThemeValues<T> = { [K in keyof T]: T[K] extends string ? string : T[K] extends object ? ThemeValues<T[K]> : T[K] };
+export type AppTheme = ThemeValues<typeof theme>;

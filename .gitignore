@@ -43,3 +43,8 @@ next-env.d.ts
 
 # Disposable local verification artifacts
 /tmp/
+
+/.worktrees/
+
+/test-results/
+/playwright-report/
