@@ -231,6 +231,7 @@ if (command === "setup") {
       name: "Prebenda",
       destination: "LOCAL_PASTOR",
       role: "GROSS_PREBEND",
+      capCents: 100000000,
       calculation: "ELIGIBLE_INCOME_PERCENT",
       percentage: "35",
     },

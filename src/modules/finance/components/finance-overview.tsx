@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { useFinanceNavigation } from "./finance-shell";
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -27,6 +28,7 @@ export function FinanceOverview({
   month: string;
   canCreate: boolean;
 }) {
+  const { navigate } = useFinanceNavigation();
   const cards = [
     {
       label: "Saldo ao final do período",
@@ -35,12 +37,14 @@ export function FinanceOverview({
       featured: true,
     },
     {
+      tone: "income",
       label: "Entradas no mês",
       value: overview.incomeCents,
       icon: ArrowDownLeft,
       featured: false,
     },
     {
+      tone: "expense",
       label: "Saídas no mês",
       value: overview.expenseCents,
       icon: ArrowUpRight,
@@ -60,6 +64,13 @@ export function FinanceOverview({
         {canCreate && (
           <Link
             className="badge"
+            onNavigate={(e) => {
+              e.preventDefault();
+              navigate(
+                financeLocation("/financeiro/lancamentos", unit, month) +
+                  "&novo=entrada",
+              );
+            }}
             href={
               financeLocation("/financeiro/lancamentos", unit, month) +
               "&novo=entrada"
@@ -80,7 +91,7 @@ export function FinanceOverview({
         {cards.map((c) => (
           <section
             key={c.label}
-            className="card stack"
+            className={`card stack finance-summary-card ${c.tone === "expense" ? "finance-expense-card" : c.tone === "income" ? "finance-income-card" : ""}`}
             style={
               c.featured
                 ? {
@@ -93,7 +104,18 @@ export function FinanceOverview({
           >
             <div className="row spread">
               <span style={{ fontSize: 12, opacity: 0.8 }}>{c.label}</span>
-              <c.icon size={20} color={c.featured ? "#B6E875" : "#087F5B"} />
+              <span className="finance-summary-icon">
+                <c.icon
+                  size={22}
+                  color={
+                    c.featured
+                      ? "#B6E875"
+                      : c.tone === "expense"
+                        ? "#B5474D"
+                        : "#087F5B"
+                  }
+                />
+              </span>
             </div>
             <div
               className={`amount ${c.value < 0 ? "negative" : ""}`}
@@ -135,6 +157,10 @@ export function FinanceOverview({
           <h2>Últimos lançamentos</h2>
           <Link
             className="row muted"
+            onNavigate={(e) => {
+              e.preventDefault();
+              navigate(financeLocation("/financeiro/lancamentos", unit, month));
+            }}
             href={financeLocation("/financeiro/lancamentos", unit, month)}
           >
             Ver todos

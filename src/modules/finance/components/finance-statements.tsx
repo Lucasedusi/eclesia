@@ -1,7 +1,8 @@
 "use client";
+import { useFinanceNavigation } from "./finance-shell";
 import Link from "next/link";
 import { useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+
 import { Printer, FilePlus2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type {
@@ -32,7 +33,7 @@ export function FinanceStatements({
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [generated, setGenerated] = useState<StatementVersionDTO | null>(null),
-    router = useRouter(),
+    financeNavigation = useFinanceNavigation(),
     statement =
       generated && (!current || generated.revision > current.revision)
         ? generated
@@ -74,7 +75,7 @@ export function FinanceStatements({
                   }
                   key.current = null;
                   setGenerated(result.data);
-                  router.refresh();
+                  financeNavigation.refresh();
                 } catch {
                   setError(
                     "Não foi possível confirmar a geração. Tente novamente para consultar esta tentativa.",

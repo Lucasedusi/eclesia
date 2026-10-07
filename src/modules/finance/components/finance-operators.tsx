@@ -1,6 +1,7 @@
 "use client";
+import { useFinanceNavigation } from "./finance-shell";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+
 import { Button } from "@/components/ui/button";
 import type { FinanceOperator } from "../services/finance-operator.service";
 import type { FinanceUnit } from "../types/finance.types";
@@ -17,7 +18,7 @@ export function FinanceOperators({
   const [busy, setBusy] = useState(false),
     [message, setMessage] = useState(""),
     [error, setError] = useState(""),
-    router = useRouter();
+    financeNavigation = useFinanceNavigation();
   return (
     <section className="card stack">
       <h2>Congregação de operação</h2>
@@ -53,7 +54,7 @@ export function FinanceOperators({
                 });
                 if (result.ok) {
                   setMessage("Congregação operacional atualizada.");
-                  router.refresh();
+                  financeNavigation.refresh();
                 } else setError(result.message);
               } catch {
                 setError("Não foi possível atualizar o acesso.");

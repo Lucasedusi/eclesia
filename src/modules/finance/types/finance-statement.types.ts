@@ -5,6 +5,7 @@ export type StatementRuleInput = {
   calculation: "ELIGIBLE_INCOME_PERCENT" | "GROSS_PREBEND_PERCENT" | "FIXED";
   percentage?: string;
   amountCents?: number;
+  capCents?: number;
 };
 export type StatementRuleSet = {
   id: string;
@@ -37,6 +38,8 @@ export type StatementVersionDTO = {
   items: (StatementRuleInput & {
     baseCents: number;
     calculatedCents: number;
+    uncappedCents?: number;
+    capApplied?: boolean;
   })[];
   departments: {
     id: string;

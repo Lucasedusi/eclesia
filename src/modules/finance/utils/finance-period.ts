@@ -32,3 +32,42 @@ export function todayLocal() {
     day: "2-digit",
   }).format(new Date());
 }
+
+export function formatFinanceMonth(month: string, long = false) {
+  const [year, part] = month.split("-");
+  const index = Number(part) - 1;
+  const names = long
+    ? [
+        "Janeiro",
+        "Fevereiro",
+        "Março",
+        "Abril",
+        "Maio",
+        "Junho",
+        "Julho",
+        "Agosto",
+        "Setembro",
+        "Outubro",
+        "Novembro",
+        "Dezembro",
+      ]
+    : [
+        "jan",
+        "fev",
+        "mar",
+        "abr",
+        "mai",
+        "jun",
+        "jul",
+        "ago",
+        "set",
+        "out",
+        "nov",
+        "dez",
+      ];
+  return index >= 0 && index < 12
+    ? long
+      ? `${names[index]} de ${year}`
+      : `${names[index]}/${year}`
+    : month;
+}

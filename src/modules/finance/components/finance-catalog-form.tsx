@@ -1,6 +1,9 @@
 "use client";
+import { formatFinanceMonth } from "../utils/finance-period";
+import { Banknote, CreditCard, QrCode, ReceiptText, Check } from "lucide-react";
+import { FinanceMoneyInput } from "./finance-money-input";
 import { useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { saveFinanceCatalogAction } from "../actions/finance-catalog.actions";
@@ -9,7 +12,7 @@ import type {
   FinanceCatalogMutation,
 } from "../types/finance-catalog.types";
 import { parseMoneyInput, formatMoney } from "../utils/finance-money";
-import { useFinanceDirtyGuard } from "./finance-shell";
+import { useFinanceDirtyGuard, useFinanceNavigation } from "./finance-shell";
 export type CatalogEntity = FinanceCatalogMutation["entity"];
 export const catalogLabels: Record<CatalogEntity, string> = {
   DEPARTMENT: "Departamento",
@@ -45,7 +48,7 @@ export function FinanceCatalogForm({
   roles: { id: string; name: string }[];
   onClose: () => void;
 }) {
-  const router = useRouter(),
+  const financeNavigation = useFinanceNavigation(),
     form = useRef<HTMLFormElement>(null),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
@@ -130,7 +133,7 @@ export function FinanceCatalogForm({
         return false;
       }
       setDirty(false);
-      router.refresh();
+      financeNavigation.refresh();
       onClose();
       return true;
     } catch {
@@ -213,7 +216,8 @@ export function FinanceCatalogForm({
                 <summary>Histórico de vigências</summary>
                 {dept.baseVersions.map((v) => (
                   <p key={v.id} className="muted">
-                    {v.effectiveMonth} · v{v.revision} ·{" "}
+                    {formatFinanceMonth(v.effectiveMonth, true)} · Versão{" "}
+                    {v.revision} ·{" "}
                     {v.participatesInBase ? "Incluído na base" : "Fora da base"}
                   </p>
                 ))}
@@ -336,7 +340,7 @@ export function FinanceCatalogForm({
                 </label>
                 <label>
                   Saldo de abertura (R$)
-                  <input
+                  <FinanceMoneyInput
                     name="opening"
                     inputMode="decimal"
                     required
@@ -350,7 +354,7 @@ export function FinanceCatalogForm({
                 preservada; use ajuste de saldo para uma correção justificada.
               </p>
             )}
-            <fieldset className="stack">
+            <fieldset className="finance-form-section finance-payment-tiles">
               <legend>Formas de pagamento permitidas</legend>
               {catalogs.paymentMethods
                 .filter(
@@ -361,14 +365,24 @@ export function FinanceCatalogForm({
                       : v.kind !== "CASH"),
                 )
                 .map((v) => (
-                  <label className="check" key={v.id}>
+                  <label className="finance-payment-tile" key={v.id}>
                     <input
                       type="checkbox"
                       name="methods"
                       value={v.id}
                       defaultChecked={box?.paymentMethodIds.includes(v.id)}
                     />
-                    {v.name}
+                    {v.kind === "CASH" ? (
+                      <Banknote size={23} />
+                    ) : v.kind === "PIX" ? (
+                      <QrCode size={23} />
+                    ) : v.kind.includes("CARD") ? (
+                      <CreditCard size={23} />
+                    ) : (
+                      <ReceiptText size={23} />
+                    )}
+                    <span>{v.name}</span>
+                    <Check className="finance-payment-check" size={16} />
                   </label>
                 ))}
               {!catalogs.paymentMethods.some(

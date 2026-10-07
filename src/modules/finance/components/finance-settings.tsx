@@ -1,4 +1,7 @@
 "use client";
+import { FinanceSkeleton } from "./finance-skeleton";
+import { useFinanceNavigation } from "./finance-shell";
+import { formatFinanceMonth } from "../utils/finance-period";
 import { useState } from "react";
 import { Plus, Pencil, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -33,6 +36,7 @@ export function FinanceSettings({
   units: FinanceUnit[];
   operators: FinanceOperator[];
 }) {
+  const { isPending } = useFinanceNavigation();
   const [rulesDirty, setRulesDirty] = useState(false);
   const [tab, setTab] = useState<CatalogEntity | "RULES" | "OPERATORS">(
       "DEPARTMENT",
@@ -64,7 +68,7 @@ export function FinanceSettings({
       const d = catalogs.departments.find((v) => v.id === id),
         version = d?.baseVersions.find((v) => v.effectiveMonth <= month);
       return version
-        ? `${version.participatesInBase ? "Participa da base" : "Apenas no relatório"} · desde ${version.effectiveMonth}`
+        ? `${version.participatesInBase ? "Participa da base" : "Apenas no relatório"} · desde ${formatFinanceMonth(version.effectiveMonth)}`
         : "Configure a participação na base";
     }
     if (tab === "CATEGORY") {
@@ -129,7 +133,9 @@ export function FinanceSettings({
               Novo cadastro
             </Button>
           </div>
-          {rows.length === 0 ? (
+          {isPending ? (
+            <FinanceSkeleton table />
+          ) : rows.length === 0 ? (
             <div className="empty">
               Nenhum cadastro por aqui. Comece adicionando o primeiro.
             </div>

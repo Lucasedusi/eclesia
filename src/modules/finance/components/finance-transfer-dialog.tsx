@@ -1,6 +1,8 @@
 "use client";
+import { useFinanceNavigation } from "./finance-shell";
+import { FinanceMoneyInput } from "./finance-money-input";
 import { useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import type { Cashbox } from "../types/finance-catalog.types";
@@ -35,7 +37,7 @@ export function FinanceTransferDialog({
     [uncertain, setUncertain] = useState(false),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
-    router = useRouter();
+    financeNavigation = useFinanceNavigation();
   async function save() {
     if (busy || !form.current?.reportValidity()) return;
     setBusy(true);
@@ -76,7 +78,7 @@ export function FinanceTransferDialog({
         if (result.code !== "UNAVAILABLE") pending.current = null;
         return;
       }
-      router.refresh();
+      financeNavigation.refresh();
       onClose();
     } catch {
       if (pending.current) setUncertain(true);
@@ -155,7 +157,7 @@ export function FinanceTransferDialog({
           </div>
           <label>
             Valor (R$)
-            <input
+            <FinanceMoneyInput
               name="amount"
               inputMode="decimal"
               required

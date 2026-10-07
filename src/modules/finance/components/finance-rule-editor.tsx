@@ -1,6 +1,8 @@
 "use client";
+import { formatFinanceMonth } from "../utils/finance-period";
+import { FinanceMoneyInput } from "./finance-money-input";
 import { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
+
 import { Plus, Trash2, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,13 +15,14 @@ import type {
 } from "../types/finance-statement.types";
 import type { FinanceUnit } from "../types/finance.types";
 import { parseMoneyInput, centsToDecimal } from "../utils/finance-money";
-import { useFinanceDirtyGuard } from "./finance-shell";
+import { useFinanceDirtyGuard, useFinanceNavigation } from "./finance-shell";
 type DraftRule = {
   key: number;
   name: string;
   role: StatementRuleInput["role"];
   calculation: StatementRuleInput["calculation"];
   value: string;
+  cap: string;
 };
 export function FinanceRuleEditor({
   unit,
@@ -35,13 +38,17 @@ export function FinanceRuleEditor({
   onDirtyChange?: (dirty: boolean) => void;
 }) {
   const effective = rules.find((r) => r.effectiveMonth <= month),
-    router = useRouter(),
+    financeNavigation = useFinanceNavigation(),
     form = useRef<HTMLFormElement>(null),
     nextKey = useRef(100);
   const initial: DraftRule[] = (effective?.items ?? []).map((r, i) => ({
     key: i,
     name: r.name,
     role: r.role,
+    cap:
+      r.capCents === undefined
+        ? ""
+        : centsToDecimal(r.capCents).replace(".", ","),
     calculation: r.calculation,
     value:
       r.calculation === "FIXED"
@@ -75,6 +82,9 @@ export function FinanceRuleEditor({
         items: items.map((r) => ({
           name: r.name,
           role: r.role,
+          ...(r.role === "GROSS_PREBEND"
+            ? { capCents: parseMoneyInput(r.cap) }
+            : {}),
           calculation: r.calculation,
           destination:
             r.role === "GROSS_PREBEND" ? "LOCAL_PASTOR" : "CATHEDRAL",
@@ -97,7 +107,7 @@ export function FinanceRuleEditor({
       }
       setDirty(false);
       setMessage(`Regras salvas. Revisão ${result.data.revision}.`);
-      router.refresh();
+      financeNavigation.refresh();
       return true;
     } catch {
       setError("Confira os valores e percentuais de cada item.");
@@ -117,6 +127,14 @@ export function FinanceRuleEditor({
         registrados pelo tesoureiro. O desconto da prebenda é retirado uma única
         vez da parte do pastor.
       </div>
+      {effective?.items.some(
+        (r) => r.role === "GROSS_PREBEND" && r.capCents === undefined,
+      ) && (
+        <p className="notice">
+          Defina o teto mensal da prebenda para gerar novos demonstrativos. Os
+          valores dos demonstrativos anteriores permanecem preservados.
+        </p>
+      )}
       <form
         ref={form}
         className="card stack"
@@ -131,7 +149,7 @@ export function FinanceRuleEditor({
             <h2>Regras desta congregação</h2>
             <p className="muted">
               {effective
-                ? `Vigência ${effective.effectiveMonth} · revisão ${effective.revision}`
+                ? `Vigência ${formatFinanceMonth(effective.effectiveMonth, true)} · revisão ${effective.revision}`
                 : "Nenhuma regra cadastrada"}
             </p>
           </div>
@@ -143,7 +161,11 @@ export function FinanceRuleEditor({
         {error && <div role="alert">{error}</div>}
         {message && <p role="status">{message}</p>}
         {items.map((r, index) => (
-          <fieldset key={r.key} className="card stack" style={{ padding: 18 }}>
+          <fieldset
+            className="card stack finance-rule-item"
+            key={r.key}
+            style={{ padding: 18 }}
+          >
             <legend>Item {index + 1}</legend>
             <div className="grid">
               <label>
@@ -195,14 +217,41 @@ export function FinanceRuleEditor({
               </label>
               <label>
                 {r.calculation === "FIXED" ? "Valor (R$)" : "Percentual (%)"}
-                <input
-                  value={r.value}
-                  inputMode="decimal"
-                  required
-                  onChange={(e) => change(r.key, { value: e.target.value })}
-                />
+                {r.calculation === "FIXED" ? (
+                  <FinanceMoneyInput
+                    value={r.value}
+                    required
+                    onChange={(e) => change(r.key, { value: e.target.value })}
+                  />
+                ) : (
+                  <input
+                    value={r.value}
+                    inputMode="decimal"
+                    required
+                    onChange={(e) => change(r.key, { value: e.target.value })}
+                  />
+                )}
               </label>
             </div>
+            {r.role === "GROSS_PREBEND" && (
+              <label>
+                Teto mensal da prebenda bruta
+                <FinanceMoneyInput
+                  value={r.cap}
+                  required
+                  onChange={(e) => change(r.key, { cap: e.target.value })}
+                />
+                <span className="muted">
+                  Limite antes do dízimo. O excedente permanece na congregação.
+                  Informe 0 para limitar a zero.
+                </span>
+              </label>
+            )}
+            {r.calculation === "FIXED" && (
+              <p className="muted">
+                Valor fixo desta congregação, independente da arrecadação.
+              </p>
+            )}
             <Button
               variant="outline"
               onClick={() => {
@@ -226,6 +275,7 @@ export function FinanceRuleEditor({
                 role: "DISTRIBUTION",
                 calculation: "ELIGIBLE_INCOME_PERCENT",
                 value: "",
+                cap: "",
               },
             ]);
             setDirty(true);
@@ -273,7 +323,7 @@ export function FinanceRuleEditor({
               setMessage(
                 "Regras copiadas. Abra novamente a aba para editar a cópia.",
               );
-              router.refresh();
+              financeNavigation.refresh();
             }
           } catch {
             setError("Não foi possível confirmar a cópia.");
@@ -317,15 +367,6 @@ export function FinanceRuleEditor({
           Copiar regras
         </Button>
       </form>
-      <details className="card">
-        <summary>Histórico de configurações ({rules.length})</summary>
-        {rules.map((r) => (
-          <p key={r.id} className="muted">
-            {r.effectiveMonth} · revisão {r.revision} ·{" "}
-            {r.items.map((i) => i.name).join(", ")}
-          </p>
-        ))}
-      </details>
     </div>
   );
 }

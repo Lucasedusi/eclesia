@@ -117,6 +117,20 @@ export function FinanceStatementDetail({
                     {i.calculation === "FIXED"
                       ? "Valor fixo"
                       : `${i.percentage}%`}
+                    {i.capCents !== undefined && (
+                      <div className="muted">
+                        Teto: {formatMoney(i.capCents)}
+                      </div>
+                    )}
+                    {i.capApplied && (
+                      <>
+                        <span className="badge">Teto aplicado</span>
+                        <div className="muted">
+                          Antes do teto:{" "}
+                          {formatMoney(i.uncappedCents ?? i.calculatedCents)}
+                        </div>
+                      </>
+                    )}
                   </td>
                   <td>
                     {i.destination === "LOCAL_PASTOR"

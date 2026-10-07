@@ -1,7 +1,8 @@
 "use client";
+import { FinanceMoneyInput } from "./finance-money-input";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+
 import { Plus, Printer, Save, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { FinanceCatalogs } from "../types/finance-catalog.types";
@@ -29,7 +30,7 @@ import {
   FinanceDocumentFields,
   type AttachedDocument,
 } from "./finance-document-fields";
-import { useFinanceDirtyGuard } from "./finance-shell";
+import { useFinanceDirtyGuard, useFinanceNavigation } from "./finance-shell";
 type Line = Pick<
   EntryFormState,
   | "categoryId"
@@ -90,7 +91,7 @@ export function FinanceEntryForm({
   onClose?: () => void;
   onStatusChange?: (status: { dirty: boolean; busy: boolean }) => void;
 }) {
-  const router = useRouter(),
+  const financeNavigation = useFinanceNavigation(),
     form = useRef<HTMLFormElement>(null),
     pending = useRef<FinanceCommand | null>(null),
     operationKey = useRef("");
@@ -184,7 +185,11 @@ export function FinanceEntryForm({
           categoryId: l.categoryId,
           departmentId: l.departmentId,
           amountCents: parseMoneyInput(l.amount),
-          titheClassificationId: catalogs.categories.find(c=>c.id===l.categoryId)?.isTithe ? l.titheClassificationId : null,
+          titheClassificationId: catalogs.categories.find(
+            (c) => c.id === l.categoryId,
+          )?.isTithe
+            ? l.titheClassificationId
+            : null,
           description: l.description,
           notes: l.notes,
           documentNumber: l.documentNumber,
@@ -243,7 +248,7 @@ export function FinanceEntryForm({
       setDirty(false);
       setConfirmation(result.data);
       onConfirmed?.(result.data);
-      router.refresh();
+      financeNavigation.refresh();
       if (action === "PRINT" && result.data.receiptId) {
         const url =
           financeLocation(
@@ -260,9 +265,6 @@ export function FinanceEntryForm({
         setExtra([]);
         setFiles([]);
         setIdentityVersion((v) => v + 1);
-        form.current
-          ?.querySelector<HTMLInputElement>("input[data-entry-focus]")
-          ?.focus();
       }
       return true;
     } catch {
@@ -284,11 +286,18 @@ export function FinanceEntryForm({
       busy: busy || uploading || ambiguous,
     });
   }, [dirty, ambiguous, busy, uploading, onStatusChange]);
+  useEffect(() => {
+    if (identityVersion > 0)
+      form.current
+        ?.querySelector<HTMLInputElement>("[data-person-search]")
+        ?.focus();
+  }, [identityVersion]);
   useFinanceDirtyGuard(dirty || ambiguous, () => save("SAVE"), discard);
   return (
     <form
       ref={form}
-      className="stack"
+      key={identityVersion}
+      className={mode === "ATTENDANCE" ? "finance-attendance-form" : "stack"}
       onSubmit={(e) => {
         e.preventDefault();
         void save(mode === "ATTENDANCE" ? "CONTINUE" : "SAVE");
@@ -324,9 +333,52 @@ export function FinanceEntryForm({
       )}
       <fieldset
         disabled={busy || ambiguous}
-        className="stack"
+        className="stack finance-entry-fields"
         style={{ border: 0, padding: 0, minWidth: 0 }}
       >
+        <section className="stack finance-form-section">
+          <h3>{direction === "EXPENSE" ? "Favorecido" : "Pessoa atendida"}</h3>
+          {groupCorrection ? (
+            <p className="notice">
+              A identificação e o recebimento pertencem ao atendimento inteiro.
+              Você pode corrigir a contribuição abaixo. Para alterar os dados
+              comuns, cancele o atendimento e registre novamente.
+            </p>
+          ) : direction === "INCOME" ? (
+            <FinanceContributorPicker
+              key={identityVersion}
+              unit={unit}
+              value={state.contributor}
+              label={state.personLabel}
+              canLookup={capabilities.lookupContributors}
+              onChange={(contributor, personLabel, suggested) => {
+                change({
+                  contributor,
+                  personLabel,
+                  titheClassificationId: suggested ?? null,
+                });
+                setExtra((current) =>
+                  current.map((l) => ({
+                    ...l,
+                    titheClassificationId: suggested ?? null,
+                  })),
+                );
+              }}
+            />
+          ) : (
+            <label>
+              Favorecido (opcional)
+              <input
+                value={state.beneficiaryName}
+                maxLength={160}
+                onChange={(e) => change({ beneficiaryName: e.target.value })}
+              />
+            </label>
+          )}
+        </section>
+        <h3 className="finance-section-title">
+          {direction === "EXPENSE" ? "Pagamento" : "Recebimento"}
+        </h3>
         <div className="grid">
           <label>
             Data
@@ -395,50 +447,13 @@ export function FinanceEntryForm({
             </select>
           </label>
         </div>
-        {groupCorrection ? (
-          <p className="notice">
-            A identificação e o recebimento pertencem ao atendimento inteiro.
-            Você pode corrigir a contribuição abaixo. Para alterar os dados
-            comuns, cancele o atendimento e registre novamente.
-          </p>
-        ) : direction === "INCOME" ? (
-          <FinanceContributorPicker
-            key={identityVersion}
-            unit={unit}
-            value={state.contributor}
-            label={state.personLabel}
-            canLookup={capabilities.lookupContributors}
-            onChange={(contributor, personLabel, suggested) => {
-              change({
-                contributor,
-                personLabel,
-                titheClassificationId: suggested ?? null,
-              });
-              setExtra((current) =>
-                current.map((l) => ({
-                  ...l,
-                  titheClassificationId: suggested ?? null,
-                })),
-              );
-            }}
-          />
-        ) : (
-          <label>
-            Favorecido (opcional)
-            <input
-              value={state.beneficiaryName}
-              maxLength={160}
-              onChange={(e) => change({ beneficiaryName: e.target.value })}
-            />
-          </label>
-        )}
         {lines.map((line, index) => {
           const category = catalogs.categories.find(
             (c) => c.id === line.categoryId,
           );
           return (
             <fieldset
-              className={mode === "ATTENDANCE" ? "card stack" : "stack"}
+              className="stack finance-form-section"
               key={index}
               style={{
                 minWidth: 0,
@@ -449,7 +464,9 @@ export function FinanceEntryForm({
               <legend>
                 {mode === "ATTENDANCE"
                   ? `Contribuição ${index + 1}`
-                  : "Contribuição"}
+                  : direction === "EXPENSE"
+                    ? "Dados da saída"
+                    : "Dados da entrada"}
               </legend>
               <div className="grid">
                 <label>
@@ -498,7 +515,7 @@ export function FinanceEntryForm({
               <div className="grid">
                 <label>
                   Valor (R$)
-                  <input
+                  <FinanceMoneyInput
                     inputMode="decimal"
                     value={line.amount}
                     placeholder="0,00"
@@ -645,43 +662,65 @@ export function FinanceEntryForm({
           </label>
         )}
       </fieldset>
-      {mode === "ATTENDANCE" && (
-        <div className="notice row" style={{ justifyContent: "space-between" }}>
-          <span>Total do atendimento</span>
-          <strong data-testid="attendance-total" style={{ fontSize: 25 }}>
-            {formatMoney(total)}
-          </strong>
-        </div>
-      )}
-      <div className="row">
-        <Button type="submit" loading={busy} disabled={uploading}>
-          <Save size={16} />
-          {initialTransaction
-            ? "Salvar correção"
-            : mode === "ATTENDANCE"
-              ? "Confirmar atendimento"
-              : "Salvar"}
-        </Button>
-        {!initialTransaction && (
-          <>
-            <Button
-              variant="outline"
-              disabled={busy || uploading}
-              onClick={() => void save("CONTINUE")}
-            >
-              Salvar e continuar
-            </Button>
-            <Button
-              variant="outline"
-              disabled={busy || uploading}
-              onClick={() => void save("PRINT")}
-            >
-              <Printer size={16} />
-              Salvar e imprimir
-            </Button>
-          </>
+      <aside
+        className={
+          mode === "ATTENDANCE" ? "finance-attendance-summary stack" : "stack"
+        }
+      >
+        {mode === "ATTENDANCE" && (
+          <div className="finance-attendance-total stack">
+            <h3>Resumo do atendimento</h3>
+            <p className="muted">
+              {state.personLabel ||
+                (state.contributor?.kind === "COLLECTIVE"
+                  ? "Contribuição coletiva"
+                  : "Identifique a pessoa para começar")}
+            </p>
+            <span className="muted">
+              {lines.length}{" "}
+              {lines.length === 1 ? "contribuição" : "contribuições"}
+            </span>
+            <span>Total do atendimento</span>
+            <strong data-testid="attendance-total" style={{ fontSize: 25 }}>
+              {formatMoney(total)}
+            </strong>
+          </div>
         )}
-      </div>
+        <div className="row">
+          <Button
+            type="submit"
+            variant={direction === "EXPENSE" ? "danger" : "primary"}
+            loading={busy}
+            disabled={uploading}
+          >
+            <Save size={16} />
+            {initialTransaction
+              ? "Salvar correção"
+              : mode === "ATTENDANCE"
+                ? "Confirmar atendimento"
+                : "Salvar"}
+          </Button>
+          {!initialTransaction && (
+            <>
+              <Button
+                variant="outline"
+                disabled={busy || uploading}
+                onClick={() => void save("CONTINUE")}
+              >
+                Salvar e continuar
+              </Button>
+              <Button
+                variant="outline"
+                disabled={busy || uploading}
+                onClick={() => void save("PRINT")}
+              >
+                <Printer size={16} />
+                Salvar e imprimir
+              </Button>
+            </>
+          )}
+        </div>
+      </aside>
     </form>
   );
 }

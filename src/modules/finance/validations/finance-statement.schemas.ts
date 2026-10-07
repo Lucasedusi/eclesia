@@ -16,9 +16,17 @@ export const statementRuleSchema = z
       .regex(/^\d{1,3}(\.\d{1,4})?$/)
       .refine((v) => Number(v) <= 100)
       .optional(),
+    capCents: z.number().int().min(0).max(MAX_AMOUNT_CENTS).optional(),
     amountCents: z.number().int().min(0).max(MAX_AMOUNT_CENTS).optional(),
   })
   .strict()
+  .refine(
+    (v) =>
+      v.role === "GROSS_PREBEND"
+        ? v.capCents !== undefined
+        : v.capCents === undefined,
+    { message: "Informe o teto mensal da prebenda bruta.", path: ["capCents"] },
+  )
   .refine(
     (v) =>
       v.calculation === "FIXED"

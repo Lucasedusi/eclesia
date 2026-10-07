@@ -1,6 +1,8 @@
 "use client";
+import { useFinanceNavigation } from "./finance-shell";
+import { FinanceMoneyInput } from "./finance-money-input";
 import { useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+
 import { Wallet, Landmark, Plus, Pencil, Scale } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
@@ -20,7 +22,7 @@ function Adjustment({
   month: string;
   onClose: () => void;
 }) {
-  const router = useRouter(),
+  const financeNavigation = useFinanceNavigation(),
     form = useRef<HTMLFormElement>(null),
     key = useRef<string | null>(null),
     pending = useRef<unknown>(null),
@@ -52,7 +54,7 @@ function Adjustment({
         if (result.code !== "UNAVAILABLE") pending.current = null;
         return;
       }
-      router.refresh();
+      financeNavigation.refresh();
       onClose();
     } catch {
       if (pending.current) setUncertain(true);
@@ -103,7 +105,8 @@ function Adjustment({
           </label>
           <label>
             Valor a acrescentar ou retirar (R$)
-            <input
+            <FinanceMoneyInput
+              signed
               name="amount"
               inputMode="decimal"
               placeholder="Ex.: -50,00"
@@ -157,15 +160,18 @@ export function FinanceCashboxes({
             : " Solicite a configuração ao administrador."}
         </div>
       ) : (
-        <div className="grid">
+        <div className="finance-cashbox-grid">
           {catalogs.cashboxes.map((box) => (
-            <article className="card stack" key={box.id}>
+            <article
+              className={`card stack finance-cashbox ${box.kind === "BANK_ACCOUNT" ? "finance-bank-card" : ""}`}
+              key={box.id}
+            >
               <div className="row spread">
                 <div className="row">
                   {box.kind === "CASH" ? (
                     <Wallet color="#087F5B" />
                   ) : (
-                    <Landmark color="#087F5B" />
+                    <Landmark />
                   )}
                   <h2>{box.name}</h2>
                 </div>
@@ -173,6 +179,16 @@ export function FinanceCashboxes({
                   {box.status === "ACTIVE" ? "Ativo" : "Inativo"}
                 </span>
               </div>
+              {box.kind === "BANK_ACCOUNT" && (
+                <div className="finance-bank-data">
+                  <span className="finance-bank-chip" aria-hidden="true" />
+                  <strong>{box.bankName || "Conta bancária"}</strong>
+                  <div className="row">
+                    <span>Agência {box.agency || "—"}</span>
+                    <span>Conta {box.accountNumber || "—"}</span>
+                  </div>
+                </div>
+              )}
               <div>
                 <span className="muted">Saldo atual</span>
                 <div

@@ -11,6 +11,8 @@ const messages: Record<FinanceErrorCode, string> = {
   CONFLICT: "Este registro mudou. Atualize os dados antes de continuar.",
   IDEMPOTENCY_CONFLICT:
     "Esta tentativa já foi usada com outros dados. Confira a confirmação anterior.",
+  PREBEND_CAP_REQUIRED:
+    "Configure o teto mensal da prebenda bruta nas regras desta congregação antes de gerar o demonstrativo.",
   CONFIGURATION_REQUIRED:
     "Complete as configurações financeiras desta congregação.",
   LEGACY_DATA_REQUIRES_REVIEW:

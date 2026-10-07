@@ -8,6 +8,7 @@ import {
   useState,
   useEffect,
   useCallback,
+  useTransition,
 } from "react";
 import {
   ArrowLeft,
@@ -33,6 +34,8 @@ type Guard = {
 };
 type Navigation = {
   navigate: (url: string) => void;
+  refresh: () => void;
+  isPending: boolean;
   register: (guard: Guard) => () => void;
 };
 const NavigationContext = createContext<Navigation | null>(null);
@@ -69,6 +72,15 @@ export function FinanceShell({
   const path = usePathname(),
     search = useSearchParams(),
     router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const refresh = useCallback(
+    () => startTransition(() => router.refresh()),
+    [router],
+  );
+  const push = useCallback(
+    (url: string) => startTransition(() => router.push(url, { scroll: false })),
+    [router],
+  );
   const unit =
     context.units.find((u) => u.id === search.get("unidade")) ??
     context.units.find((u) => u.id === context.defaultUnitId)!;
@@ -85,9 +97,9 @@ export function FinanceShell({
   const navigate = useCallback(
     (url: string) => {
       if ([...guards.current].some((g) => g.dirty)) setPending(url);
-      else router.push(url);
+      else push(url);
     },
-    [router, setPending],
+    [push, setPending],
   );
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
@@ -139,7 +151,9 @@ export function FinanceShell({
   ];
   return (
     <FinanceThemeProvider>
-      <NavigationContext.Provider value={{ navigate, register }}>
+      <NavigationContext.Provider
+        value={{ navigate, register, refresh, isPending }}
+      >
         <Workspace className="finance" data-app-shell>
           <aside className="finance-sidebar">
             <div className="finance-logo">
@@ -222,7 +236,12 @@ export function FinanceShell({
               </div>
             </div>
           </header>
-          <main className="finance-main" key={unit.id}>
+          {isPending && (
+            <div className="finance-progress no-print" role="status">
+              <span className="finance-spinner" /> Atualizando financeiro…
+            </div>
+          )}
+          <main className="finance-main" key={unit.id} aria-busy={isPending}>
             {children}
           </main>
         </Workspace>
@@ -244,7 +263,7 @@ export function FinanceShell({
                     if (g.dirty && g.discard() === false) return;
                   const target = pending;
                   setPending(null);
-                  if (target) router.push(target);
+                  if (target) push(target);
                 }}
               >
                 Descartar
@@ -258,7 +277,7 @@ export function FinanceShell({
                       if (g.dirty && !(await g.save())) return;
                     const target = pending;
                     setPending(null);
-                    if (target) router.push(target);
+                    if (target) push(target);
                   } finally {
                     setSaving(false);
                   }

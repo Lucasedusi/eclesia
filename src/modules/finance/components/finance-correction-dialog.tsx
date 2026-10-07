@@ -1,6 +1,7 @@
 "use client";
+import { useFinanceNavigation } from "./finance-shell";
 import { useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { submitFinanceCommand } from "../actions/finance-command.actions";
@@ -22,7 +23,7 @@ export function FinanceCancellationDialog({
     [error, setError] = useState(""),
     [uncertain, setUncertain] = useState(false),
     key = useRef<string | null>(null),
-    router = useRouter();
+    financeNavigation = useFinanceNavigation();
   return (
     <Modal
       title={
@@ -64,7 +65,7 @@ export function FinanceCancellationDialog({
                   setUncertain(result.code === "UNAVAILABLE");
                   return;
                 }
-                router.refresh();
+                financeNavigation.refresh();
                 onClose();
               } catch {
                 setUncertain(true);

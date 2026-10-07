@@ -1,6 +1,9 @@
 "use client";
+import { useFinanceNavigation } from "./finance-shell";
+import { FinanceSkeleton } from "./finance-skeleton";
+import { Loader2 } from "lucide-react";
 import { useRef, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { Search, ChevronLeft, ChevronRight, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { FinanceCatalogs } from "../types/finance-catalog.types";
@@ -32,7 +35,7 @@ export function FinanceTransactionsTable({
     close: () => void,
   ) => React.ReactNode;
 }) {
-  const router = useRouter(),
+  const { navigate, isPending } = useFinanceNavigation(),
     path = usePathname(),
     sequence = useRef(0),
     [detail, setDetail] = useState<FinanceTransactionDetail | null>(null),
@@ -42,7 +45,7 @@ export function FinanceTransactionsTable({
     const query = new URLSearchParams({ unidade: unit, mes: month });
     for (const [k, v] of data)
       if (typeof v === "string" && v && v !== "ALL") query.set(k, v);
-    router.push(`${path}?${query}`, { scroll: false });
+    navigate(`${path}?${query}`);
   }
   function paginate(page: number) {
     const data = new FormData();
@@ -81,9 +84,13 @@ export function FinanceTransactionsTable({
                 maxLength={160}
               />
             </label>
-            <Button type="submit" style={{ alignSelf: "end" }}>
-              <Search size={16} />
-              Filtrar
+            <Button
+              type="submit"
+              loading={isPending}
+              style={{ alignSelf: "end" }}
+            >
+              {!isPending && <Search size={16} />}
+              {isPending ? "Filtrando…" : "Filtrar"}
             </Button>
           </div>
           <details>
@@ -162,7 +169,9 @@ export function FinanceTransactionsTable({
           </span>
         </div>
         {error && <div role="alert">{error}</div>}
-        {result.items.length === 0 ? (
+        {isPending ? (
+          <FinanceSkeleton table />
+        ) : result.items.length === 0 ? (
           <div className="empty">
             Nenhum lançamento encontrado. Confira o mês e os filtros
             selecionados.
@@ -193,11 +202,15 @@ export function FinanceTransactionsTable({
                           t.description ||
                           "Coletivo"}
                       </div>
+                    </td>
+                    <td>
+                      {t.departmentName}
                       {t.classificationName && (
-                        <span className="badge">{t.classificationName}</span>
+                        <div className="muted finance-classification">
+                          {t.classificationName}
+                        </div>
                       )}
                     </td>
-                    <td>{t.departmentName}</td>
                     <td style={{ whiteSpace: "nowrap" }}>
                       {t.date.split("-").reverse().join("/")}
                     </td>
@@ -221,7 +234,9 @@ export function FinanceTransactionsTable({
                         variant="outline"
                         size="sm"
                         aria-label={`Detalhes ${t.categoryName} ${t.personName || t.beneficiaryName || ""}`}
-                        loading={loading === t.id}
+                        disabled={loading === t.id}
+                        aria-busy={loading === t.id}
+                        className="finance-icon-button"
                         onClick={async () => {
                           const request = ++sequence.current;
                           setLoading(t.id);
@@ -241,7 +256,11 @@ export function FinanceTransactionsTable({
                           }
                         }}
                       >
-                        <Eye size={15} />
+                        {loading === t.id ? (
+                          <Loader2 size={15} className="finance-spin" />
+                        ) : (
+                          <Eye size={15} />
+                        )}
                       </Button>
                     </td>
                   </tr>
@@ -258,7 +277,7 @@ export function FinanceTransactionsTable({
             <Button
               variant="outline"
               size="sm"
-              disabled={result.page <= 1}
+              disabled={isPending || result.page <= 1}
               onClick={() => paginate(result.page - 1)}
               aria-label="Página anterior"
             >
@@ -267,7 +286,7 @@ export function FinanceTransactionsTable({
             <Button
               variant="outline"
               size="sm"
-              disabled={result.page >= result.pageCount}
+              disabled={isPending || result.page >= result.pageCount}
               onClick={() => paginate(result.page + 1)}
               aria-label="Próxima página"
             >
@@ -279,6 +298,7 @@ export function FinanceTransactionsTable({
       {detail && (
         <FinanceTransactionDetails
           transaction={detail}
+          catalogs={catalogs}
           unit={unit}
           month={month}
           onClose={() => setDetail(null)}

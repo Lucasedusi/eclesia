@@ -4,24 +4,28 @@ import { useState } from "react";
 import { FileDown, ReceiptText } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
+import type { FinanceCatalogs } from "../types/finance-catalog.types";
 import type { FinanceTransactionDetail } from "../types/finance-query.types";
 import { formatMoney } from "../utils/finance-money";
 import { financeLocation } from "../utils/finance-navigation";
 import { getFinanceDocumentUrlAction } from "../actions/finance-document.actions";
 export function FinanceTransactionDetails({
   transaction: t,
+  catalogs,
   unit,
   month,
   onClose,
   actions,
 }: {
   transaction: FinanceTransactionDetail;
+  catalogs: FinanceCatalogs;
   unit: string;
   month: string;
   onClose: () => void;
   actions?: React.ReactNode;
 }) {
   const [error, setError] = useState("");
+  const [openingDocument, setOpeningDocument] = useState<string | null>(null);
   return (
     <Modal
       title="Detalhes do lançamento"
@@ -32,7 +36,9 @@ export function FinanceTransactionDetails({
       <div className="stack">
         {error && <div role="alert">{error}</div>}
         <div className="row">
-          <span className="badge">
+          <span
+            className={`badge ${t.direction === "EXPENSE" ? "finance-expense-badge" : ""}`}
+          >
             {t.direction === "INCOME" ? "Entrada" : "Saída"}
           </span>
           <span className="badge">
@@ -50,6 +56,20 @@ export function FinanceTransactionDetails({
         </strong>
         <h3>{t.categoryName}</h3>
         <div className="grid">
+          <div>
+            <p className="muted">Caixa ou conta</p>
+            <span>
+              {catalogs.cashboxes.find((b) => b.id === t.cashboxId)?.name ||
+                "Caixa indisponível"}
+            </span>
+          </div>
+          <div>
+            <p className="muted">Forma de pagamento</p>
+            <span>
+              {catalogs.paymentMethods.find((m) => m.id === t.paymentMethodId)
+                ?.name || "Forma indisponível"}
+            </span>
+          </div>
           <div>
             <p className="muted">Pessoa / favorecido</p>
             {t.personName || t.beneficiaryName || "Contribuição coletiva"}
@@ -119,7 +139,10 @@ export function FinanceTransactionDetails({
               <Button
                 key={d.id}
                 variant="outline"
+                loading={openingDocument === d.id}
+                disabled={openingDocument !== null}
                 onClick={async () => {
+                  setOpeningDocument(d.id);
                   const popup = window.open("about:blank", "_blank");
                   if (popup) popup.opener = null;
                   try {
@@ -142,6 +165,8 @@ export function FinanceTransactionDetails({
                   } catch {
                     popup?.close();
                     setError("Não foi possível abrir o anexo.");
+                  } finally {
+                    setOpeningDocument(null);
                   }
                 }}
               >

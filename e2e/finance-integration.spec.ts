@@ -151,7 +151,7 @@ test("admin configures, restricted operator receives and monthly versions preser
   await operator
     .getByRole("button", { name: /Gerar (demonstrativo|nova versão)/ })
     .click();
-  await expect(operator.getByTestId("statement-cathedral-total")).toBeVisible();
+  await expect(operator.getByTestId("statement-cathedral-total").filter({visible:true})).toBeVisible();
   const versionCount = await operator
     .getByRole("link", { name: "Ver demonstrativo" })
     .count();
@@ -183,7 +183,10 @@ test("admin configures, restricted operator receives and monthly versions preser
   await expect(page.locator("main").getByRole("alert")).toHaveCount(0);
   await operator.reload();
   await expect(
-    operator.getByText("Desatualizado", { exact: true }),
+    operator
+      .getByRole("article")
+      .filter({ visible: true })
+      .getByText("Desatualizado", { exact: true }),
   ).toBeVisible();
   await operator
     .getByRole("button", { name: "Gerar nova versão", exact: true })
@@ -198,7 +201,7 @@ test("admin configures, restricted operator receives and monthly versions preser
       .filter({ visible: true }),
   ).toBeVisible();
   await operator.goto(`/financeiro?unidade=${f.headquartersId}&mes=2026-10`);
-  await expect(operator.getByTestId("statement-cathedral-total")).toHaveCount(
+  await expect(operator.getByTestId("statement-cathedral-total").filter({visible:true})).toHaveCount(
     0,
   );
   await expect(

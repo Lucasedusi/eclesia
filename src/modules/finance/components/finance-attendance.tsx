@@ -22,13 +22,7 @@ export function FinanceAttendance(props: {
         </div>
         <HandCoins color="#087F5B" size={32} />
       </div>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "minmax(0,900px)",
-          justifyContent: "center",
-        }}
-      >
+      <div>
         <section className="card stack">
           <div className="row">
             <ShieldCheck color="#087F5B" size={18} />

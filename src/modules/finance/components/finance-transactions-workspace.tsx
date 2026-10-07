@@ -1,6 +1,7 @@
 "use client";
+import { useFinanceNavigation } from "./finance-shell";
 import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Plus, ArrowUpRight, ArrowLeftRight, Pencil, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { FinanceCatalogs } from "../types/finance-catalog.types";
@@ -49,7 +50,7 @@ export function FinanceTransactionsWorkspace({
       kind: "CANCEL_TRANSACTION" | "CANCEL_ATTENDANCE" | "CANCEL_TRANSFER";
     } | null>(null),
     [transfer, setTransfer] = useState<{ existing?: TransferRow } | null>(null),
-    router = useRouter(),
+    navigation = useFinanceNavigation(),
     search = useSearchParams();
   return (
     <div className="stack">
@@ -71,6 +72,7 @@ export function FinanceTransactionsWorkspace({
               <>
                 <Button
                   variant="outline"
+                  className="finance-expense-action"
                   onClick={() => setEntry({ direction: "EXPENSE" })}
                 >
                   <ArrowUpRight size={16} />
@@ -220,9 +222,7 @@ export function FinanceTransactionsWorkspace({
                   onClick={() => {
                     const q = new URLSearchParams(search);
                     q.set("transferPage", String(transfers.page + delta));
-                    router.push(`/financeiro/lancamentos?${q}`, {
-                      scroll: false,
-                    });
+                    navigation.navigate(`/financeiro/lancamentos?${q}`);
                   }}
                 >
                   {delta < 0 ? "Anterior" : "Próxima"}

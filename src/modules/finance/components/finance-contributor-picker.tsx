@@ -1,6 +1,6 @@
 "use client";
-import { useRef, useState } from "react";
-import { Search, UserCheck, QrCode } from "lucide-react";
+import { useRef, useState, useId } from "react";
+import { Search, UserCheck, QrCode, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { ContributorRef } from "../types/finance-command.types";
 import type {
@@ -28,6 +28,7 @@ export function FinanceContributorPicker({
   ) => void;
   allowCollective?: boolean;
 }) {
+  const inputId = useId();
   const [kind, setKind] = useState(
       value?.kind ?? (canLookup ? "MEMBER" : "UNREGISTERED"),
     ),
@@ -96,6 +97,7 @@ export function FinanceContributorPicker({
         <label>
           Nome da pessoa
           <input
+            data-person-search
             value={value?.kind === "UNREGISTERED" ? value.name : ""}
             onChange={(e) =>
               onChange(
@@ -128,7 +130,7 @@ export function FinanceContributorPicker({
       ) : (
         kind === "MEMBER" && (
           <>
-            <div className="grid">
+            <div className="finance-person-search">
               <label>
                 Buscar por
                 <select
@@ -147,45 +149,64 @@ export function FinanceContributorPicker({
                   <option value="CREDENTIAL">QR da credencial</option>
                 </select>
               </label>
-              <label>
-                {searchKind === "CPF"
-                  ? "CPF"
-                  : searchKind === "MEMBER_CODE"
-                    ? "Matrícula"
-                    : searchKind === "CREDENTIAL"
-                      ? "Conteúdo do QR da credencial"
-                      : "Nome para busca"}
-                <input
-                  value={query}
-                  onChange={(e) => {
-                    ++sequence.current;
-                    setBusy(false);
-                    setResults([]);
-                    setQuery(e.target.value);
-                  }}
-                  autoComplete="off"
-                  maxLength={searchKind === "CREDENTIAL" ? 2048 : 160}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      void search();
-                    }
-                  }}
-                />
-              </label>
+              <div className="finance-person-query">
+                <label htmlFor={inputId}>
+                  {searchKind === "CPF"
+                    ? "CPF"
+                    : searchKind === "MEMBER_CODE"
+                      ? "Matrícula"
+                      : searchKind === "CREDENTIAL"
+                        ? "Conteúdo do QR da credencial"
+                        : "Nome para busca"}
+                </label>
+                <div className="finance-search-controls">
+                  <div className="finance-search-input">
+                    <input
+                      id={inputId}
+                      data-person-search
+                      value={query}
+                      onChange={(e) => {
+                        ++sequence.current;
+                        setBusy(false);
+                        setResults([]);
+                        setQuery(e.target.value);
+                      }}
+                      autoComplete="off"
+                      maxLength={searchKind === "CREDENTIAL" ? 2048 : 160}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          void search();
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      aria-label="Buscar pessoa"
+                      title="Buscar pessoa"
+                      disabled={busy}
+                      aria-busy={busy}
+                      onClick={() => void search()}
+                    >
+                      {busy ? (
+                        <Loader2 size={18} className="finance-spin" />
+                      ) : (
+                        <Search size={18} />
+                      )}
+                    </button>
+                  </div>
+                  <Button
+                    variant="outline"
+                    className="finance-icon-button"
+                    aria-label="Ler credencial com a câmera"
+                    title="Ler credencial com a câmera"
+                    onClick={() => setCamera(true)}
+                  >
+                    <QrCode size={20} />
+                  </Button>
+                </div>
+              </div>
             </div>
-            <Button variant="outline" onClick={() => setCamera(true)}>
-              <QrCode size={16} />
-              Ler credencial com a câmera
-            </Button>
-            <Button
-              variant="outline"
-              loading={busy}
-              onClick={() => void search()}
-            >
-              <Search size={15} />
-              Buscar pessoa
-            </Button>
             <div aria-live="polite">
               {error && <p role="alert">{error}</p>}
               {results.map((r) => (
