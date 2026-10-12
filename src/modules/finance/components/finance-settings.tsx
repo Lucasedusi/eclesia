@@ -20,6 +20,8 @@ import { FinanceRuleEditor } from "./finance-rule-editor";
 import { FinanceOperators } from "./finance-operators";
 import type { FinanceOperator } from "../services/finance-operator.service";
 export function FinanceSettings({
+  latestStatementMonth,
+  currentMonth,
   catalogs,
   unit,
   month,
@@ -28,6 +30,8 @@ export function FinanceSettings({
   units,
   operators,
 }: {
+  latestStatementMonth: string | null;
+  currentMonth: string;
   catalogs: FinanceCatalogs;
   unit: string;
   month: string;
@@ -85,7 +89,6 @@ export function FinanceSettings({
     <div className="stack">
       <div className="row spread">
         <div>
-          <p className="eyebrow">Administração</p>
           <h1>Configurações financeiras</h1>
           <p className="muted">
             Cadastros do campo e regras próprias de cada congregação.
@@ -118,6 +121,8 @@ export function FinanceSettings({
       ) : tab === "RULES" ? (
         <FinanceRuleEditor
           key={`${unit}-${month}-${rules[0]?.id ?? "new"}`}
+          latestStatementMonth={latestStatementMonth}
+          currentMonth={currentMonth}
           unit={unit}
           month={month}
           rules={rules}

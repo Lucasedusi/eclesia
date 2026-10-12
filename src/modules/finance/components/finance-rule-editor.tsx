@@ -25,12 +25,16 @@ type DraftRule = {
   cap: string;
 };
 export function FinanceRuleEditor({
+  latestStatementMonth,
+  currentMonth,
   unit,
   month,
   rules,
   units,
   onDirtyChange,
 }: {
+  latestStatementMonth: string | null;
+  currentMonth: string;
   unit: string;
   month: string;
   rules: StatementRuleSet[];
@@ -55,6 +59,15 @@ export function FinanceRuleEditor({
         ? centsToDecimal(r.amountCents ?? 0).replace(".", ",")
         : (r.percentage ?? "0"),
   }));
+  const [effectiveMonth, setEffectiveMonth] = useState(month);
+  const [copyMonth, setCopyMonth] = useState(month);
+  const copyReasonRequired =
+    copyMonth < currentMonth ||
+    (latestStatementMonth !== null && copyMonth <= latestStatementMonth);
+  const [reasonError, setReasonError] = useState("");
+  const reasonRequired =
+    effectiveMonth < currentMonth ||
+    (latestStatementMonth !== null && effectiveMonth <= latestStatementMonth);
   const [items, setItems] = useState(initial),
     [dirty, setDirty] = useState(false),
     [busy, setBusy] = useState(false),
@@ -73,6 +86,7 @@ export function FinanceRuleEditor({
     if (busy || !form.current?.reportValidity()) return false;
     setBusy(true);
     setError("");
+    setReasonError("");
     setMessage("");
     try {
       const data = new FormData(form.current);
@@ -97,6 +111,13 @@ export function FinanceRuleEditor({
           : {}),
       });
       if (!result.ok) {
+        if (result.code === "STATEMENT_REASON_REQUIRED") {
+          setReasonError(result.message);
+          form.current
+            ?.querySelector<HTMLTextAreaElement>('[name="reason"]')
+            ?.focus();
+          return false;
+        }
         setError(
           result.message +
             (result.fieldErrors
@@ -155,7 +176,16 @@ export function FinanceRuleEditor({
           </div>
           <label>
             Nova vigência
-            <input name="month" type="month" defaultValue={month} required />
+            <input
+              name="month"
+              type="month"
+              value={effectiveMonth}
+              onChange={(e) => {
+                setEffectiveMonth(e.target.value);
+                setReasonError("");
+              }}
+              required
+            />
           </label>
         </div>
         {error && <div role="alert">{error}</div>}
@@ -285,10 +315,28 @@ export function FinanceRuleEditor({
           Adicionar regra
         </Button>
         <label>
-          Justificativa para revisão de período anterior
-          <textarea name="reason" minLength={5} maxLength={1000} />
+          Justificativa da alteração{" "}
+          {reasonRequired ? "(obrigatória)" : "(opcional)"}
+          <textarea
+            name="reason"
+            required={reasonRequired || !!reasonError}
+            minLength={5}
+            maxLength={1000}
+            aria-invalid={!!reasonError}
+            aria-describedby={
+              reasonError
+                ? "finance-rule-reason-error"
+                : "finance-rule-reason-help"
+            }
+            onChange={() => setReasonError("")}
+          />
+          {reasonError && (
+            <span id="finance-rule-reason-error" role="alert">
+              {reasonError}
+            </span>
+          )}
         </label>
-        <p className="muted">
+        <p className="muted" id="finance-rule-reason-help">
           Obrigatória ao alterar um período passado ou que já possui
           demonstrativo. As versões anteriores permanecem disponíveis.
         </p>
@@ -355,12 +403,24 @@ export function FinanceRuleEditor({
           </label>
           <label>
             Vigência da cópia
-            <input type="month" name="month" defaultValue={month} required />
+            <input
+              type="month"
+              name="month"
+              value={copyMonth}
+              onChange={(e) => setCopyMonth(e.target.value)}
+              required
+            />
           </label>
         </div>
         <label>
-          Justificativa da cópia retroativa
-          <textarea name="reason" minLength={5} />
+          Justificativa da cópia{" "}
+          {copyReasonRequired ? "(obrigatória)" : "(opcional)"}
+          <textarea
+            name="reason"
+            minLength={5}
+            maxLength={1000}
+            required={copyReasonRequired}
+          />
         </label>
         <Button type="submit" variant="outline" loading={busy}>
           <Copy size={16} />

@@ -28,7 +28,7 @@ where a.id in ('40000000-0000-4000-8000-000000000002','40000000-0000-4000-8000-0
 and p.key in ('finance.view','finance.transactions.create') and p.deleted_at is null;
 
 select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000001',true);
-do $$ declare c uuid:='20000000-0000-4000-8000-000000000001';u uuid:='30000000-0000-4000-8000-000000000001';hq uuid:='30000000-0000-4000-8000-000000000002';m uuid;d uuid;cat uuid;outcat uuid;b uuid;command jsonb;result jsonb;
+do $$ declare c uuid:='20000000-0000-4000-8000-000000000001';u uuid:='30000000-0000-4000-8000-000000000001';hq uuid:='30000000-0000-4000-8000-000000000002';m uuid;d uuid;cat uuid;outcat uuid;b uuid;command jsonb;result jsonb;classification uuid;
 begin
  m:=(public.save_finance_catalog(c,jsonb_build_object('entity','PAYMENT_METHOD','congregationId',u,'name','Dinheiro','kind','CASH'))->>'id')::uuid;
  d:=(public.save_finance_catalog(c,jsonb_build_object('entity','DEPARTMENT','congregationId',u,'name','Tesouraria','effectiveMonth','2026-10','participatesInBase',true))->>'id')::uuid;
@@ -50,7 +50,32 @@ begin
  perform public.execute_finance_command(c,jsonb_build_object('kind','ADJUST_BALANCE','congregationId',u,'operationKey',gen_random_uuid(),'cashboxId',b,'date','2026-10-03','amountCents',-100,'reason','Ajuste de teste'));
  result:=public.get_finance_overview(c,u,'2026-10');
  perform pg_temp.assert_true((result->>'adjustmentCents')::numeric=-100 and (result->>'expenseCents')::numeric=244000,'adjustments excluded from expenses');
+
+ insert into public.members(church_id,congregation_id,full_name,member_code) values(c,u,'José Conceição','ACCENT01');
+ result:=public.lookup_finance_contributors(c,u,'NAME','jose conceicao');
+ perform pg_temp.assert_true(jsonb_array_length(result)=1 and result->0->>'name'='José Conceição','name lookup ignores accents and case');
+ result:=public.lookup_finance_contributors(c,u,'NAME','Jos%');
+ perform pg_temp.assert_true(jsonb_array_length(result)=0,'name lookup treats wildcard literally');
+ classification:=(public.save_finance_catalog(c,jsonb_build_object('entity','CLASSIFICATION','congregationId',u,'name','Diácono'))->>'id')::uuid;
+ perform public.execute_finance_command(c,command||jsonb_build_object('operationKey',gen_random_uuid(),'items',jsonb_build_array(jsonb_build_object('categoryId',cat,'departmentId',d,'amountCents',12345,'titheClassificationId',classification))));
+ result:=public.list_finance_transactions(c,u,jsonb_build_object('month','2026-10','titheClassificationId',classification));
+ perform pg_temp.assert_true((result->>'totalCount')::int=1 and (result->>'filteredIncomeCents')::numeric=12345 and (result->>'filteredExpenseCents')::numeric=0,'classification scopes results AND totals');
+ result:=public.list_finance_transactions(c,u,jsonb_build_object('month','2026-10','titheClassificationId',gen_random_uuid()));
+ perform pg_temp.assert_true((result->>'totalCount')::int=0,'unknown classification returns no results');
  perform set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000002',true);
  begin perform public.get_finance_overview(c,hq,'2026-10');raise exception 'expected denial';exception when raise_exception then if sqlerrm<>'FORBIDDEN' then raise;end if;end;
 end;$$;
+-- Exercise exposed functions with real database roles, not only JWT claims.
+set local role authenticated;
+select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000001',true);
+select pg_temp.assert_true(jsonb_array_length(public.lookup_finance_contributors('20000000-0000-4000-8000-000000000001','30000000-0000-4000-8000-000000000001','NAME','JOSE CONCEICAO'))=1,'authenticated accent lookup');
+do $$ begin
+ begin
+  perform public.lookup_finance_contributors('20000000-0000-4000-8000-000000000002','30000000-0000-4000-8000-000000000003','NAME','jose');
+  raise exception 'cross tenant lookup allowed';
+ exception when insufficient_privilege then null;end;
+end $$;
+select pg_temp.assert_true(not has_function_privilege('anon','public.lookup_finance_contributors(uuid,uuid,text,text)','execute'),'anonymous lookup revoked');
+select pg_temp.assert_true(not has_function_privilege('anon','public.list_finance_transactions(uuid,uuid,jsonb)','execute'),'anonymous list revoked');
+reset role;
 rollback;

@@ -139,7 +139,6 @@ export function FinanceCashboxes({
     <div className="stack">
       <div className="row spread">
         <div>
-          <p className="eyebrow">Recursos disponíveis</p>
           <h1>Caixas e contas</h1>
           <p className="muted">
             Saldos atuais e formas de recebimento desta congregação.
@@ -179,16 +178,6 @@ export function FinanceCashboxes({
                   {box.status === "ACTIVE" ? "Ativo" : "Inativo"}
                 </span>
               </div>
-              {box.kind === "BANK_ACCOUNT" && (
-                <div className="finance-bank-data">
-                  <span className="finance-bank-chip" aria-hidden="true" />
-                  <strong>{box.bankName || "Conta bancária"}</strong>
-                  <div className="row">
-                    <span>Agência {box.agency || "—"}</span>
-                    <span>Conta {box.accountNumber || "—"}</span>
-                  </div>
-                </div>
-              )}
               <div>
                 <span className="muted">Saldo atual</span>
                 <div
@@ -202,6 +191,24 @@ export function FinanceCashboxes({
                   </span>
                 )}
               </div>
+              <div className="finance-account-details">
+                {box.kind === "BANK_ACCOUNT" ? (
+                  <>
+                    <span>{box.bankName || "Conta bancária"}</span>
+                    <span className="muted">
+                      Agência {box.agency || "—"} · Conta{" "}
+                      {box.accountNumber || "—"}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span>Caixa em dinheiro</span>
+                    <span className="muted">
+                      Movimentação local da congregação
+                    </span>
+                  </>
+                )}
+              </div>
               <p className="muted">
                 {box.paymentMethodIds
                   .map(
@@ -211,12 +218,8 @@ export function FinanceCashboxes({
                   .filter(Boolean)
                   .join(" · ")}
               </p>
-              <div className="muted">
-                Abertura em {box.openingDate?.split("-").reverse().join("/")} ·{" "}
-                {formatMoney(box.openingCents)}
-              </div>
               {capabilities.manageSettings && (
-                <div className="row">
+                <div className="row finance-cashbox-actions">
                   <Button
                     variant="outline"
                     size="sm"

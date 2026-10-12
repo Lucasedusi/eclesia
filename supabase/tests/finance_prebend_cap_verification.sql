@@ -60,6 +60,13 @@ begin
  perform pg_temp.assert_true((select count(*)=ledger_count from public.financial_ledger_entries where church_id=c) and (select count(*)=tx_count from public.financial_transactions where church_id=c),'statement did not change money');
  retry:=public.generate_finance_statement(c,u,'2026-10',key);perform pg_temp.assert_true(retry->>'id'=statement->>'id','statement retry preserves version');
 
+ begin
+  perform public.save_finance_statement_rules(c,jsonb_build_object('congregationId',u,'effectiveMonth','2026-10','items',rules));
+  raise exception 'expected justification requirement';
+ exception when sqlstate '22023' then
+  perform pg_temp.assert_true(sqlerrm='STATEMENT_REASON_REQUIRED','existing statement requests specific justification');
+ end;
+
  -- Simulate a pre-migration rule set: old receipts stay readable/idempotent,
  -- while a NEW statement must wait for an explicitly configured cap.
  insert into public.report_delivery_rule_sets(church_id,congregation_id,effective_month,revision,reason,items,created_by)

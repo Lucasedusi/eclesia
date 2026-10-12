@@ -9,8 +9,13 @@ import {
   useEffect,
   useCallback,
   useTransition,
+  useSyncExternalStore,
 } from "react";
 import {
+  PanelLeftClose,
+  PanelLeftOpen,
+  Menu,
+  X,
   ArrowLeft,
   ChartNoAxesCombined,
   Wallet,
@@ -27,6 +32,22 @@ import { financeLocation } from "../utils/finance-navigation";
 import { FinanceThemeProvider } from "./finance-theme-provider";
 import { FinanceContextBar } from "./finance-context-bar";
 import { Workspace } from "./finance-shell.styles";
+const sidebarPreference = "eclesias:finance:sidebar-collapsed";
+function subscribeSidebar(callback: () => void) {
+  window.addEventListener("storage", callback);
+  window.addEventListener("finance-sidebar-change", callback);
+  return () => {
+    window.removeEventListener("storage", callback);
+    window.removeEventListener("finance-sidebar-change", callback);
+  };
+}
+function readSidebar() {
+  try {
+    return localStorage.getItem(sidebarPreference) === "true";
+  } catch {
+    return false;
+  }
+}
 type Guard = {
   dirty: boolean;
   save: () => Promise<boolean>;
@@ -72,6 +93,20 @@ export function FinanceShell({
   const path = usePathname(),
     search = useSearchParams(),
     router = useRouter();
+  const collapsed = useSyncExternalStore(
+    subscribeSidebar,
+    readSidebar,
+    () => false,
+  );
+  const [mobileOpen, setMobileOpen] = useState(false);
+  function toggleSidebar() {
+    try {
+      localStorage.setItem(sidebarPreference, String(!collapsed));
+    } catch {
+      return;
+    }
+    window.dispatchEvent(new Event("finance-sidebar-change"));
+  }
   const [isPending, startTransition] = useTransition();
   const refresh = useCallback(
     () => startTransition(() => router.refresh()),
@@ -154,14 +189,20 @@ export function FinanceShell({
       <NavigationContext.Provider
         value={{ navigate, register, refresh, isPending }}
       >
-        <Workspace className="finance" data-app-shell>
-          <aside className="finance-sidebar">
+        <Workspace
+          className="finance"
+          data-app-shell
+          data-collapsed={collapsed}
+          data-mobile-open={mobileOpen}
+        >
+          <aside className="finance-sidebar" id="finance-sidebar">
             <div className="finance-logo">
               <span>
                 <Leaf size={21} />
               </span>
-              eclesias{" "}
+              <b className="finance-nav-label">eclesias</b>{" "}
               <small
+                className="finance-nav-label"
                 style={{ fontSize: 9, color: "#6D7F76", letterSpacing: 1 }}
               >
                 FIN
@@ -180,14 +221,17 @@ export function FinanceShell({
                   <Link
                     key={l.path}
                     href={financeLocation(l.path, unit.id, month)}
+                    title={l.label}
+                    aria-label={l.label}
                     aria-current={path === l.path ? "page" : undefined}
                     onNavigate={(e) => {
                       e.preventDefault();
+                      setMobileOpen(false);
                       navigate(financeLocation(l.path, unit.id, month));
                     }}
                   >
                     <l.icon size={19} />
-                    {l.label}
+                    <span className="finance-nav-label">{l.label}</span>
                   </Link>
                 ))}
             </nav>
@@ -201,6 +245,8 @@ export function FinanceShell({
                 </p>
               </div>
               <Link
+                title="Voltar ao sistema"
+                aria-label="Voltar ao sistema"
                 href="/"
                 onNavigate={(e) => {
                   e.preventDefault();
@@ -208,11 +254,35 @@ export function FinanceShell({
                 }}
               >
                 <ArrowLeft size={16} />
-                Voltar ao sistema
+                <span className="finance-nav-label">Voltar ao sistema</span>
               </Link>
             </div>
           </aside>
           <header className="finance-topbar">
+            <button
+              type="button"
+              className="finance-menu-toggle finance-desktop-toggle"
+              aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
+              aria-expanded={!collapsed}
+              aria-controls="finance-sidebar"
+              onClick={toggleSidebar}
+            >
+              {collapsed ? (
+                <PanelLeftOpen size={20} />
+              ) : (
+                <PanelLeftClose size={20} />
+              )}
+            </button>
+            <button
+              type="button"
+              className="finance-menu-toggle finance-mobile-toggle"
+              aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"}
+              aria-expanded={mobileOpen}
+              aria-controls="finance-sidebar"
+              onClick={() => setMobileOpen(!mobileOpen)}
+            >
+              {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
             <FinanceContextBar
               units={context.units}
               selectedUnitId={unit.id}

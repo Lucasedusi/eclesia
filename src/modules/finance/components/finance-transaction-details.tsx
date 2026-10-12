@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
-import { FileDown, ReceiptText } from "lucide-react";
+import { FileDown, Printer } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import type { FinanceCatalogs } from "../types/finance-catalog.types";
@@ -112,7 +112,7 @@ export function FinanceTransactionDetails({
             t.receipts.map((r) => (
               <Link
                 key={r.id}
-                className="row"
+                className="finance-secondary-link"
                 target="_blank"
                 rel="noopener"
                 href={financeLocation(
@@ -121,13 +121,14 @@ export function FinanceTransactionDetails({
                   month,
                 )}
               >
-                <ReceiptText size={17} />
-                {r.number} · v{r.revision} ·{" "}
-                {r.status === "SUPERSEDED"
-                  ? "Substituído"
-                  : r.status === "CANCELLED"
-                    ? "Cancelado"
-                    : "Vigente"}
+                <Printer size={17} />
+                Imprimir comprovante
+                {(r.status === "SUPERSEDED" || r.status === "CANCELLED") && (
+                  <span className="muted">
+                    {" "}
+                    · {r.status === "SUPERSEDED" ? "Substituído" : "Cancelado"}
+                  </span>
+                )}
               </Link>
             ))
           )}

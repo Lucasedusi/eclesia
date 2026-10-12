@@ -71,11 +71,23 @@ test("filter and detail loading have stable feedback and payment identification"
       await new Promise((r) => setTimeout(r, 900));
     await route.continue();
   });
-  await page.getByText("Mais filtros", { exact: true }).click();
+  await page
+    .getByRole("button", { name: "Filtros avançados", exact: true })
+    .click();
+  const filterWidth = (await page
+    .getByRole("button", { name: "Filtrar", exact: true })
+    .boundingBox())!.width;
   await page
     .getByRole("combobox", { name: "Situação", exact: true })
     .selectOption("CONFIRMED");
-  await page.getByRole("button", { name: "Filtrar", exact: true }).click();
+  await expect(
+    page.getByRole("status", { name: "Buscando lançamentos" }),
+  ).toBeVisible();
+  expect(
+    (await page
+      .getByRole("button", { name: "Filtrar", exact: true })
+      .boundingBox())!.width,
+  ).toBe(filterWidth);
   await expect(
     page.getByRole("status", { name: "Carregando lançamentos" }),
   ).toBeVisible();

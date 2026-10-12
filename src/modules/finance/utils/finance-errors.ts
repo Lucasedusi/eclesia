@@ -5,6 +5,8 @@ import type {
 } from "../types/finance.types";
 const messages: Record<FinanceErrorCode, string> = {
   FORBIDDEN: "Seu acesso não permite esta operação nesta congregação.",
+  STATEMENT_REASON_REQUIRED:
+    "Informe uma justificativa de pelo menos 5 caracteres: a alteração afeta um período passado ou com demonstrativo já gerado.",
   INVALID_INPUT: "Confira os campos informados.",
   INACTIVE_REFERENCE:
     "Um cadastro foi inativado. Escolha uma opção ativa; seu preenchimento foi preservado.",
@@ -34,7 +36,14 @@ export function financeFailure(error: unknown): FinanceActionResult<never> {
     error instanceof Error && error.message in messages
       ? (error.message as FinanceErrorCode)
       : "UNAVAILABLE";
-  return { ok: false, code, message: messages[code] };
+  return {
+    ok: false,
+    code,
+    message: messages[code],
+    ...(code === "STATEMENT_REASON_REQUIRED"
+      ? { fieldErrors: { retroactiveReason: [messages[code]] } }
+      : {}),
+  };
 }
 export function throwFinanceDatabaseError(error: {
   message: string;

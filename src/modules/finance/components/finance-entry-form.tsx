@@ -3,7 +3,7 @@ import { FinanceMoneyInput } from "./finance-money-input";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
-import { Plus, Printer, Save, Trash2 } from "lucide-react";
+import { Plus, Printer, Save, Trash2, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { FinanceCatalogs } from "../types/finance-catalog.types";
 import type { FinanceCapabilities } from "../types/finance.types";
@@ -310,6 +310,7 @@ export function FinanceEntryForm({
             <>
               {" "}
               <Link
+                className="finance-secondary-link"
                 target="_blank"
                 rel="noopener"
                 href={financeLocation(
@@ -318,7 +319,7 @@ export function FinanceEntryForm({
                   month,
                 )}
               >
-                Abrir comprovante
+                <Printer size={16} aria-hidden="true" /> Abrir comprovante
               </Link>
             </>
           )}
@@ -707,7 +708,7 @@ export function FinanceEntryForm({
                 disabled={busy || uploading}
                 onClick={() => void save("CONTINUE")}
               >
-                Salvar e continuar
+                <ArrowRight size={16} aria-hidden="true" /> Salvar e continuar
               </Button>
               <Button
                 variant="outline"

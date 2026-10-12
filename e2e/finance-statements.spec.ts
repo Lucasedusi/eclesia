@@ -20,7 +20,8 @@ test("statement shows the approved distribution without treating it as payment",
   await expect(
     page.getByText("R$ 3.000,00", { exact: true }).first(),
   ).toBeVisible();
-  await expect(page.getByText("R$ 4.989,00", { exact: true })).toBeVisible();
+  await expect(page.getByText("Restante da distribuição", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Total distribuído", { exact: true })).toHaveCount(0);
   await expect(
     page.getByText("Este demonstrativo não registra pagamentos.", {
       exact: false,

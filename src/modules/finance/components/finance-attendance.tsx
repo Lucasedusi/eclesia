@@ -14,7 +14,6 @@ export function FinanceAttendance(props: {
     <div className="stack">
       <div className="row spread">
         <div>
-          <p className="eyebrow">Cada contribuição tem um propósito</p>
           <h1>Atendimento</h1>
           <p className="muted">
             Uma identificação. Todas as contribuições. Um comprovante.

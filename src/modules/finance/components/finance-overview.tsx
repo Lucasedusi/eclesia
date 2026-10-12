@@ -55,7 +55,6 @@ export function FinanceOverview({
     <div className="stack">
       <div className="row spread">
         <div>
-          <p className="eyebrow">Clareza para cuidar de cada recurso</p>
           <h1>Visão geral</h1>
           <p className="muted">
             Sua congregação em números · {month.split("-").reverse().join("/")}

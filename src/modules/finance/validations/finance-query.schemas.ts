@@ -10,6 +10,7 @@ export const financeFiltersSchema = z
     categoryId: z.uuid().optional(),
     cashboxId: z.uuid().optional(),
     paymentMethodId: z.uuid().optional(),
+    titheClassificationId: z.uuid().optional(),
     memberId: z.uuid().optional(),
     page: z.coerce.number().int().min(1).max(100000).default(1),
   })

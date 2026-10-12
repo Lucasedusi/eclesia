@@ -4,7 +4,14 @@ import { FinanceSkeleton } from "./finance-skeleton";
 import { Loader2 } from "lucide-react";
 import { useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { Search, ChevronLeft, ChevronRight, Eye } from "lucide-react";
+import {
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  SlidersHorizontal,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { FinanceCatalogs } from "../types/finance-catalog.types";
 import type {
@@ -41,6 +48,8 @@ export function FinanceTransactionsTable({
     [detail, setDetail] = useState<FinanceTransactionDetail | null>(null),
     [error, setError] = useState(""),
     [loading, setLoading] = useState<string | null>(null);
+  const [advanced, setAdvanced] = useState(false);
+  const filterForm = useRef<HTMLFormElement>(null);
   function filter(data: FormData) {
     const query = new URLSearchParams({ unidade: unit, mes: month });
     for (const [k, v] of data)
@@ -59,7 +68,6 @@ export function FinanceTransactionsTable({
     <div className="stack">
       <div className="row spread">
         <div>
-          <p className="eyebrow">Movimentação</p>
           <h1>Lançamentos</h1>
           <p className="muted">Entradas e saídas do mês, sempre à mão.</p>
         </div>
@@ -68,36 +76,59 @@ export function FinanceTransactionsTable({
       <section className="card stack">
         <form
           className="stack"
+          ref={filterForm}
+          onChange={(e) => {
+            if (e.target instanceof HTMLSelectElement)
+              filter(new FormData(e.currentTarget));
+          }}
           key={JSON.stringify(filters)}
           onSubmit={(e) => {
             e.preventDefault();
             filter(new FormData(e.currentTarget));
           }}
         >
-          <div className="row">
+          <div className="row finance-filter-bar">
             <label style={{ flex: 1, minWidth: 200 }}>
               Buscar
-              <input
-                name="search"
-                defaultValue={filters.search}
-                placeholder="Pessoa, descrição ou documento"
-                maxLength={160}
-              />
+              <span className="finance-search-input">
+                <input
+                  name="search"
+                  defaultValue={filters.search}
+                  placeholder="Pessoa, descrição ou documento"
+                  maxLength={160}
+                />
+                {isPending && (
+                  <span
+                    className="finance-search-loading"
+                    role="status"
+                    aria-label="Buscando lançamentos"
+                  >
+                    <Loader2
+                      size={16}
+                      className="finance-spin"
+                      aria-hidden="true"
+                    />
+                  </span>
+                )}
+              </span>
             </label>
+            <Button type="submit" style={{ alignSelf: "end" }}>
+              <Search size={16} /> Filtrar
+            </Button>
             <Button
-              type="submit"
-              loading={isPending}
+              type="button"
+              variant="outline"
+              aria-expanded={advanced}
+              aria-controls="finance-advanced-filters"
+              onClick={() => setAdvanced(!advanced)}
               style={{ alignSelf: "end" }}
             >
-              {!isPending && <Search size={16} />}
-              {isPending ? "Filtrando…" : "Filtrar"}
+              <SlidersHorizontal size={16} />
+              Filtros avançados
             </Button>
           </div>
-          <details>
-            <summary className="muted" style={{ cursor: "pointer" }}>
-              Mais filtros
-            </summary>
-            <div className="grid" style={{ marginTop: 18 }}>
+          <div id="finance-advanced-filters" hidden={!advanced}>
+            <div className="grid" style={{ marginTop: 6 }}>
               <label>
                 Natureza
                 <select name="direction" defaultValue={filters.direction}>
@@ -115,6 +146,11 @@ export function FinanceTransactionsTable({
                 </select>
               </label>
               {[
+                {
+                  name: "titheClassificationId",
+                  label: "Classificação do dízimo",
+                  items: catalogs.classifications,
+                },
                 {
                   name: "departmentId",
                   label: "Departamento",
@@ -153,7 +189,24 @@ export function FinanceTransactionsTable({
                 </label>
               ))}
             </div>
-          </details>
+          </div>
+          <div className="row spread">
+            <span className="muted">
+              Seleções são aplicadas automaticamente.
+            </span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                filterForm.current?.reset();
+                filter(new FormData());
+              }}
+            >
+              <X size={14} />
+              Limpar filtros
+            </Button>
+          </div>
         </form>
         <div className="row spread notice">
           <span>
@@ -193,7 +246,16 @@ export function FinanceTransactionsTable({
               </thead>
               <tbody>
                 {result.items.map((t) => (
-                  <tr key={t.id}>
+                  <tr
+                    key={t.id}
+                    className={
+                      t.status === "CANCELLED"
+                        ? "finance-row-cancelled"
+                        : t.direction === "INCOME"
+                          ? "finance-row-income"
+                          : "finance-row-expense"
+                    }
+                  >
                     <td>
                       <strong>{t.categoryName || "Lançamento"}</strong>
                       <div className="muted">

@@ -121,6 +121,9 @@ test("admin configures, restricted operator receives and monthly versions preser
   await expect(dialog.getByLabel("Valor (R$)", { exact: true })).toBeDisabled();
   await dialog.getByRole("button", { name: "Confirmar transferência" }).click();
   await expect(dialog).toHaveCount(0);
+  await operator
+    .getByText("Transferências entre caixas", { exact: true })
+    .click();
   await expect(
     operator.getByText(`Transferência ${suffix}`, { exact: true }),
   ).toBeVisible();
@@ -151,7 +154,12 @@ test("admin configures, restricted operator receives and monthly versions preser
   await operator
     .getByRole("button", { name: /Gerar (demonstrativo|nova versão)/ })
     .click();
-  await expect(operator.getByTestId("statement-cathedral-total").filter({visible:true})).toBeVisible();
+  await expect(
+    operator.getByTestId("statement-cathedral-total").filter({ visible: true }),
+  ).toBeVisible();
+  await operator
+    .getByRole("button", { name: "Visualizar histórico", exact: true })
+    .click();
   const versionCount = await operator
     .getByRole("link", { name: "Ver demonstrativo" })
     .count();
@@ -169,7 +177,7 @@ test("admin configures, restricted operator receives and monthly versions preser
   const ruleValue = Number((await rule.inputValue()).replace(",", ".")) + 1;
   await rule.fill(ruleValue.toFixed(2).replace(".", ","));
   await page
-    .getByLabel("Justificativa para revisão de período anterior")
+    .getByLabel(/^Justificativa da alteração/)
     .fill("Atualização de regra para conferência integrada");
   const rulesSaved = page.waitForResponse(
     (r) =>
@@ -191,6 +199,9 @@ test("admin configures, restricted operator receives and monthly versions preser
   await operator
     .getByRole("button", { name: "Gerar nova versão", exact: true })
     .click();
+  await operator
+    .getByRole("button", { name: "Visualizar histórico", exact: true })
+    .click();
   await expect(
     operator.getByRole("link", { name: "Ver demonstrativo" }),
   ).toHaveCount(versionCount + 1);
@@ -201,9 +212,9 @@ test("admin configures, restricted operator receives and monthly versions preser
       .filter({ visible: true }),
   ).toBeVisible();
   await operator.goto(`/financeiro?unidade=${f.headquartersId}&mes=2026-10`);
-  await expect(operator.getByTestId("statement-cathedral-total").filter({visible:true})).toHaveCount(
-    0,
-  );
+  await expect(
+    operator.getByTestId("statement-cathedral-total").filter({ visible: true }),
+  ).toHaveCount(0);
   await expect(
     operator.getByText(/acesso|permissão|indisponível|carregar/i).first(),
   ).toBeVisible();

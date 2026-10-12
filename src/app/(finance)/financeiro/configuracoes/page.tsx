@@ -7,9 +7,13 @@ import {
 } from "@/modules/finance/services/finance-page.service";
 import { listFinanceCatalogs } from "@/modules/finance/services/finance-catalog.service";
 import { listFinanceUnits } from "@/modules/finance/services/finance-access.service";
-import { listStatementRules } from "@/modules/finance/services/finance-statement.service";
+import {
+  listStatementRules,
+  latestStatementMonth,
+} from "@/modules/finance/services/finance-statement.service";
 import { FinanceSettings } from "@/modules/finance/components/finance-settings";
 import { listFinanceOperators } from "@/modules/finance/services/finance-operator.service";
+import { todayLocal } from "@/modules/finance/utils/finance-period";
 async function Content({
   searchParams,
 }: {
@@ -17,22 +21,26 @@ async function Content({
 }) {
   const { context, month } = await resolveFinancePage(searchParams, true),
     client = await createClient();
-  const [catalogs, rules, units, roles, operators] = await Promise.all([
-    listFinanceCatalogs(context),
-    listStatementRules(context),
-    listFinanceUnits(context.auth),
-    client
-      .from("roles")
-      .select("id,name")
-      .eq("church_id", context.churchId)
-      .is("deleted_at", null)
-      .eq("status", "ACTIVE")
-      .order("name"),
-    listFinanceOperators(context),
-  ]);
+  const [catalogs, rules, units, roles, operators, latestMonth] =
+    await Promise.all([
+      listFinanceCatalogs(context),
+      listStatementRules(context),
+      listFinanceUnits(context.auth),
+      client
+        .from("roles")
+        .select("id,name")
+        .eq("church_id", context.churchId)
+        .is("deleted_at", null)
+        .eq("status", "ACTIVE")
+        .order("name"),
+      listFinanceOperators(context),
+      latestStatementMonth(context),
+    ]);
   if (roles.error) throw new Error("UNAVAILABLE");
   return (
     <FinanceSettings
+      latestStatementMonth={latestMonth}
+      currentMonth={todayLocal().slice(0, 7)}
       catalogs={catalogs}
       unit={context.congregationId}
       month={month}

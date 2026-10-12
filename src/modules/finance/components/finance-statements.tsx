@@ -3,7 +3,8 @@ import { useFinanceNavigation } from "./finance-shell";
 import Link from "next/link";
 import { useRef, useState } from "react";
 
-import { Printer, FilePlus2 } from "lucide-react";
+import { Printer, FilePlus2, History } from "lucide-react";
+import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import type {
   StatementVersionDTO,
@@ -29,6 +30,7 @@ export function FinanceStatements({
   canGenerate: boolean;
   canConfigure: boolean;
 }) {
+  const [historyOpen, setHistoryOpen] = useState(false);
   const key = useRef<string | null>(null),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
@@ -42,13 +44,18 @@ export function FinanceStatements({
     <div className="stack">
       <div className="row spread no-print">
         <div>
-          <p className="eyebrow">Conferência e transparência</p>
           <h1>Demonstrativos</h1>
           <p className="muted">
             Confira a distribuição mensal e consulte todas as versões.
           </p>
         </div>
         <div className="row">
+          {versions.length > 0 && (
+            <Button variant="outline" onClick={() => setHistoryOpen(true)}>
+              <History size={16} />
+              Visualizar histórico
+            </Button>
+          )}
           {statement && (
             <Button variant="outline" onClick={() => window.print()}>
               <Printer size={16} />
@@ -116,9 +123,12 @@ export function FinanceStatements({
             : "Configure as regras para gerar o primeiro demonstrativo."}
         </div>
       )}
-      {versions.length > 0 && (
-        <section className="card stack no-print">
-          <h2>Versões preservadas</h2>
+      {historyOpen && (
+        <Modal
+          title="Histórico de demonstrativos"
+          className="finance-drawer"
+          onClose={() => setHistoryOpen(false)}
+        >
           <div className="table-scroll">
             <table>
               <thead>
@@ -163,7 +173,7 @@ export function FinanceStatements({
               </tbody>
             </table>
           </div>
-        </section>
+        </Modal>
       )}
     </div>
   );

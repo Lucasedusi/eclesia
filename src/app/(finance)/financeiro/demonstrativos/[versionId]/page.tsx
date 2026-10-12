@@ -23,7 +23,13 @@ async function Content({
     versions = await listStatements(context, { month: statement.month });
   return (
     <div className="stack">
-      <FinanceStatementPrint />
+      <div className="row spread no-print">
+        <div>
+          <h1>Demonstrativo</h1>
+          <p className="muted">Consulta da versão preservada.</p>
+        </div>
+        <FinanceStatementPrint />
+      </div>
       <FinanceStatementDetail
         statement={statement}
         superseded={versions.some((v) => v.id === statement.id && v.superseded)}

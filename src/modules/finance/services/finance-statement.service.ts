@@ -153,3 +153,21 @@ export async function listStatements(
   if (error) throwFinanceDatabaseError(error);
   return data as StatementListItem[];
 }
+
+export async function latestStatementMonth(
+  context: FinanceContext,
+): Promise<string | null> {
+  if (!context.capabilities.manageSettings) throw new Error("FORBIDDEN");
+  const client = await createClient();
+  const { data, error } = await client
+    .from("report_delivery_versions")
+    .select("month")
+    .eq("church_id", context.churchId)
+    .eq("congregation_id", context.congregationId)
+    .is("deleted_at", null)
+    .order("month", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throwFinanceDatabaseError(error);
+  return data?.month.slice(0, 7) ?? null;
+}

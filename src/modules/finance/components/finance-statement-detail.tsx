@@ -1,3 +1,4 @@
+import { ArrowDownLeft, Calculator, Layers3 } from "lucide-react";
 import type { StatementVersionDTO } from "../types/finance-statement.types";
 import { formatMoney } from "../utils/finance-money";
 export function FinanceStatementDetail({
@@ -9,15 +10,16 @@ export function FinanceStatementDetail({
 }) {
   return (
     <article className="stack">
-      <header>
+      <header className="card finance-statement-meta">
         <div className="row spread">
           <div>
-            <p className="eyebrow">
-              Demonstrativo mensal · versão {s.revision}
+            <h2>{s.congregationName}</h2>
+            <p className="finance-statement-period">
+              Competência {s.month.split("-").reverse().join("/")} · Versão{" "}
+              {s.revision}
             </p>
-            <h1>{s.congregationName}</h1>
             <p className="muted">
-              Referência {s.month.split("-").reverse().join("/")} · Gerado em{" "}
+              Gerado em{" "}
               {new Date(s.createdAt).toLocaleString("pt-BR", {
                 timeZone: "America/Sao_Paulo",
               })}
@@ -33,7 +35,7 @@ export function FinanceStatementDetail({
           </span>
         </div>
         {s.stale && (
-          <p className="notice">
+          <p className="notice finance-statement-stale">
             Há lançamentos ou configurações posteriores a esta versão. Gere
             outra versão para refletir as alterações.
           </p>
@@ -45,21 +47,36 @@ export function FinanceStatementDetail({
           </p>
         )}
       </header>
-      <p className="notice">
+      <p className="muted finance-statement-note">
         Este demonstrativo não registra pagamentos. Ele orienta os valores a
         lançar como despesas e a entregar à Catedral.
       </p>
       <div className="grid">
-        <section className="card">
-          <p className="muted">Entradas totais</p>
+        <section className="card finance-summary-card finance-income-card">
+          <div className="row">
+            <span className="finance-summary-icon">
+              <ArrowDownLeft size={21} aria-hidden="true" />
+            </span>
+            <p className="muted">Entradas totais</p>
+          </div>
           <div className="amount">{formatMoney(s.totalIncomeCents)}</div>
         </section>
-        <section className="card">
-          <p className="muted">Base de cálculo</p>
+        <section className="card finance-summary-card finance-base-card">
+          <div className="row">
+            <span className="finance-summary-icon">
+              <Calculator size={21} aria-hidden="true" />
+            </span>
+            <p className="muted">Base de cálculo</p>
+          </div>
           <div className="amount">{formatMoney(s.eligibleIncomeCents)}</div>
         </section>
-        <section className="card">
-          <p className="muted">Entradas fora da base</p>
+        <section className="card finance-summary-card finance-excluded-card">
+          <div className="row">
+            <span className="finance-summary-icon">
+              <Layers3 size={21} aria-hidden="true" />
+            </span>
+            <p className="muted">Entradas fora da base</p>
+          </div>
           <div className="amount">{formatMoney(s.excludedIncomeCents)}</div>
         </section>
       </div>
@@ -168,23 +185,6 @@ export function FinanceStatementDetail({
           </span>
         </section>
       </div>
-      <section className="card stack">
-        <div className="row spread">
-          <span>Total distribuído</span>
-          <strong>{formatMoney(s.distributionTotalCents)}</strong>
-        </div>
-        <div className="row spread">
-          <span>Restante da distribuição</span>
-          <strong className={s.remainderCents < 0 ? "negative" : ""}>
-            {formatMoney(s.remainderCents)}
-          </strong>
-        </div>
-        <p className="muted">
-          Base de cálculo menos a distribuição. Este valor não representa o
-          saldo dos caixas. Despesas já lançadas no período:{" "}
-          {formatMoney(s.expenseCents)}.
-        </p>
-      </section>
     </article>
   );
 }

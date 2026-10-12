@@ -138,99 +138,104 @@ export function FinanceTransactionsWorkspace({
         }
       />
       {transfers.items.length > 0 && (
-        <section className="card stack">
-          <h2>Transferências entre caixas</h2>
-          <div className="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>Data</th>
-                  <th>Origem → destino</th>
-                  <th>Valor</th>
-                  <th>Situação</th>
-                  <th>Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {transfers.items.map((t) => (
-                  <tr key={t.id}>
-                    <td>{t.date.split("-").reverse().join("/")}</td>
-                    <td>
-                      {
-                        catalogs.cashboxes.find(
-                          (b) => b.id === t.sourceCashboxId,
-                        )?.name
-                      }{" "}
-                      →{" "}
-                      {
-                        catalogs.cashboxes.find(
-                          (b) => b.id === t.targetCashboxId,
-                        )?.name
-                      }
-                      <div className="muted">{t.description}</div>
-                    </td>
-                    <td className="money">{formatMoney(t.amountCents)}</td>
-                    <td>
-                      {t.status === "CANCELLED" ? "Cancelada" : "Confirmada"}
-                    </td>
-                    <td>
-                      {capabilities.transfer && t.status !== "CANCELLED" && (
-                        <div className="row">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            aria-label="Corrigir transferência"
-                            onClick={() => setTransfer({ existing: t })}
-                          >
-                            <Pencil size={14} />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            aria-label="Cancelar transferência"
-                            onClick={() =>
-                              setCancel({
-                                id: t.id,
-                                revision: t.revision,
-                                kind: "CANCEL_TRANSFER",
-                              })
-                            }
-                          >
-                            <X size={14} />
-                          </Button>
-                        </div>
-                      )}
-                    </td>
+        <details className="card finance-transfers">
+          <summary>
+            <ArrowLeftRight size={17} aria-hidden="true" />
+            Transferências entre caixas
+          </summary>
+          <div className="stack" style={{ marginTop: 18 }}>
+            <div className="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Data</th>
+                    <th>Origem → destino</th>
+                    <th>Valor</th>
+                    <th>Situação</th>
+                    <th>Ações</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          {transfers.pageCount > 1 && (
-            <div className="row">
-              <span className="muted">
-                Página {transfers.page} de {transfers.pageCount}
-              </span>
-              {[-1, 1].map((delta) => (
-                <Button
-                  key={delta}
-                  variant="outline"
-                  disabled={
-                    transfers.page + delta < 1 ||
-                    transfers.page + delta > transfers.pageCount
-                  }
-                  onClick={() => {
-                    const q = new URLSearchParams(search);
-                    q.set("transferPage", String(transfers.page + delta));
-                    navigation.navigate(`/financeiro/lancamentos?${q}`);
-                  }}
-                >
-                  {delta < 0 ? "Anterior" : "Próxima"}
-                </Button>
-              ))}
+                </thead>
+                <tbody>
+                  {transfers.items.map((t) => (
+                    <tr key={t.id}>
+                      <td>{t.date.split("-").reverse().join("/")}</td>
+                      <td>
+                        {
+                          catalogs.cashboxes.find(
+                            (b) => b.id === t.sourceCashboxId,
+                          )?.name
+                        }{" "}
+                        →{" "}
+                        {
+                          catalogs.cashboxes.find(
+                            (b) => b.id === t.targetCashboxId,
+                          )?.name
+                        }
+                        <div className="muted">{t.description}</div>
+                      </td>
+                      <td className="money">{formatMoney(t.amountCents)}</td>
+                      <td>
+                        {t.status === "CANCELLED" ? "Cancelada" : "Confirmada"}
+                      </td>
+                      <td>
+                        {capabilities.transfer && t.status !== "CANCELLED" && (
+                          <div className="row">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              aria-label="Corrigir transferência"
+                              onClick={() => setTransfer({ existing: t })}
+                            >
+                              <Pencil size={14} />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              aria-label="Cancelar transferência"
+                              onClick={() =>
+                                setCancel({
+                                  id: t.id,
+                                  revision: t.revision,
+                                  kind: "CANCEL_TRANSFER",
+                                })
+                              }
+                            >
+                              <X size={14} />
+                            </Button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          )}
-        </section>
+            {transfers.pageCount > 1 && (
+              <div className="row">
+                <span className="muted">
+                  Página {transfers.page} de {transfers.pageCount}
+                </span>
+                {[-1, 1].map((delta) => (
+                  <Button
+                    key={delta}
+                    variant="outline"
+                    disabled={
+                      transfers.page + delta < 1 ||
+                      transfers.page + delta > transfers.pageCount
+                    }
+                    onClick={() => {
+                      const q = new URLSearchParams(search);
+                      q.set("transferPage", String(transfers.page + delta));
+                      navigation.navigate(`/financeiro/lancamentos?${q}`);
+                    }}
+                  >
+                    {delta < 0 ? "Anterior" : "Próxima"}
+                  </Button>
+                ))}
+              </div>
+            )}
+          </div>
+        </details>
       )}
       {entry && (
         <FinanceTransactionDrawer
