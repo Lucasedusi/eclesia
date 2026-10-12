@@ -1,6 +1,8 @@
 "use client";
 import styled, { createGlobalStyle } from "styled-components";
+
 export const FinanceStyles = createGlobalStyle`
+
  .finance,#finance-modal-root{color:#18352C;font-family:var(--font-app),sans-serif}
  .finance h1{font-size:28px;font-weight:600;letter-spacing:-.8px;margin:0}.finance h2{font-size:18px;font-weight:500;margin:0}.finance h3{font-size:15px;font-weight:500;margin:0}.finance p{line-height:1.6}
  .finance .muted,#finance-modal-root .muted{color:#6D7F76;font-size:13px}.finance .eyebrow{font-size:11px;letter-spacing:1.6px;text-transform:uppercase;font-weight:600;color:#6D7F76}
@@ -44,7 +46,7 @@ export const FinanceStyles = createGlobalStyle`
  :is(.finance,#finance-modal-root) .finance-payment-tile:has(input:focus-visible){outline:2px solid #6B9F89;outline-offset:2px}
  :is(.finance,#finance-modal-root) .finance-payment-check{position:absolute;right:12px;top:12px;opacity:0}
  :is(.finance,#finance-modal-root) .finance-payment-tile:has(input:checked) .finance-payment-check{opacity:1}
- .finance .finance-attendance-form{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:30px;align-items:start}
+ .finance .finance-attendance-form{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:30px;align-items:start}
  .finance .finance-attendance-form>[role=status],.finance .finance-attendance-form>[role=alert],.finance .finance-attendance-form>.notice{grid-column:1/-1}
  .finance .finance-attendance-summary{position:sticky;top:20px;padding:22px;background:#F4F8F5;border:1px solid #E0EAE3;border-radius:14px}
  .finance .finance-attendance-summary>.row{display:grid;gap:10px}

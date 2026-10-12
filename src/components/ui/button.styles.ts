@@ -129,6 +129,13 @@ export const ButtonRoot = styled.button<ButtonRootProps>`
   ${({ $size }) => buttonSizes[$size]}
   ${({ $variant }) => buttonVariants[$variant]}
 
+  span {
+    display: flex;
+    flex-direction: column;
+    align-items: baseline;
+    gap: 5px;
+  }
+
   svg {
     width: 18px;
     height: 18px;
