@@ -58,7 +58,36 @@ export async function getFinanceReport(
   const s = projection.summary;
   const rows =
     projection.type === "ANALYTIC" ? projection.rows : projection.categories;
+  const boxRows = new Map<
+    string,
+    { income: bigint; expense: bigint; count: number }
+  >();
+  if (projection.type === "ANALYTIC") {
+    for (const row of projection.rows) {
+      const sums = boxRows.get(row.cashboxId) ?? {
+        income: BigInt(0),
+        expense: BigInt(0),
+        count: 0,
+      };
+      sums[row.direction === "INCOME" ? "income" : "expense"] += BigInt(
+        row.amountCents,
+      );
+      sums.count++;
+      boxRows.set(row.cashboxId, sums);
+    }
+  }
+  const boxIds = new Set(projection.cashboxes.map((box) => box.id));
   const consistent =
+    (projection.type !== "ANALYTIC" ||
+      ([...boxRows.keys()].every((id) => boxIds.has(id)) &&
+        projection.cashboxes.every((box) => {
+          const sums = boxRows.get(box.id);
+          return (
+            (sums?.income ?? BigInt(0)) === BigInt(box.incomeCents) &&
+            (sums?.expense ?? BigInt(0)) === BigInt(box.expenseCents) &&
+            (sums?.count ?? 0) === box.count
+          );
+        }))) &&
     reconciles(s) &&
     projection.cashboxes.every(reconciles) &&
     (Object.keys(s) as (keyof FinanceReportSummary)[]).every(
@@ -91,7 +120,7 @@ export async function getFinanceReport(
       .maybeSingle(),
     client
       .from("congregations")
-      .select("name")
+      .select("name,address,number,complement,district,city,state,zip_code")
       .eq("church_id", context.churchId)
       .eq("id", context.congregationId)
       .is("deleted_at", null)
@@ -116,6 +145,16 @@ export async function getFinanceReport(
     ...projection,
     emissionId: randomUUID(),
     congregationName: unit.data.name,
+    congregationAddress:
+      [
+        [unit.data.address, unit.data.number].filter(Boolean).join(", "),
+        unit.data.complement,
+        unit.data.district,
+        [unit.data.city, unit.data.state].filter(Boolean).join(" / "),
+        unit.data.zip_code ? `CEP ${unit.data.zip_code}` : null,
+      ]
+        .filter(Boolean)
+        .join(" · ") || null,
     church: {
       name: settings.data?.display_church_name?.trim() || church.data.name,
       document: church.data.document,

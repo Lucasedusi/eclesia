@@ -76,6 +76,16 @@ beforeEach(() => {
                 city: null,
                 state: null,
                 logo_url: null,
+                ...(table === "congregations"
+                  ? {
+                      address: "Rua Exemplo",
+                      number: "120",
+                      district: "Centro",
+                      city: "Porangatu",
+                      state: "GO",
+                      zip_code: "76550000",
+                    }
+                  : {}),
               },
         error: null,
       }),
@@ -89,6 +99,9 @@ it("loads a scoped synthetic without personal rows and tolerates absent logo", a
     month: "2026-10",
   });
   expect(doc.summary.closingCents).toBe(205000);
+  expect(doc.congregationAddress).toBe(
+    "Rua Exemplo, 120 · Centro · Porangatu / GO · CEP 76550000",
+  );
   expect(doc.church.name).toBe("Nome configurado");
   expect(doc.church.logoDataUri).toBeNull();
   expect(doc).not.toHaveProperty("rows");
@@ -139,3 +152,50 @@ it.each(["REPORT_TOO_LARGE", "REPORT_RECONCILIATION_REQUIRED"])(
     ).rejects.toThrow(message);
   },
 );
+
+it("rejects analytic rows assigned to an unknown or unbalanced cashbox", async () => {
+  const rows = projection.categories.map((category, i) => ({
+    ...category,
+    id: `00000000-0000-4000-8000-00000000000${i}`,
+    date: "2026-10-01",
+    personName: null,
+    description: null,
+    documentNumber: null,
+    departmentName: "Missões",
+    cashboxId: ctx.congregationId,
+    cashboxName: "Caixa",
+    paymentMethodName: "Dinheiro",
+  }));
+  const analytic = {
+    ...projection,
+    type: "ANALYTIC",
+    rows,
+    summary: { ...summary, count: 2 },
+    cashboxes: [
+      { ...summary, count: 2, id: ctx.congregationId, name: "Caixa" },
+    ],
+  };
+  m.rpc.mockResolvedValue({ data: analytic, error: null });
+  await expect(
+    getFinanceReport(ctx, { type: "ANALYTIC", month: "2026-10" }),
+  ).resolves.toHaveProperty("rows");
+  rows[0].cashboxId = "30000000-0000-4000-8000-000000000099";
+  await expect(
+    getFinanceReport(ctx, { type: "ANALYTIC", month: "2026-10" }),
+  ).rejects.toThrow("REPORT_RECONCILIATION_REQUIRED");
+  analytic.cashboxes.push({
+    ...summary,
+    count: 0,
+    incomeCents: 0,
+    expenseCents: 0,
+    openingCents: 0,
+    closingCents: 0,
+    openingMovementCents: 0,
+    adjustmentCents: 0,
+    id: rows[0].cashboxId,
+    name: "Caixa",
+  });
+  await expect(
+    getFinanceReport(ctx, { type: "ANALYTIC", month: "2026-10" }),
+  ).rejects.toThrow("REPORT_RECONCILIATION_REQUIRED");
+});

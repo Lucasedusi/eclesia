@@ -49,6 +49,8 @@ begin
  perform pg_temp.assert_true((a#>>'{summary,closingCents}')::numeric=205000,'closing reconciles');
  perform pg_temp.assert_true((a#>>'{summary,incomeCents}')::numeric=150000,'all departments included');
  perform pg_temp.assert_true(jsonb_array_length(a->'rows')=4,'complete analytic');
+ perform pg_temp.assert_true((select count(distinct x->>'cashboxId')=2 from jsonb_array_elements(a->'rows') x),'analytic rows identify each cashbox');
+ perform pg_temp.assert_true((select sum((x->>'amountCents')::numeric)=62000 from jsonb_array_elements(a->'rows') x where x->>'cashboxId'=b2::text),'cashbox identity preserves per-box amounts');
  perform pg_temp.assert_true(not (s ? 'rows'),'no individual rows in synthetic');
  perform pg_temp.assert_true(exists(select 1 from jsonb_array_elements(s->'categories') x where x->>'classificationName'='Presbíteros' and (x->>'amountCents')::numeric=102000),'classification consolidated between cashboxes');
  perform set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000002',true);

@@ -169,6 +169,11 @@ test("filters discard an in-flight report and mobile stays within viewport", asy
     .click();
   const popup = await popupEvent;
   await expect(page.getByText("Preparando o PDF…")).toBeVisible();
+  await expect(popup.getByRole("status")).toContainText("Preparando o PDF…");
+  await expect(popup.locator(".spinner")).toBeVisible();
+  await expect(popup.locator(".spinner")).toHaveCSS("animation-name", "spin");
+  await popup.emulateMedia({ reducedMotion: "reduce" });
+  await expect(popup.locator(".spinner")).toHaveCSS("animation-name", "none");
   await page.getByLabel("Analítico — lançamentos detalhados").check();
   release();
   await expect.poll(() => popup.isClosed()).toBe(true);

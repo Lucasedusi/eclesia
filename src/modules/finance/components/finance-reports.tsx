@@ -66,10 +66,30 @@ export function FinanceReports({
       if (tab) {
         tab.opener = null;
         tab.document.title = "Preparando relatório — Eclesias";
-        tab.document.body.textContent =
-          "Preparando o PDF… Você pode aguardar nesta aba.";
-        tab.document.body.style.cssText =
-          "font:16px system-ui,sans-serif;color:#183d2e;padding:32px";
+        const waiting = tab.document.createElement("main");
+        waiting.setAttribute("role", "status");
+        waiting.setAttribute("aria-busy", "true");
+        const spinner = tab.document.createElement("span");
+        spinner.className = "spinner";
+        spinner.setAttribute("aria-hidden", "true");
+        const title = tab.document.createElement("h1");
+        title.textContent = "Preparando o PDF…";
+        const message = tab.document.createElement("p");
+        message.textContent =
+          "Você pode aguardar nesta aba. O relatório abrirá assim que estiver pronto.";
+        waiting.append(spinner, title, message);
+        const style = tab.document.createElement("style");
+        style.textContent = `
+          body { margin:0; min-height:100vh; display:grid; place-items:center; background:#f5f8f6; color:#183d2e; font:14px system-ui,sans-serif; }
+          main { margin:24px; padding:36px; max-width:420px; text-align:center; background:white; border:1px solid #dfe8e2; border-radius:16px; }
+          h1 { font-size:20px; margin:18px 0 10px; } p { color:#52675c; line-height:1.6; }
+          .spinner { display:inline-block; width:30px; height:30px; border:3px solid #dfe8e2; border-top-color:#087e5c; border-radius:50%; animation:spin .8s linear infinite; }
+          @keyframes spin { to { transform:rotate(360deg); } }
+          @media (prefers-reduced-motion:reduce) { .spinner { animation:none; } }
+        `;
+        tab.document.documentElement.lang = "pt-BR";
+        tab.document.head.append(style);
+        tab.document.body.replaceChildren(waiting);
       }
     } catch {
       tab?.close();

@@ -33,6 +33,7 @@ const row = category.omit({ count: true }).extend({
   description: z.string().nullable(),
   documentNumber: z.string().nullable(),
   departmentName: z.string(),
+  cashboxId: z.uuid(),
   cashboxName: z.string(),
   paymentMethodName: z.string(),
 });

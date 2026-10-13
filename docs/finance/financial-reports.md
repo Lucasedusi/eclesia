@@ -14,9 +14,9 @@ A nova aba, o download e a impressão utilizam o mesmo arquivo. Não há prévia
 ## Qual modelo escolher
 
 - **Sintético:** resume por categoria e classificação registrada dos dízimos, reunindo dinheiro, Pix e outros meios dos caixas selecionados. Não lista os nomes de contribuintes. A quantidade indica lançamentos, não pessoas distintas.
-- **Analítico:** identifica cada entrada/saída, pessoa ou favorecido, descrição, departamento, caixa e forma de pagamento. Os dízimos são agrupados pela classificação registrada no lançamento, com subtotais por classificação e categoria. Referências de documentos aparecem quando registradas.
+- **Analítico:** organiza primeiro por caixa/conta: entradas, seguidas das saídas do mesmo caixa. Cada novo caixa começa em outra página. As tabelas identificam pessoa ou favorecido, descrição, departamento e forma de pagamento; o caixa aparece no título da seção. Os dízimos são agrupados pela classificação registrada no lançamento, com um subtotal identificado por grupo (por exemplo, “Subtotal Dízimos — Jovem”). Outras categorias têm seu subtotal com o nome da categoria. Referências de documentos aparecem quando registradas.
 
-Ambos têm cabeçalho da igreja, resumo do mês, resumo por departamento, saldos por caixa e identificação da emissão/páginas. Todos os departamentos entram, mesmo os que não participam da base de repasses. O mês é definido pela data financeira do lançamento.
+Ambos têm cabeçalho da igreja, resumo do mês, saldos por caixa e identificação da emissão/páginas. O resumo por departamento permanece no sintético. O analítico inclui o endereço cadastrado da congregação; quando não houver endereço, informa essa ausência. O título em caixa alta fica à esquerda e a congregação/mês à direita. Todos os departamentos entram, mesmo os que não participam da base de repasses. O mês é definido pela data financeira do lançamento.
 
 ## Como conferir os valores
 
@@ -41,4 +41,4 @@ O demonstrativo calcula valores orientativos de repasse, prebenda e outros itens
 
 ## Impressão
 
-A4 retrato, fontes incorporadas, texto pesquisável e tabelas de 8,5 pontos no analítico e 9 pontos no sintético. O analítico destaca ENTRADAS/TOTAL DE ENTRADAS em verde e SAÍDAS/TOTAL DE SAÍDAS em vermelho, com categorias em negrito. A distinção entre entradas/saídas e o sinal dos valores continuam claros em preto e branco. A impressão usa os controles do navegador/visualizador de PDF; o sistema não escolhe a impressora automaticamente.
+A4 retrato, fontes incorporadas, texto pesquisável e tabelas de 7,5 pontos no analítico e 9 pontos no sintético. O analítico destaca ENTRADAS/TOTAL DE ENTRADAS em verde e SAÍDAS/TOTAL DE SAÍDAS em vermelho, com categorias em negrito. A distinção entre entradas/saídas e o sinal dos valores continuam claros em preto e branco. A impressão usa os controles do navegador/visualizador de PDF; o sistema não escolhe a impressora automaticamente.

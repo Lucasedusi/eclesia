@@ -18,6 +18,7 @@ export type FinanceReportDocument = FinanceReportProjection & {
     logoDataUri: string | null;
   };
   congregationName: string;
+  congregationAddress: string | null;
 };
 export class FinanceReportError extends Error {
   constructor(
