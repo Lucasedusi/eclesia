@@ -1,60 +1,116 @@
 import { test, expect } from "@playwright/test";
 import { readFileSync } from "node:fs";
+// The headless shell downloads PDFs; the full browser exercises its PDF viewer.
+test.use({ channel: "chromium" });
 test.beforeEach(() =>
   test.skip(!process.env.E2E_FINANCE_FIXTURE, "Local finance fixture required"),
 );
 const fixture = () =>
   JSON.parse(readFileSync(process.env.E2E_FINANCE_FIXTURE!, "utf8"));
-test("reports preview and download share a PDF and changing type clears it", async ({
+for (const type of [
+  "Sintético — resumo por categorias",
+  "Analítico — lançamentos detalhados",
+]) {
+  test(`${type} opens its PDF in a new tab without an embedded preview`, async ({
+    page,
+  }) => {
+    const f = fixture();
+    await page.goto(`/financeiro/relatorios?unidade=${f.unitId}&mes=2026-10`);
+    await page.getByLabel(type).check();
+    const popupEvent = page.waitForEvent("popup");
+    const response = page.waitForResponse(
+      (r) =>
+        r.url().endsWith("/api/finance/reports/pdf") &&
+        r.request().method() === "POST",
+    );
+    await page
+      .getByRole("button", { name: "Gerar relatório", exact: true })
+      .click();
+    const popup = await popupEvent;
+    expect((await response).status()).toBe(200);
+    const link = page.getByRole("link", { name: "Abrir PDF", exact: true });
+    await expect(link).toBeVisible();
+    const pdfUrl = await link.getAttribute("href");
+    await expect(popup).toHaveURL(pdfUrl!);
+    await expect(page.locator("iframe")).toHaveCount(0);
+    const bytes = Buffer.from(
+      await page.evaluate(
+        async (url) =>
+          Array.from(new Uint8Array(await (await fetch(url!)).arrayBuffer())),
+        pdfUrl,
+      ),
+    );
+    expect(bytes.subarray(0, 4).toString()).toBe("%PDF");
+    const download = page.waitForEvent("download");
+    await page.getByRole("link", { name: "Baixar PDF", exact: true }).click();
+    expect(readFileSync((await (await download).path())!)).toEqual(bytes);
+    await popup.close();
+    await page
+      .getByLabel(
+        type.startsWith("Sintético")
+          ? "Analítico — lançamentos detalhados"
+          : "Sintético — resumo por categorias",
+      )
+      .check();
+    await expect(link).toHaveCount(0);
+  });
+}
+
+test("blocked popups still offer a usable PDF link and download", async ({
   page,
 }) => {
   const f = fixture();
   await page.goto(`/financeiro/relatorios?unidade=${f.unitId}&mes=2026-10`);
-  await expect(
-    page.getByRole("heading", { name: "Relatórios", exact: true }),
-  ).toBeVisible();
-  const response = page.waitForResponse(
-    (r) =>
-      r.url().endsWith("/api/finance/reports/pdf") &&
-      r.request().method() === "POST",
-  );
+  await page.evaluate(() => {
+    window.open = () => null;
+  });
   await page
     .getByRole("button", { name: "Gerar relatório", exact: true })
     .click();
-  const pdf = await response;
-  expect(pdf.status()).toBe(200);
-  await expect(page.getByTitle("Prévia do relatório financeiro")).toBeVisible();
-  const previewUrl = await page
-    .getByTitle("Prévia do relatório financeiro")
-    .getAttribute("src");
-  expect(
-    await page
-      .getByRole("link", { name: "Baixar PDF", exact: true })
-      .getAttribute("href"),
-  ).toBe(previewUrl);
-  const bytes = Buffer.from(
-    await page.evaluate(
-      async (url) =>
-        Array.from(new Uint8Array(await (await fetch(url!)).arrayBuffer())),
-      previewUrl,
-    ),
-  );
-  expect(bytes.length).toBeGreaterThan(1000);
-  const download = page.waitForEvent("download");
-  await page.getByRole("link", { name: "Baixar PDF", exact: true }).click();
-  expect(readFileSync((await (await download).path())!)).toEqual(bytes);
-  await page.screenshot({
-    path: "tmp/reports/previa-relatorio.png",
-    fullPage: true,
-  });
-  await page.getByLabel("Analítico — lançamentos detalhados").check();
+  const link = page.getByRole("link", { name: "Abrir PDF", exact: true });
+  await expect(link).toBeVisible();
   await expect(
-    page.getByRole("link", { name: "Baixar PDF", exact: true }),
+    page.getByText(
+      "Use Abrir PDF para visualizar o relatório em uma nova aba.",
+    ),
+  ).toBeVisible();
+  const url = await link.getAttribute("href");
+  expect(
+    await page.evaluate(
+      async (value) => (await (await fetch(value!)).blob()).type,
+      url,
+    ),
+  ).toBe("application/pdf");
+  await expect(page.locator("iframe")).toHaveCount(0);
+});
+
+test("generation failure closes the waiting tab and permits retry", async ({
+  page,
+}) => {
+  const f = fixture();
+  await page.goto(`/financeiro/relatorios?unidade=${f.unitId}&mes=2026-10`);
+  await page.route("**/api/finance/reports/pdf", (route) =>
+    route.fulfill({
+      status: 500,
+      contentType: "application/json",
+      body: JSON.stringify({ message: "Falha de teste" }),
+    }),
+  );
+  const popupEvent = page.waitForEvent("popup");
+  await page
+    .getByRole("button", { name: "Gerar relatório", exact: true })
+    .click();
+  const popup = await popupEvent;
+  await expect(
+    page.getByRole("alert").filter({ hasText: "Falha de teste" }),
+  ).toBeVisible();
+  await expect.poll(() => popup.isClosed()).toBe(true);
+  await expect(
+    page.getByRole("button", { name: "Gerar relatório", exact: true }),
+  ).toBeEnabled();
+  await expect(
+    page.getByRole("link", { name: "Abrir PDF", exact: true }),
   ).toHaveCount(0);
-  await page.screenshot({
-    path: "tmp/reports/tela-relatorios.png",
-    fullPage: true,
-  });
 });
 test("treasurer only sees own congregation and cannot request another PDF", async ({
   browser,
@@ -107,12 +163,15 @@ test("filters discard an in-flight report and mobile stays within viewport", asy
       })
       .catch(() => {});
   });
+  const popupEvent = page.waitForEvent("popup");
   await page
     .getByRole("button", { name: "Gerar relatório", exact: true })
     .click();
+  const popup = await popupEvent;
   await expect(page.getByText("Preparando o PDF…")).toBeVisible();
   await page.getByLabel("Analítico — lançamentos detalhados").check();
   release();
+  await expect.poll(() => popup.isClosed()).toBe(true);
   await expect(page.getByText("Preparando o PDF…")).toHaveCount(0);
   await expect(page.getByText("Resposta antiga")).toHaveCount(0);
   expect(

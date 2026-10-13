@@ -1,5 +1,5 @@
 import { expect, it, vi } from "vitest";
-import { PDFDocument } from "pdf-lib";
+import { PDFDocument, PDFPage } from "pdf-lib";
 import { mkdir, writeFile } from "node:fs/promises";
 import type { FinanceReportDocument } from "../types/finance-report.types";
 vi.mock("server-only", () => ({}));
@@ -131,4 +131,84 @@ it("embeds a valid church logo and keeps the report readable", async () => {
   const pdf = await PDFDocument.load(await createFinanceReportPdf(input));
   expect(pdf.getPageCount()).toBe(1);
   expect(pdf.getPages()[0].node.Resources()?.toString()).toContain("XObject");
+});
+
+it("renders classified tithe blocks with every contributor and accurate subtotals", async () => {
+  const input = fixture(9, "ANALYTIC");
+  if (input.type !== "ANALYTIC") throw new Error("Analytic fixture required");
+  input.rows.forEach((row, i) => {
+    row.classificationId = i % 2 ? "senhores" : "senhoras";
+    row.classificationName = i % 2 ? "Senhores" : "Senhoras";
+    row.description = null;
+  });
+  input.rows[4].classificationId = null;
+  input.rows[4].classificationName = null;
+  for (let i = 5; i < 9; i++) {
+    Object.assign(input.rows[i], {
+      categoryId: i < 7 ? `offering-${i}` : "expense",
+      categoryName:
+        i === 5
+          ? "Oferta de culto"
+          : i === 6
+            ? "Oferta de missões"
+            : "Despesas prediais",
+      direction: i < 7 ? "INCOME" : "EXPENSE",
+      classificationId: null,
+      classificationName: null,
+      personName: i < 7 ? null : "Fornecedor de manutenção",
+      description:
+        i < 7 ? "Oferta do culto de domingo" : "Manutenção das instalações",
+      departmentName: i === 6 ? "Missões" : "Tesouraria",
+      cashboxName: i % 2 ? "Caixa local" : "Conta principal",
+      paymentMethodName: i % 2 ? "Dinheiro" : "Pix",
+    });
+  }
+  Object.assign(input.summary, {
+    incomeCents: 7000,
+    expenseCents: 2000,
+    closingCents: -5000,
+  });
+  Object.assign(input.cashboxes[0], input.summary);
+  input.departments = [
+    { id: "dep", name: "Tesouraria", incomeCents: 6000, expenseCents: 2000 },
+    { id: "missions", name: "Missões", incomeCents: 1000, expenseCents: 0 },
+  ];
+  const logo = await (
+    await import("sharp")
+  )
+    .default({
+      create: {
+        width: 60,
+        height: 90,
+        channels: 4,
+        background: { r: 10, g: 94, b: 67, alpha: 1 },
+      },
+    })
+    .png()
+    .toBuffer();
+  input.church.logoDataUri = `data:image/png;base64,${logo.toString("base64")}`;
+  const draw = vi.spyOn(PDFPage.prototype, "drawText");
+  try {
+    const bytes = await createFinanceReportPdf(input);
+    if (process.env.REPORT_PDF_QA)
+      await writeFile("tmp/reports/analitico-hierarquia.pdf", bytes);
+    const text = draw.mock.calls.map(([value]) => value);
+    const start = text.indexOf("Dízimos — Senhoras");
+    const next = text.indexOf("Dízimos — Senhores");
+    const missing = text.indexOf("Dízimos — Sem classificação");
+    expect(start).toBeGreaterThan(-1);
+    expect(text.slice(start, next)).toContain("Pessoa fictícia 1");
+    expect(text.slice(start, next)).toContain("Pessoa fictícia 3");
+    expect(text.slice(start, next)).not.toContain("Pessoa fictícia 2");
+    expect(text.slice(next, missing)).toContain("Pessoa fictícia 4");
+    expect(text.slice(missing)).toContain("Pessoa fictícia 5");
+    expect(text.filter((t) => t === "Subtotal da classificação")).toHaveLength(
+      3,
+    );
+    expect(text).toContain("TOTAL DE ENTRADAS");
+    expect(text).not.toContain("Todos os caixas e contas da congregação");
+    expect(text).not.toContain("Outros movimentos de saldo");
+  } finally {
+    draw.mockRestore();
+  }
 });

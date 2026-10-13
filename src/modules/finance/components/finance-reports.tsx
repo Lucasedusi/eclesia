@@ -5,11 +5,9 @@ import {
   ListOrdered,
   FileDown,
   FileText,
-  Printer,
   ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { FinanceSkeleton } from "./finance-skeleton";
 import { useFinanceNavigation } from "./finance-shell";
 export function FinanceReports({
   unit,
@@ -24,20 +22,34 @@ export function FinanceReports({
     [box, setBox] = useState(""),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
-  const [pdf, setPdf] = useState<{ url: string; name: string } | null>(null);
+  const [pdf, setPdf] = useState<{
+    url: string;
+    name: string;
+    opened: boolean;
+  } | null>(null);
   const controller = useRef<AbortController | null>(null),
     url = useRef<string | null>(null),
-    frame = useRef<HTMLIFrameElement>(null);
+    pendingTab = useRef<Window | null>(null);
   const { isPending } = useFinanceNavigation();
   useEffect(
     () => () => {
       controller.current?.abort();
+      pendingTab.current?.close();
       if (url.current) URL.revokeObjectURL(url.current);
     },
     [],
   );
+  useEffect(() => {
+    if (isPending) {
+      controller.current?.abort();
+      pendingTab.current?.close();
+      pendingTab.current = null;
+    }
+  }, [isPending]);
   function invalidate() {
     controller.current?.abort();
+    pendingTab.current?.close();
+    pendingTab.current = null;
     controller.current = null;
     if (url.current) URL.revokeObjectURL(url.current);
     url.current = null;
@@ -47,6 +59,23 @@ export function FinanceReports({
   }
   async function generate() {
     invalidate();
+    // Reserve the tab during the click; opening after fetch may be blocked.
+    let tab: Window | null = null;
+    try {
+      tab = window.open("about:blank", "_blank");
+      if (tab) {
+        tab.opener = null;
+        tab.document.title = "Preparando relatório — Eclesias";
+        tab.document.body.textContent =
+          "Preparando o PDF… Você pode aguardar nesta aba.";
+        tab.document.body.style.cssText =
+          "font:16px system-ui,sans-serif;color:#183d2e;padding:32px";
+      }
+    } catch {
+      tab?.close();
+      tab = null;
+    }
+    pendingTab.current = tab;
     const request = new AbortController();
     controller.current = request;
     setBusy(true);
@@ -75,11 +104,23 @@ export function FinanceReports({
       if (request.signal.aborted) return;
       const objectUrl = URL.createObjectURL(blob);
       url.current = objectUrl;
+      let opened = false;
+      if (tab && !tab.closed) {
+        try {
+          tab.location.replace(objectUrl);
+          opened = true;
+        } catch {
+          tab.close();
+        }
+      }
+      pendingTab.current = null;
       setPdf({
+        opened,
         url: objectUrl,
         name: `relatorio-${type === "ANALYTIC" ? "analitico" : "sintetico"}-${month}.pdf`,
       });
     } catch (e) {
+      tab?.close();
       if (!request.signal.aborted)
         setError(
           e instanceof Error
@@ -89,6 +130,7 @@ export function FinanceReports({
     } finally {
       if (controller.current === request) {
         controller.current = null;
+        pendingTab.current = null;
         setBusy(false);
       }
     }
@@ -191,70 +233,46 @@ export function FinanceReports({
         </div>
       )}
       {busy ? (
-        <section aria-label="Gerando relatório" aria-busy="true">
+        <section
+          className="notice"
+          aria-label="Gerando relatório"
+          aria-busy="true"
+        >
           <p role="status">Preparando o PDF…</p>
-          <FinanceSkeleton table />
         </section>
       ) : visiblePdf ? (
         <section
-          className="card stack finance-report-preview"
+          className="card stack finance-report-ready"
           aria-label="Relatório gerado"
         >
           <div className="row spread">
-            <div>
+            <div role="status">
               <h2>Seu relatório está pronto</h2>
               <p className="muted">
-                A prévia, o download e a impressão usam o mesmo arquivo.
+                {visiblePdf.opened
+                  ? "O PDF foi aberto em uma nova aba. Use o visualizador para imprimir ou salvar."
+                  : "Use Abrir PDF para visualizar o relatório em uma nova aba."}
               </p>
             </div>
             <div className="row">
               <a
                 className="finance-report-link"
                 href={visiblePdf.url}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <ExternalLink size={17} aria-hidden="true" />
+                Abrir PDF
+              </a>
+              <a
+                className="finance-report-link"
+                href={visiblePdf.url}
                 download={visiblePdf.name}
               >
-                <FileDown size={17} />
+                <FileDown size={17} aria-hidden="true" />
                 Baixar PDF
               </a>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  try {
-                    if (!frame.current?.contentWindow) throw new Error();
-                    frame.current.contentWindow.focus();
-                    frame.current.contentWindow.print();
-                  } catch {
-                    window.open(
-                      visiblePdf.url,
-                      "_blank",
-                      "noopener,noreferrer",
-                    );
-                  }
-                }}
-              >
-                <Printer size={17} />
-                Imprimir
-              </Button>
             </div>
-          </div>
-          <iframe
-            ref={frame}
-            title="Prévia do relatório financeiro"
-            src={visiblePdf.url}
-          />
-          <div className="row spread">
-            <p className="muted">
-              Uma nova emissão pode refletir correções feitas após este arquivo.
-            </p>
-            <a
-              href={visiblePdf.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="finance-report-link"
-            >
-              <ExternalLink size={16} />
-              Abrir PDF em outra aba
-            </a>
           </div>
         </section>
       ) : (

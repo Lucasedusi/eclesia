@@ -6,15 +6,15 @@
 2. Confira o mês no cabeçalho. A congregação segue seu acesso: o tesoureiro comum tem somente a sua; quem pode consultar outras unidades verá apenas as unidades autorizadas.
 3. Selecione **Sintético — resumo por categorias** ou **Analítico — lançamentos detalhados**.
 4. Mantenha **Todos os caixas e contas**, ou escolha um caixa específico. Caixas inativos permanecem disponíveis para consulta do histórico.
-5. Clique em **Gerar relatório**. Após o carregamento, confira a prévia.
-6. Use **Baixar PDF** para guardar/enviar o documento ou **Imprimir**. Se o navegador não mostrar a prévia, use **Abrir PDF em outra aba** e imprima pelo visualizador do navegador.
+5. Clique em **Gerar relatório**. Uma nova aba mostra o carregamento e abre o PDF automaticamente.
+6. Use os controles do visualizador de PDF para imprimir ou salvar. Se o navegador bloquear a nova aba, clique em **Abrir PDF** na tela do sistema. **Baixar PDF** também permanece disponível após a geração.
 
-A prévia, o download e a impressão utilizam o mesmo arquivo. Mudar tipo, caixa, mês ou congregação exige nova geração. O PDF não é arquivado automaticamente no servidor: guarde o arquivo enviado à contabilidade. Uma nova emissão pode refletir correções feitas depois da anterior.
+A nova aba, o download e a impressão utilizam o mesmo arquivo. Não há prévia incorporada na tela do sistema. Mudar tipo, caixa, mês ou congregação exige nova geração. O PDF não é arquivado automaticamente no servidor: guarde o arquivo enviado à contabilidade. Uma nova emissão pode refletir correções feitas depois da anterior.
 
 ## Qual modelo escolher
 
 - **Sintético:** resume por categoria e classificação registrada dos dízimos, reunindo dinheiro, Pix e outros meios dos caixas selecionados. Não lista os nomes de contribuintes. A quantidade indica lançamentos, não pessoas distintas.
-- **Analítico:** identifica cada entrada/saída, pessoa ou favorecido, descrição, departamento, caixa e forma de pagamento. Referências de documentos aparecem quando registradas.
+- **Analítico:** identifica cada entrada/saída, pessoa ou favorecido, descrição, departamento, caixa e forma de pagamento. Os dízimos são agrupados pela classificação registrada no lançamento, com subtotais por classificação e categoria. Referências de documentos aparecem quando registradas.
 
 Ambos têm cabeçalho da igreja, resumo do mês, resumo por departamento, saldos por caixa e identificação da emissão/páginas. Todos os departamentos entram, mesmo os que não participam da base de repasses. O mês é definido pela data financeira do lançamento.
 
@@ -25,7 +25,7 @@ Ambos têm cabeçalho da igreja, resumo do mês, resumo por departamento, saldos
 - No consolidado da congregação, transferências internas não alteram o saldo total nem contam como receitas/despesas.
 - No recorte de um caixa, a transferência de saída reduz seu saldo e a de entrada aumenta seu saldo.
 - Resultado do mês significa entradas menos saídas; pode ser diferente do saldo final.
-- Aberturas e ajustes ficam separados das entradas/saídas comuns.
+- Aberturas e ajustes ficam separados das entradas/saídas comuns. No analítico, seus efeitos são explicados em observações compactas abaixo de Caixas e contas; a tabela detalhada de outros movimentos permanece apenas no sintético.
 - Cancelados não entram na movimentação; correções válidas são consideradas junto dos efeitos de reversão no saldo.
 - O cargo atual do membro não muda a classificação registrada do dízimo.
 
@@ -41,4 +41,4 @@ O demonstrativo calcula valores orientativos de repasse, prebenda e outros itens
 
 ## Impressão
 
-A4 retrato, fontes incorporadas, texto pesquisável e tabelas de 9 pontos. A distinção entre entradas/saídas e o sinal dos valores continuam claros em preto e branco. A impressão usa os controles do navegador/visualizador de PDF; o sistema não escolhe a impressora automaticamente.
+A4 retrato, fontes incorporadas, texto pesquisável e tabelas de 8,5 pontos no analítico e 9 pontos no sintético. O analítico destaca ENTRADAS/TOTAL DE ENTRADAS em verde e SAÍDAS/TOTAL DE SAÍDAS em vermelho, com categorias em negrito. A distinção entre entradas/saídas e o sinal dos valores continuam claros em preto e branco. A impressão usa os controles do navegador/visualizador de PDF; o sistema não escolhe a impressora automaticamente.

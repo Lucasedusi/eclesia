@@ -2,11 +2,12 @@ import "server-only";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import fontkit from "@pdf-lib/fontkit";
-import { PDFDocument, rgb, type PDFPage } from "pdf-lib";
+import { PDFDocument, rgb, type PDFPage, type PDFImage } from "pdf-lib";
 import sharp from "sharp";
 import type { FinanceReportDocument } from "../types/finance-report.types";
 import { wrapReportText } from "../utils/finance-report-layout";
 import { formatMoney } from "../utils/finance-money";
+import { groupReportClassifications } from "../utils/finance-report-groups";
 const W = 595.28,
   H = 841.89,
   M = 34.02,
@@ -35,6 +36,7 @@ export async function createFinanceReportPdf(
   const regular = await doc.embedFont(r, { subset: true }),
     bold = await doc.embedFont(b, { subset: true });
   const kind = data.type === "ANALYTIC" ? "Analítico" : "Sintético";
+  const analytic = data.type === "ANALYTIC";
   const month = new Date(`${data.month}-15T12:00:00Z`).toLocaleDateString(
     "pt-BR",
     { month: "long", year: "numeric", timeZone: "UTC" },
@@ -96,8 +98,8 @@ export async function createFinanceReportPdf(
     }
     y += gap;
   }
-  function heading(text: string, color = ink) {
-    ensure(65);
+  function heading(text: string, color = ink, reserve = 65) {
+    ensure(reserve);
     y += 9;
     draw(text, M, y, 11, bold, color);
     y += 22;
@@ -108,9 +110,20 @@ export async function createFinanceReportPdf(
     widths: number[];
     right?: number[];
     color?: ReturnType<typeof rgb>;
+    keepAfter?: number;
   };
-  function table(options: TableOptions, rows: string[][]) {
-    const { title, headers, widths, right = [], color = ink } = options;
+  type Cell = string | { text: string; bold?: boolean }[];
+  function table(options: TableOptions, rows: Cell[][]) {
+    const {
+      title,
+      headers,
+      widths,
+      right = [],
+      color = ink,
+      keepAfter = 37,
+    } = options;
+    const bodySize = analytic ? 8.5 : 9;
+    const leading = analytic ? 11 : 12;
     function header(continued = false) {
       ensure(49);
       if (continued) {
@@ -131,21 +144,42 @@ export async function createFinanceReportPdf(
       });
       let x = M;
       lines.forEach((ls, i) => {
-        ls.forEach((l, j) => draw(l, x + 6, y + 6 + j * 11, 8, bold, muted));
+        ls.forEach((l, j) =>
+          draw(
+            l,
+            analytic && right.includes(i)
+              ? x + widths[i] - 6 - bold.widthOfTextAtSize(l, 8)
+              : x + 6,
+            y + 6 + j * 11,
+            8,
+            bold,
+            muted,
+          ),
+        );
         x += widths[i];
       });
       y += hh;
     }
     header();
     for (const [rowIndex, row] of rows.entries()) {
-      const cells = row.map((v, i) => wrap(v, widths[i] - 12));
+      const cells = row.map((v, i) =>
+        (typeof v === "string" ? [{ text: v }] : v).flatMap((part) => {
+          const font = "bold" in part && part.bold ? bold : regular;
+          return wrap(part.text, widths[i] - 12, bodySize, font).map(
+            (text) => ({ text, font }),
+          );
+        }),
+      );
       const totalLines = Math.max(...cells.map((ls) => ls.length));
       let offset = 0;
       // Keep ordinary rows intact; split only a row larger than a whole page.
       if (
-        y + totalLines * 12 + 12 + (rowIndex === rows.length - 1 ? 37 : 0) >
+        y +
+          totalLines * leading +
+          12 +
+          (rowIndex === rows.length - 1 ? keepAfter : 0) >
           BOTTOM &&
-        totalLines * 12 + 12 < 620
+        totalLines * leading + 12 < 620
       ) {
         newPage();
         header(true);
@@ -157,31 +191,35 @@ export async function createFinanceReportPdf(
         }
         const count = Math.min(
           totalLines - offset,
-          Math.floor((BOTTOM - y - 12) / 12),
+          Math.floor((BOTTOM - y - 12) / leading),
         );
         let x = M;
         cells.forEach((ls, i) => {
-          ls.slice(offset, offset + count).forEach((l, j) =>
+          ls.slice(offset, offset + count).forEach(({ text: l, font }, j) =>
             draw(
               l,
               right.includes(i)
-                ? x + widths[i] - 6 - regular.widthOfTextAtSize(l, 9)
+                ? x + widths[i] - 6 - font.widthOfTextAtSize(l, bodySize)
                 : x + 6,
-              y + 6 + j * 12,
-              9,
-              regular,
+              y + 6 + j * leading,
+              bodySize,
+              font,
               i === row.length - 1 ? color : ink,
             ),
           );
           x += widths[i];
         });
-        y += count * 12 + 12;
+        y += count * leading + 12;
         rule(y);
         offset += count;
         if (offset < totalLines) {
           newPage();
+          const cellText = (cell: Cell) =>
+            typeof cell === "string"
+              ? cell
+              : cell.map((p) => p.text).join("\n");
           paragraph(
-            `Continuação: ${row[0]} · ${row[1]?.split("\n")[0] ?? ""}`,
+            `Continuação: ${cellText(row[0])} · ${cellText(row[1] ?? "").split("\n")[0]}`,
             8.5,
             muted,
             3,
@@ -206,8 +244,63 @@ export async function createFinanceReportPdf(
     );
     y += 27;
   }
+  function band(label: string, color: ReturnType<typeof rgb>, amount?: number) {
+    ensure(amount === undefined ? 125 : 32);
+    page.drawRectangle({ x: M, y: H - y - 28, width: CW, height: 28, color });
+    draw(
+      label.toLocaleUpperCase("pt-BR"),
+      M + 9,
+      y + 8,
+      10,
+      bold,
+      rgb(1, 1, 1),
+    );
+    if (amount !== undefined) {
+      const value = formatMoney(amount);
+      draw(
+        value,
+        W - M - 9 - bold.widthOfTextAtSize(value, 10),
+        y + 8,
+        10,
+        bold,
+        rgb(1, 1, 1),
+      );
+    }
+    y += 40;
+  }
+  function subtotal(
+    label: string,
+    amount: number,
+    color: ReturnType<typeof rgb>,
+  ) {
+    const value = formatMoney(amount);
+    const labelWidth = bold.widthOfTextAtSize(label, 8.5);
+    const valueWidth = bold.widthOfTextAtSize(value, 8.5);
+    ensure(25);
+    draw(
+      label,
+      W - M - 6 - valueWidth - 14 - labelWidth,
+      y + 4,
+      8.5,
+      bold,
+      muted,
+    );
+    draw(value, W - M - 6 - valueWidth, y + 4, 8.5, bold, color);
+    y += 25;
+  }
+  function groupHeading(text: string, size: number, gap: number, after = 70) {
+    const lines = wrap(text, CW, size, bold);
+    ensure(gap + lines.length * (size + 4) + 8 + after);
+    y += gap;
+    for (const l of lines) {
+      draw(l, M, y, size, bold);
+      y += size + 4;
+    }
+    y += 8;
+  }
   newPage(true);
   let logoWidth = 0;
+  let logo: { image: PDFImage; width: number; height: number } | null = null;
   if (data.church.logoDataUri) {
     const match =
       /^data:image\/(?:png|jpeg|webp);base64,([A-Za-z0-9+/=]+)$/.exec(
@@ -223,22 +316,15 @@ export async function createFinanceReportPdf(
           .toBuffer();
         const image = await doc.embedPng(png),
           dimensions = image.scaleToFit(42, 42);
-        page!.drawImage(image, {
-          x: M,
-          y: H - M - dimensions.height,
-          ...dimensions,
-        });
+        logo = { image, ...dimensions };
         logoWidth = 55;
       } catch {
         /* A missing or invalid logo must not prevent a financial report. */
       }
   }
   const titleX = M + logoWidth;
-  for (const l of wrap(data.church.name, CW - logoWidth, 12, bold)) {
-    draw(l, titleX, y, 12, bold);
-    y += 16;
-  }
-  for (const l of wrap(
+  const churchLines = wrap(data.church.name, CW - logoWidth, 12, bold);
+  const identityLines = wrap(
     [
       data.church.city,
       data.church.document ? `CNPJ ${data.church.document}` : null,
@@ -247,11 +333,27 @@ export async function createFinanceReportPdf(
       .join(" · "),
     CW - logoWidth,
     8.5,
-  )) {
+  );
+  const identityHeight = churchLines.length * 16 + identityLines.length * 12;
+  const headerHeight = Math.max(identityHeight, 42);
+  if (logo)
+    page!.drawImage(logo.image, {
+      x: M,
+      y:
+        H - M - logo.height - (analytic ? (headerHeight - logo.height) / 2 : 0),
+      width: logo.width,
+      height: logo.height,
+    });
+  if (analytic) y += (headerHeight - identityHeight) / 2;
+  for (const l of churchLines) {
+    draw(l, titleX, y, 12, bold);
+    y += 16;
+  }
+  for (const l of identityLines) {
     draw(l, titleX, y, 8.5, regular, muted);
     y += 12;
   }
-  y = Math.max(y, M + 42) + 12;
+  y = (analytic ? M + headerHeight : Math.max(y, M + 42)) + 12;
   rule(y);
   y += 17;
   draw(
@@ -263,14 +365,15 @@ export async function createFinanceReportPdf(
   );
   y += 24;
   paragraph(`${data.congregationName} · ${month}`, 10, ink, 3);
-  paragraph(
-    data.cashboxName
-      ? `Caixa / conta: ${data.cashboxName}`
-      : "Todos os caixas e contas da congregação",
-    8.5,
-    muted,
-    8,
-  );
+  if (!analytic || data.cashboxName)
+    paragraph(
+      data.cashboxName
+        ? `Caixa / conta: ${data.cashboxName}`
+        : "Todos os caixas e contas da congregação",
+      8.5,
+      muted,
+      8,
+    );
   const s = data.summary;
   const metrics = [
     ["Saldo anterior", s.openingCents],
@@ -302,12 +405,13 @@ export async function createFinanceReportPdf(
     );
   });
   y += 63;
-  paragraph(
-    `Resultado do mês (entradas − saídas): ${formatMoney(s.incomeCents - s.expenseCents)}`,
-    9,
-    muted,
-    3,
-  );
+  if (!analytic)
+    paragraph(
+      `Resultado do mês (entradas − saídas): ${formatMoney(s.incomeCents - s.expenseCents)}`,
+      9,
+      muted,
+      3,
+    );
   const extras = [
     s.openingMovementCents
       ? `aberturas ${formatMoney(s.openingMovementCents)}`
@@ -317,12 +421,15 @@ export async function createFinanceReportPdf(
       ? `transferências líquidas ${formatMoney(s.transferNetCents)}`
       : null,
   ].filter(Boolean);
-  if (extras.length)
+  if (!analytic && extras.length)
     paragraph(`Outros efeitos no saldo: ${extras.join(" · ")}.`, 8.5, muted, 3);
   for (const direction of ["INCOME", "EXPENSE"] as const) {
     const name = direction === "INCOME" ? "Entradas" : "Saídas",
       color = direction === "INCOME" ? green : red;
-    heading(data.type === "SYNTHETIC" ? `${name} por categoria` : name, color);
+    if (analytic) {
+      y += direction === "EXPENSE" ? 16 : 8;
+      band(name, color);
+    } else heading(`${name} por categoria`, color);
     if (data.type === "SYNTHETIC") {
       const categories = data.categories.filter(
         (c) => c.direction === direction,
@@ -372,59 +479,123 @@ export async function createFinanceReportPdf(
           `Nenhuma ${direction === "INCOME" ? "entrada registrada" : "saída registrada"} no período.`,
           9,
         );
-      for (const group of Map.groupBy(rows, (r) => r.categoryId).values()) {
+      const categoryGroups = [
+        ...Map.groupBy(rows, (r) => r.categoryId).values(),
+      ];
+      const widths = [64, CW - 64 - 79 - 100 - 85, 79, 100, 85];
+      const reportRows = (items: typeof rows): Cell[][] =>
+        items.map((r) => [
+          r.date.split("-").reverse().join("/"),
+          [
+            r.personName ||
+              (direction === "INCOME"
+                ? "Contribuição coletiva"
+                : "Saída registrada"),
+            r.description,
+            r.documentNumber ? `Doc. ${r.documentNumber}` : null,
+          ]
+            .filter(Boolean)
+            .join("\n"),
+          r.departmentName,
+          [{ text: r.cashboxName }, { text: r.paymentMethodName, bold: true }],
+          formatMoney(r.amountCents),
+        ]);
+      const firstRowReserve = (row: Cell[]) => {
+        const height =
+          Math.max(
+            ...row.map((cell, i) =>
+              (typeof cell === "string" ? [{ text: cell }] : cell).reduce(
+                (count, part) =>
+                  count +
+                  wrap(
+                    part.text,
+                    widths[i] - 12,
+                    8.5,
+                    "bold" in part && part.bold ? bold : regular,
+                  ).length,
+                0,
+              ),
+            ),
+          ) *
+            11 +
+          12;
+        return 23 + (height < 620 ? height : 34);
+      };
+      for (const [categoryIndex, group] of categoryGroups.entries()) {
         const names = [...new Set(group.map((r) => r.categoryName))].join(
           " / ",
         );
-        ensure(75);
-        paragraph(names, 9, ink, 3);
-        table(
-          {
-            title: `${name} · ${names}`,
-            headers: [
-              "Data",
-              "Pessoa / descrição",
-              "Departamento",
-              "Caixa / pagamento",
-              "Valor",
-            ],
-            widths: [70, CW - 70 - 79 - 100 - 90, 79, 100, 90],
-            right: [4],
-            color,
-          },
-          group.map((r) => [
-            r.date.split("-").reverse().join("/"),
-            [
-              r.personName ||
-                (direction === "INCOME"
-                  ? "Contribuição coletiva"
-                  : "Saída registrada"),
-              r.classificationName,
-              r.description,
-              r.documentNumber ? `Doc. ${r.documentNumber}` : null,
-            ]
-              .filter(Boolean)
-              .join("\n"),
-            r.departmentName,
-            `${r.cashboxName}\n${r.paymentMethodName}`,
-            formatMoney(r.amountCents),
-          ]),
+        const classified = group.some(
+          (r) => r.classificationId || r.classificationName,
         );
-        total(
+        const classifications = groupReportClassifications(group);
+        groupHeading(
+          names,
+          10,
+          16,
+          firstRowReserve(reportRows(group.slice(0, 1))[0]) +
+            (classified ? 40 : 0),
+        );
+        for (const [
+          classificationIndex,
+          classification,
+        ] of classifications.entries()) {
+          const tableRows = reportRows(classification.rows);
+          if (classified)
+            groupHeading(
+              `${names} — ${classification.name}`,
+              9,
+              9,
+              firstRowReserve(tableRows[0]),
+            );
+          const lastGroup = classificationIndex === classifications.length - 1;
+          table(
+            {
+              title: `${name} · ${names}${classified ? ` · ${classification.name}` : ""}`,
+              headers: [
+                "Data",
+                "Pessoa / descrição",
+                "Departamento",
+                "Caixa / pagamento",
+                "Valor",
+              ],
+              widths,
+              right: [4],
+              color,
+              keepAfter:
+                8 +
+                (classified ? 25 : 0) +
+                (lastGroup ? 25 : 0) +
+                (lastGroup && categoryIndex === categoryGroups.length - 1
+                  ? 32
+                  : 0),
+            },
+            tableRows,
+          );
+          if (classified)
+            subtotal(
+              "Subtotal da classificação",
+              classification.totalCents,
+              color,
+            );
+        }
+        subtotal(
           "Subtotal da categoria",
           group.reduce((a, r) => a + r.amountCents, 0),
           color,
         );
       }
     }
-    total(
-      `Total de ${name.toLocaleLowerCase("pt-BR")}`,
-      direction === "INCOME" ? s.incomeCents : s.expenseCents,
-      color,
-    );
+    const amount = direction === "INCOME" ? s.incomeCents : s.expenseCents;
+    if (analytic) band(`Total de ${name}`, color, amount);
+    else total(`Total de ${name.toLocaleLowerCase("pt-BR")}`, amount, color);
   }
   if (data.departments.length) {
-    heading("Resumo por departamento");
+    heading(
+      "Resumo por departamento",
+      ink,
+      analytic ? Math.min(200, 65 + data.departments.length * 23) : 65,
+    );
     table(
       {
         title: "Resumo por departamento",
@@ -440,7 +611,11 @@ export async function createFinanceReportPdf(
     );
   }
   if (data.cashboxes.length) {
-    heading("Caixas e contas");
+    heading(
+      "Caixas e contas",
+      ink,
+      analytic ? Math.min(200, 65 + data.cashboxes.length * 23) : 65,
+    );
     table(
       {
         title: "Caixas e contas",
@@ -476,7 +651,7 @@ export async function createFinanceReportPdf(
         paragraph(`${b.name}: ${details.join(" · ")}.`, 8.5, muted, 3);
     }
   }
-  if (data.movements.length) {
+  if (!analytic && data.movements.length) {
     heading("Outros movimentos de saldo");
     paragraph(
       "Aberturas e ajustes compõem o saldo. Transferências apenas movimentam recursos entre caixas; não são receitas ou despesas.",

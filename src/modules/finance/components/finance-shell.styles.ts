@@ -453,14 +453,6 @@ export const Workspace = styled.div`
   .finance-report-empty small {
     font-size: 12px;
   }
-  .finance-report-preview iframe {
-    border: 1px solid #dce6e0;
-    border-radius: 8px;
-    width: 100%;
-    height: 76vh;
-    min-height: 420px;
-    background: #f4f6f5;
-  }
   .finance-report-link {
     display: inline-flex;
     align-items: center;
@@ -492,7 +484,7 @@ export const Workspace = styled.div`
     .finance-report-option {
       padding: 15px;
     }
-    .finance-report-preview .row {
+    .finance-report-ready .row {
       flex-wrap: wrap;
     }
   }
