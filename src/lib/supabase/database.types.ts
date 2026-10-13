@@ -8482,6 +8482,10 @@ export type Database = {
         Args: { p_church_id: string; p_month: string; p_unit: string }
         Returns: Json
       }
+      get_finance_report: {
+        Args: { p_church_id: string; p_options: Json; p_unit: string }
+        Returns: Json
+      }
       get_finance_statement: {
         Args: { p_church_id: string; p_version_id: string }
         Returns: Json

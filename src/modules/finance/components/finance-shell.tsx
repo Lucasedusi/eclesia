@@ -24,6 +24,7 @@ import {
   SlidersHorizontal,
   Landmark,
   Leaf,
+  Files,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
@@ -175,6 +176,12 @@ export function FinanceShell({
       label: "Demonstrativos",
       path: "/financeiro/demonstrativos",
       icon: Landmark,
+      show: true,
+    },
+    {
+      label: "Relatórios",
+      path: "/financeiro/relatorios",
+      icon: Files,
       show: true,
     },
     {
