@@ -109,7 +109,9 @@ export function FinanceEntryForm({
     [reason, setReason] = useState(""),
     [identityVersion, setIdentityVersion] = useState(0);
   const lines: Line[] = [state, ...extra],
-    groupCorrection = Boolean(initialTransaction?.attendanceId);
+    groupCorrection = Boolean(initialTransaction?.attendanceId),
+    collective =
+      direction === "INCOME" && state.contributor?.kind === "COLLECTIVE";
   const boxes = catalogs.cashboxes.filter(
       (b) => b.status === "ACTIVE" || b.id === state.cashboxId,
     ),
@@ -376,6 +378,22 @@ export function FinanceEntryForm({
               />
             </label>
           )}
+          {collective && (
+            <div className="stack">
+              <label>
+                Descrição da contribuição
+                <input
+                  maxLength={1000}
+                  placeholder="Ex.: Oferta do culto de ensino"
+                  value={state.description}
+                  onChange={(e) => change({ description: e.target.value })}
+                />
+              </label>
+              <small className="muted">
+                Opcional. Esta descrição aparecerá no relatório.
+              </small>
+            </div>
+          )}
         </section>
         <h3 className="finance-section-title">
           {direction === "EXPENSE" ? "Pagamento" : "Recebimento"}
@@ -469,6 +487,19 @@ export function FinanceEntryForm({
                     ? "Dados da saída"
                     : "Dados da entrada"}
               </legend>
+              {collective && index > 0 && (
+                <label>
+                  Descrição da contribuição {index + 1}
+                  <input
+                    maxLength={1000}
+                    placeholder="Ex.: Oferta de missões"
+                    value={line.description}
+                    onChange={(e) =>
+                      changeLine(index, { description: e.target.value })
+                    }
+                  />
+                </label>
+              )}
               <div className="grid">
                 <label>
                   Categoria
@@ -601,7 +632,9 @@ export function FinanceEntryForm({
           }}
         >
           <summary className="muted" style={{ cursor: "pointer" }}>
-            Documento, descrição, observações e anexos
+            {collective
+              ? "Documento, observações e anexos"
+              : "Documento, descrição, observações e anexos"}
           </summary>
           <div className="stack" style={{ marginTop: 16 }}>
             <label>
@@ -612,14 +645,16 @@ export function FinanceEntryForm({
                 onChange={(e) => change({ documentNumber: e.target.value })}
               />
             </label>
-            <label>
-              Descrição
-              <input
-                maxLength={1000}
-                value={state.description}
-                onChange={(e) => change({ description: e.target.value })}
-              />
-            </label>
+            {!collective && (
+              <label>
+                Descrição
+                <input
+                  maxLength={1000}
+                  value={state.description}
+                  onChange={(e) => change({ description: e.target.value })}
+                />
+              </label>
+            )}
             <label>
               Observações
               <textarea

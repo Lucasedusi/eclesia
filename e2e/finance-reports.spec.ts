@@ -16,7 +16,7 @@ for (const type of [
   }) => {
     const f = fixture();
     await page.goto(`/financeiro/relatorios?unidade=${f.unitId}&mes=2026-10`);
-    await page.getByLabel(type).check();
+    await page.getByRole("radio", { name: type, exact: true }).check();
     const popupEvent = page.waitForEvent("popup");
     const response = page.waitForResponse(
       (r) =>
@@ -46,11 +46,12 @@ for (const type of [
     expect(readFileSync((await (await download).path())!)).toEqual(bytes);
     await popup.close();
     await page
-      .getByLabel(
-        type.startsWith("Sintético")
+      .getByRole("radio", {
+        name: type.startsWith("Sintético")
           ? "Analítico — lançamentos detalhados"
           : "Sintético — resumo por categorias",
-      )
+        exact: true,
+      })
       .check();
     await expect(link).toHaveCount(0);
   });
@@ -174,7 +175,12 @@ test("filters discard an in-flight report and mobile stays within viewport", asy
   await expect(popup.locator(".spinner")).toHaveCSS("animation-name", "spin");
   await popup.emulateMedia({ reducedMotion: "reduce" });
   await expect(popup.locator(".spinner")).toHaveCSS("animation-name", "none");
-  await page.getByLabel("Analítico — lançamentos detalhados").check();
+  await page
+    .getByRole("radio", {
+      name: "Analítico — lançamentos detalhados",
+      exact: true,
+    })
+    .check();
   release();
   await expect.poll(() => popup.isClosed()).toBe(true);
   await expect(page.getByText("Preparando o PDF…")).toHaveCount(0);

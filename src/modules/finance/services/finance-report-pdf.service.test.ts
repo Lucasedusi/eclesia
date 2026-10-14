@@ -315,3 +315,61 @@ it("wraps long congregation, cashbox and subtotal labels within the printable ar
     draw.mockRestore();
   }
 });
+
+it("repeats consolidated indicators at the end and separates the opening indicators from entries", async () => {
+  const text = vi.spyOn(PDFPage.prototype, "drawText");
+  const rectangles = vi.spyOn(PDFPage.prototype, "drawRectangle");
+  try {
+    const bytes = await createFinanceReportPdf(fixture(1, "ANALYTIC"));
+    const labels = text.mock.calls
+      .filter(([, o]) => o?.size === 8.5)
+      .map(([t]) => t);
+    for (const label of [
+      "Saldo anterior",
+      "Entradas",
+      "Saídas",
+      "Saldo final",
+    ]) {
+      expect(labels.filter((t) => t === label)).toHaveLength(2);
+    }
+    expect(text.mock.calls.map(([t]) => t)).toContain(
+      "Resumo final do período",
+    );
+    const rects = rectangles.mock.calls.map(([o]) => o!);
+    const firstSummary = rects.find((r) => r.height === 53)!;
+    const firstSection = rects.find((r) => r.width! > 500 && r.height! >= 28)!;
+    expect(
+      firstSummary.y! - firstSection.y! - firstSection.height!,
+    ).toBeGreaterThanOrEqual(28);
+    if (process.env.REPORT_PDF_QA)
+      await writeFile("tmp/reports/analitico-resumo-final.pdf", bytes);
+  } finally {
+    text.mockRestore();
+    rectangles.mockRestore();
+  }
+});
+
+it("prints bank identification below its name and in continuation headers", async () => {
+  const input = fixture(49, "ANALYTIC");
+  Object.assign(input.cashboxes[0], {
+    name: "Conta bancária",
+    bankDetails: {
+      bankName: "Banco Exemplo",
+      agency: "0001",
+      accountNumber: "12345-6",
+    },
+  });
+  const text = vi.spyOn(PDFPage.prototype, "drawText");
+  try {
+    const bytes = await createFinanceReportPdf(input);
+    const details = text.mock.calls.filter(
+      ([t]) => t.includes("Agência 0001") && t.includes("Conta 12345-6"),
+    );
+    expect(details.length).toBeGreaterThanOrEqual(3);
+    expect(details.every(([, o]) => o!.size! <= 7.5)).toBe(true);
+    if (process.env.REPORT_PDF_QA)
+      await writeFile("tmp/reports/analitico-dados-bancarios.pdf", bytes);
+  } finally {
+    text.mockRestore();
+  }
+});

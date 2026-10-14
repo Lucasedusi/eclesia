@@ -16,7 +16,7 @@ A nova aba, o download e a impressão utilizam o mesmo arquivo. Não há prévia
 - **Sintético:** resume por categoria e classificação registrada dos dízimos, reunindo dinheiro, Pix e outros meios dos caixas selecionados. Não lista os nomes de contribuintes. A quantidade indica lançamentos, não pessoas distintas.
 - **Analítico:** organiza primeiro por caixa/conta: entradas, seguidas das saídas do mesmo caixa. Cada novo caixa começa em outra página. As tabelas identificam pessoa ou favorecido, descrição, departamento e forma de pagamento; o caixa aparece no título da seção. Os dízimos são agrupados pela classificação registrada no lançamento, com um subtotal identificado por grupo (por exemplo, “Subtotal Dízimos — Jovem”). Outras categorias têm seu subtotal com o nome da categoria. Referências de documentos aparecem quando registradas.
 
-Ambos têm cabeçalho da igreja, resumo do mês, saldos por caixa e identificação da emissão/páginas. O resumo por departamento permanece no sintético. O analítico inclui o endereço cadastrado da congregação; quando não houver endereço, informa essa ausência. O título em caixa alta fica à esquerda e a congregação/mês à direita. Todos os departamentos entram, mesmo os que não participam da base de repasses. O mês é definido pela data financeira do lançamento.
+Ambos têm cabeçalho da igreja, resumo do mês, saldos por caixa e identificação da emissão/páginas. O resumo por departamento permanece no sintético. O analítico inclui o endereço cadastrado da congregação; quando não houver endereço, informa essa ausência. O título em caixa alta fica à esquerda e a congregação/mês à direita. O analítico separa os indicadores iniciais das seções com um espaço maior e repete os mesmos quatro indicadores no “Resumo final do período”, respeitando o filtro de caixa. Nas contas bancárias, banco, agência e conta cadastrados aparecem discretamente abaixo do nome e nas páginas de continuação; dados não preenchidos são omitidos. Todos os departamentos entram, mesmo os que não participam da base de repasses. O mês é definido pela data financeira do lançamento.
 
 ## Como conferir os valores
 
@@ -42,3 +42,9 @@ O demonstrativo calcula valores orientativos de repasse, prebenda e outros itens
 ## Impressão
 
 A4 retrato, fontes incorporadas, texto pesquisável e tabelas de 7,5 pontos no analítico e 9 pontos no sintético. O analítico destaca ENTRADAS/TOTAL DE ENTRADAS em verde e SAÍDAS/TOTAL DE SAÍDAS em vermelho, com categorias em negrito. A distinção entre entradas/saídas e o sinal dos valores continuam claros em preto e branco. A impressão usa os controles do navegador/visualizador de PDF; o sistema não escolhe a impressora automaticamente.
+
+## Descrição de contribuições coletivas
+
+Em Nova entrada e Atendimento, selecionar **Contribuição coletiva** mostra **Descrição da contribuição** logo abaixo da identificação. Use, por exemplo, “Oferta do culto de ensino”. O campo é opcional e é a mesma descrição já utilizada nos lançamentos e relatórios; não precisa ser repetido nos detalhes adicionais.
+
+No atendimento com várias contribuições, os itens seguintes têm seu próprio campo de descrição. Ao trocar o tipo de identificação, o texto preenchido é preservado. Ao salvar e continuar, a descrição é limpa para o próximo atendimento.

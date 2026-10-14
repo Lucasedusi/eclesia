@@ -52,7 +52,18 @@ const common = {
     }),
   ),
   cashboxes: z.array(
-    financeReportSummarySchema.extend({ id: z.uuid(), name: z.string() }),
+    financeReportSummarySchema.extend({
+      id: z.uuid(),
+      name: z.string(),
+      bankDetails: z
+        .object({
+          bankName: z.string().nullable(),
+          agency: z.string().nullable(),
+          accountNumber: z.string().nullable(),
+        })
+        .nullable()
+        .optional(),
+    }),
   ),
   movements: z.array(
     z.object({

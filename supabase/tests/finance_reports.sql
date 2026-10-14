@@ -90,6 +90,15 @@ begin
  s:=public.get_finance_report(c,u,'{"type":"SYNTHETIC","month":"2026-12"}');
  perform pg_temp.assert_true((s#>>'{summary,count}')::int=0 and (s#>>'{summary,openingCents}')::numeric=205000,'empty month retains prior balance');
  execute 'reset role';
+ -- Current bank metadata is scoped to the reported cashbox; local cashboxes omit it.
+ update public.financial_cashboxes set cashbox_type='BANK_ACCOUNT',bank_name='Banco Exemplo',agency='0001',account_number='12345-6' where church_id=c and id=b2;
+ execute 'set local role authenticated';
+ a:=public.get_finance_report(c,u,'{"type":"ANALYTIC","month":"2026-10"}');
+ perform pg_temp.assert_true(exists(select 1 from jsonb_array_elements(a->'cashboxes') x where x->>'id'=b2::text and x#>>'{bankDetails,agency}'='0001' and x#>>'{bankDetails,accountNumber}'='12345-6'),'bank details in analytic');
+ perform pg_temp.assert_true(exists(select 1 from jsonb_array_elements(a->'cashboxes') x where x->>'id'=b::text and x->'bankDetails'='null'::jsonb),'local cashbox has no bank details');
+ s:=public.get_finance_report(c,u,'{"type":"SYNTHETIC","month":"2026-10"}');
+ perform pg_temp.assert_true(not exists(select 1 from jsonb_array_elements(s->'cashboxes') x where x ? 'bankDetails'),'synthetic projection unchanged');
+ execute 'reset role';
  -- Bulk fictional rows to exercise >1,000 records without PostgREST truncation.
  with added as (
  insert into public.financial_transactions(church_id,congregation_id,category_id,department_id,cashbox_id,payment_method_id,transaction_type,amount,transaction_date,status,category_name,department_name,contributor_kind)

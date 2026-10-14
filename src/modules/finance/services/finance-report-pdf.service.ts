@@ -45,6 +45,21 @@ export async function createFinanceReportPdf(
   doc.setAuthor(data.church.name);
   doc.setCreator("Eclesias");
   let activeCashboxName = "";
+  let activeBankDetails = "";
+  const bankDescription = (box: FinanceReportDocument["cashboxes"][number]) => {
+    const bank = box.bankDetails;
+    return bank
+      ? [
+          bank.bankName?.trim(),
+          bank.agency?.trim() ? `Agência ${bank.agency.trim()}` : null,
+          bank.accountNumber?.trim()
+            ? `Conta ${bank.accountNumber.trim()}`
+            : null,
+        ]
+          .filter(Boolean)
+          .join(" · ")
+      : "";
+  };
   let page: PDFPage,
     y = M;
   const wrap = (text: string, width: number, size = 9, font = regular) =>
@@ -87,6 +102,12 @@ export async function createFinanceReportPdf(
         for (const l of wrap(activeCashboxName, CW, 8, bold)) {
           draw(l, M, y, 8, bold, muted);
           y += 11;
+        }
+      }
+      if (analytic && activeBankDetails) {
+        for (const l of wrap(activeBankDetails, CW, 7)) {
+          draw(l, M, y, 7, regular, muted);
+          y += 10;
         }
       }
       y += 5;
@@ -259,9 +280,14 @@ export async function createFinanceReportPdf(
     color: ReturnType<typeof rgb>,
     amount?: number,
     cashbox?: string,
+    bankDetails?: string,
   ) {
     const boxLines = cashbox ? wrap(cashbox, CW * 0.65, 9, bold) : [];
-    const height = Math.max(28, boxLines.length * 12 + 16);
+    const detailLines = bankDetails ? wrap(bankDetails, CW * 0.65, 7) : [];
+    const height = Math.max(
+      28,
+      boxLines.length * 12 + detailLines.length * 10 + 16,
+    );
     ensure(amount === undefined ? height + 97 : height + 4);
     page.drawRectangle({ x: M, y: H - y - height, width: CW, height, color });
     boxLines.forEach((l, i) =>
@@ -272,6 +298,16 @@ export async function createFinanceReportPdf(
         9,
         bold,
         rgb(1, 1, 1),
+      ),
+    );
+    detailLines.forEach((l, i) =>
+      draw(
+        l,
+        W - M - 9 - regular.widthOfTextAtSize(l, 7),
+        y + 8 + boxLines.length * 12 + i * 10,
+        7,
+        regular,
+        rgb(0.86, 0.92, 0.9),
       ),
     );
     draw(
@@ -444,30 +480,34 @@ export async function createFinanceReportPdf(
     ["Saídas", s.expenseCents],
     ["Saldo final", s.closingCents],
   ] as const;
-  ensure(62);
-  metrics.forEach(([label, value], i) => {
-    const width = CW / 4,
-      x = M + i * width;
-    page!.drawRectangle({
-      x,
-      y: H - y - 53,
-      width: width - 5,
-      height: 53,
-      color: pale,
+  function indicators() {
+    ensure(62);
+    metrics.forEach(([label, value], i) => {
+      const width = CW / 4,
+        x = M + i * width;
+      page!.drawRectangle({
+        x,
+        y: H - y - 53,
+        width: width - 5,
+        height: 53,
+        color: pale,
+      });
+      draw(label, x + 8, y + 8, 8.5, regular, muted);
+      const text = formatMoney(value),
+        size = bold.widthOfTextAtSize(text, 11) > width - 16 ? 9 : 11;
+      draw(
+        text,
+        x + 8,
+        y + 27,
+        size,
+        bold,
+        i === 2 ? red : i === 1 ? green : ink,
+      );
     });
-    draw(label, x + 8, y + 8, 8.5, regular, muted);
-    const text = formatMoney(value),
-      size = bold.widthOfTextAtSize(text, 11) > width - 16 ? 9 : 11;
-    draw(
-      text,
-      x + 8,
-      y + 27,
-      size,
-      bold,
-      i === 2 ? red : i === 1 ? green : ink,
-    );
-  });
-  y += 63;
+    y += 63;
+  }
+  indicators();
+  if (analytic) y += 20;
   if (!analytic)
     paragraph(
       `Resultado do mês (entradas − saídas): ${formatMoney(s.incomeCents - s.expenseCents)}`,
@@ -496,13 +536,14 @@ export async function createFinanceReportPdf(
   for (const [sectionIndex, { direction, box }] of sections.entries()) {
     if (analytic && direction === "INCOME") {
       activeCashboxName = box?.name ?? "";
+      activeBankDetails = box ? bankDescription(box) : "";
       if (sectionIndex > 0) newPage();
     }
     const name = direction === "INCOME" ? "Entradas" : "Saídas",
       color = direction === "INCOME" ? green : red;
     if (analytic) {
       y += direction === "EXPENSE" ? 16 : 8;
-      band(name, color, undefined, box?.name);
+      band(name, color, undefined, box?.name, activeBankDetails);
     } else heading(`${name} por categoria`, color);
     if (data.type === "SYNTHETIC") {
       const categories = data.categories.filter(
@@ -655,6 +696,7 @@ export async function createFinanceReportPdf(
     else total(`Total de ${name.toLocaleLowerCase("pt-BR")}`, amount, color);
   }
   activeCashboxName = "";
+  activeBankDetails = "";
   if (!analytic && data.departments.length) {
     heading("Resumo por departamento", ink, 65);
     table(
@@ -731,6 +773,11 @@ export async function createFinanceReportPdf(
         formatMoney(m.amountCents),
       ]),
     );
+  }
+  if (analytic) {
+    y += 16;
+    heading("Resumo final do período", ink, 98);
+    indicators();
   }
   paragraph(
     `${s.count} lançamento(s). Valores registrados até a emissão. Nova emissão pode refletir correções posteriores.`,
