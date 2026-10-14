@@ -86,7 +86,7 @@ export const FinanceStyles = createGlobalStyle`
  .finance .finance-receipt-controls{align-items:end}
  .finance .finance-receipt-controls button{height:42px;min-height:42px;padding:8px 18px}
  .finance .finance-receipt-controls>.muted{align-self:center}
- .finance .finance-attendance-summary button.finance-attendance-action{display:grid;grid-template-columns:32px minmax(0,1fr);gap:12px;text-align:left;justify-content:stretch;min-height:44px}
+ .finance .finance-attendance-summary button.finance-attendance-action{display:grid;grid-template-columns:50px minmax(0,1fr);gap:12px;text-align:left;justify-content:stretch;min-height:44px}
  .finance .finance-attendance-action>.finance-action-icon{display:flex;align-items:center;justify-content:flex-start;border-right:1px solid currentColor;min-height:22px}
  .finance .finance-attendance-action>.finance-action-label{line-height:1.4}
  @media(max-width:480px){.finance .finance-receipt-controls>*{width:100%}}
@@ -142,7 +142,9 @@ export const Workspace = styled.div`
     letter-spacing: -1px;
     padding: 0 14px 35px;
   }
-  .finance-logo b { font-weight: 600; }
+  .finance-logo b {
+    font-weight: 600;
+  }
   .finance-logo span {
     width: 35px;
     height: 38px;
@@ -320,18 +322,21 @@ export const Workspace = styled.div`
     outline-offset: 2px;
   }
   .finance-desktop-toggle {
-    position:absolute;
-    left:0;
-    top:50%;
-    transform:translateY(-50%);
-    width:28px;
-    height:36px;
-    border:0;
-    border-radius:0 6px 6px 0;
-    background:transparent;
-    color:#80958A;
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 36px;
+    border: 0;
+    border-radius: 0 6px 6px 0;
+    background: transparent;
+    color: #80958a;
   }
-  .finance-desktop-toggle:hover { background:#EDF4EF; color:#285C47; }
+  .finance-desktop-toggle:hover {
+    background: #edf4ef;
+    color: #285c47;
+  }
   .finance-mobile-toggle {
     display: none;
   }
@@ -462,7 +467,11 @@ export const Workspace = styled.div`
     min-width: 240px;
     flex: 1;
   }
-  .finance-report-controls button { height:42px;min-height:42px;padding:8px 18px; }
+  .finance-report-controls button {
+    height: 42px;
+    min-height: 42px;
+    padding: 8px 18px;
+  }
   .finance-report-empty {
     text-align: center;
     display: grid;
@@ -508,7 +517,9 @@ export const Workspace = styled.div`
       width: 100%;
       flex-basis: 100%;
     }
-    .finance-report-controls button { width:100%; }
+    .finance-report-controls button {
+      width: 100%;
+    }
     .finance-report-option {
       padding: 15px;
     }
