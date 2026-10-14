@@ -349,12 +349,9 @@ it("repeats consolidated indicators at the end and separates the opening indicat
     expect(text.mock.calls.map(([t]) => t)).toContain(
       "Resumo final do período",
     );
-    const rects = rectangles.mock.calls.map(([o]) => o!);
-    const firstSummary = rects.find((r) => r.height === 53)!;
-    const firstSection = rects.find((r) => r.width! > 500 && r.height! >= 28)!;
-    expect(
-      firstSummary.y! - firstSection.y! - firstSection.height!,
-    ).toBeGreaterThanOrEqual(28);
+    const summaryValue = text.mock.calls.find(([, o]) => o?.size === 11)![1]!;
+    const firstSection = text.mock.calls.find(([t]) => t === "ENTRADAS")![1]!;
+    expect(summaryValue.y! - firstSection.y!).toBeGreaterThanOrEqual(55);
     if (process.env.REPORT_PDF_QA)
       await writeFile("tmp/reports/analitico-resumo-final.pdf", bytes);
   } finally {
@@ -657,3 +654,141 @@ it.each([11, 12, 13])(
     }
   },
 );
+
+it.each(["ANALYTIC", "SYNTHETIC"] as const)(
+  "uses soft section colors, rounded surfaces and a quiet empty state in %s",
+  async (type) => {
+    const input = fixture(1, type);
+    const original = structuredClone(input);
+    const text = vi.spyOn(PDFPage.prototype, "drawText");
+    const rectangles = vi.spyOn(PDFPage.prototype, "drawRectangle");
+    const paths = vi.spyOn(PDFPage.prototype, "drawSvgPath");
+    try {
+      await createFinanceReportPdf(input);
+      expect(input).toEqual(original);
+      const filledBands = rectangles.mock.calls.filter(
+        ([o]) =>
+          o!.width! > 500 && o!.color?.type === "RGB" && o!.color.red < 0.8,
+      );
+      expect(filledBands).toHaveLength(0);
+      expect(paths.mock.calls.length).toBeGreaterThanOrEqual(8);
+      const labels = text.mock.calls.map(([t]) => t);
+      expect(labels).toContain("TOTAL DE SAÍDAS");
+      for (const title of [
+        "ENTRADAS",
+        "SAÍDAS",
+        "TOTAL DE ENTRADAS",
+        "TOTAL DE SAÍDAS",
+      ]) {
+        const options = text.mock.calls[labels.indexOf(title)][1]!;
+        expect(options.color).not.toEqual({
+          type: "RGB",
+          red: 1,
+          green: 1,
+          blue: 1,
+        });
+      }
+    } finally {
+      text.mockRestore();
+      rectangles.mockRestore();
+      paths.mockRestore();
+    }
+  },
+);
+
+it("keeps balance notes and final indicators together in a two-box analytic report", async () => {
+  const input = fixture(11, "ANALYTIC");
+  if (input.type !== "ANALYTIC") throw new Error("Analytic fixture required");
+  const bankId = "00000000-0000-4000-8000-000000000003";
+  input.rows.forEach((row, i) => {
+    row.description = i === 4 || i === 5 ? "Oferta do culto de ensino" : null;
+    row.documentNumber = null;
+    row.cashboxId = i < 9 ? input.cashboxes[0].id : bankId;
+    row.classificationId =
+      i < 4 || i === 9
+        ? i === 0
+          ? "senhoras"
+          : i === 3
+            ? "criancas"
+            : "missionarias"
+        : null;
+    row.classificationName =
+      row.classificationId === "senhoras"
+        ? "Senhoras"
+        : row.classificationId === "criancas"
+          ? "Crianças"
+          : row.classificationId
+            ? "Missionárias"
+            : null;
+    row.categoryId =
+      i === 8
+        ? "expense"
+        : i === 6 || i === 7
+          ? "missions"
+          : row.classificationId
+            ? "tithe"
+            : "offering";
+    row.categoryName =
+      i === 8
+        ? "Manutenção predial"
+        : i === 6 || i === 7
+          ? "Oferta de missões"
+          : row.classificationId
+            ? "Dízimos"
+            : "Oferta de culto";
+    row.direction = i === 8 ? "EXPENSE" : "INCOME";
+  });
+  input.cashboxes = [
+    {
+      ...summary,
+      id: input.cashboxes[0].id,
+      name: "Caixa local",
+      openingCents: 0,
+      incomeCents: 8000,
+      expenseCents: 1000,
+      adjustmentCents: -500,
+      closingCents: 6500,
+      count: 9,
+    },
+    {
+      ...summary,
+      id: bankId,
+      name: "Conta bancária",
+      openingCents: 0,
+      incomeCents: 2000,
+      adjustmentCents: -2000,
+      closingCents: 0,
+      count: 2,
+      bankDetails: {
+        bankName: "Banco Exemplo",
+        agency: "0001",
+        accountNumber: "12345-6",
+      },
+    },
+  ];
+  input.summary = {
+    ...summary,
+    openingCents: 0,
+    incomeCents: 10000,
+    expenseCents: 1000,
+    adjustmentCents: -2500,
+    closingCents: 6500,
+    count: 11,
+  };
+  const text = vi.spyOn(PDFPage.prototype, "drawText");
+  try {
+    const bytes = await createFinanceReportPdf(input);
+    const labels = text.mock.calls.map(([t]) => t);
+    expect(
+      text.mock.instances[labels.indexOf("Caixas e contas")] ===
+        text.mock.instances[labels.indexOf("Resumo final do período")],
+    ).toBe(true);
+    expect((await PDFDocument.load(bytes)).getPageCount()).toBeLessThanOrEqual(
+      3,
+    );
+    if (process.env.REPORT_PDF_QA)
+      await writeFile("tmp/reports/analitico-refinamento.pdf", bytes);
+  } finally {
+    text.mockRestore();
+  }
+});

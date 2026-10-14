@@ -41,7 +41,7 @@ O demonstrativo calcula valores orientativos de repasse, prebenda e outros itens
 
 ## Impressão
 
-A4 retrato, fontes incorporadas, texto pesquisável e tabelas de 7,5 pontos nos dois modelos, com cabeçalhos numéricos alinhados aos valores à direita. Ambos destacam ENTRADAS/TOTAL DE ENTRADAS em verde e SAÍDAS/TOTAL DE SAÍDAS em vermelho, com categorias em negrito. A distinção entre entradas/saídas e o sinal dos valores continuam claros em preto e branco. A impressão usa os controles do navegador/visualizador de PDF; o sistema não escolhe a impressora automaticamente.
+A4 retrato, fontes incorporadas, texto pesquisável e tabelas de 7,5 pontos nos dois modelos, com cabeçalhos numéricos alinhados aos valores à direita. Ambos destacam ENTRADAS/TOTAL DE ENTRADAS em verde e SAÍDAS/TOTAL DE SAÍDAS em vermelho, com categorias em negrito. Cabeçalhos têm fundos claros, texto escuro e um pequeno detalhe lateral colorido. Totais usam destaque tipográfico e linha superior; indicadores e cabeçalhos têm cantos discretamente arredondados. Seções sem movimentação mantêm mensagem e total explícitos em apresentação compacta. O encerramento procura manter saldos, observações e indicadores finais na mesma página. A distinção entre entradas/saídas e o sinal dos valores continuam claros em preto e branco. A impressão usa os controles do navegador/visualizador de PDF; o sistema não escolhe a impressora automaticamente.
 
 ## Descrição de contribuições coletivas
 

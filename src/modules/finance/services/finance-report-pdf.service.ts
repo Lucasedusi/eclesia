@@ -16,8 +16,8 @@ const W = 595.28,
 const ink = rgb(0.09, 0.19, 0.16),
   muted = rgb(0.34, 0.4, 0.38),
   green = rgb(0.02, 0.4, 0.28),
-  red = rgb(0.62, 0.16, 0.19),
-  line = rgb(0.85, 0.89, 0.87),
+  red = rgb(0.6, 0.23, 0.26),
+  line = rgb(0.89, 0.91, 0.9),
   pale = rgb(0.96, 0.975, 0.967);
 let fontBytes: Promise<Buffer[]> | undefined;
 function fonts() {
@@ -81,6 +81,23 @@ export async function createFinanceReportPdf(
       thickness: 0.5,
       color: line,
     });
+  }
+  function roundedSurface(
+    x: number,
+    top: number,
+    width: number,
+    height: number,
+    color: ReturnType<typeof rgb>,
+  ) {
+    const r = 4;
+    page.drawSvgPath(
+      `M ${r},0 H ${width - r} Q ${width},0 ${width},${r} V ${height - r} Q ${width},${height} ${width - r},${height} H ${r} Q 0,${height} 0,${height - r} V ${r} Q 0,0 ${r},0 Z`,
+      {
+        x,
+        y: H - top,
+        color,
+      },
+    );
   }
   function newPage(first = false) {
     page = doc.addPage([W, H]);
@@ -160,7 +177,7 @@ export async function createFinanceReportPdf(
     const bodySize = 7.5;
     const headerSize = 7;
     const leading = 10;
-    const padding = analytic ? 12 : 6;
+    const padding = analytic ? 8 : 6;
     function header(continued = false) {
       ensure(49);
       if (continued) {
@@ -322,11 +339,22 @@ export async function createFinanceReportPdf(
     const boxLines = cashbox ? wrap(cashbox, CW * 0.65, 9, bold) : [];
     const detailLines = bankDetails ? wrap(bankDetails, CW * 0.65, 7) : [];
     const height = Math.max(
-      analytic ? 28 : 24,
-      boxLines.length * 12 + detailLines.length * 10 + (analytic ? 16 : 12),
+      26,
+      boxLines.length * 12 + detailLines.length * 10 + 14,
     );
     ensure(amount === undefined ? height + followingHeight : height + 4);
-    page.drawRectangle({ x: M, y: H - y - height, width: CW, height, color });
+    const tint =
+      color === red ? rgb(0.985, 0.953, 0.955) : rgb(0.935, 0.97, 0.952);
+    roundedSurface(M, y, CW, height, tint);
+    if (amount === undefined) {
+      page.drawLine({
+        start: { x: M + 1.5, y: H - y - 7 },
+        end: { x: M + 1.5, y: H - y - height + 7 },
+        thickness: 2,
+        color,
+      });
+    } else rule(y);
+
     boxLines.forEach((l, i) =>
       draw(
         l,
@@ -334,7 +362,7 @@ export async function createFinanceReportPdf(
         y + 8 + i * 12,
         9,
         bold,
-        rgb(1, 1, 1),
+        color,
       ),
     );
     detailLines.forEach((l, i) =>
@@ -344,16 +372,16 @@ export async function createFinanceReportPdf(
         y + 8 + boxLines.length * 12 + i * 10,
         7,
         regular,
-        rgb(0.86, 0.92, 0.9),
+        muted,
       ),
     );
     draw(
       label.toLocaleUpperCase("pt-BR"),
       M + 9,
       y + 8,
-      10,
+      amount === undefined ? 9.5 : 9,
       bold,
-      rgb(1, 1, 1),
+      color,
     );
     if (amount !== undefined) {
       const value = formatMoney(amount);
@@ -363,10 +391,10 @@ export async function createFinanceReportPdf(
         y + 8,
         10,
         bold,
-        rgb(1, 1, 1),
+        color,
       );
     }
-    y += height + (analytic ? 12 : 8);
+    y += height + 8;
   }
   function subtotal(
     label: string,
@@ -376,7 +404,7 @@ export async function createFinanceReportPdf(
     const value = formatMoney(amount);
     const valueWidth = bold.widthOfTextAtSize(value, 8);
     const lines = wrap(label, CW - valueWidth - 26, 8, bold);
-    const height = Math.max(25, lines.length * 11 + 12);
+    const height = Math.max(22, lines.length * 11 + 10);
     ensure(height);
     lines.forEach((l, i) =>
       draw(
@@ -400,7 +428,7 @@ export async function createFinanceReportPdf(
       draw(l, M, y, size, bold);
       y += size + 4;
     }
-    y += 8;
+    y += 6;
   }
   newPage(true);
   let logoWidth = 0;
@@ -507,13 +535,7 @@ export async function createFinanceReportPdf(
     metrics.forEach(([label, value], i) => {
       const width = CW / 4,
         x = M + i * width;
-      page!.drawRectangle({
-        x,
-        y: H - y - 53,
-        width: width - 5,
-        height: 53,
-        color: pale,
-      });
+      roundedSurface(x, y, width - 5, 53, pale);
       draw(label, x + 8, y + 8, 8.5, regular, muted);
       const text = formatMoney(value),
         size = bold.widthOfTextAtSize(text, 11) > width - 16 ? 9 : 11;
@@ -541,11 +563,48 @@ export async function createFinanceReportPdf(
       activeCashboxName = box?.name ?? "";
       activeBankDetails = box ? bankDescription(box) : "";
       if (analytic && sectionIndex > 0) newPage();
-      else if (!analytic && sectionIndex > 0) y += 16;
+      else if (!analytic && sectionIndex > 0) {
+        y += 12;
+        rule(y);
+        y += 8;
+      }
     }
     const name = direction === "INCOME" ? "Entradas" : "Saídas",
       color = direction === "INCOME" ? green : red;
     y += direction === "EXPENSE" ? (analytic ? 16 : 12) : 8;
+    const populated = (
+      data.type === "ANALYTIC" ? data.rows : data.cashboxCategories
+    ).some((row) => row.direction === direction && row.cashboxId === box.id);
+    if (!populated) {
+      band(name, color, undefined, box.name, activeBankDetails, 44);
+      paragraph(
+        `Nenhuma ${direction === "INCOME" ? "entrada registrada" : "saída registrada"} no período.`,
+        8,
+        muted,
+        4,
+      );
+      draw(
+        `TOTAL DE ${name.toLocaleUpperCase("pt-BR")}`,
+        M + 6,
+        y,
+        8,
+        bold,
+        muted,
+      );
+      const amount = formatMoney(
+        direction === "INCOME" ? box.incomeCents : box.expenseCents,
+      );
+      draw(
+        amount,
+        W - M - 6 - bold.widthOfTextAtSize(amount, 9),
+        y,
+        9,
+        bold,
+        muted,
+      );
+      y += 22;
+      continue;
+    }
     if (data.type === "SYNTHETIC") {
       const categories = data.cashboxCategories.filter(
         (c) => c.direction === direction && c.cashboxId === box.id,
@@ -699,8 +758,8 @@ export async function createFinanceReportPdf(
             ),
           ) *
             10 +
-          12;
-        return 23 + (height < 620 ? height : 34);
+          8;
+        return 19 + (height < 620 ? height : 34);
       };
       for (const [categoryIndex, group] of categoryGroups.entries()) {
         const names = [...new Set(group.map((r) => r.categoryName))].join(
@@ -720,15 +779,15 @@ export async function createFinanceReportPdf(
           const keepAfter =
             8 +
             Math.max(
-              25,
-              wrap(`Subtotal ${groupName}`, CW - 140, 8, bold).length * 11 + 12,
+              22,
+              wrap(`Subtotal ${groupName}`, CW - 140, 8, bold).length * 11 + 10,
             ) +
             (lastGroup && categoryIndex === categoryGroups.length - 1 ? 32 : 0);
           // A single-row group must keep its heading, row and named subtotal together.
           groupHeading(
             groupName,
             9,
-            16,
+            10,
             firstRowReserve(tableRows[0]) +
               (tableRows.length === 1 ? keepAfter : 0),
           );
@@ -760,6 +819,69 @@ export async function createFinanceReportPdf(
   }
   activeCashboxName = "";
   activeBankDetails = "";
+  const notes = data.cashboxes.flatMap((b) => {
+    const details = [
+      b.openingMovementCents
+        ? `abertura no mês ${formatMoney(b.openingMovementCents)}`
+        : null,
+      b.adjustmentCents ? `ajustes ${formatMoney(b.adjustmentCents)}` : null,
+      b.transferNetCents
+        ? `transferências líquidas ${formatMoney(b.transferNetCents)}`
+        : null,
+    ].filter(Boolean);
+    return details.length ? [`${b.name}: ${details.join(" · ")}.`] : [];
+  });
+  const rowHeight = (cells: string[], widths: number[]) =>
+    Math.max(
+      ...cells.map((text, i) => wrap(text, widths[i] - 12, 7.5).length),
+    ) *
+      10 +
+    (analytic ? 8 : 6);
+  const balanceHeight = data.cashboxes.length
+    ? 31 +
+      (analytic ? 19 : 17) +
+      8 +
+      data.cashboxes.reduce(
+        (sum, b) =>
+          sum +
+          rowHeight(
+            [
+              b.name,
+              formatMoney(b.openingCents),
+              formatMoney(b.incomeCents),
+              formatMoney(b.expenseCents),
+              formatMoney(b.closingCents),
+            ],
+            [CW - 380, 95, 95, 95, 95],
+          ),
+        0,
+      )
+    : 0;
+  const departmentHeight =
+    !analytic && data.departments.length
+      ? 31 +
+        17 +
+        8 +
+        data.departments.reduce(
+          (sum, d) =>
+            sum +
+            rowHeight(
+              [d.name, formatMoney(d.incomeCents), formatMoney(d.expenseCents)],
+              [CW - 220, 110, 110],
+            ),
+          0,
+        )
+      : 0;
+  const endingHeight =
+    balanceHeight +
+    departmentHeight +
+    notes.reduce(
+      (sum, note) => sum + wrap(note, CW, 8.5).length * 12.5 + 3,
+      0,
+    ) +
+    130;
+  // Long summaries can span pages; ordinary summaries stay with the final indicators.
+  ensure(endingHeight <= 620 ? endingHeight : 90);
   if (!analytic && data.departments.length) {
     heading("Resumo por departamento", ink, 65);
     table(
@@ -803,22 +925,10 @@ export async function createFinanceReportPdf(
         formatMoney(b.closingCents),
       ]),
     );
-    for (const b of data.cashboxes) {
-      const details = [
-        b.openingMovementCents
-          ? `abertura no mês ${formatMoney(b.openingMovementCents)}`
-          : null,
-        b.adjustmentCents ? `ajustes ${formatMoney(b.adjustmentCents)}` : null,
-        b.transferNetCents
-          ? `transferências líquidas ${formatMoney(b.transferNetCents)}`
-          : null,
-      ].filter(Boolean);
-      if (details.length)
-        paragraph(`${b.name}: ${details.join(" · ")}.`, 8.5, muted, 3);
-    }
+    for (const note of notes) paragraph(note, 8.5, muted, 3);
   }
   y += analytic ? 16 : 8;
-  heading("Resumo final do período", ink, analytic ? 98 : 106);
+  heading("Resumo final do período", ink, 106);
   indicators();
   paragraph(
     `${s.count} lançamento(s). Valores registrados até a emissão. Nova emissão pode refletir correções posteriores.`,
