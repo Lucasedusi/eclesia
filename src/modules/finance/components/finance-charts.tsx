@@ -1,4 +1,5 @@
 "use client";
+import { FinanceEmpty } from "./finance-empty";
 import { useState } from "react";
 import type { FinanceOverview } from "../types/finance-query.types";
 import { formatMoney } from "../utils/finance-money";
@@ -29,9 +30,9 @@ export function FinanceCharts({ overview }: { overview: FinanceOverview }) {
           </div>
         </div>
         {overview.incomeCents === 0 && overview.expenseCents === 0 ? (
-          <div className="empty">
+          <FinanceEmpty>
             Os movimentos aparecerão aqui assim que forem registrados.
-          </div>
+          </FinanceEmpty>
         ) : (
           <>
             <svg
@@ -136,7 +137,7 @@ export function FinanceCharts({ overview }: { overview: FinanceOverview }) {
           </select>
         </div>
         {categories.length === 0 ? (
-          <div className="empty">Sem movimento nesta natureza.</div>
+          <FinanceEmpty>Sem movimento nesta natureza.</FinanceEmpty>
         ) : (
           categories.slice(0, 6).map((c) => (
             <div key={c.id}>

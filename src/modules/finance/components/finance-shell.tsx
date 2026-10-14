@@ -12,8 +12,8 @@ import {
   useSyncExternalStore,
 } from "react";
 import {
-  PanelLeftClose,
-  PanelLeftOpen,
+  ChevronLeft,
+  ChevronRight,
   Menu,
   X,
   ArrowLeft,
@@ -275,9 +275,9 @@ export function FinanceShell({
               onClick={toggleSidebar}
             >
               {collapsed ? (
-                <PanelLeftOpen size={20} />
+                <ChevronRight size={16} />
               ) : (
-                <PanelLeftClose size={20} />
+                <ChevronLeft size={16} />
               )}
             </button>
             <button

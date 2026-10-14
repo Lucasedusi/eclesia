@@ -2,9 +2,10 @@
 
 import { useActionState, useMemo, useState } from "react";
 import { ChevronDown, ChevronUp, Clock3, Copy, MailPlus, Save, ShieldCheck, UserCheck, Users } from "lucide-react";
-import { ACCESS_ROLES, ACCESS_SCOPES, INITIAL_ACTION_STATE, ROLE_LABELS, SCOPE_LABELS, type AccessScope } from "@/modules/auth/types/auth.types";
+import { ACCESS_ROLES, ACCESS_SCOPES, INITIAL_ACTION_STATE, ROLE_LABELS, SCOPE_LABELS, type AccessScope, type AccessRole, type AccessStatus } from "@/modules/auth/types/auth.types";
 import type { InvitationItem, PermissionOption, ScopeOption, UserAccessItem, UserManagementData } from "../services/user-management.service";
 import { cancelInvitationAction, inviteUserAction, resendInvitationAction, setPermissionOverrideAction, updateAccessAction } from "../actions/user-management.actions";
+import { UserFinanceAssignmentEditor } from "./user-finance-assignment";
 import * as S from "./user-management.styles";
 
 const statusLabels = { ACTIVE: "Ativo", INACTIVE: "Inativo", BLOCKED: "Bloqueado" } as const;
@@ -49,7 +50,12 @@ function AccessEditor({ access, data }: { access: UserAccessItem; data: UserMana
   const [open, setOpen] = useState(false);
   const [scope, setScope] = useState<AccessScope>(access.scope);
   const [state, action, pending] = useActionState(updateAccessAction, INITIAL_ACTION_STATE);
-  const targetId = access.regionId ?? access.congregationId ?? access.ministryId ?? "";
+  const initialTargetId = access.regionId ?? access.congregationId ?? access.ministryId ?? "";
+  const [targetId, setTargetId] = useState(initialTargetId);
+  const [role, setRole] = useState<AccessRole>(access.role);
+  const [status, setStatus] = useState<AccessStatus>(access.status);
+  const operation = data.financeOperations?.assignments.find(item => item.accessId === access.id);
+  const accessChanged = role !== access.role || status !== access.status || scope !== access.scope || targetId !== initialTargetId;
   return <S.AccessCard>
     <S.AccessSummary>
       <S.Person><S.Avatar>{getInitials(access.name)}</S.Avatar><S.PersonMeta><strong>{access.name}</strong><small>{access.email}</small></S.PersonMeta></S.Person>
@@ -62,14 +68,16 @@ function AccessEditor({ access, data }: { access: UserAccessItem; data: UserMana
       <form action={action}>
         <input type="hidden" name="accessId" value={access.id}/>
         <S.FormGrid>
-          <S.Field><span>Papel de acesso</span><S.Select name="role" defaultValue={access.role}>{ACCESS_ROLES.map((role)=><option key={role} value={role}>{ROLE_LABELS[role]}</option>)}</S.Select></S.Field>
-          <S.Field><span>Escopo</span><S.Select name="scope" value={scope} onChange={(event)=>setScope(event.target.value as AccessScope)}>{ACCESS_SCOPES.map((item)=><option key={item} value={item}>{SCOPE_LABELS[item]}</option>)}</S.Select></S.Field>
-          <S.Field><span>Situação</span><S.Select name="status" defaultValue={access.status}><option value="ACTIVE">Ativo</option><option value="INACTIVE">Inativo</option><option value="BLOCKED">Bloqueado</option></S.Select></S.Field>
-          {scope !== "CHURCH" ? <S.Field><span>Alvo do escopo</span><S.Select name="targetId" defaultValue={scope===access.scope?targetId:""}><option value="">Selecione</option>{scopeOptions(scope,data).map((option)=><option key={option.id} value={option.id}>{option.name}</option>)}</S.Select></S.Field> : <input type="hidden" name="targetId" value=""/>}
+          <S.Field><span>Papel de acesso</span><S.Select name="role" value={role} onChange={event => setRole(event.target.value as AccessRole)}>{ACCESS_ROLES.map((role)=><option key={role} value={role}>{ROLE_LABELS[role]}</option>)}</S.Select></S.Field>
+          <S.Field><span>Escopo</span><S.Select name="scope" value={scope} onChange={(event)=>{setScope(event.target.value as AccessScope); setTargetId("");}}>{ACCESS_SCOPES.map((item)=><option key={item} value={item}>{SCOPE_LABELS[item]}</option>)}</S.Select></S.Field>
+          <S.Field><span>Situação</span><S.Select name="status" value={status} onChange={event => setStatus(event.target.value as AccessStatus)}><option value="ACTIVE">Ativo</option><option value="INACTIVE">Inativo</option><option value="BLOCKED">Bloqueado</option></S.Select></S.Field>
+          {scope !== "CHURCH" ? <S.Field><span>Alvo do escopo</span><S.Select name="targetId" value={targetId} onChange={event => setTargetId(event.target.value)}><option value="">Selecione</option>{scopeOptions(scope,data).map((option)=><option key={option.id} value={option.id}>{option.name}</option>)}</S.Select></S.Field> : <input type="hidden" name="targetId" value=""/>}
           <S.Field style={{gridColumn:"1 / -1"}}><span>Observação administrativa</span><S.Textarea name="notes" defaultValue={access.notes ?? ""}/></S.Field>
         </S.FormGrid>
         <S.FormFooter><S.Button type="submit" disabled={pending}>{pending?<S.Spinner/>:<Save size={15}/>} {pending?"Salvando...":"Salvar alterações"}</S.Button></S.FormFooter>
       </form>
+      {operation && data.financeOperations && <UserFinanceAssignmentEditor assignment={operation} authorizationUnitId={data.financeOperations.authorizationUnitId} accessChanged={accessChanged}/>}
+      {access.scope === "CONGREGATION" && <S.PermissionBox><h3>Operação financeira</h3><p>Utiliza automaticamente a congregação deste acesso, conforme as permissões concedidas.</p></S.PermissionBox>}
       <PermissionEditor access={access} permissions={data.permissions}/>
     </S.Editor> : null}
   </S.AccessCard>;

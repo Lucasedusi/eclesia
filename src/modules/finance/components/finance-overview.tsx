@@ -1,11 +1,11 @@
 "use client";
+import { FinanceEmpty } from "./finance-empty";
 import Link from "next/link";
 import { useFinanceNavigation } from "./finance-shell";
 import {
   ArrowDownLeft,
   ArrowUpRight,
   Wallet,
-  Plus,
   ChevronRight,
 } from "lucide-react";
 import type {
@@ -20,13 +20,11 @@ export function FinanceOverview({
   recent,
   unit,
   month,
-  canCreate,
 }: {
   overview: Overview;
   recent: FinanceTransactionPage;
   unit: string;
   month: string;
-  canCreate: boolean;
 }) {
   const { navigate } = useFinanceNavigation();
   const cards = [
@@ -60,31 +58,7 @@ export function FinanceOverview({
             Sua congregação em números · {month.split("-").reverse().join("/")}
           </p>
         </div>
-        {canCreate && (
-          <Link
-            className="badge"
-            onNavigate={(e) => {
-              e.preventDefault();
-              navigate(
-                financeLocation("/financeiro/lancamentos", unit, month) +
-                  "&novo=entrada",
-              );
-            }}
-            href={
-              financeLocation("/financeiro/lancamentos", unit, month) +
-              "&novo=entrada"
-            }
-            style={{
-              background: "#B6E875",
-              padding: "13px 18px",
-              fontSize: 13,
-              color: "#0B3D32",
-            }}
-          >
-            <Plus size={17} />
-            Nova entrada
-          </Link>
-        )}
+
       </div>
       <div className="grid">
         {cards.map((c) => (
@@ -167,7 +141,7 @@ export function FinanceOverview({
           </Link>
         </div>
         {recent.items.length === 0 ? (
-          <div className="empty">Ainda não há lançamentos neste mês.</div>
+          <FinanceEmpty>Ainda não há lançamentos neste mês.</FinanceEmpty>
         ) : (
           <div className="table-scroll">
             <table>

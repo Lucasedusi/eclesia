@@ -241,11 +241,6 @@ export function FinanceReports({
             Gerar relatório
           </Button>
         </div>
-        <p className="muted">
-          O relatório considera os lançamentos registrados. Os valores
-          calculados no demonstrativo só aparecem como saídas depois de
-          lançados.
-        </p>
       </section>
       {error && (
         <div role="alert" className="notice finance-report-error">

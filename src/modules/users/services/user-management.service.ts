@@ -6,6 +6,9 @@ import { requireAccessContext } from "@/modules/auth/services/access-context.ser
 import { PERMISSIONS } from "@/modules/auth/constants/permissions";
 import type { AccessRole, AccessScope, AccessStatus } from "@/modules/auth/types/auth.types";
 
+import { getUserFinanceOperations } from "./user-finance.service";
+import type { UserFinanceOperations } from "../types/user-finance.types";
+
 type NamedRelation = { name: string } | { name: string }[] | null;
 type ProfileRelation = {
   full_name: string | null;
@@ -61,6 +64,7 @@ export type ScopeOption = { id: string; name: string };
 export type PermissionOption = { key: string; name: string; module: string; sensitive: boolean };
 
 export type UserManagementData = {
+  financeOperations: UserFinanceOperations | null;
   accesses: UserAccessItem[];
   invitations: InvitationItem[];
   regions: ScopeOption[];
@@ -73,7 +77,7 @@ export async function getUserManagementData(): Promise<UserManagementData> {
   const context = await requireAccessContext(PERMISSIONS.usersView);
   const supabase = await createClient();
 
-  const [accessResult, invitationsResult, regionsResult, congregationsResult, ministriesResult, permissionsResult] = await measureServerOperation(
+  const [accessResult, invitationsResult, regionsResult, congregationsResult, ministriesResult, permissionsResult, financeOperations] = await measureServerOperation(
     "users.workspace",
     () => Promise.all([
       supabase.from("user_church_access").select(
@@ -86,8 +90,9 @@ export async function getUserManagementData(): Promise<UserManagementData> {
     supabase.from("congregations").select("id, name").eq("church_id", context.church.id).eq("status", "ACTIVE").is("deleted_at", null).order("name"),
     supabase.from("ministries").select("id, name").eq("church_id", context.church.id).eq("status", "ACTIVE").is("deleted_at", null).order("name"),
       supabase.from("permissions").select("key, name, module, is_sensitive").eq("status", "ACTIVE").is("deleted_at", null).order("module").order("name"),
+      getUserFinanceOperations(context),
     ]),
-    { route: "/usuarios", supabaseCalls: 6 },
+    { route: "/usuarios", supabaseCalls: context.permissions.includes(PERMISSIONS.financeSettings) ? 8 : 6 },
   );
 
   const queryErrors = [
@@ -114,6 +119,7 @@ export async function getUserManagementData(): Promise<UserManagementData> {
   const rows = (accessResult.data ?? []) as unknown as AccessRow[];
 
   return {
+    financeOperations: financeOperations ? { ...financeOperations, assignments: financeOperations.assignments.filter(item => rows.some(row => row.id === item.accessId)) } : null,
     accesses: rows.map((row) => {
       const profile = first(row.profiles);
       const target = first(row.regions) ?? first(row.congregations) ?? first(row.ministries);

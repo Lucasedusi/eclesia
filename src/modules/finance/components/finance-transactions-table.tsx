@@ -1,4 +1,5 @@
 "use client";
+import { FinanceEmpty } from "./finance-empty";
 import { useFinanceNavigation } from "./finance-shell";
 import { FinanceSkeleton } from "./finance-skeleton";
 import { Loader2 } from "lucide-react";
@@ -90,27 +91,15 @@ export function FinanceTransactionsTable({
           <div className="row finance-filter-bar">
             <label style={{ flex: 1, minWidth: 200 }}>
               Buscar
-              <span className="finance-search-input">
-                <input
-                  name="search"
-                  defaultValue={filters.search}
-                  placeholder="Pessoa, descrição ou documento"
-                  maxLength={160}
-                />
-                {isPending && (
-                  <span
-                    className="finance-search-loading"
-                    role="status"
-                    aria-label="Buscando lançamentos"
-                  >
-                    <Loader2
-                      size={16}
-                      className="finance-spin"
-                      aria-hidden="true"
-                    />
-                  </span>
-                )}
-              </span>
+              <TransactionSearch
+                initialValue={filters.search ?? ""}
+                busy={isPending}
+                onClear={() => {
+                  const data = new FormData(filterForm.current!);
+                  data.delete("search");
+                  filter(data);
+                }}
+              />
             </label>
             <Button type="submit" style={{ alignSelf: "end" }}>
               <Search size={16} /> Filtrar
@@ -190,10 +179,7 @@ export function FinanceTransactionsTable({
               ))}
             </div>
           </div>
-          <div className="row spread">
-            <span className="muted">
-              Seleções são aplicadas automaticamente.
-            </span>
+          {advanced && <div className="row" style={{ justifyContent: "flex-end" }}>
             <Button
               type="button"
               variant="ghost"
@@ -206,7 +192,7 @@ export function FinanceTransactionsTable({
               <X size={14} />
               Limpar filtros
             </Button>
-          </div>
+          </div>}
         </form>
         <div className="row spread notice">
           <span>
@@ -225,10 +211,10 @@ export function FinanceTransactionsTable({
         {isPending ? (
           <FinanceSkeleton table />
         ) : result.items.length === 0 ? (
-          <div className="empty">
+          <FinanceEmpty>
             Nenhum lançamento encontrado. Confira o mês e os filtros
             selecionados.
-          </div>
+          </FinanceEmpty>
         ) : (
           <div className="table-scroll">
             <table>
@@ -369,4 +355,21 @@ export function FinanceTransactionsTable({
       )}
     </div>
   );
+}
+
+function TransactionSearch({ initialValue, busy, onClear }: {
+  initialValue: string;
+  busy: boolean;
+  onClear: () => void;
+}) {
+  const [value, setValue] = useState(initialValue);
+  const input = useRef<HTMLInputElement>(null);
+  return <span className="finance-search-input">
+    <input ref={input} name="search" value={value} onChange={event => setValue(event.target.value)} placeholder="Pessoa, descrição ou documento" maxLength={160} />
+    {busy ? <span className="finance-search-loading" role="status" aria-label="Buscando lançamentos"><Loader2 size={16} className="finance-spin" aria-hidden="true" /></span> : value && <button type="button" className="finance-clear-search" aria-label="Limpar busca" onClick={() => {
+      setValue("");
+      onClear();
+      input.current?.focus();
+    }}><X size={15} aria-hidden="true" /></button>}
+  </span>;
 }

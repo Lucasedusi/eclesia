@@ -726,32 +726,34 @@ export function FinanceEntryForm({
           <Button
             type="submit"
             variant={direction === "EXPENSE" ? "danger" : "primary"}
-            loading={busy}
-            disabled={uploading}
+            className={mode === "ATTENDANCE" ? "finance-attendance-action" : undefined}
+            aria-busy={busy}
+            disabled={busy || uploading}
           >
-            <Save size={16} />
-            {initialTransaction
+            <span className="finance-action-icon">{busy ? <span className="finance-spinner" aria-hidden="true" /> : <Save size={16} aria-hidden="true" />}</span>
+            <span className="finance-action-label">{initialTransaction
               ? "Salvar correção"
               : mode === "ATTENDANCE"
                 ? "Confirmar atendimento"
-                : "Salvar"}
+                : "Salvar"}</span>
           </Button>
           {!initialTransaction && (
             <>
               <Button
                 variant="outline"
                 disabled={busy || uploading}
+                className={mode === "ATTENDANCE" ? "finance-attendance-action" : undefined}
                 onClick={() => void save("CONTINUE")}
               >
-                <ArrowRight size={16} aria-hidden="true" /> Salvar e continuar
+                <span className="finance-action-icon"><ArrowRight size={16} aria-hidden="true" /></span><span className="finance-action-label">Salvar e continuar</span>
               </Button>
               <Button
                 variant="outline"
                 disabled={busy || uploading}
+                className={mode === "ATTENDANCE" ? "finance-attendance-action" : undefined}
                 onClick={() => void save("PRINT")}
               >
-                <Printer size={16} />
-                Salvar e imprimir
+                <span className="finance-action-icon"><Printer size={16} aria-hidden="true" /></span><span className="finance-action-label">Salvar e imprimir</span>
               </Button>
             </>
           )}

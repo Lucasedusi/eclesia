@@ -62,6 +62,11 @@ test("attendance groups tithe, worship and missions into one receipt", async ({
   await expect(page.getByTestId("receipt-item")).toHaveCount(3);
   await expect(page.getByTestId("receipt-item").filter({hasText:"Diácono"})).toHaveCount(1);
   await expect(page.getByText("R$ 270,00", { exact: true })).toBeVisible();
+  const paperControl = (await page.getByRole("combobox", { name: "Largura do papel", exact: true }).boundingBox())!;
+  const printControl = (await page.getByRole("button", { name: "Imprimir comprovante" }).boundingBox())!;
+  expect(Math.abs(paperControl.y - printControl.y)).toBeLessThan(2);
+  expect(Math.abs(paperControl.y + paperControl.height - printControl.y - printControl.height)).toBeLessThan(2);
+  await page.screenshot({ path: "tmp/finance-final-receipt-controls.png", fullPage: true });
   await page.evaluate(() => {
     window.print = () => {};
   });

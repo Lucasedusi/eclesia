@@ -34,7 +34,7 @@ test("attendance identifies first, masks currency and resets native validation",
     .getByRole("combobox", { name: "Categoria", exact: true })
     .selectOption(f.titheId);
   const money = page.getByRole("textbox", { name: "Valor (R$)", exact: true });
-  await money.fill("1234,5");
+  await money.fill("123450");
   await money.blur();
   await expect(money).toHaveValue("1.234,50");
   await page
@@ -164,7 +164,7 @@ test("gross ceiling and fixed accountant are saved for the chosen congregation a
   const cap = page.getByRole("textbox", {
     name: /Teto mensal da prebenda bruta/,
   });
-  await cap.fill("4000");
+  await cap.fill("400000");
   await cap.blur();
   await expect(cap).toHaveValue("4.000,00");
   const accountant = page

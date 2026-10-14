@@ -8,6 +8,7 @@ import {
 import {
   formatCurrencyInput,
   maskCurrencyInput,
+  formatPastedCurrency,
 } from "../utils/finance-money-mask";
 type Props = Omit<InputHTMLAttributes<HTMLInputElement>, "type"> & {
   signed?: boolean;
@@ -18,6 +19,8 @@ export function FinanceMoneyInput({
   onChange,
   onBlur,
   onFocus,
+  onPaste,
+  onKeyDown,
   signed = false,
   ...props
 }: Props) {
@@ -26,15 +29,13 @@ export function FinanceMoneyInput({
       ? ""
       : formatCurrencyInput(String(defaultValue), signed),
   );
-  const [focused, setFocused] = useState(false);
+  const pasted = useRef<string | null>(null);
   const input = useRef<HTMLInputElement>(null);
   const caret = useRef<number | null>(null);
   const displayed =
     value === undefined
       ? draft
-      : focused
-        ? maskCurrencyInput(String(value), signed)
-        : formatCurrencyInput(String(value), signed);
+      : formatCurrencyInput(String(value), signed);
   useLayoutEffect(() => {
     if (caret.current !== null && input.current === document.activeElement)
       input.current?.setSelectionRange(caret.current, caret.current);
@@ -50,20 +51,37 @@ export function FinanceMoneyInput({
         inputMode="decimal"
         value={displayed}
         onFocus={(e) => {
-          setFocused(true);
           onFocus?.(e);
+        }}
+        onPaste={(e) => {
+          onPaste?.(e);
+          if (!e.defaultPrevented) pasted.current = e.clipboardData.getData("text");
+        }}
+        onKeyDown={(e) => {
+          onKeyDown?.(e);
+          if (e.defaultPrevented) return;
+          const field = e.currentTarget;
+          const pos = field.selectionStart ?? 0;
+          if (field.selectionEnd !== pos) return;
+          // Delete a digit along with an adjacent formatting separator.
+          if (e.key === "Backspace" && /[.,]/.test(field.value[pos - 1] ?? ""))
+            field.setSelectionRange(Math.max(0, pos - 2), pos);
+          if (e.key === "Delete" && /[.,]/.test(field.value[pos] ?? ""))
+            field.setSelectionRange(pos, pos + 2);
         }}
         onChange={(e) => {
           const raw = e.currentTarget.value;
-          const count = raw
-            .slice(0, e.currentTarget.selectionStart ?? raw.length)
-            .replace(/[^\d,-]/g, "").length;
-          const next = maskCurrencyInput(raw, signed);
-          let position = 0,
-            seen = 0;
-          while (position < next.length && seen < count) {
-            if (/[\d,-]/.test(next[position])) seen++;
-            position++;
+          const rightDigits = raw
+            .slice(e.currentTarget.selectionStart ?? raw.length)
+            .replace(/\D/g, "").length;
+          const next = pasted.current !== null
+            ? formatPastedCurrency(raw, signed)
+            : maskCurrencyInput(raw, signed);
+          pasted.current = null;
+          let position = next.length, seen = 0;
+          while (position > 0 && seen < rightDigits) {
+            position--;
+            if (/\d/.test(next[position])) seen++;
           }
           caret.current = position;
           e.currentTarget.value = next;
@@ -71,7 +89,6 @@ export function FinanceMoneyInput({
           onChange?.(e);
         }}
         onBlur={(e) => {
-          setFocused(false);
           const next = formatCurrencyInput(e.currentTarget.value, signed);
           e.currentTarget.value = next;
           setDraft(next);

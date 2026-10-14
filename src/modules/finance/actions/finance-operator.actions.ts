@@ -20,6 +20,7 @@ export async function assignFinanceOperatorAction(
     });
     await assignFinanceOperator(context, value);
     revalidatePath("/financeiro", "layout");
+    revalidatePath("/usuarios");
     return { ok: true, data: null };
   } catch (error) {
     unstable_rethrow(error);

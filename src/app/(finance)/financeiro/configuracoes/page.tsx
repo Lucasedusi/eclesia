@@ -12,7 +12,6 @@ import {
   latestStatementMonth,
 } from "@/modules/finance/services/finance-statement.service";
 import { FinanceSettings } from "@/modules/finance/components/finance-settings";
-import { listFinanceOperators } from "@/modules/finance/services/finance-operator.service";
 import { todayLocal } from "@/modules/finance/utils/finance-period";
 async function Content({
   searchParams,
@@ -21,7 +20,7 @@ async function Content({
 }) {
   const { context, month } = await resolveFinancePage(searchParams, true),
     client = await createClient();
-  const [catalogs, rules, units, roles, operators, latestMonth] =
+  const [catalogs, rules, units, roles, latestMonth] =
     await Promise.all([
       listFinanceCatalogs(context),
       listStatementRules(context),
@@ -33,7 +32,6 @@ async function Content({
         .is("deleted_at", null)
         .eq("status", "ACTIVE")
         .order("name"),
-      listFinanceOperators(context),
       latestStatementMonth(context),
     ]);
   if (roles.error) throw new Error("UNAVAILABLE");
@@ -47,7 +45,6 @@ async function Content({
       roles={roles.data ?? []}
       rules={rules}
       units={units}
-      operators={operators}
     />
   );
 }

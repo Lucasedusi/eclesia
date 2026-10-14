@@ -1,5 +1,5 @@
 "use client";
-import { HandCoins, ShieldCheck } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import { FinanceEntryForm } from "./finance-entry-form";
 import type { FinanceCatalogs } from "../types/finance-catalog.types";
 import type { FinanceCapabilities } from "../types/finance.types";
@@ -19,7 +19,6 @@ export function FinanceAttendance(props: {
             Uma identificação. Todas as contribuições. Um comprovante.
           </p>
         </div>
-        <HandCoins color="#087F5B" size={32} />
       </div>
       <div>
         <section className="card stack">

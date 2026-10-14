@@ -1,9 +1,10 @@
 "use client";
+import { FinanceEmpty } from "./finance-empty";
 import { FinanceSkeleton } from "./finance-skeleton";
 import { useFinanceNavigation } from "./finance-shell";
 import { formatFinanceMonth } from "../utils/finance-period";
 import { useState } from "react";
-import { Plus, Pencil, SlidersHorizontal } from "lucide-react";
+import { Plus, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type {
   FinanceCatalogs,
@@ -17,8 +18,6 @@ import {
   methodLabels,
 } from "./finance-catalog-form";
 import { FinanceRuleEditor } from "./finance-rule-editor";
-import { FinanceOperators } from "./finance-operators";
-import type { FinanceOperator } from "../services/finance-operator.service";
 export function FinanceSettings({
   latestStatementMonth,
   currentMonth,
@@ -28,7 +27,6 @@ export function FinanceSettings({
   roles,
   rules,
   units,
-  operators,
 }: {
   latestStatementMonth: string | null;
   currentMonth: string;
@@ -38,11 +36,10 @@ export function FinanceSettings({
   roles: { id: string; name: string }[];
   rules: StatementRuleSet[];
   units: FinanceUnit[];
-  operators: FinanceOperator[];
 }) {
   const { isPending } = useFinanceNavigation();
   const [rulesDirty, setRulesDirty] = useState(false);
-  const [tab, setTab] = useState<CatalogEntity | "RULES" | "OPERATORS">(
+  const [tab, setTab] = useState<CatalogEntity | "RULES">(
       "DEPARTMENT",
     ),
     [editing, setEditing] = useState<{
@@ -55,7 +52,6 @@ export function FinanceSettings({
     { id: "CLASSIFICATION", label: "Classificações" },
     { id: "PAYMENT_METHOD", label: "Formas de pagamento" },
     { id: "RULES", label: "Regras do demonstrativo" },
-    { id: "OPERATORS", label: "Operadores" },
   ] as const;
   const rows: CatalogItem[] =
     tab === "DEPARTMENT"
@@ -94,7 +90,6 @@ export function FinanceSettings({
             Cadastros do campo e regras próprias de cada congregação.
           </p>
         </div>
-        <SlidersHorizontal size={28} color="#087F5B" />
       </div>
       <div className="tabs">
         {tabs.map((t) => (
@@ -116,9 +111,7 @@ export function FinanceSettings({
           </button>
         ))}
       </div>
-      {tab === "OPERATORS" ? (
-        <FinanceOperators unit={unit} units={units} operators={operators} />
-      ) : tab === "RULES" ? (
+      {tab === "RULES" ? (
         <FinanceRuleEditor
           key={`${unit}-${month}-${rules[0]?.id ?? "new"}`}
           latestStatementMonth={latestStatementMonth}
@@ -141,9 +134,9 @@ export function FinanceSettings({
           {isPending ? (
             <FinanceSkeleton table />
           ) : rows.length === 0 ? (
-            <div className="empty">
+            <FinanceEmpty>
               Nenhum cadastro por aqui. Comece adicionando o primeiro.
-            </div>
+            </FinanceEmpty>
           ) : (
             <div className="table-scroll">
               <table>
