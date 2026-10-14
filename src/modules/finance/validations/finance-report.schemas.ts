@@ -81,5 +81,6 @@ export const financeReportProjectionSchema = z.discriminatedUnion("type", [
     ...common,
     type: z.literal("SYNTHETIC"),
     categories: z.array(category),
+    cashboxCategories: z.array(category.extend({ cashboxId: z.uuid() })),
   }),
 ]);

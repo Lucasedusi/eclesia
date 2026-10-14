@@ -65,6 +65,20 @@ function fixture(
               },
             ]
           : [],
+        cashboxCategories: n
+          ? [
+              {
+                cashboxId: common.cashboxes[0].id,
+                categoryId: "cat",
+                categoryName: "Dízimos",
+                classificationId: "k",
+                classificationName: "Presbíteros",
+                direction: "INCOME",
+                amountCents: n * 1000,
+                count: n,
+              },
+            ]
+          : [],
       }
     : {
         ...common,
@@ -373,3 +387,273 @@ it("prints bank identification below its name and in continuation headers", asyn
     text.mockRestore();
   }
 });
+
+it("summarizes each cashbox with classified totals, compact typography and a closing summary", async () => {
+  const input = fixture(49, "SYNTHETIC");
+  if (input.type !== "SYNTHETIC") throw new Error("Synthetic fixture required");
+  const base = input.cashboxCategories[0];
+  input.cashboxCategories = [
+    { ...base, classificationName: "Jovens", amountCents: 20000, count: 20 },
+    {
+      ...base,
+      classificationId: "women",
+      classificationName: "Senhoras",
+      amountCents: 19000,
+      count: 19,
+    },
+    {
+      ...base,
+      categoryId: "offering",
+      categoryName: "Oferta de culto",
+      classificationId: null,
+      classificationName: null,
+      amountCents: 10000,
+      count: 10,
+    },
+  ];
+  input.cashboxes[0].bankDetails = {
+    bankName: "Banco Exemplo",
+    agency: "0001",
+    accountNumber: "12345-6",
+  };
+  input.movements = [
+    {
+      id: base.cashboxId,
+      date: "2026-10-01",
+      kind: "ADJUSTMENT",
+      description: "Detalhe que não pertence ao resumo",
+      amountCents: 0,
+    },
+  ];
+  const draw = vi.spyOn(PDFPage.prototype, "drawText");
+  try {
+    const bytes = await createFinanceReportPdf(input);
+    const texts = draw.mock.calls.map(([text]) => text);
+    expect(texts).toContain("RELATÓRIO FINANCEIRO SINTÉTICO");
+    expect(texts.some((t) => t.startsWith("Endereço:"))).toBe(true);
+    expect(texts).toContain("ENTRADAS");
+    expect(texts).toContain("SAÍDAS");
+    expect(texts).toContain("Subtotal Dízimos");
+    expect(texts).not.toContain("Subtotal Oferta de culto");
+    expect(texts).not.toContain("Subtotal da categoria");
+    expect(texts).not.toContain("Lançamentos");
+    expect(texts).not.toContain("Outros movimentos de saldo");
+    expect(texts).not.toContain(input.movements[0].description);
+    expect(
+      texts.filter((t) => t === "Saldo anterior").length,
+    ).toBeGreaterThanOrEqual(3); // initial, balance table, final
+    expect(texts).toContain("Resumo final do período");
+    expect(texts).toContain("Resumo por departamento");
+    expect(
+      texts.some((t) => t.includes("Agência 0001") && t.includes("12345-6")),
+    ).toBe(true);
+    const parent = texts.indexOf("Dízimos"),
+      child = texts.indexOf("Jovens");
+    expect(draw.mock.calls[child][1]?.size).toBe(7.5);
+    expect(draw.mock.calls[child][1]?.x).toBeGreaterThan(
+      draw.mock.calls[parent][1]?.x ?? 0,
+    );
+    expect(draw.mock.instances[parent]).toBe(draw.mock.instances[child]);
+    const pdf = await PDFDocument.load(bytes);
+    expect(pdf.getPageCount()).toBeLessThanOrEqual(2);
+    if (process.env.REPORT_PDF_QA)
+      await writeFile("tmp/reports/sintetico-classificado.pdf", bytes);
+  } finally {
+    draw.mockRestore();
+  }
+});
+
+it("keeps same-named synthetic cashboxes separate without forcing a new page for each", async () => {
+  const input = fixture(0, "SYNTHETIC");
+  input.departments = [];
+  input.cashboxes.push({
+    ...input.cashboxes[0],
+    id: "00000000-0000-4000-8000-000000000003",
+  });
+  input.summary.openingCents *= 2;
+  input.summary.closingCents *= 2;
+  const draw = vi.spyOn(PDFPage.prototype, "drawText");
+  try {
+    const bytes = await createFinanceReportPdf(input);
+    const entries = draw.mock.calls.flatMap(([text], i) =>
+      text === "ENTRADAS" ? [i] : [],
+    );
+    expect(entries).toHaveLength(2);
+    expect(draw.mock.instances[entries[0]]).toBe(
+      draw.mock.instances[entries[1]],
+    );
+    expect(
+      draw.mock.calls.filter(([text]) => text === "TOTAL DE ENTRADAS"),
+    ).toHaveLength(2);
+    if (process.env.REPORT_PDF_QA)
+      await writeFile("tmp/reports/sintetico-dois-caixas.pdf", bytes);
+  } finally {
+    draw.mockRestore();
+  }
+});
+
+it("repeats synthetic category context across pages and keeps the last row with its subtotal", async () => {
+  const input = fixture(49, "SYNTHETIC");
+  if (input.type !== "SYNTHETIC") throw new Error("Synthetic fixture required");
+  const base = input.cashboxCategories[0];
+  input.cashboxCategories = Array.from({ length: 49 }, (_, i) => ({
+    ...base,
+    classificationId: `class-${i}`,
+    classificationName: `Classificação ${i + 1}`,
+    amountCents: 1000,
+    count: 1,
+  }));
+  const draw = vi.spyOn(PDFPage.prototype, "drawText");
+  try {
+    const bytes = await createFinanceReportPdf(input);
+    const texts = draw.mock.calls.map(([text]) => text);
+    expect(texts).toContain("Dízimos · continuação");
+    for (let i = 1; i <= 49; i++)
+      expect(texts.filter((t) => t === `Classificação ${i}`)).toHaveLength(1);
+    expect(draw.mock.instances[texts.indexOf("Classificação 49")]).toBe(
+      draw.mock.instances[texts.indexOf("Subtotal Dízimos")],
+    );
+    for (const [text, options] of draw.mock.calls) {
+      expect(options!.y).toBeGreaterThanOrEqual(20);
+      expect(
+        options!.x! + options!.font!.widthOfTextAtSize(text, options!.size!),
+      ).toBeLessThanOrEqual(562);
+    }
+    const finalSummary = texts.indexOf("Resumo final do período");
+    const issuedNotice = texts.findIndex((t) => t.startsWith("49 lançamento"));
+    expect(draw.mock.instances[finalSummary]).toBe(
+      draw.mock.instances[issuedNotice],
+    );
+    if (process.env.REPORT_PDF_QA)
+      await writeFile("tmp/reports/sintetico-paginado.pdf", bytes);
+  } finally {
+    draw.mockRestore();
+  }
+});
+
+it("prints income and expenses of each synthetic cashbox without mixing same-named accounts", async () => {
+  const input = fixture(4, "SYNTHETIC");
+  if (input.type !== "SYNTHETIC") throw new Error("Synthetic fixture required");
+  const base = input.cashboxCategories[0];
+  const otherId = "00000000-0000-4000-8000-000000000003";
+  input.cashboxes = [
+    {
+      ...input.cashboxes[0],
+      incomeCents: 1000,
+      expenseCents: 200,
+      closingCents: -9200,
+      count: 2,
+    },
+    {
+      ...input.cashboxes[0],
+      id: otherId,
+      incomeCents: 2000,
+      expenseCents: 300,
+      closingCents: -8300,
+      count: 2,
+      bankDetails: {
+        bankName: "Banco Exemplo",
+        agency: "0001",
+        accountNumber: "12345-6",
+      },
+    },
+  ];
+  input.cashboxCategories = input.cashboxes.flatMap((box, i) => [
+    {
+      ...base,
+      cashboxId: box.id,
+      classificationName: i ? "Senhoras" : "Jovens",
+      amountCents: box.incomeCents,
+      count: 1,
+    },
+    {
+      ...base,
+      cashboxId: box.id,
+      categoryId: "expense",
+      categoryName: "Despesas prediais",
+      classificationId: null,
+      classificationName: null,
+      direction: "EXPENSE" as const,
+      amountCents: box.expenseCents,
+      count: 1,
+    },
+  ]);
+  Object.assign(input.summary, {
+    openingCents: -20000,
+    incomeCents: 3000,
+    expenseCents: 500,
+    closingCents: -17500,
+    count: 4,
+  });
+  input.departments = [
+    { id: "dep", name: "Tesouraria", incomeCents: 3000, expenseCents: 500 },
+  ];
+  const draw = vi.spyOn(PDFPage.prototype, "drawText");
+  try {
+    const bytes = await createFinanceReportPdf(input);
+    const text = draw.mock.calls.map(([text]) => text);
+    const sections = text.flatMap((t, i) =>
+      t === "ENTRADAS" || t === "SAÍDAS" ? [i] : [],
+    );
+    expect(sections.map((i) => text[i])).toEqual([
+      "ENTRADAS",
+      "SAÍDAS",
+      "ENTRADAS",
+      "SAÍDAS",
+    ]);
+    expect(text.slice(sections[0], sections[1])).toContain("Jovens");
+    expect(text.slice(sections[0], sections[1])).not.toContain("Senhoras");
+    expect(text.slice(sections[1], sections[2])).toContain("R$ 2,00");
+    expect(text.slice(sections[2], sections[3])).toContain("Senhoras");
+    expect(text.slice(sections[2], sections[3])).not.toContain("Jovens");
+    expect(text.slice(sections[3])).toContain("R$ 3,00");
+    if (process.env.REPORT_PDF_QA)
+      await writeFile("tmp/reports/sintetico-caixas-movimentados.pdf", bytes);
+  } finally {
+    draw.mockRestore();
+  }
+});
+
+it.each([11, 12, 13])(
+  "keeps a synthetic cashbox heading with its first classified group near a page break (%i)",
+  async (n) => {
+    const input = fixture(8, "SYNTHETIC");
+    if (input.type !== "SYNTHETIC")
+      throw new Error("Synthetic fixture required");
+    const base = input.cashboxCategories[0];
+    const otherId = "00000000-0000-4000-8000-000000000003";
+    input.cashboxes.push({
+      ...input.cashboxes[0],
+      id: otherId,
+      name: "Segundo caixa",
+    });
+    input.cashboxCategories = [
+      ...Array.from({ length: n }, (_, i) => ({
+        ...base,
+        classificationId: `c-${i}`,
+        classificationName: `Grupo ${i}`,
+        amountCents: 1000,
+        count: 1,
+      })),
+      {
+        ...base,
+        cashboxId: otherId,
+        classificationName: "Grupo do segundo caixa",
+        amountCents: 1000,
+        count: 1,
+      },
+    ];
+    const draw = vi.spyOn(PDFPage.prototype, "drawText");
+    try {
+      await createFinanceReportPdf(input);
+      const texts = draw.mock.calls.map(([text]) => text);
+      const entries = texts.flatMap((t, i) => (t === "ENTRADAS" ? [i] : []));
+      expect(
+        draw.mock.instances[entries[1]] ===
+          draw.mock.instances[texts.indexOf("Grupo do segundo caixa")],
+      ).toBe(true);
+    } finally {
+      draw.mockRestore();
+    }
+  },
+);

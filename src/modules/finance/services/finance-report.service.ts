@@ -57,37 +57,36 @@ export async function getFinanceReport(
     ]) === BigInt(s.closingCents);
   const s = projection.summary;
   const rows =
-    projection.type === "ANALYTIC" ? projection.rows : projection.categories;
+    projection.type === "ANALYTIC"
+      ? projection.rows
+      : projection.cashboxCategories;
   const boxRows = new Map<
     string,
     { income: bigint; expense: bigint; count: number }
   >();
-  if (projection.type === "ANALYTIC") {
-    for (const row of projection.rows) {
-      const sums = boxRows.get(row.cashboxId) ?? {
-        income: BigInt(0),
-        expense: BigInt(0),
-        count: 0,
-      };
-      sums[row.direction === "INCOME" ? "income" : "expense"] += BigInt(
-        row.amountCents,
-      );
-      sums.count++;
-      boxRows.set(row.cashboxId, sums);
-    }
+  for (const row of rows) {
+    const sums = boxRows.get(row.cashboxId) ?? {
+      income: BigInt(0),
+      expense: BigInt(0),
+      count: 0,
+    };
+    sums[row.direction === "INCOME" ? "income" : "expense"] += BigInt(
+      row.amountCents,
+    );
+    sums.count += "count" in row ? row.count : 1;
+    boxRows.set(row.cashboxId, sums);
   }
   const boxIds = new Set(projection.cashboxes.map((box) => box.id));
   const consistent =
-    (projection.type !== "ANALYTIC" ||
-      ([...boxRows.keys()].every((id) => boxIds.has(id)) &&
-        projection.cashboxes.every((box) => {
-          const sums = boxRows.get(box.id);
-          return (
-            (sums?.income ?? BigInt(0)) === BigInt(box.incomeCents) &&
-            (sums?.expense ?? BigInt(0)) === BigInt(box.expenseCents) &&
-            (sums?.count ?? 0) === box.count
-          );
-        }))) &&
+    [...boxRows.keys()].every((id) => boxIds.has(id)) &&
+    projection.cashboxes.every((box) => {
+      const sums = boxRows.get(box.id);
+      return (
+        (sums?.income ?? BigInt(0)) === BigInt(box.incomeCents) &&
+        (sums?.expense ?? BigInt(0)) === BigInt(box.expenseCents) &&
+        (sums?.count ?? 0) === box.count
+      );
+    }) &&
     reconciles(s) &&
     projection.cashboxes.every(reconciles) &&
     (Object.keys(s) as (keyof FinanceReportSummary)[]).every(

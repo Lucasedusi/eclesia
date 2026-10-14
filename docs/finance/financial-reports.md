@@ -13,10 +13,10 @@ A nova aba, o download e a impressão utilizam o mesmo arquivo. Não há prévia
 
 ## Qual modelo escolher
 
-- **Sintético:** resume por categoria e classificação registrada dos dízimos, reunindo dinheiro, Pix e outros meios dos caixas selecionados. Não lista os nomes de contribuintes. A quantidade indica lançamentos, não pessoas distintas.
+- **Sintético:** organiza entradas e saídas de cada caixa/conta, resumidas por categoria. Os dízimos têm classificações recuadas sob a categoria e um subtotal identificado. Categorias sem classificações aparecem em uma única linha com seu total. Não lista nomes, descrições individuais, meios de pagamento ou quantidade na tabela principal. Caixas podem compartilhar uma página quando houver espaço; cabeçalhos e categorias continuam identificados nas páginas seguintes.
 - **Analítico:** organiza primeiro por caixa/conta: entradas, seguidas das saídas do mesmo caixa. Cada novo caixa começa em outra página. As tabelas identificam pessoa ou favorecido, descrição, departamento e forma de pagamento; o caixa aparece no título da seção. Os dízimos são agrupados pela classificação registrada no lançamento, com um subtotal identificado por grupo (por exemplo, “Subtotal Dízimos — Jovem”). Outras categorias têm seu subtotal com o nome da categoria. Referências de documentos aparecem quando registradas.
 
-Ambos têm cabeçalho da igreja, resumo do mês, saldos por caixa e identificação da emissão/páginas. O resumo por departamento permanece no sintético. O analítico inclui o endereço cadastrado da congregação; quando não houver endereço, informa essa ausência. O título em caixa alta fica à esquerda e a congregação/mês à direita. O analítico separa os indicadores iniciais das seções com um espaço maior e repete os mesmos quatro indicadores no “Resumo final do período”, respeitando o filtro de caixa. Nas contas bancárias, banco, agência e conta cadastrados aparecem discretamente abaixo do nome e nas páginas de continuação; dados não preenchidos são omitidos. Todos os departamentos entram, mesmo os que não participam da base de repasses. O mês é definido pela data financeira do lançamento.
+Ambos têm cabeçalho da igreja, resumo do mês, saldos por caixa e identificação da emissão/páginas. O resumo por departamento permanece no sintético. Ambos incluem o endereço cadastrado da congregação; quando não houver endereço, informa essa ausência. O título em caixa alta fica à esquerda e a congregação/mês à direita. Cada modelo separa os indicadores iniciais das seções com um espaço maior e repete os mesmos quatro indicadores no “Resumo final do período”, respeitando o filtro de caixa. Nas contas bancárias, banco, agência e conta cadastrados aparecem discretamente abaixo do nome e nas páginas de continuação; dados não preenchidos são omitidos. Todos os departamentos entram, mesmo os que não participam da base de repasses. O mês é definido pela data financeira do lançamento.
 
 ## Como conferir os valores
 
@@ -25,7 +25,7 @@ Ambos têm cabeçalho da igreja, resumo do mês, saldos por caixa e identificaç
 - No consolidado da congregação, transferências internas não alteram o saldo total nem contam como receitas/despesas.
 - No recorte de um caixa, a transferência de saída reduz seu saldo e a de entrada aumenta seu saldo.
 - Resultado do mês significa entradas menos saídas; pode ser diferente do saldo final.
-- Aberturas e ajustes ficam separados das entradas/saídas comuns. No analítico, seus efeitos são explicados em observações compactas abaixo de Caixas e contas; a tabela detalhada de outros movimentos permanece apenas no sintético.
+- Aberturas e ajustes ficam separados das entradas/saídas comuns. Seus efeitos são explicados em observações compactas junto aos saldos por caixa. Nenhum modelo repete uma tabela detalhada de outros movimentos. No sintético, o encerramento reúne o resumo por departamento, os saldos por caixa e os quatro indicadores finais.
 - Cancelados não entram na movimentação; correções válidas são consideradas junto dos efeitos de reversão no saldo.
 - O cargo atual do membro não muda a classificação registrada do dízimo.
 
@@ -41,7 +41,7 @@ O demonstrativo calcula valores orientativos de repasse, prebenda e outros itens
 
 ## Impressão
 
-A4 retrato, fontes incorporadas, texto pesquisável e tabelas de 7,5 pontos no analítico e 9 pontos no sintético. O analítico destaca ENTRADAS/TOTAL DE ENTRADAS em verde e SAÍDAS/TOTAL DE SAÍDAS em vermelho, com categorias em negrito. A distinção entre entradas/saídas e o sinal dos valores continuam claros em preto e branco. A impressão usa os controles do navegador/visualizador de PDF; o sistema não escolhe a impressora automaticamente.
+A4 retrato, fontes incorporadas, texto pesquisável e tabelas de 7,5 pontos nos dois modelos, com cabeçalhos numéricos alinhados aos valores à direita. Ambos destacam ENTRADAS/TOTAL DE ENTRADAS em verde e SAÍDAS/TOTAL DE SAÍDAS em vermelho, com categorias em negrito. A distinção entre entradas/saídas e o sinal dos valores continuam claros em preto e branco. A impressão usa os controles do navegador/visualizador de PDF; o sistema não escolhe a impressora automaticamente.
 
 ## Descrição de contribuições coletivas
 

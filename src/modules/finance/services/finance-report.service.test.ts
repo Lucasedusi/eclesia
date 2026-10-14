@@ -56,10 +56,18 @@ const projection = {
     },
   ],
 };
+const syntheticProjection = {
+  ...projection,
+  cashboxCategories: projection.categories.map((c) => ({
+    ...c,
+    cashboxId: ctx.congregationId,
+  })),
+};
 beforeEach(() => {
-  m.rpc
-    .mockReset()
-    .mockResolvedValue({ data: structuredClone(projection), error: null });
+  m.rpc.mockReset().mockResolvedValue({
+    data: structuredClone(syntheticProjection),
+    error: null,
+  });
   m.logo.mockResolvedValue(null);
   m.from.mockImplementation((table: string) => {
     const q = {
@@ -122,7 +130,7 @@ it("denies capability before reading any report", async () => {
 });
 it("rejects inconsistent totals", async () => {
   m.rpc.mockResolvedValue({
-    data: { ...projection, summary: { ...summary, closingCents: 1 } },
+    data: { ...syntheticProjection, summary: { ...summary, closingCents: 1 } },
     error: null,
   });
   await expect(
@@ -198,4 +206,29 @@ it("rejects analytic rows assigned to an unknown or unbalanced cashbox", async (
   await expect(
     getFinanceReport(ctx, { type: "ANALYTIC", month: "2026-10" }),
   ).rejects.toThrow("REPORT_RECONCILIATION_REQUIRED");
+});
+
+it("rejects synthetic summaries assigned to unknown boxes or with mismatched counts", async () => {
+  for (const invalid of [
+    {
+      ...syntheticProjection,
+      cashboxCategories: syntheticProjection.cashboxCategories.map((c) => ({
+        ...c,
+        cashboxId: "30000000-0000-4000-8000-000000000099",
+      })),
+    },
+    {
+      ...syntheticProjection,
+      cashboxCategories: syntheticProjection.cashboxCategories.map((c) => ({
+        ...c,
+        count: c.count + 1,
+      })),
+    },
+    { ...syntheticProjection, cashboxCategories: [] },
+  ]) {
+    m.rpc.mockResolvedValue({ data: invalid, error: null });
+    await expect(
+      getFinanceReport(ctx, { type: "SYNTHETIC", month: "2026-10" }),
+    ).rejects.toThrow("REPORT_RECONCILIATION_REQUIRED");
+  }
 });

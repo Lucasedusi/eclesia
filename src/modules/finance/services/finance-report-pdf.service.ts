@@ -98,13 +98,13 @@ export async function createFinanceReportPdf(
         draw(l, M, y, 8.5, regular, muted);
         y += 11;
       }
-      if (analytic && activeCashboxName) {
+      if (activeCashboxName) {
         for (const l of wrap(activeCashboxName, CW, 8, bold)) {
           draw(l, M, y, 8, bold, muted);
           y += 11;
         }
       }
-      if (analytic && activeBankDetails) {
+      if (activeBankDetails) {
         for (const l of wrap(activeBankDetails, CW, 7)) {
           draw(l, M, y, 7, regular, muted);
           y += 10;
@@ -139,6 +139,12 @@ export async function createFinanceReportPdf(
     right?: number[];
     color?: ReturnType<typeof rgb>;
     keepAfter?: number;
+    rowStyles?: {
+      indent?: number;
+      gap?: number;
+      keepNext?: boolean;
+      continuationGroup?: string;
+    }[];
   };
   type Cell = string | { text: string; bold?: boolean }[];
   function table(options: TableOptions, rows: Cell[][]) {
@@ -148,11 +154,13 @@ export async function createFinanceReportPdf(
       widths,
       right = [],
       color = ink,
-      keepAfter = 37,
+      keepAfter = analytic ? 37 : 10,
+      rowStyles = [],
     } = options;
-    const bodySize = analytic ? 7.5 : 9;
-    const headerSize = analytic ? 7 : 8;
-    const leading = analytic ? 10 : 12;
+    const bodySize = 7.5;
+    const headerSize = 7;
+    const leading = 10;
+    const padding = analytic ? 12 : 6;
     function header(continued = false) {
       ensure(49);
       if (continued) {
@@ -165,7 +173,7 @@ export async function createFinanceReportPdf(
       const lines = headers.map((v, i) =>
         wrap(v, widths[i] - 12, headerSize, bold),
       );
-      const hh = Math.max(...lines.map((l) => l.length)) * 11 + 12;
+      const hh = Math.max(...lines.map((l) => l.length)) * 11 + padding;
       page.drawRectangle({
         x: M,
         y: H - y - hh,
@@ -178,10 +186,10 @@ export async function createFinanceReportPdf(
         ls.forEach((l, j) =>
           draw(
             l,
-            analytic && right.includes(i)
+            right.includes(i)
               ? x + widths[i] - 6 - bold.widthOfTextAtSize(l, headerSize)
               : x + 6,
-            y + 6 + j * 11,
+            y + padding / 2 + j * 11,
             headerSize,
             bold,
             muted,
@@ -192,37 +200,79 @@ export async function createFinanceReportPdf(
       y += hh;
     }
     header();
-    for (const [rowIndex, row] of rows.entries()) {
-      const cells = row.map((v, i) =>
+    const cellLines = (row: Cell[], indent = 0) =>
+      row.map((v, i) =>
         (typeof v === "string" ? [{ text: v }] : v).flatMap((part) => {
           const font = "bold" in part && part.bold ? bold : regular;
-          return wrap(part.text, widths[i] - 12, bodySize, font).map(
-            (text) => ({ text, font }),
-          );
+          return wrap(
+            part.text,
+            widths[i] - 12 - (i === 0 ? indent : 0),
+            bodySize,
+            font,
+          ).map((text) => ({ text, font }));
         }),
       );
+    for (const [rowIndex, row] of rows.entries()) {
+      const style = rowStyles[rowIndex];
+      const indent = style?.indent ?? 0;
+      const cells = cellLines(row, indent);
       const totalLines = Math.max(...cells.map((ls) => ls.length));
+      let nextHeight = 0;
+      for (
+        let next = rowIndex + 1;
+        rowStyles[next - 1]?.keepNext && rows[next];
+        next++
+      ) {
+        nextHeight +=
+          Math.max(
+            ...cellLines(rows[next], rowStyles[next]?.indent).map(
+              (ls) => ls.length,
+            ),
+          ) *
+            leading +
+          padding +
+          (rowStyles[next]?.gap ?? 0) +
+          (next === rows.length - 1 ? keepAfter : 0);
+      }
+      const continuation = () => {
+        header(true);
+        if (style?.continuationGroup) {
+          for (const l of wrap(
+            `${style.continuationGroup} · continuação`,
+            widths[0] - 12,
+            bodySize,
+            bold,
+          )) {
+            draw(l, M + 6, y + 3, bodySize, bold);
+            y += leading;
+          }
+          y += padding;
+        }
+      };
       let offset = 0;
       // Keep ordinary rows intact; split only a row larger than a whole page.
       if (
         y +
           totalLines * leading +
-          12 +
+          padding +
+          nextHeight +
+          (style?.gap ?? 0) +
           (rowIndex === rows.length - 1 ? keepAfter : 0) >
           BOTTOM &&
-        totalLines * leading + 12 < 620
+        totalLines * leading + padding < 620
       ) {
         newPage();
-        header(true);
+        continuation();
       }
+      y += style?.gap ?? 0;
       while (offset < totalLines) {
         if (BOTTOM - y < 30) {
           newPage();
-          header(true);
+          continuation();
         }
         const count = Math.min(
           totalLines - offset,
-          Math.floor((BOTTOM - y - 12) / leading),
+          Math.floor((BOTTOM - y - padding) / leading),
         );
         let x = M;
         cells.forEach((ls, i) => {
@@ -231,8 +281,8 @@ export async function createFinanceReportPdf(
               l,
               right.includes(i)
                 ? x + widths[i] - 6 - font.widthOfTextAtSize(l, bodySize)
-                : x + 6,
-              y + 6 + j * leading,
+                : x + 6 + (i === 0 ? indent : 0),
+              y + padding / 2 + j * leading,
               bodySize,
               font,
               i === row.length - 1 ? color : ink,
@@ -240,7 +290,7 @@ export async function createFinanceReportPdf(
           );
           x += widths[i];
         });
-        y += count * leading + 12;
+        y += count * leading + padding;
         rule(y);
         offset += count;
         if (offset < totalLines) {
@@ -255,25 +305,11 @@ export async function createFinanceReportPdf(
             muted,
             3,
           );
-          header(true);
+          continuation();
         }
       }
     }
     y += 8;
-  }
-  function total(label: string, amount: number, color = ink) {
-    ensure(29);
-    const value = formatMoney(amount);
-    draw(label, M + 6, y + 5, 9, bold, color);
-    draw(
-      value,
-      W - M - 6 - bold.widthOfTextAtSize(value, 9),
-      y + 5,
-      9,
-      bold,
-      color,
-    );
-    y += 27;
   }
   function band(
     label: string,
@@ -281,14 +317,15 @@ export async function createFinanceReportPdf(
     amount?: number,
     cashbox?: string,
     bankDetails?: string,
+    followingHeight = analytic ? 97 : 75,
   ) {
     const boxLines = cashbox ? wrap(cashbox, CW * 0.65, 9, bold) : [];
     const detailLines = bankDetails ? wrap(bankDetails, CW * 0.65, 7) : [];
     const height = Math.max(
-      28,
-      boxLines.length * 12 + detailLines.length * 10 + 16,
+      analytic ? 28 : 24,
+      boxLines.length * 12 + detailLines.length * 10 + (analytic ? 16 : 12),
     );
-    ensure(amount === undefined ? height + 97 : height + 4);
+    ensure(amount === undefined ? height + followingHeight : height + 4);
     page.drawRectangle({ x: M, y: H - y - height, width: CW, height, color });
     boxLines.forEach((l, i) =>
       draw(
@@ -329,7 +366,7 @@ export async function createFinanceReportPdf(
         rgb(1, 1, 1),
       );
     }
-    y += height + 12;
+    y += height + (analytic ? 12 : 8);
   }
   function subtotal(
     label: string,
@@ -401,15 +438,13 @@ export async function createFinanceReportPdf(
     CW - logoWidth,
     8.5,
   );
-  const addressLines = analytic
-    ? wrap(
-        data.congregationAddress
-          ? `Endereço: ${data.congregationAddress}`
-          : "Endereço não informado",
-        CW - logoWidth,
-        8,
-      )
-    : [];
+  const addressLines = wrap(
+    data.congregationAddress
+      ? `Endereço: ${data.congregationAddress}`
+      : "Endereço não informado",
+    CW - logoWidth,
+    8,
+  );
   const identityHeight =
     churchLines.length * 16 +
     identityLines.length * 12 +
@@ -418,12 +453,11 @@ export async function createFinanceReportPdf(
   if (logo)
     page!.drawImage(logo.image, {
       x: M,
-      y:
-        H - M - logo.height - (analytic ? (headerHeight - logo.height) / 2 : 0),
+      y: H - M - logo.height - (headerHeight - logo.height) / 2,
       width: logo.width,
       height: logo.height,
     });
-  if (analytic) y += (headerHeight - identityHeight) / 2;
+  y += (headerHeight - identityHeight) / 2;
   for (const l of churchLines) {
     draw(l, titleX, y, 12, bold);
     y += 16;
@@ -436,11 +470,17 @@ export async function createFinanceReportPdf(
     draw(l, titleX, y, 8, regular, muted);
     y += 11;
   }
-  y = (analytic ? M + headerHeight : Math.max(y, M + 42)) + 12;
+  y = M + headerHeight + 12;
   rule(y);
   y += 17;
-  if (analytic) {
-    draw("RELATÓRIO FINANCEIRO ANALÍTICO", M, y, 10, bold);
+  {
+    draw(
+      `RELATÓRIO FINANCEIRO ${kind.toLocaleUpperCase("pt-BR")}`,
+      M,
+      y,
+      10,
+      bold,
+    );
     const unitLines = wrap(data.congregationName, 220, 9, bold);
     unitLines.forEach((l, i) =>
       draw(l, W - M - bold.widthOfTextAtSize(l, 9), y + i * 12, 9, bold),
@@ -454,24 +494,6 @@ export async function createFinanceReportPdf(
       muted,
     );
     y += Math.max(30, unitLines.length * 12 + 23);
-  } else {
-    draw(
-      `Relatório financeiro ${kind.toLocaleLowerCase("pt-BR")}`,
-      M,
-      y,
-      15,
-      bold,
-    );
-    y += 24;
-    paragraph(`${data.congregationName} · ${month}`, 10, ink, 3);
-    paragraph(
-      data.cashboxName
-        ? `Caixa / conta: ${data.cashboxName}`
-        : "Todos os caixas e contas da congregação",
-      8.5,
-      muted,
-      8,
-    );
   }
   const s = data.summary;
   const metrics = [
@@ -507,87 +529,129 @@ export async function createFinanceReportPdf(
     y += 63;
   }
   indicators();
-  if (analytic) y += 20;
-  if (!analytic)
-    paragraph(
-      `Resultado do mês (entradas − saídas): ${formatMoney(s.incomeCents - s.expenseCents)}`,
-      9,
-      muted,
-      3,
-    );
-  const extras = [
-    s.openingMovementCents
-      ? `aberturas ${formatMoney(s.openingMovementCents)}`
-      : null,
-    s.adjustmentCents ? `ajustes ${formatMoney(s.adjustmentCents)}` : null,
-    s.transferNetCents
-      ? `transferências líquidas ${formatMoney(s.transferNetCents)}`
-      : null,
-  ].filter(Boolean);
-  if (!analytic && extras.length)
-    paragraph(`Outros efeitos no saldo: ${extras.join(" · ")}.`, 8.5, muted, 3);
+  y += 20;
   const directions = ["INCOME", "EXPENSE"] as const;
-  const sections =
-    data.type === "ANALYTIC"
-      ? data.cashboxes.flatMap((box) =>
-          directions.map((direction) => ({ direction, box })),
-        )
-      : directions.map((direction) => ({ direction, box: null }));
+  const sections = data.cashboxes.flatMap((box) =>
+    directions.map((direction) => ({ direction, box })),
+  );
+  if (!analytic && !sections.length)
+    paragraph("Nenhuma movimentação registrada no período.", 7.5);
   for (const [sectionIndex, { direction, box }] of sections.entries()) {
-    if (analytic && direction === "INCOME") {
+    if (direction === "INCOME") {
       activeCashboxName = box?.name ?? "";
       activeBankDetails = box ? bankDescription(box) : "";
-      if (sectionIndex > 0) newPage();
+      if (analytic && sectionIndex > 0) newPage();
+      else if (!analytic && sectionIndex > 0) y += 16;
     }
     const name = direction === "INCOME" ? "Entradas" : "Saídas",
       color = direction === "INCOME" ? green : red;
-    if (analytic) {
-      y += direction === "EXPENSE" ? 16 : 8;
-      band(name, color, undefined, box?.name, activeBankDetails);
-    } else heading(`${name} por categoria`, color);
+    y += direction === "EXPENSE" ? (analytic ? 16 : 12) : 8;
     if (data.type === "SYNTHETIC") {
-      const categories = data.categories.filter(
-        (c) => c.direction === direction,
+      const categories = data.cashboxCategories.filter(
+        (c) => c.direction === direction && c.cashboxId === box.id,
       );
-      if (!categories.length)
+      if (!categories.length) {
+        band(name, color, undefined, box.name, activeBankDetails);
         paragraph(
           `Nenhuma ${direction === "INCOME" ? "entrada registrada" : "saída registrada"} no período.`,
           9,
         );
-      else {
-        const categoryRows: string[][] = [];
+      } else {
+        const categoryRows: Cell[][] = [];
+        const rowStyles: NonNullable<TableOptions["rowStyles"]> = [];
         for (const group of Map.groupBy(
           categories,
           (c) => c.categoryId,
         ).values()) {
-          categoryRows.push(
-            ...group.map((c) => [
-              [c.categoryName, c.classificationName]
-                .filter(Boolean)
-                .join(" · "),
-              String(c.count),
-              formatMoney(c.amountCents),
-            ]),
+          const names = [...new Set(group.map((c) => c.categoryName))].join(
+            " / ",
           );
-          if (group.length > 1)
+          const amount = group.reduce((sum, c) => sum + c.amountCents, 0);
+          const classified = group.some(
+            (c) => c.classificationId || c.classificationName,
+          );
+          const gap = categoryRows.length ? 10 : 0;
+          if (classified) {
+            categoryRows.push([[{ text: names, bold: true }], ""]);
+            rowStyles.push({ gap, keepNext: true });
+            const classifications = groupReportClassifications(group);
+            for (const [index, classification] of classifications.entries()) {
+              categoryRows.push([
+                classification.name,
+                formatMoney(classification.totalCents),
+              ]);
+              rowStyles.push({
+                indent: 12,
+                keepNext: index === classifications.length - 1,
+                continuationGroup: names,
+              });
+            }
             categoryRows.push([
-              "Subtotal da categoria",
-              String(group.reduce((a, c) => a + c.count, 0)),
-              formatMoney(group.reduce((a, c) => a + c.amountCents, 0)),
+              [{ text: `Subtotal ${names}`, bold: true }],
+              [{ text: formatMoney(amount), bold: true }],
             ]);
+            rowStyles.push({ continuationGroup: names });
+          } else {
+            categoryRows.push([
+              [{ text: names, bold: true }],
+              [{ text: formatMoney(amount), bold: true }],
+            ]);
+            rowStyles.push({ gap });
+          }
         }
+        // Reserve the section header together with the first category and its
+        // first classification (and subtotal when it is a single-row group).
+        let firstRowsHeight = 8 + 17; // band gap + table header
+        for (let i = 0; i < categoryRows.length; i++) {
+          const height =
+            Math.max(
+              ...categoryRows[i].map((cell, column) =>
+                (typeof cell === "string" ? [{ text: cell }] : cell).reduce(
+                  (lines, part) =>
+                    lines +
+                    wrap(
+                      part.text,
+                      (column === 0
+                        ? CW - 110 - (rowStyles[i]?.indent ?? 0)
+                        : 110) - 12,
+                      7.5,
+                      "bold" in part && part.bold ? bold : regular,
+                    ).length,
+                  0,
+                ),
+              ),
+            ) *
+              10 +
+            6;
+          firstRowsHeight +=
+            height +
+            (rowStyles[i]?.gap ?? 0) +
+            (i === categoryRows.length - 1 ? 32 : 0);
+          if (!rowStyles[i]?.keepNext) break;
+        }
+        band(
+          name,
+          color,
+          undefined,
+          box.name,
+          activeBankDetails,
+          firstRowsHeight,
+        );
         table(
           {
-            title: name,
-            headers: ["Categoria / classificação", "Lançamentos", "Total"],
-            widths: [CW - 190, 80, 110],
-            right: [1, 2],
+            title: `${name} · ${box.name}`,
+            headers: ["Categoria / classificação", "Total"],
+            widths: [CW - 110, 110],
+            right: [1],
             color,
+            rowStyles,
+            keepAfter: 32,
           },
           categoryRows,
         );
       }
     } else {
+      band(name, color, undefined, box?.name, activeBankDetails);
       const rows = data.rows.filter(
         (r) => r.direction === direction && r.cashboxId === box?.id,
       );
@@ -692,8 +756,7 @@ export async function createFinanceReportPdf(
     const totals = box ?? s;
     const amount =
       direction === "INCOME" ? totals.incomeCents : totals.expenseCents;
-    if (analytic) band(`Total de ${name}`, color, amount);
-    else total(`Total de ${name.toLocaleLowerCase("pt-BR")}`, amount, color);
+    band(`Total de ${name}`, color, amount);
   }
   activeCashboxName = "";
   activeBankDetails = "";
@@ -715,13 +778,13 @@ export async function createFinanceReportPdf(
   }
   if (data.cashboxes.length) {
     heading(
-      "Caixas e contas",
+      analytic ? "Caixas e contas" : "Saldos por caixa",
       ink,
       analytic ? Math.min(200, 65 + data.cashboxes.length * 23) : 65,
     );
     table(
       {
-        title: "Caixas e contas",
+        title: analytic ? "Caixas e contas" : "Saldos por caixa",
         headers: [
           "Caixa / conta",
           "Saldo anterior",
@@ -754,31 +817,9 @@ export async function createFinanceReportPdf(
         paragraph(`${b.name}: ${details.join(" · ")}.`, 8.5, muted, 3);
     }
   }
-  if (!analytic && data.movements.length) {
-    heading("Outros movimentos de saldo");
-    paragraph(
-      "Aberturas e ajustes compõem o saldo. Transferências apenas movimentam recursos entre caixas; não são receitas ou despesas.",
-      8.5,
-    );
-    table(
-      {
-        title: "Outros movimentos de saldo",
-        headers: ["Data", "Movimento", "Valor"],
-        widths: [65, CW - 175, 110],
-        right: [2],
-      },
-      data.movements.map((m) => [
-        m.date.split("-").reverse().join("/"),
-        m.description,
-        formatMoney(m.amountCents),
-      ]),
-    );
-  }
-  if (analytic) {
-    y += 16;
-    heading("Resumo final do período", ink, 98);
-    indicators();
-  }
+  y += analytic ? 16 : 8;
+  heading("Resumo final do período", ink, analytic ? 98 : 106);
+  indicators();
   paragraph(
     `${s.count} lançamento(s). Valores registrados até a emissão. Nova emissão pode refletir correções posteriores.`,
     8,

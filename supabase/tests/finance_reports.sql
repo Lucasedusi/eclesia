@@ -53,6 +53,9 @@ begin
  perform pg_temp.assert_true((select sum((x->>'amountCents')::numeric)=62000 from jsonb_array_elements(a->'rows') x where x->>'cashboxId'=b2::text),'cashbox identity preserves per-box amounts');
  perform pg_temp.assert_true(not (s ? 'rows'),'no individual rows in synthetic');
  perform pg_temp.assert_true(exists(select 1 from jsonb_array_elements(s->'categories') x where x->>'classificationName'='Presbíteros' and (x->>'amountCents')::numeric=102000),'classification consolidated between cashboxes');
+ perform pg_temp.assert_true(jsonb_array_length(s->'cashboxCategories')=4,'per-box synthetic groups are complete');
+ perform pg_temp.assert_true(exists(select 1 from jsonb_array_elements(s->'cashboxCategories') x where x->>'cashboxId'=b2::text and (x->>'amountCents')::numeric=62000 and (x->>'count')::int=1),'classification preserves cashbox total');
+ perform pg_temp.assert_true(not exists(select 1 from jsonb_array_elements(s->'cashboxCategories') x where x ?| array['personName','description','paymentMethodName']),'synthetic groups omit personal detail');
  perform set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000002',true);
  perform public.get_finance_report(c,u,'{"type":"SYNTHETIC","month":"2026-10"}');
  begin
@@ -69,6 +72,7 @@ begin
  a:=public.get_finance_report(c,u,'{"type":"ANALYTIC","month":"2026-10"}');
  perform pg_temp.assert_true((a#>>'{summary,closingCents}')::numeric=205000 and (a#>>'{summary,incomeCents}')::numeric=150000,'internal transfer leaves income and consolidated balance unchanged');
  s:=public.get_finance_report(c,u,jsonb_build_object('type','SYNTHETIC','month','2026-10','cashboxId',b));
+ perform pg_temp.assert_true(not exists(select 1 from jsonb_array_elements(s->'cashboxCategories') x where x->>'cashboxId'<>b::text),'synthetic cashbox filter is applied');
  perform pg_temp.assert_true((s#>>'{summary,transferNetCents}')::numeric=-30000 and (s#>>'{summary,closingCents}')::numeric=93000,'source box transfer signed and reconciled');
  perform public.execute_finance_command(c,jsonb_build_object('kind','CANCEL_TRANSFER','operationKey',gen_random_uuid(),'congregationId',u,'id',saved->>'transferId','expectedRevision',1,'reason','Cancelar transferência fictícia'));
  s:=public.get_finance_report(c,u,jsonb_build_object('type','SYNTHETIC','month','2026-10','cashboxId',b));
@@ -97,7 +101,7 @@ begin
  perform pg_temp.assert_true(exists(select 1 from jsonb_array_elements(a->'cashboxes') x where x->>'id'=b2::text and x#>>'{bankDetails,agency}'='0001' and x#>>'{bankDetails,accountNumber}'='12345-6'),'bank details in analytic');
  perform pg_temp.assert_true(exists(select 1 from jsonb_array_elements(a->'cashboxes') x where x->>'id'=b::text and x->'bankDetails'='null'::jsonb),'local cashbox has no bank details');
  s:=public.get_finance_report(c,u,'{"type":"SYNTHETIC","month":"2026-10"}');
- perform pg_temp.assert_true(not exists(select 1 from jsonb_array_elements(s->'cashboxes') x where x ? 'bankDetails'),'synthetic projection unchanged');
+ perform pg_temp.assert_true(s->'cashboxes'=a->'cashboxes','synthetic includes same scoped bank metadata');
  execute 'reset role';
  -- Bulk fictional rows to exercise >1,000 records without PostgREST truncation.
  with added as (
