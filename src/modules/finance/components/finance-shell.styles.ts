@@ -346,7 +346,10 @@ export const Workspace = styled.div`
   .finance-mobile-title,
   .finance-mobile-navigation,
   .finance-mobile-actions,
-  .finance-overview-recent-mobile {
+  .finance-overview-recent-mobile,
+  .finance-mobile-nature,
+  .finance-mobile-transaction-cards,
+  .finance-mobile-transfers {
     display: none;
   }
   .finance-single-unit {
@@ -390,6 +393,154 @@ export const Workspace = styled.div`
     }
   }
   @media (max-width: 760px) {
+    .finance-filter-bar {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .finance-filter-bar > label {
+      grid-column: 1 / -1;
+      min-width: 0 !important;
+    }
+    .finance-filter-bar > button {
+      min-height: 44px;
+      margin: 0;
+    }
+    .finance-mobile-nature {
+      display: flex;
+      gap: 6px;
+    }
+    .finance-mobile-nature button {
+      flex: 1;
+      min-height: 44px;
+      padding: 8px 6px;
+      border: 1px solid #dce8e0;
+      border-radius: 10px;
+      background: #f7faf8;
+      color: #52695e;
+      font: inherit;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .finance-mobile-nature button[aria-pressed="true"] {
+      border-color: #087f5b;
+      background: #0b3d32;
+      color: #fff;
+    }
+    .finance-mobile-nature button:focus-visible {
+      outline: 2px solid #087f5b;
+      outline-offset: 2px;
+    }
+    .finance-advanced-direction,
+    .finance-desktop-transactions {
+      display: none;
+    }
+    .finance-filter-totals {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 5px 10px;
+    }
+    .finance-filter-totals > span:first-child {
+      grid-column: 1 / -1;
+      font-weight: 600;
+    }
+    .finance-filter-totals > span {
+      min-width: 0;
+      font-size: 12px;
+    }
+    .finance-mobile-transaction-cards {
+      display: grid;
+      gap: 16px;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    .finance-mobile-transaction-cards h3 {
+      margin: 0 0 8px;
+      color: #6d7f76;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .finance-mobile-transaction-cards ul {
+      display: grid;
+      gap: 8px;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    .finance-mobile-transaction-card {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      width: 100%;
+      min-height: 88px;
+      padding: 15px;
+      border: 1px solid #dfe9e2;
+      border-radius: 13px;
+      background: #fff;
+      color: #18352c;
+      font: inherit;
+      font-size: 13px;
+      text-align: left;
+      cursor: pointer;
+    }
+    .finance-mobile-transaction-card:focus-visible {
+      outline: 2px solid #087f5b;
+      outline-offset: 2px;
+    }
+    .finance-mobile-transaction-main,
+    .finance-mobile-transaction-side {
+      display: grid;
+      gap: 4px;
+      min-width: 0;
+    }
+    .finance-mobile-transaction-main {
+      overflow-wrap: anywhere;
+    }
+    .finance-mobile-transaction-main > span,
+    .finance-mobile-transaction-main > small {
+      color: #6d7f76;
+      font-size: 11px;
+    }
+    .finance-mobile-transaction-side {
+      flex-shrink: 0;
+      justify-items: end;
+      max-width: 45%;
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+      overflow-wrap: anywhere;
+    }
+    .finance-mobile-transaction-side .badge {
+      font-size: 10px;
+    }
+    .finance-desktop-transfers {
+      display: none;
+    }
+    .finance-mobile-transfers {
+      display: grid;
+      gap: 10px;
+    }
+    .finance-mobile-transfer-card {
+      display: grid;
+      gap: 6px;
+      padding: 14px;
+      border: 1px solid #dfe9e2;
+      border-radius: 12px;
+      background: #fff;
+      font-size: 13px;
+      overflow-wrap: anywhere;
+    }
+    .finance-mobile-transfer-card p {
+      margin: 0;
+    }
+    .finance-mobile-transfer-card > .row:last-child {
+      justify-content: flex-end;
+    }
+    .finance-mobile-transfer-card button {
+      min-width: 44px;
+      min-height: 44px;
+    }
     .finance-overview-summaries {
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 12px;

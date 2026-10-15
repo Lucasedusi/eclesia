@@ -54,6 +54,35 @@ export function FinanceTransactionsWorkspace({
     [transfer, setTransfer] = useState<{ existing?: TransferRow } | null>(null),
     navigation = useFinanceNavigation(),
     search = useSearchParams();
+  function transferActions(t: TransferRow) {
+    if (!capabilities.transfer || t.status === "CANCELLED") return null;
+    return (
+      <div className="row">
+        <Button
+          variant="outline"
+          size="sm"
+          aria-label="Corrigir transferência"
+          onClick={() => setTransfer({ existing: t })}
+        >
+          <Pencil size={14} />
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          aria-label="Cancelar transferência"
+          onClick={() =>
+            setCancel({
+              id: t.id,
+              revision: t.revision,
+              kind: "CANCEL_TRANSFER",
+            })
+          }
+        >
+          <X size={14} />
+        </Button>
+      </div>
+    );
+  }
   return (
     <div className="stack">
       <FinanceTransactionsTable
@@ -146,7 +175,31 @@ export function FinanceTransactionsWorkspace({
             Transferências entre caixas
           </summary>
           <div className="stack" style={{ marginTop: 18 }}>
-            <div className="table-scroll">
+            <div className="finance-mobile-transfers">
+              {transfers.items.map((t) => (
+                <article className="finance-mobile-transfer-card" key={t.id}>
+                  <div className="row spread">
+                    <strong>{formatMoney(t.amountCents)}</strong>
+                    <span className="badge">
+                      {t.status === "CANCELLED" ? "Cancelada" : "Confirmada"}
+                    </span>
+                  </div>
+                  <p>
+                    {catalogs.cashboxes.find((b) => b.id === t.sourceCashboxId)
+                      ?.name || "Origem indisponível"}
+                    {" → "}
+                    {catalogs.cashboxes.find((b) => b.id === t.targetCashboxId)
+                      ?.name || "Destino indisponível"}
+                  </p>
+                  <p className="muted">
+                    {t.date.split("-").reverse().join("/")}
+                    {t.description ? ` · ${t.description}` : ""}
+                  </p>
+                  {transferActions(t)}
+                </article>
+              ))}
+            </div>
+            <div className="table-scroll finance-desktop-transfers">
               <table>
                 <thead>
                   <tr>
@@ -180,32 +233,7 @@ export function FinanceTransactionsWorkspace({
                         {t.status === "CANCELLED" ? "Cancelada" : "Confirmada"}
                       </td>
                       <td>
-                        {capabilities.transfer && t.status !== "CANCELLED" && (
-                          <div className="row">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              aria-label="Corrigir transferência"
-                              onClick={() => setTransfer({ existing: t })}
-                            >
-                              <Pencil size={14} />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              aria-label="Cancelar transferência"
-                              onClick={() =>
-                                setCancel({
-                                  id: t.id,
-                                  revision: t.revision,
-                                  kind: "CANCEL_TRANSFER",
-                                })
-                              }
-                            >
-                              <X size={14} />
-                            </Button>
-                          </div>
-                        )}
+                        {transferActions(t)}
                       </td>
                     </tr>
                   ))}

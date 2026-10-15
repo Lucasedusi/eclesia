@@ -23,6 +23,7 @@ import type { FinanceFilters } from "../validations/finance-query.schemas";
 import { formatMoney } from "../utils/finance-money";
 import { getFinanceTransactionAction } from "../actions/finance-query.actions";
 import { FinanceTransactionDetails } from "./finance-transaction-details";
+import { FinanceMobileTransactionCards } from "./finance-mobile-transaction-cards";
 export function FinanceTransactionsTable({
   result,
   catalogs,
@@ -51,6 +52,17 @@ export function FinanceTransactionsTable({
     [loading, setLoading] = useState<string | null>(null);
   const [advanced, setAdvanced] = useState(false);
   const filterForm = useRef<HTMLFormElement>(null);
+  const advancedFilterCount = [
+    filters.status !== "ALL",
+    filters.titheClassificationId,
+    filters.departmentId,
+    filters.categoryId,
+    filters.cashboxId,
+    filters.paymentMethodId,
+    filters.memberId,
+  ].filter(Boolean).length;
+  const hasActiveFilters =
+    advancedFilterCount > 0 || Boolean(filters.search) || filters.direction !== "ALL";
   function filter(data: FormData) {
     const query = new URLSearchParams({ unidade: unit, mes: month });
     for (const [k, v] of data)
@@ -64,6 +76,21 @@ export function FinanceTransactionsTable({
     });
     data.set("page", String(page));
     filter(data);
+  }
+  async function openDetail(id: string) {
+    const request = ++sequence.current;
+    setLoading(id);
+    setError("");
+    try {
+      const response = await getFinanceTransactionAction(unit, id);
+      if (request !== sequence.current) return;
+      if (response.ok) setDetail(response.data);
+      else setError(response.message);
+    } catch {
+      setError("Não foi possível abrir o lançamento.");
+    } finally {
+      if (request === sequence.current) setLoading(null);
+    }
   }
   return (
     <div className="stack">
@@ -114,11 +141,36 @@ export function FinanceTransactionsTable({
             >
               <SlidersHorizontal size={16} />
               Filtros avançados
+              {advancedFilterCount > 0 && (
+                <span className="finance-active-filter-count">
+                  {advancedFilterCount} filtro{advancedFilterCount !== 1 ? "s" : ""} ativo{advancedFilterCount !== 1 ? "s" : ""}
+                </span>
+              )}
             </Button>
+          </div>
+          <div className="finance-mobile-nature" role="group" aria-label="Filtrar natureza">
+            {[
+              { label: "Todas", value: "ALL" },
+              { label: "Entradas", value: "INCOME" },
+              { label: "Saídas", value: "EXPENSE" },
+            ].map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                aria-pressed={filters.direction === option.value}
+                onClick={() => {
+                  const data = new FormData(filterForm.current!);
+                  data.set("direction", option.value);
+                  filter(data);
+                }}
+              >
+                {option.label}
+              </button>
+            ))}
           </div>
           <div id="finance-advanced-filters" hidden={!advanced}>
             <div className="grid" style={{ marginTop: 6 }}>
-              <label>
+              <label className="finance-advanced-direction">
                 Natureza
                 <select name="direction" defaultValue={filters.direction}>
                   <option value="ALL">Todas</option>
@@ -179,22 +231,24 @@ export function FinanceTransactionsTable({
               ))}
             </div>
           </div>
-          {advanced && <div className="row" style={{ justifyContent: "flex-end" }}>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                filterForm.current?.reset();
-                filter(new FormData());
-              }}
-            >
-              <X size={14} />
-              Limpar filtros
-            </Button>
-          </div>}
+          {hasActiveFilters && (
+            <div className="row" style={{ justifyContent: "flex-end" }}>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  filterForm.current?.reset();
+                  filter(new FormData());
+                }}
+              >
+                <X size={14} />
+                Limpar filtros
+              </Button>
+            </div>
+          )}
         </form>
-        <div className="row spread notice">
+        <div className="row spread notice finance-filter-totals">
           <span>
             {result.totalCount} resultado{result.totalCount !== 1 ? "s" : ""}
           </span>
@@ -216,7 +270,12 @@ export function FinanceTransactionsTable({
             selecionados.
           </FinanceEmpty>
         ) : (
-          <div className="table-scroll">
+          <>
+            <FinanceMobileTransactionCards
+              items={result.items}
+              onOpen={openDetail}
+            />
+            <div className="table-scroll finance-desktop-transactions">
             <table>
               <thead>
                 <tr>
@@ -285,24 +344,7 @@ export function FinanceTransactionsTable({
                         disabled={loading === t.id}
                         aria-busy={loading === t.id}
                         className="finance-icon-button"
-                        onClick={async () => {
-                          const request = ++sequence.current;
-                          setLoading(t.id);
-                          setError("");
-                          try {
-                            const response = await getFinanceTransactionAction(
-                              unit,
-                              t.id,
-                            );
-                            if (request !== sequence.current) return;
-                            if (response.ok) setDetail(response.data);
-                            else setError(response.message);
-                          } catch {
-                            setError("Não foi possível abrir o lançamento.");
-                          } finally {
-                            if (request === sequence.current) setLoading(null);
-                          }
-                        }}
+                        onClick={() => openDetail(t.id)}
                       >
                         {loading === t.id ? (
                           <Loader2 size={15} className="finance-spin" />
@@ -315,7 +357,8 @@ export function FinanceTransactionsTable({
                 ))}
               </tbody>
             </table>
-          </div>
+            </div>
+          </>
         )}
         <div className="row spread">
           <span className="muted">
