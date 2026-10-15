@@ -344,7 +344,9 @@ export const Workspace = styled.div`
     margin-left: auto;
   }
   .finance-mobile-title,
-  .finance-mobile-navigation {
+  .finance-mobile-navigation,
+  .finance-mobile-actions,
+  .finance-overview-recent-mobile {
     display: none;
   }
   .finance-single-unit {
@@ -388,6 +390,90 @@ export const Workspace = styled.div`
     }
   }
   @media (max-width: 760px) {
+    .finance-overview-summaries {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .finance-overview-summaries .finance-summary-card {
+      padding: 17px;
+      gap: 8px;
+    }
+    .finance-overview-summaries .finance-summary-card:first-child {
+      grid-column: 1 / -1;
+      padding: 22px;
+    }
+    .finance-overview-summaries .finance-summary-card:not(:first-child) .amount {
+      font-size: clamp(18px, 5vw, 24px);
+      overflow-wrap: anywhere;
+    }
+    .finance-mobile-actions {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .finance-mobile-actions a {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      min-width: 0;
+      min-height: 74px;
+      padding: 8px 2px;
+      color: #18352c;
+      font-size: 11px;
+      font-weight: 600;
+      line-height: 1.2;
+      text-align: center;
+      text-decoration: none;
+      overflow-wrap: anywhere;
+    }
+    .finance-mobile-action-icon {
+      display: grid;
+      place-items: center;
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      background: #e7f4eb;
+      color: #087f5b;
+    }
+    .finance-mobile-actions a:focus-visible {
+      outline: 2px solid #087f5b;
+      outline-offset: 2px;
+    }
+    .finance-overview-recent-mobile {
+      display: grid;
+    }
+    .finance-overview-recent-desktop {
+      display: none;
+    }
+    .finance-overview-recent-list {
+      display: grid;
+    }
+    .finance-overview-recent-item {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px 0;
+      border-top: 1px solid #edf2ef;
+      font-size: 13px;
+    }
+    .finance-overview-recent-item > div {
+      display: grid;
+      gap: 3px;
+      min-width: 0;
+    }
+    .finance-overview-recent-item > strong {
+      min-width: 0;
+      max-width: 45%;
+      overflow-wrap: anywhere;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    .finance-overview-recent-item .muted {
+      overflow-wrap: anywhere;
+    }
     .finance-desktop-toggle {
       display: none;
     }

@@ -37,7 +37,13 @@ async function Content({
       transfers={transfers}
       capabilities={context.capabilities}
       date={todayLocal()}
-      newEntry={search.novo === "entrada"}
+      initialEntry={
+        search.novo === "entrada"
+          ? "INCOME"
+          : search.novo === "saida"
+            ? "EXPENSE"
+            : null
+      }
       unit={context.congregationId}
       month={month}
       filters={filters}

@@ -25,6 +25,7 @@ async function Content({
       recent={recent}
       unit={context.congregationId}
       month={month}
+      capabilities={context.capabilities}
     />
   );
 }

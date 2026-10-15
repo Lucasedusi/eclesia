@@ -28,7 +28,7 @@ export function FinanceTransactionsWorkspace({
   result,
   filters,
   transfers,
-  newEntry,
+  initialEntry,
 }: {
   unit: string;
   month: string;
@@ -38,12 +38,14 @@ export function FinanceTransactionsWorkspace({
   result: FinanceTransactionPage;
   filters: FinanceFilters;
   transfers: { items: TransferRow[]; page: number; pageCount: number };
-  newEntry: boolean;
+  initialEntry: "INCOME" | "EXPENSE" | null;
 }) {
   const [entry, setEntry] = useState<{
       direction: "INCOME" | "EXPENSE";
       transaction?: FinanceTransactionDetail;
-    } | null>(newEntry && capabilities.create ? { direction: "INCOME" } : null),
+    } | null>(
+      initialEntry && capabilities.create ? { direction: initialEntry } : null,
+    ),
     [cancel, setCancel] = useState<{
       id: string;
       revision: number;

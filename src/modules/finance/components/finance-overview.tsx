@@ -1,30 +1,137 @@
 "use client";
-import { FinanceEmpty } from "./finance-empty";
+
 import Link from "next/link";
-import { useFinanceNavigation } from "./finance-shell";
 import {
   ArrowDownLeft,
   ArrowUpRight,
-  Wallet,
   ChevronRight,
+  HandCoins,
+  Plus,
+  Wallet,
 } from "lucide-react";
 import type {
   FinanceOverview as Overview,
   FinanceTransactionPage,
 } from "../types/finance-query.types";
+import type { FinanceCapabilities } from "../types/finance.types";
 import { formatMoney } from "../utils/finance-money";
 import { financeLocation } from "../utils/finance-navigation";
 import { FinanceCharts } from "./finance-charts";
+import { FinanceEmpty } from "./finance-empty";
+import { useFinanceNavigation } from "./finance-shell";
+
+function RecentTransactions({
+  recent,
+  unit,
+  month,
+  mobile,
+}: {
+  recent: FinanceTransactionPage;
+  unit: string;
+  month: string;
+  mobile: boolean;
+}) {
+  const { navigate } = useFinanceNavigation();
+  const items = recent.items.slice(0, 5);
+  return (
+    <section
+      className={`card stack ${mobile ? "finance-overview-recent-mobile" : "finance-overview-recent-desktop"}`}
+    >
+      <div className="row spread">
+        <h2>Últimos lançamentos</h2>
+        <Link
+          className="row muted"
+          href={financeLocation("/financeiro/lancamentos", unit, month)}
+          onNavigate={(event) => {
+            event.preventDefault();
+            navigate(financeLocation("/financeiro/lancamentos", unit, month));
+          }}
+        >
+          Ver todos <ChevronRight size={15} />
+        </Link>
+      </div>
+      {items.length === 0 ? (
+        <FinanceEmpty>Ainda não há lançamentos neste mês.</FinanceEmpty>
+      ) : mobile ? (
+        <div className="finance-overview-recent-list">
+          {items.map((item) => (
+            <div className="finance-overview-recent-item" key={item.id}>
+              <div>
+                <strong>{item.categoryName}</strong>
+                <span className="muted">
+                  {item.personName ||
+                    item.beneficiaryName ||
+                    item.description ||
+                    "Contribuição coletiva"}
+                </span>
+                <span className="muted">
+                  {item.date.split("-").reverse().join("/")}
+                  {item.departmentName ? ` · ${item.departmentName}` : ""}
+                  {item.status === "CANCELLED" ? " · Cancelado" : ""}
+                </span>
+              </div>
+              <strong className={item.direction === "INCOME" ? "positive" : "negative"}>
+                {item.direction === "INCOME" ? "+" : "−"} {formatMoney(item.amountCents)}
+              </strong>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Descrição</th>
+                <th>Departamento</th>
+                <th>Data</th>
+                <th>Valor</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((item) => (
+                <tr key={item.id}>
+                  <td>
+                    <strong>{item.categoryName}</strong>
+                    <div className="muted">
+                      {item.personName ||
+                        item.beneficiaryName ||
+                        item.description ||
+                        "Contribuição coletiva"}
+                    </div>
+                  </td>
+                  <td>{item.departmentName}</td>
+                  <td>{item.date.split("-").reverse().join("/")}</td>
+                  <td
+                    className={`money ${item.direction === "INCOME" ? "positive" : "negative"}`}
+                  >
+                    {item.direction === "INCOME" ? "+" : "−"}{" "}
+                    {formatMoney(item.amountCents)}
+                    {item.status === "CANCELLED" && (
+                      <div className="muted">Cancelado</div>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
+
 export function FinanceOverview({
   overview,
   recent,
   unit,
   month,
+  capabilities,
 }: {
   overview: Overview;
   recent: FinanceTransactionPage;
   unit: string;
   month: string;
+  capabilities: FinanceCapabilities;
 }) {
   const { navigate } = useFinanceNavigation();
   const cards = [
@@ -49,8 +156,36 @@ export function FinanceOverview({
       featured: false,
     },
   ];
+  const shortcuts = [
+    {
+      label: "Atendimento",
+      path: "/financeiro/atendimento",
+      icon: HandCoins,
+      show: capabilities.create,
+    },
+    {
+      label: "Nova entrada",
+      path: "/financeiro/lancamentos",
+      icon: Plus,
+      extras: { novo: "entrada" },
+      show: capabilities.create,
+    },
+    {
+      label: "Nova saída",
+      path: "/financeiro/lancamentos",
+      icon: ArrowUpRight,
+      extras: { novo: "saida" },
+      show: capabilities.create,
+    },
+    {
+      label: "Caixas",
+      path: "/financeiro/caixas",
+      icon: Wallet,
+      show: true,
+    },
+  ];
   return (
-    <div className="stack">
+    <div className="stack finance-overview">
       <div className="row spread">
         <div>
           <h1>Visão geral</h1>
@@ -58,15 +193,14 @@ export function FinanceOverview({
             Sua congregação em números · {month.split("-").reverse().join("/")}
           </p>
         </div>
-
       </div>
-      <div className="grid">
-        {cards.map((c) => (
+      <div className="grid finance-overview-summaries">
+        {cards.map((card) => (
           <section
-            key={c.label}
-            className={`card stack finance-summary-card ${c.tone === "expense" ? "finance-expense-card" : c.tone === "income" ? "finance-income-card" : ""}`}
+            key={card.label}
+            className={`card stack finance-summary-card ${card.tone === "expense" ? "finance-expense-card" : card.tone === "income" ? "finance-income-card" : ""}`}
             style={
-              c.featured
+              card.featured
                 ? {
                     background: "linear-gradient(120deg,#0B3D32,#087F5B)",
                     color: "white",
@@ -76,14 +210,14 @@ export function FinanceOverview({
             }
           >
             <div className="row spread">
-              <span style={{ fontSize: 12, opacity: 0.8 }}>{c.label}</span>
+              <span style={{ fontSize: 12, opacity: 0.8 }}>{card.label}</span>
               <span className="finance-summary-icon">
-                <c.icon
+                <card.icon
                   size={22}
                   color={
-                    c.featured
+                    card.featured
                       ? "#B6E875"
-                      : c.tone === "expense"
+                      : card.tone === "expense"
                         ? "#B5474D"
                         : "#087F5B"
                   }
@@ -91,21 +225,49 @@ export function FinanceOverview({
               </span>
             </div>
             <div
-              className={`amount ${c.value < 0 ? "negative" : ""}`}
+              className={`amount ${card.value < 0 ? "negative" : ""}`}
               style={
-                c.featured && c.value < 0 ? { color: "#FFD4D7" } : undefined
+                card.featured && card.value < 0 ? { color: "#FFD4D7" } : undefined
               }
             >
-              {formatMoney(c.value)}
+              {formatMoney(card.value)}
             </div>
             <span style={{ fontSize: 11, opacity: 0.75 }}>
-              {c.featured
+              {card.featured
                 ? "Posição consolidada dos caixas"
                 : "Lançamentos confirmados"}
             </span>
           </section>
         ))}
       </div>
+      <nav className="finance-mobile-actions" aria-label="Ações rápidas">
+        {shortcuts
+          .filter((shortcut) => shortcut.show)
+          .map((shortcut) => {
+            const href = financeLocation(
+              shortcut.path,
+              unit,
+              month,
+              shortcut.extras,
+            );
+            return (
+              <Link
+                key={shortcut.label}
+                href={href}
+                onNavigate={(event) => {
+                  event.preventDefault();
+                  navigate(href);
+                }}
+              >
+                <span className="finance-mobile-action-icon">
+                  <shortcut.icon size={20} aria-hidden="true" />
+                </span>
+                <span>{shortcut.label}</span>
+              </Link>
+            );
+          })}
+      </nav>
+      <RecentTransactions recent={recent} unit={unit} month={month} mobile />
       <div
         className="card row spread"
         style={{ padding: "16px 22px", fontSize: 12 }}
@@ -125,64 +287,7 @@ export function FinanceOverview({
         </span>
       </div>
       <FinanceCharts overview={overview} />
-      <section className="card stack">
-        <div className="row spread">
-          <h2>Últimos lançamentos</h2>
-          <Link
-            className="row muted"
-            onNavigate={(e) => {
-              e.preventDefault();
-              navigate(financeLocation("/financeiro/lancamentos", unit, month));
-            }}
-            href={financeLocation("/financeiro/lancamentos", unit, month)}
-          >
-            Ver todos
-            <ChevronRight size={15} />
-          </Link>
-        </div>
-        {recent.items.length === 0 ? (
-          <FinanceEmpty>Ainda não há lançamentos neste mês.</FinanceEmpty>
-        ) : (
-          <div className="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>Descrição</th>
-                  <th>Departamento</th>
-                  <th>Data</th>
-                  <th>Valor</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recent.items.slice(0, 5).map((t) => (
-                  <tr key={t.id}>
-                    <td>
-                      <strong>{t.categoryName}</strong>
-                      <div className="muted">
-                        {t.personName ||
-                          t.beneficiaryName ||
-                          t.description ||
-                          "Contribuição coletiva"}
-                      </div>
-                    </td>
-                    <td>{t.departmentName}</td>
-                    <td>{t.date.split("-").reverse().join("/")}</td>
-                    <td
-                      className={`money ${t.direction === "INCOME" ? "positive" : "negative"}`}
-                    >
-                      {t.direction === "INCOME" ? "+" : "−"}{" "}
-                      {formatMoney(t.amountCents)}
-                      {t.status === "CANCELLED" && (
-                        <div className="muted">Cancelado</div>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+      <RecentTransactions recent={recent} unit={unit} month={month} mobile={false} />
     </div>
   );
 }
