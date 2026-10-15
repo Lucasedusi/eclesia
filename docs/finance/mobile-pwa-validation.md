@@ -75,6 +75,22 @@ O helper obtém a configuração local sem exibir chaves e guarda as sessões fi
 - E2E autenticados confirmaram gravação, correção e cancelamento; múltiplas contribuições no mesmo comprovante; transferências separadas dos totais; versões e cálculos do demonstrativo; geração, abertura e download dos dois PDFs; restrição de caixa/configurações no servidor; PDF de outra congregação rejeitado com HTTP 403; ações de escrita ausentes no contexto de consulta.
 - No navegador, o worker real armazenou apenas a página neutra e mostrou “Sem conexão” após perda de rede. O redirecionamento sem sessão e o retorno ao Financeiro com sessão válida passaram. A simulação de atualização preservou o formulário preenchido, inclusive quando o controle do worker mudou durante a edição.
 
+## Acesso temporário para teste em celular
+
+Foi preparado um endereço HTTPS temporário para o servidor de produção local, com uma nova igreja fictícia, duas congregações, quatro pessoas, entradas, despesas, atendimento com comprovante e transferência. Credenciais, sessões e configuração do endereço permanecem apenas em `tmp/phone-demo/`, ignorado pelo Git. O acesso depende do Mac e dos processos locais ativos; não é uma implantação de produção.
+
+O encaminhamento temporário expõe as rotas financeiras e permite somente os endpoints necessários à renovação da sessão de demonstração e aos anexos assinados dessa igreja. Acesso direto à Data API, administração do Auth, listagem de buckets, cadastro público e manutenção foi verificado como indisponível. A comunicação do servidor com o Supabase continua local, sem alterações nas regras de autorização.
+
+Durante a verificação, os títulos acessíveis do gráfico revelaram um aviso de renderização do React: o conteúdo de `title` era uma lista de fragmentos. A correção o transforma em uma única string, preservando data e valores. Um teste de regressão reproduziu o aviso antes da correção e passou depois dela.
+
+Verificação posterior à correção:
+
+- 484 testes unitários passaram, além de lint sem avisos, TypeScript, build e `git diff --check`.
+- Cinco E2E de visão geral mobile/desktop e PWA passaram no endereço HTTPS; o cenário de outro perfil não integrou essa execução específica da conta de demonstração.
+- Navegador com sessão inicialmente vazia confirmou login e retorno ao Financeiro, gravação com anexo, PDF válido, manifesto, worker e página de falta de conexão, sem exceções no navegador.
+- A renovação da sessão pelo endereço público foi confirmada para o usuário fictício.
+- A instalação em aparelhos físicos continua pendente da validação do usuário.
+
 ## Pré-requisitos de verificação antes da disponibilização
 
 - Conferir em aparelhos Android e iPhone físicos: instalação, expiração e retorno após login, rolagem com teclado, falta de conexão durante gravação, atualização com formulário sujo, abertura/baixar PDF e impressão de 58/80 mm. Os aparelhos não estavam disponíveis nesta sessão.

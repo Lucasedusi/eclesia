@@ -60,9 +60,7 @@ export function FinanceCharts({ overview }: { overview: FinanceOverview }) {
                 return (
                   <g key={d.date}>
                     <title>
-                      {d.date.split("-").reverse().join("/")}: entradas{" "}
-                      {formatMoney(d.incomeCents)}, saídas{" "}
-                      {formatMoney(d.expenseCents)}
+                      {`${d.date.split("-").reverse().join("/")}: entradas ${formatMoney(d.incomeCents)}, saídas ${formatMoney(d.expenseCents)}`}
                     </title>
                     <rect
                       x={x - 5}
