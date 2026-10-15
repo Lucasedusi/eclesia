@@ -27,7 +27,7 @@ test("a waiting update preserves a dirty attendance form until it is discarded",
       value: {
         ...events,
         controller: {},
-        register: async () => ({ waiting: { postMessage: (message: unknown) => state.__financePosted!.push(message) }, installing: null, update: async () => {}, addEventListener: () => {} }),
+        register: async () => ({ waiting: { postMessage: (message: unknown) => state.__financePosted!.push(message) }, installing: null, update: async () => {}, addEventListener: () => {}, removeEventListener: () => {} }),
       },
     });
   });

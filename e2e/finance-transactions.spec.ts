@@ -66,5 +66,5 @@ test("continuous entry preserves defaults, then supports correction and cancella
     .fill("Registro de teste duplicado");
   await page.getByRole("button", { name: "Confirmar cancelamento" }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  await expect(page.getByText("Cancelado", { exact: true })).toBeVisible();
+  await expect(page.getByRole("table").getByText("Cancelado", { exact: true })).toBeVisible();
 });

@@ -1,7 +1,8 @@
 import { test, expect } from "@playwright/test";
 import { readFileSync } from "node:fs";
 // The headless shell downloads PDFs; the full browser exercises its PDF viewer.
-test.use({ channel: "chromium" });
+// These scenarios mock failed/held requests. PWA tests exercise the real worker.
+test.use({ channel: "chromium", serviceWorkers: "block" });
 test.beforeEach(() =>
   test.skip(!process.env.E2E_FINANCE_FIXTURE, "Local finance fixture required"),
 );
@@ -126,8 +127,8 @@ test("treasurer only sees own congregation and cannot request another PDF", asyn
     name: "Congregação",
     exact: true,
   });
-  await expect(select).toBeDisabled();
-  await expect(select.locator("option")).toHaveCount(1);
+  await expect(page.locator(".finance-single-unit")).toHaveText("Unit A");
+  await expect(select).toHaveCount(0);
   const own = await context.request.post("/api/finance/reports/pdf", {
     data: { congregationId: f.unitId, type: "ANALYTIC", month: "2026-10" },
   });

@@ -1,6 +1,9 @@
 import { expect, test } from "@playwright/test";
 import { readFileSync } from "node:fs";
 
+// Keep simulated network failures routable; the PWA suite covers the real worker.
+test.use({ serviceWorkers: "block" });
+
 test.beforeEach(() => {
   test.skip(
     !process.env.E2E_STORAGE_STATE || !process.env.E2E_FINANCE_FIXTURE,
@@ -26,8 +29,7 @@ for (const width of [320, 390]) {
     await page.getByRole("button", { name: "Nova entrada", exact: true }).click();
     const dialog = page.getByRole("dialog", { name: "Nova entrada" });
     await expect(dialog).toBeVisible();
-    const bounds = await dialog.boundingBox();
-    expect(bounds!.width).toBeGreaterThanOrEqual(width - 2);
+    await expect.poll(async () => (await dialog.boundingBox())!.width).toBeGreaterThanOrEqual(width - 2);
     await dialog.getByLabel("Valor (R$)").fill("1234");
     await expect(dialog.getByLabel("Valor (R$)")).toHaveValue("12,34");
     await expect(dialog.getByText("Conferir antes de confirmar")).toBeVisible();

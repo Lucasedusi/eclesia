@@ -24,6 +24,7 @@ for (const width of [320, 390]) {
     await expect(mobile).toBeVisible();
     for (const label of ["Início", "Lançamentos", "Atendimento", "Mais"])
       await expect(mobile.getByText(label, { exact: true })).toBeVisible();
+    await expect(page.locator(".finance-sidebar")).toHaveCount(1);
     await expect(page.locator(".finance-sidebar")).toBeHidden();
     await expect(page.getByLabel("Período")).toBeVisible();
     await expect
@@ -40,7 +41,7 @@ test("desktop keeps the financial sidebar", async ({ page }) => {
   const { unitId } = fixture();
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(`/financeiro?unidade=${unitId}&mes=2026-10`);
-  await expect(page.locator(".finance-sidebar")).toBeVisible();
+  await expect(page.getByRole("complementary")).toBeVisible();
   await expect(
     page.getByRole("navigation", { name: "Navegação financeira mobile" }),
   ).toBeHidden();

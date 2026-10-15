@@ -138,19 +138,17 @@ test("mobile menu opens and closes without horizontal overflow", async ({
   await expect(
     page.getByRole("navigation", { name: "Navegação financeira" }),
   ).toBeHidden();
-  await page.getByRole("button", { name: "Abrir menu", exact: true }).click();
-  await expect(
-    page.getByRole("navigation", { name: "Navegação financeira" }),
-  ).toBeVisible();
+  const mobile = page.getByRole("navigation", { name: "Navegação financeira mobile" });
+  await mobile.getByRole("button", { name: "Mais", exact: true }).click();
+  await expect(page.getByRole("group", { name: "Mais opções" })).toBeVisible();
   await page
     .getByRole("link", { name: "Caixas e contas", exact: true })
     .click();
   await expect(
     page.getByRole("heading", { name: "Caixas e contas", exact: true }),
   ).toBeVisible();
-  await expect(
-    page.getByRole("navigation", { name: "Navegação financeira" }),
-  ).toBeHidden();
+  await expect(page.getByRole("group", { name: "Mais opções" })).toHaveCount(0);
+  await expect(mobile).toBeVisible();
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth,

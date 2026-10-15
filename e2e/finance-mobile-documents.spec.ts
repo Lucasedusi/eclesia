@@ -27,7 +27,9 @@ test("blocked mobile popup leaves full width PDF open and download actions", asy
   await expect(open).toBeVisible();
   await expect(download).toBeVisible();
   const bounds = await open.boundingBox();
-  expect(bounds!.width).toBeGreaterThan(260);
+  const actions = await ready.locator(".finance-report-ready-actions").boundingBox();
+  expect(bounds!.width).toBeCloseTo(actions!.width, 0);
+  expect(bounds!.height).toBeGreaterThanOrEqual(48);
   const bytes = await page.evaluate(async (url) => Array.from(new Uint8Array(await (await fetch(url!)).arrayBuffer())).slice(0, 4), await open.getAttribute("href"));
   expect(Buffer.from(bytes).toString()).toBe("%PDF");
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);

@@ -33,6 +33,7 @@ for (const width of [320, 390]) {
     await page.getByRole("button", { name: "Fechar modal" }).click();
 
     await page.goto(`/financeiro/demonstrativos?unidade=${unit}&mes=2026-10`);
+    await expect(page.getByRole("button", { name: /Gerar (demonstrativo|nova versão)/ })).toBeVisible();
     if (!(await page.getByText("Este demonstrativo não registra pagamentos.", { exact: false }).isVisible())) {
       await page.getByRole("button", { name: /Gerar (demonstrativo|nova versão)/ }).click();
     }
@@ -45,9 +46,7 @@ for (const width of [320, 390]) {
 test("statement history identifies revision and status in a mobile drawer", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(`/financeiro/demonstrativos?unidade=${unitId()}&mes=2026-10`);
-  if (!(await page.getByRole("button", { name: "Visualizar histórico" }).isVisible())) {
-    await page.getByRole("button", { name: "Gerar demonstrativo" }).click();
-  }
+  await page.getByRole("button", { name: /Gerar (demonstrativo|nova versão)/ }).click();
   await page.getByRole("button", { name: "Visualizar histórico" }).click();
   const history = page.getByRole("dialog", { name: "Histórico de demonstrativos" });
   await expect(history.locator(".finance-mobile-card-table tr").last()).toBeVisible();

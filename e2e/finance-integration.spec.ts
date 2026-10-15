@@ -29,6 +29,7 @@ test("admin configures, restricted operator receives and monthly versions preser
   ).toBeVisible();
   const restricted = await browser.newContext({
     storageState: "tmp/finance-treasurer-session.json",
+    serviceWorkers: "block",
   });
   // Replay the actual Server Action with another authenticated caller: no reliance on hidden buttons.
   const denied = await restricted.request.post(request.url(), {

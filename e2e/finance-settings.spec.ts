@@ -34,13 +34,26 @@ test("admin assigns an operational congregation within regional scope", async ({
   const unit = access.getByRole("combobox", { name: "Congregação de operação", exact: true });
   await expect(unit).toBeVisible();
   await expect(unit.locator("option")).toHaveCount(2);
-  await unit.selectOption({ label: "Unit A" });
-  await access.getByRole("button", { name: "Salvar operação financeira", exact: true }).click();
-  await expect(access.getByRole("status")).toContainText("Congregação de operação atualizada.");
-  await page.reload();
-  await access.getByRole("button", { name: "Editar acesso" }).click();
-  await expect(unit.locator("option:checked")).toHaveText("Unit A");
-  await access.getByRole("combobox", { name: "Escopo", exact: true }).selectOption("CHURCH");
-  await expect(unit).toBeDisabled();
-  await expect(access.getByRole("button", { name: "Salvar operação financeira" })).toBeDisabled();
+  const originalOperation = await unit.inputValue();
+  try {
+    await unit.selectOption({ label: "Unit A" });
+    await access.getByRole("button", { name: "Salvar operação financeira", exact: true }).click();
+    await expect(access.getByRole("status")).toContainText("Congregação de operação atualizada.");
+    await page.reload();
+    await access.getByRole("button", { name: "Editar acesso" }).click();
+    await expect(unit.locator("option:checked")).toHaveText("Unit A");
+    await access.getByRole("combobox", { name: "Escopo", exact: true }).selectOption("CHURCH");
+    await expect(unit).toBeDisabled();
+    await expect(access.getByRole("button", { name: "Salvar operação financeira" })).toBeDisabled();
+  } finally {
+    // This regional user is also the read-only mobile fixture until assigned.
+    await page.reload();
+    await access.getByRole("button", { name: "Editar acesso" }).click();
+    await unit.selectOption(originalOperation);
+    await access.getByRole("button", { name: "Salvar operação financeira", exact: true }).click();
+    await expect(access.getByRole("status")).toContainText("Congregação de operação atualizada.");
+    await page.reload();
+    await access.getByRole("button", { name: "Editar acesso" }).click();
+    await expect(unit).toHaveValue(originalOperation);
+  }
 });

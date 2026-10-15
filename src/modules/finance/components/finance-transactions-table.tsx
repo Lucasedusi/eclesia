@@ -231,8 +231,8 @@ export function FinanceTransactionsTable({
               ))}
             </div>
           </div>
-          {hasActiveFilters && (
-            <div className="row" style={{ justifyContent: "flex-end" }}>
+          {(advanced || hasActiveFilters) && (
+            <div className={`row${advanced ? "" : " finance-mobile-filter-reset"}`} style={{ justifyContent: "flex-end" }}>
               <Button
                 type="button"
                 variant="ghost"

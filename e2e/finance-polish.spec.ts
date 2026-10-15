@@ -1,5 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { readFileSync } from "node:fs";
+
+test.use({ serviceWorkers: "block" });
 test.beforeEach(() =>
   test.skip(!process.env.E2E_FINANCE_FIXTURE, "Local fixture required"),
 );

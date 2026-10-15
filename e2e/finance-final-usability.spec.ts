@@ -61,8 +61,8 @@ test("overview and report controls are compact and adapt to mobile", async ({ pa
   await expect(page.getByRole("link", { name: "Nova entrada" })).toHaveCount(0);
   await expect(page.locator(".finance-logo b")).toHaveCSS("font-weight", "600");
   await expect(page.getByRole("heading", { name: "Visão geral", exact: true })).toBeVisible();
-  await expect(page.locator(".finance-sidebar")).toBeVisible();
-  const sidebar = (await page.locator(".finance-sidebar").boundingBox())!;
+  await expect(page.getByRole("complementary")).toBeVisible();
+  const sidebar = (await page.getByRole("complementary").boundingBox())!;
   const toggle = (await page.getByRole("button", { name: "Recolher menu" }).boundingBox())!;
   expect(Math.abs(toggle.x - sidebar.x - sidebar.width)).toBeLessThan(2);
   await expect(page.locator(".empty > svg").last()).toBeVisible();

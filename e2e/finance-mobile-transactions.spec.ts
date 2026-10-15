@@ -25,7 +25,9 @@ test("mobile transaction cards share filters, totals and details with the deskto
   );
   const cards = page.getByRole("list", { name: "Lançamentos em cartões" });
   await expect(cards).toBeVisible();
-  await expect(page.locator(".finance-desktop-transactions")).toBeHidden();
+  const desktopTable = page.locator(".finance-desktop-transactions");
+  await expect(desktopTable).toHaveCount(1);
+  await expect(desktopTable).toBeHidden();
   await expect(cards.getByText("Oferta de culto").first()).toBeVisible();
   await expect(page.getByText("Entradas filtradas")).toBeVisible();
 
@@ -67,7 +69,7 @@ test("mobile transfers stay separate from entry and expense totals", async ({
   await dialog.getByRole("button", { name: "Confirmar transferência" }).click();
   await expect(dialog).toHaveCount(0);
   await page.getByText("Transferências entre caixas", { exact: true }).click();
-  await expect(page.getByText(description)).toBeVisible();
+  await expect(page.locator(".finance-mobile-transfers").getByText(description)).toBeVisible();
   await expect(page.locator(".finance-mobile-transfers")).toBeVisible();
   await expect(totals).toHaveText(before!);
 });

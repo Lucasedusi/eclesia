@@ -166,7 +166,7 @@ export const FinanceStyles = createGlobalStyle`
   .finance .finance-cashbox-actions button{width:100%;min-height:44px}
   .finance .finance-statement-meta{padding:18px}
   .finance .finance-statement-meta .badge{margin-top:8px}
-  #finance-modal-root .finance-secondary-drawer{inset:0;width:100vw;max-width:100vw;height:100dvh;max-height:100dvh;border-radius:0}
+  #finance-modal-root .finance-secondary-drawer{position:fixed;inset:0;width:100vw;max-width:100vw;height:100dvh;max-height:100dvh;border-radius:0}
   #finance-modal-root .finance-secondary-drawer button[aria-label="Fechar modal"]{min-width:44px;min-height:44px}
   :is(.finance,#finance-modal-root) .finance-entry-review dl{grid-template-columns:1fr}
   :is(.finance,#finance-modal-root) .finance-entry-summary{position:static;min-width:0}
@@ -417,6 +417,7 @@ export const Workspace = styled.div`
   .finance-mobile-navigation,
   .finance-mobile-actions,
   .finance-overview-recent-mobile,
+  .row.finance-mobile-filter-reset,
   .finance-mobile-nature,
   .finance-mobile-transaction-cards,
   .finance-mobile-transfers {
@@ -463,6 +464,9 @@ export const Workspace = styled.div`
     }
   }
   @media (max-width: 760px) {
+    .row.finance-mobile-filter-reset {
+      display: flex;
+    }
     .finance-filter-bar {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
