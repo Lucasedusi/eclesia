@@ -14,8 +14,6 @@ import {
 import {
   ChevronLeft,
   ChevronRight,
-  Menu,
-  X,
   ArrowLeft,
   ChartNoAxesCombined,
   Wallet,
@@ -32,6 +30,7 @@ import type { FinanceUnit } from "../types/finance.types";
 import { financeLocation } from "../utils/finance-navigation";
 import { FinanceThemeProvider } from "./finance-theme-provider";
 import { FinanceContextBar } from "./finance-context-bar";
+import { FinanceMobileNavigation } from "./finance-mobile-navigation";
 import { Workspace } from "./finance-shell.styles";
 const sidebarPreference = "eclesias:finance:sidebar-collapsed";
 function subscribeSidebar(callback: () => void) {
@@ -99,7 +98,6 @@ export function FinanceShell({
     readSidebar,
     () => false,
   );
-  const [mobileOpen, setMobileOpen] = useState(false);
   function toggleSidebar() {
     try {
       localStorage.setItem(sidebarPreference, String(!collapsed));
@@ -200,7 +198,6 @@ export function FinanceShell({
           className="finance"
           data-app-shell
           data-collapsed={collapsed}
-          data-mobile-open={mobileOpen}
         >
           <aside className="finance-sidebar" id="finance-sidebar">
             <div className="finance-logo">
@@ -233,7 +230,6 @@ export function FinanceShell({
                     aria-current={path === l.path ? "page" : undefined}
                     onNavigate={(e) => {
                       e.preventDefault();
-                      setMobileOpen(false);
                       navigate(financeLocation(l.path, unit.id, month));
                     }}
                   >
@@ -280,16 +276,7 @@ export function FinanceShell({
                 <ChevronLeft size={16} />
               )}
             </button>
-            <button
-              type="button"
-              className="finance-menu-toggle finance-mobile-toggle"
-              aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"}
-              aria-expanded={mobileOpen}
-              aria-controls="finance-sidebar"
-              onClick={() => setMobileOpen(!mobileOpen)}
-            >
-              {mobileOpen ? <X size={20} /> : <Menu size={20} />}
-            </button>
+            <strong className="finance-mobile-title">Financeiro</strong>
             <FinanceContextBar
               units={context.units}
               selectedUnitId={unit.id}
@@ -321,6 +308,13 @@ export function FinanceShell({
           <main className="finance-main" key={unit.id} aria-busy={isPending}>
             {children}
           </main>
+          <FinanceMobileNavigation
+            items={links.filter((link) => link.show)}
+            pathname={path}
+            unitId={unit.id}
+            month={month}
+            navigate={navigate}
+          />
         </Workspace>
         <Modal
           open={pending !== null}

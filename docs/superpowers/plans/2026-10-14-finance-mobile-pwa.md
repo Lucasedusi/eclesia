@@ -42,7 +42,7 @@
 
 ---
 
-### Tarefa 1: navegação e contexto mobile
+### Task 1: navegação e contexto mobile
 
 **Arquivos:** modificar `finance-shell.tsx`, `finance-shell.styles.ts`, `finance-context-bar.tsx`; criar `finance-mobile-navigation.tsx`, `docs/finance/mobile-pwa-validation.md`; testar em `e2e/finance-mobile-shell.spec.ts`.
 
@@ -55,7 +55,7 @@
 - [ ] **Verificar:** repetir o teste focado e `npm run typecheck`; esperar aprovação. Revisar visualmente 320, 390 e 1440 px.
 - [ ] **Commit:** `feat(finance): add mobile navigation shell`.
 
-### Tarefa 2: visão geral orientada à consulta e às ações
+### Task 2: visão geral orientada à consulta e às ações
 
 **Arquivos:** modificar `finance-overview.tsx`, `finance-shell.styles.ts`, `src/app/(finance)/financeiro/page.tsx`, `src/app/(finance)/financeiro/lancamentos/page.tsx`, `finance-transactions-workspace.tsx`, `src/modules/finance/utils/finance-navigation.ts`; testar em `e2e/finance-mobile-overview.spec.ts` e `src/modules/finance/utils/finance-navigation.test.ts`.
 
@@ -67,7 +67,7 @@
 - [ ] **Verificar:** teste focado, `npm run typecheck` e comparação visual desktop/mobile; esperar aprovação.
 - [ ] **Commit:** `feat(finance): prioritize mobile overview actions`.
 
-### Tarefa 3: lançamentos, filtros e transferências em cartões
+### Task 3: lançamentos, filtros e transferências em cartões
 
 **Arquivos:** modificar `finance-transactions-table.tsx`, `finance-transactions-workspace.tsx`, `finance-shell.styles.ts`; criar `finance-mobile-transaction-cards.tsx`; testar em `e2e/finance-mobile-transactions.spec.ts`.
 
@@ -79,7 +79,7 @@
 - [ ] **Verificar:** teste focado e `npm run typecheck`; esperar aprovação.
 - [ ] **Commit:** `feat(finance): adapt transactions for touch`.
 
-### Tarefa 4: formulários de entrada, saída e atendimento
+### Task 4: formulários de entrada, saída e atendimento
 
 **Arquivos:** modificar `finance-entry-form.tsx`, `finance-attendance.tsx`, `finance-transaction-drawer.tsx`, `finance-shell.styles.ts`; testar em `e2e/finance-mobile-entry.spec.ts` e manter `e2e/finance-attendance.spec.ts`.
 
@@ -91,7 +91,7 @@
 - [ ] **Verificar:** novo teste, `e2e/finance-attendance.spec.ts`, testes da máscara e `npm run typecheck`; esperar aprovação.
 - [ ] **Commit:** `feat(finance): streamline mobile entry and attendance`.
 
-### Tarefa 5: caixas, demonstrativos e configurações
+### Task 5: caixas, demonstrativos e configurações
 
 **Arquivos:** modificar `finance-cashboxes.tsx`, `finance-settings.tsx`, `finance-statements.tsx`, `finance-statement-detail.tsx`, `finance-shell.styles.ts`; testar em `e2e/finance-mobile-secondary.spec.ts`.
 
@@ -103,7 +103,7 @@
 - [ ] **Verificar:** teste focado, `e2e/finance-statements.spec.ts`, `e2e/finance-settings.spec.ts` e `npm run typecheck`; esperar aprovação.
 - [ ] **Commit:** `feat(finance): adapt secondary finance screens`.
 
-### Tarefa 6: PDFs e comprovantes no celular
+### Task 6: PDFs e comprovantes no celular
 
 **Arquivos:** modificar `finance-reports.tsx`, `finance-receipt.tsx`, `finance-shell.styles.ts`; testar em `e2e/finance-mobile-documents.spec.ts` e manter `e2e/finance-reports.spec.ts`.
 
@@ -115,7 +115,7 @@
 - [ ] **Verificar:** novo teste, `e2e/finance-reports.spec.ts` e testes de PDF existentes; esperar aprovação.
 - [ ] **Commit:** `feat(finance): polish mobile documents`.
 
-### Tarefa 7: instalação, login e falta de conexão
+### Task 7: instalação, login e falta de conexão
 
 **Arquivos:** modificar `src/app/(finance)/financeiro/layout.tsx`, `src/proxy.ts`, `next.config.ts`; criar `public/financeiro.webmanifest`, `public/financeiro-icon.svg`, `public/financeiro-icon-192.png`, `public/financeiro-icon-512.png`, `public/financeiro-apple-icon.png`, `public/financeiro-sw.js`, `public/financeiro-offline.html`, `src/modules/finance/components/finance-pwa-controller.tsx`; testar em `e2e/finance-mobile-pwa.spec.ts`.
 
@@ -127,7 +127,7 @@
 - [ ] **Verificar:** teste focado, requisições HTTP reais em build local para cabeçalhos/redirect, `npm run typecheck` e `npm run build`; esperar aprovação.
 - [ ] **Commit:** `feat(finance): add online-first finance PWA`.
 
-### Tarefa 8: atualização segura, desempenho e aceite integrado
+### Task 8: atualização segura, desempenho e aceite integrado
 
 **Arquivos:** finalizar `finance-pwa-controller.tsx`, `finance-shell.tsx`, `finance-shell.styles.ts`; criar `e2e/finance-mobile-update.spec.ts`; atualizar `docs/finance/mobile-pwa-validation.md`; ajustar apenas arquivos afetados por falhas comprovadas.
 

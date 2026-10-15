@@ -15,19 +15,24 @@ export function FinanceContextBar({
     <div className="finance-context">
       <label>
         Congregação
-        <select
-          aria-label="Congregação"
-          value={selectedUnitId}
-          disabled={units.length === 1}
-          onChange={(e) => onChange(e.target.value, month)}
-        >
-          {units.map((u) => (
-            <option key={u.id} value={u.id}>
-              {u.name}
-              {u.isHeadquarters ? " · Sede" : ""}
-            </option>
-          ))}
-        </select>
+        {units.length === 1 ? (
+          <span className="finance-single-unit">
+            {units[0].name}{units[0].isHeadquarters ? " · Sede" : ""}
+          </span>
+        ) : (
+          <select
+            aria-label="Congregação"
+            value={selectedUnitId}
+            onChange={(e) => onChange(e.target.value, month)}
+          >
+            {units.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.name}
+                {u.isHeadquarters ? " · Sede" : ""}
+              </option>
+            ))}
+          </select>
+        )}
       </label>
       <label>
         Período
