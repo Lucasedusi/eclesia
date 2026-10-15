@@ -74,6 +74,14 @@ export const FinanceStyles = createGlobalStyle`
  .finance .finance-statement-period{font-size:14px;font-weight:500}
  .finance .finance-statement-meta .finance-statement-stale{background:#FFF6E6;color:#805D22;margin-top:16px}
  .finance .finance-statement-note{margin:0;padding:0 4px}
+ .finance .finance-pwa-status{display:grid;gap:6px;padding:0 24px}
+ .finance .finance-pwa-status:empty{display:none}
+ .finance .finance-pwa-offline,.finance .finance-pwa-update{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;border-radius:10px;font-size:13px}
+ .finance .finance-pwa-offline{background:#FFF2E8;color:#814D1D}
+ .finance .finance-pwa-update{background:#EDF7F0;color:#176348}
+ .finance .finance-pwa-update button,.finance .finance-pwa-install button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;padding:8px 12px;border:1px solid #A9CCBA;border-radius:8px;background:white;color:#176348;font:inherit;font-size:12px;font-weight:600;cursor:pointer}
+ .finance .finance-pwa-update button:focus-visible,.finance .finance-pwa-install button:focus-visible{outline:2px solid #087F5B;outline-offset:2px}
+ .finance .finance-pwa-install{display:none}
  .finance .finance-base-card{background:#F5F9F7}
  .finance .finance-excluded-card{background:#F8F9FC}
  .finance .finance-base-card .finance-summary-icon{background:#DFEEE8;color:#28634F}
@@ -132,6 +140,12 @@ export const FinanceStyles = createGlobalStyle`
  @media(max-width:1100px){.finance .finance-attendance-form{grid-template-columns:minmax(0,1fr)}.finance .finance-attendance-summary{position:static}.finance .finance-attendance-summary>.row{display:flex}}
  @media(max-width:480px){:is(.finance,#finance-modal-root) .finance-person-search{grid-template-columns:1fr}.finance .finance-attendance-summary>.row{display:grid}}
  @media(max-width:760px){
+  .finance .finance-pwa-status{padding:0 16px}
+  .finance .finance-pwa-install{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:8px}
+  .finance .finance-pwa-install>button{min-height:36px;padding:6px 10px;border-color:transparent;background:transparent}
+  .finance .finance-pwa-install-help{display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border-radius:10px;background:#EDF7F0;color:#176348;font-size:12px;line-height:1.5}
+  .finance .finance-pwa-install-help>span{flex:1}
+  .finance .finance-pwa-install-help button{min-width:44px;min-height:44px}
   .finance .finance-secondary-heading{align-items:stretch;gap:14px}
   .finance .finance-secondary-heading>*{width:100%}
   .finance .finance-secondary-heading-actions{display:grid;grid-template-columns:1fr;gap:8px}

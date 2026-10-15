@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Eclesias Financeiro">
+  <rect width="512" height="512" rx="112" fill="#0B3D32"/>
+  <circle cx="256" cy="256" r="165" fill="#145D47"/>
+  <path d="M149 293c32-86 100-133 207-133-7 105-66 179-169 189-22 2-41-2-55-10 9-17 14-32 17-46Z" fill="#E9F8EB"/>
+  <path d="M159 352c53-58 111-97 178-122" fill="none" stroke="#A9E45B" stroke-width="25" stroke-linecap="round"/>
+  <path d="M224 287v-49m65 15v-65" fill="none" stroke="#0B3D32" stroke-width="19" stroke-linecap="round"/>
+</svg>

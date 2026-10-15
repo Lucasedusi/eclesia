@@ -15,6 +15,24 @@ const nextConfig: NextConfig = {
     },
   },
   serverExternalPackages: ["exceljs", "@resvg/resvg-js"],
+  async headers() {
+    const confidential = [
+      { key: "Cache-Control", value: "private, no-store, max-age=0" },
+      { key: "Pragma", value: "no-cache" },
+    ];
+    return [
+      { source: "/financeiro/:path*", headers: confidential },
+      { source: "/api/finance/:path*", headers: confidential },
+      { source: "/login", headers: confidential },
+      {
+        source: "/financeiro-sw.js",
+        headers: [
+          { key: "Cache-Control", value: "no-cache, max-age=0" },
+          { key: "Service-Worker-Allowed", value: "/" },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

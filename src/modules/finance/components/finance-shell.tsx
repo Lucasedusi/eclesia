@@ -31,6 +31,7 @@ import { financeLocation } from "../utils/finance-navigation";
 import { FinanceThemeProvider } from "./finance-theme-provider";
 import { FinanceContextBar } from "./finance-context-bar";
 import { FinanceMobileNavigation } from "./finance-mobile-navigation";
+import { FinancePwaController } from "./finance-pwa-controller";
 import { Workspace } from "./finance-shell.styles";
 const sidebarPreference = "eclesias:finance:sidebar-collapsed";
 function subscribeSidebar(callback: () => void) {
@@ -128,6 +129,10 @@ export function FinanceShell({
       guards.current.delete(g);
     };
   }, []);
+  const hasUnsavedChanges = useCallback(
+    () => [...guards.current].some((guard) => guard.dirty),
+    [],
+  );
   const navigate = useCallback(
     (url: string) => {
       if ([...guards.current].some((g) => g.dirty)) setPending(url);
@@ -305,6 +310,7 @@ export function FinanceShell({
               <span className="finance-spinner" /> Atualizando financeiro…
             </div>
           )}
+          <FinancePwaController hasUnsavedChanges={hasUnsavedChanges} />
           <main className="finance-main" key={unit.id} aria-busy={isPending}>
             {children}
           </main>

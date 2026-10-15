@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/proxy";
+import { getSafeRedirect } from "@/modules/auth/utils/safe-redirect";
 
 const PUBLIC_PATHS = [
   "/login",
@@ -15,6 +16,12 @@ const PUBLIC_PATHS = [
   "/api/cron/events/cleanup",
   "/api/telemetry/web-vitals",
 ];
+
+const PWA_PUBLIC_ASSETS = new Set([
+  "/financeiro.webmanifest",
+  "/financeiro-sw.js",
+  "/financeiro-offline.html",
+]);
 
 const PREPARATION_PATHS = [
   "/onboarding",
@@ -44,6 +51,16 @@ function finalizeResponse(
   startedAt: number,
 ) {
   response.headers.set("X-Content-Type-Options", "nosniff");
+  if (
+    pathname === "/financeiro" ||
+    pathname.startsWith("/financeiro/") ||
+    pathname === "/api/finance" ||
+    pathname.startsWith("/api/finance/") ||
+    pathname === "/login"
+  ) {
+    response.headers.set("Cache-Control", "private, no-store, max-age=0");
+    response.headers.set("Pragma", "no-cache");
+  }
   if (pathname === "/verificar/membro" || pathname.startsWith("/verificar/membro/")) {
     response.headers.set("Cache-Control", "no-store");
     response.headers.set("Pragma", "no-cache");
@@ -65,8 +82,11 @@ function finalizeResponse(
 
 export async function proxy(request: NextRequest) {
   const startedAt = performance.now();
-  const { response, authenticated } = await updateSession(request);
   const pathname = request.nextUrl.pathname;
+  if (PWA_PUBLIC_ASSETS.has(pathname)) {
+    return finalizeResponse(NextResponse.next(), pathname, startedAt);
+  }
+  const { response, authenticated } = await updateSession(request);
   const isPublic = matchesPrefix(pathname, PUBLIC_PATHS);
   const isPreparation = matchesPrefix(pathname, PREPARATION_PATHS);
 
@@ -86,8 +106,15 @@ export async function proxy(request: NextRequest) {
     pathname === "/recuperar-senha";
 
   if (authenticated && isAuthEntry) {
+    const requested = getSafeRedirect(request.nextUrl.searchParams.get("next"));
+    const destination =
+      requested === "/financeiro" ||
+      requested.startsWith("/financeiro/") ||
+      requested.startsWith("/financeiro?")
+        ? requested
+        : "/";
     return finalizeResponse(
-      redirectWithSession(new URL("/", request.url), response),
+      redirectWithSession(new URL(destination, request.url), response),
       pathname,
       startedAt,
     );
