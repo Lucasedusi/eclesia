@@ -18,7 +18,7 @@ export const FinanceStyles = createGlobalStyle`
  .finance label.check,#finance-modal-root label.check{display:flex;align-items:center;gap:9px}.finance input[type=checkbox],#finance-modal-root input[type=checkbox]{accent-color:#087F5B;width:17px;height:17px}
  .finance .table-scroll{position:relative;overflow-x:auto;min-width:0;max-width:100%}.finance table{width:100%;border-collapse:collapse;font-size:13px;text-align:left}.finance th{color:#6D7F76;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.6px;background:#F8FAF9}.finance th,.finance td{padding:15px 12px;border-bottom:1px solid #EDF2EF}.finance td.money{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}.finance tbody tr:last-child td{border-bottom:0}.finance tbody tr:hover{background:#FAFCFB}
  .finance .empty{padding:48px 24px;text-align:center;color:#6D7F76;display:grid;justify-items:center;gap:12px}.finance .empty>svg{color:#8CA297}.finance .tabs{display:flex;gap:8px;flex-wrap:wrap}.finance .tabs button{padding:10px 14px;border-radius:8px;border:1px solid #E3EAE6;background:white;color:#52695E;font:inherit;font-size:13px;cursor:pointer}.finance .tabs button[aria-pressed=true]{background:#0B3D32;color:white;border-color:#0B3D32}
- .finance [role=alert],#finance-modal-root [role=alert]{background:#FBEFF0;color:#923840;padding:12px 16px;border-radius:8px;font-size:13px}.finance [role=status],#finance-modal-root [role=status]{font-size:13px}.finance .notice,#finance-modal-root .notice{padding:14px 16px;background:#F0F7E9;border-radius:10px;font-size:13px;line-height:1.6}
+ .finance [role=alert],#finance-modal-root [role=alert]{background:#FBEFF0;color:#923840;padding:12px 16px;border-radius:8px;font-size:13px}.finance [role=status],#finance-modal-root [role=status]{font-size:13px}.finance .notice,#finance-modal-root .notice{padding:14px 16px;background:#F0F7E9;border-radius:10px;font-size:13px;line-height:1.6; justify-content:space-between;display:flex;align-items:center;gap:12px}.finance .notice .muted,#finance-modal-root .notice .muted{color:#6D7F76;font-size:12px}.finance .notice button,#finance-modal-root .notice button{min-width:44px;min-height:44px}
  #finance-modal-root .finance-drawer{position:fixed;right:0;top:0;bottom:0;max-height:100dvh;height:100dvh;border-radius:20px 0 0 20px;max-width:min(650px,100vw);width:650px}
 
  :is(.finance,#finance-modal-root) .finance-form-section{border:0;border-top:1px solid #E3EAE6!important;padding:22px 0 0!important;margin-top:8px}
@@ -684,7 +684,9 @@ export const Workspace = styled.div`
     .finance-overview-summaries .finance-summary-card:first-child .amount {
       font-size: 30px;
     }
-    .finance-overview-summaries .finance-summary-card:not(:first-child) .amount {
+    .finance-overview-summaries
+      .finance-summary-card:not(:first-child)
+      .amount {
       font-size: clamp(18px, 5vw, 24px);
     }
     .finance-overview-recent-mobile {
