@@ -68,6 +68,7 @@ function Adjustment({
   return (
     <Modal
       title={`Ajustar ${box.name}`}
+      className="finance-secondary-drawer"
       busy={busy || uncertain}
       onClose={onClose}
       footer={
@@ -137,7 +138,7 @@ export function FinanceCashboxes({
     [adjusting, setAdjusting] = useState<Cashbox | null>(null);
   return (
     <div className="stack">
-      <div className="row spread">
+      <div className="row spread finance-secondary-heading">
         <div>
           <h1>Caixas e contas</h1>
           <p className="muted">

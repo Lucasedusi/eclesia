@@ -91,7 +91,7 @@ export function FinanceSettings({
           </p>
         </div>
       </div>
-      <div className="tabs">
+      <div className="tabs finance-settings-tabs" aria-label="Áreas das configurações financeiras">
         {tabs.map((t) => (
           <button
             key={t.id}
@@ -124,7 +124,7 @@ export function FinanceSettings({
         />
       ) : (
         <section className="card stack">
-          <div className="row spread">
+          <div className="row spread finance-secondary-heading">
             <h2>{tabs.find((t) => t.id === tab)?.label}</h2>
             <Button onClick={() => setEditing({ entity: tab })}>
               <Plus size={16} />
@@ -139,7 +139,7 @@ export function FinanceSettings({
             </FinanceEmpty>
           ) : (
             <div className="table-scroll">
-              <table>
+              <table className="finance-mobile-card-table">
                 <thead>
                   <tr>
                     <th>Nome</th>
@@ -153,16 +153,16 @@ export function FinanceSettings({
                 <tbody>
                   {rows.map((r) => (
                     <tr key={r.id}>
-                      <td>
+                      <td data-label="Nome">
                         <strong>{r.name}</strong>
                       </td>
-                      <td className="muted">{details(r.id)}</td>
-                      <td>
+                      <td className="muted" data-label="Configuração">{details(r.id)}</td>
+                      <td data-label="Situação">
                         <span className="badge">
                           {r.status === "ACTIVE" ? "Ativo" : "Inativo"}
                         </span>
                       </td>
-                      <td>
+                      <td data-label="Ações">
                         <Button
                           variant="outline"
                           size="sm"

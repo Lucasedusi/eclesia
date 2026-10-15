@@ -147,6 +147,7 @@ export function FinanceCatalogForm({
   return (
     <Modal
       title={`${id ? "Editar" : "Novo"} ${catalogLabels[entity].toLowerCase()}`}
+      className="finance-secondary-drawer"
       busy={busy}
       onClose={() => {
         if (!dirty || window.confirm("Descartar as alterações deste cadastro?"))

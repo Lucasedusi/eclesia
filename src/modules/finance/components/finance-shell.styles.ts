@@ -132,6 +132,28 @@ export const FinanceStyles = createGlobalStyle`
  @media(max-width:1100px){.finance .finance-attendance-form{grid-template-columns:minmax(0,1fr)}.finance .finance-attendance-summary{position:static}.finance .finance-attendance-summary>.row{display:flex}}
  @media(max-width:480px){:is(.finance,#finance-modal-root) .finance-person-search{grid-template-columns:1fr}.finance .finance-attendance-summary>.row{display:grid}}
  @media(max-width:760px){
+  .finance .finance-secondary-heading{align-items:stretch;gap:14px}
+  .finance .finance-secondary-heading>*{width:100%}
+  .finance .finance-secondary-heading-actions{display:grid;grid-template-columns:1fr;gap:8px}
+  .finance .finance-secondary-heading-actions button,.finance .finance-secondary-heading>button{width:100%;min-height:44px}
+  .finance .finance-settings-tabs{flex-wrap:nowrap;overflow-x:auto;max-width:100%;padding-bottom:5px;scrollbar-width:thin}
+  .finance .finance-settings-tabs button{flex:none;min-height:44px;white-space:nowrap}
+  :is(.finance,#finance-modal-root) .finance-mobile-card-table,:is(.finance,#finance-modal-root) .finance-mobile-card-table tbody,:is(.finance,#finance-modal-root) .finance-mobile-card-table tr,:is(.finance,#finance-modal-root) .finance-mobile-card-table td{display:block;width:100%}
+  :is(.finance,#finance-modal-root) .finance-mobile-card-table thead{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+  :is(.finance,#finance-modal-root) .finance-mobile-card-table tbody{display:grid;gap:10px}
+  :is(.finance,#finance-modal-root) .finance-mobile-card-table tr{padding:10px 14px;border:1px solid #E3EAE6;border-radius:12px;background:#fff}
+  :is(.finance,#finance-modal-root) .finance-mobile-card-table td{display:block;padding:7px 0;border:0;min-width:0;overflow-wrap:anywhere}
+  :is(.finance,#finance-modal-root) .finance-mobile-card-table td::before{content:attr(data-label);display:block;margin-bottom:2px;color:#6D7F76;font-size:11px;font-weight:500}
+  :is(.finance,#finance-modal-root) .finance-mobile-card-table td.money{text-align:left;white-space:normal}
+  :is(.finance,#finance-modal-root) .finance-mobile-card-table td button{min-width:44px;min-height:44px}
+  .finance .finance-cashbox-grid{gap:12px}
+  .finance .finance-cashbox{padding:18px;gap:14px}
+  .finance .finance-cashbox-actions{display:grid;grid-template-columns:1fr;gap:8px}
+  .finance .finance-cashbox-actions button{width:100%;min-height:44px}
+  .finance .finance-statement-meta{padding:18px}
+  .finance .finance-statement-meta .badge{margin-top:8px}
+  #finance-modal-root .finance-secondary-drawer{inset:0;width:100vw;max-width:100vw;height:100dvh;max-height:100dvh;border-radius:0}
+  #finance-modal-root .finance-secondary-drawer button[aria-label="Fechar modal"]{min-width:44px;min-height:44px}
   :is(.finance,#finance-modal-root) .finance-entry-review dl{grid-template-columns:1fr}
   :is(.finance,#finance-modal-root) .finance-entry-summary{position:static;min-width:0}
   :is(.finance,#finance-modal-root) .finance-entry-secondary-actions{display:grid;grid-template-columns:1fr;gap:8px;width:100%}

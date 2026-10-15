@@ -42,14 +42,14 @@ export function FinanceStatements({
         : current;
   return (
     <div className="stack">
-      <div className="row spread no-print">
+      <div className="row spread no-print finance-secondary-heading">
         <div>
           <h1>Demonstrativos</h1>
           <p className="muted">
             Confira a distribuição mensal e consulte todas as versões.
           </p>
         </div>
-        <div className="row">
+        <div className="row finance-secondary-heading-actions">
           {versions.length > 0 && (
             <Button variant="outline" onClick={() => setHistoryOpen(true)}>
               <History size={16} />
@@ -126,11 +126,11 @@ export function FinanceStatements({
       {historyOpen && (
         <Modal
           title="Histórico de demonstrativos"
-          className="finance-drawer"
+          className="finance-drawer finance-secondary-drawer"
           onClose={() => setHistoryOpen(false)}
         >
           <div className="table-scroll">
-            <table>
+            <table className="finance-mobile-card-table">
               <thead>
                 <tr>
                   <th>Versão</th>
@@ -143,21 +143,21 @@ export function FinanceStatements({
               <tbody>
                 {versions.map((v) => (
                   <tr key={v.id}>
-                    <td>{v.revision}</td>
-                    <td>
+                    <td data-label="Versão">{v.revision}</td>
+                    <td data-label="Geração">
                       {new Date(v.createdAt).toLocaleString("pt-BR", {
                         timeZone: "America/Sao_Paulo",
                       })}
                     </td>
-                    <td>{v.createdByName}</td>
-                    <td>
+                    <td data-label="Responsável">{v.createdByName}</td>
+                    <td data-label="Situação">
                       {v.superseded
                         ? "Substituída"
                         : v.stale
                           ? "Desatualizada"
                           : "Atual"}
                     </td>
-                    <td>
+                    <td data-label="Consulta">
                       <Link
                         href={financeLocation(
                           `/financeiro/demonstrativos/${v.id}`,

@@ -83,7 +83,7 @@ export function FinanceStatementDetail({
       <section className="card stack">
         <h2>Entradas por departamento</h2>
         <div className="table-scroll">
-          <table>
+          <table className="finance-mobile-card-table">
             <thead>
               <tr>
                 <th>Departamento</th>
@@ -94,11 +94,11 @@ export function FinanceStatementDetail({
             <tbody>
               {s.departments.map((d) => (
                 <tr key={d.id}>
-                  <td>{d.name}</td>
-                  <td>
+                  <td data-label="Departamento">{d.name}</td>
+                  <td data-label="Participação">
                     {d.participatesInBase ? "Incluído na base" : "Fora da base"}
                   </td>
-                  <td className="money">{formatMoney(d.incomeCents)}</td>
+                  <td className="money" data-label="Entradas">{formatMoney(d.incomeCents)}</td>
                 </tr>
               ))}
             </tbody>
@@ -108,7 +108,7 @@ export function FinanceStatementDetail({
       <section className="card stack">
         <h2>Memória de cálculo</h2>
         <div className="table-scroll">
-          <table>
+          <table className="finance-mobile-card-table">
             <thead>
               <tr>
                 <th>Item</th>
@@ -121,16 +121,16 @@ export function FinanceStatementDetail({
             <tbody>
               {s.items.map((i, index) => (
                 <tr key={index}>
-                  <td>
+                  <td data-label="Item">
                     {i.name}
                     {i.role === "PREBEND_DEDUCTION" && (
                       <div className="muted">Descontado da prebenda bruta</div>
                     )}
                   </td>
-                  <td>
+                  <td data-label="Base utilizada">
                     {i.calculation === "FIXED" ? "—" : formatMoney(i.baseCents)}
                   </td>
-                  <td>
+                  <td data-label="Cálculo">
                     {i.calculation === "FIXED"
                       ? "Valor fixo"
                       : `${i.percentage}%`}
@@ -149,12 +149,12 @@ export function FinanceStatementDetail({
                       </>
                     )}
                   </td>
-                  <td>
+                  <td data-label="Destino">
                     {i.destination === "LOCAL_PASTOR"
                       ? "Pastor · valor bruto"
                       : "Catedral"}
                   </td>
-                  <td className="money">{formatMoney(i.calculatedCents)}</td>
+                  <td className="money" data-label="Valor">{formatMoney(i.calculatedCents)}</td>
                 </tr>
               ))}
             </tbody>
