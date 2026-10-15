@@ -141,8 +141,8 @@ export const FinanceStyles = createGlobalStyle`
  @media(max-width:480px){:is(.finance,#finance-modal-root) .finance-person-search{grid-template-columns:1fr}.finance .finance-attendance-summary>.row{display:grid}}
  @media(max-width:760px){
   .finance .finance-pwa-status{padding:0 16px}
-  .finance .finance-pwa-install{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:8px}
-  .finance .finance-pwa-install>button{min-height:36px;padding:6px 10px;border-color:transparent;background:transparent}
+  .finance .finance-pwa-install{display:grid;gap:8px}
+  .finance .finance-pwa-install>button{justify-content:flex-start;min-height:48px;padding:10px 12px;border:0;background:transparent;color:#18352C;font-size:14px;font-weight:400}
   .finance .finance-pwa-install-help{display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border-radius:10px;background:#EDF7F0;color:#176348;font-size:12px;line-height:1.5}
   .finance .finance-pwa-install-help>span{flex:1}
   .finance .finance-pwa-install-help button{min-width:44px;min-height:44px}
@@ -413,9 +413,9 @@ export const Workspace = styled.div`
   .finance-topbar > .row:last-child {
     margin-left: auto;
   }
-  .finance-mobile-title,
   .finance-mobile-navigation,
-  .finance-mobile-actions,
+  .finance-summary-label-mobile,
+  .finance-summary-value-mobile,
   .finance-overview-recent-mobile,
   .row.finance-mobile-filter-reset,
   .finance-mobile-nature,
@@ -615,61 +615,82 @@ export const Workspace = styled.div`
       min-width: 44px;
       min-height: 44px;
     }
-    .finance-overview-summaries {
+    .finance-overview-heading {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+    .finance-overview-heading p,
+    .finance-overview .finance-overview-breakdown,
+    .finance-overview .finance-daily-chart,
+    .finance-summary-label-desktop,
+    .finance-summary-value-desktop,
+    .finance-overview-summaries .finance-summary-card:not(:first-child) .finance-summary-caption {
+      display: none;
+    }
+    .finance-summary-label-mobile,
+    .finance-summary-value-mobile {
+      display: inline;
+    }
+    .finance-overview .finance-overview-summaries {
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 12px;
     }
     .finance-overview-summaries .finance-summary-card {
-      padding: 17px;
-      gap: 8px;
+      padding: 14px;
+      gap: 10px;
+      align-content: start;
+      min-width: 0;
+    }
+    .finance-overview-summaries .finance-summary-card > .row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 6px;
+    }
+    .finance-overview-summaries .finance-summary-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
+    }
+    .finance-overview-summaries .finance-summary-icon svg {
+      width: 18px;
+      height: 18px;
+    }
+    .finance-overview-summaries .finance-summary-label {
+      font-size: 13px !important;
+      font-weight: 600;
+      opacity: 1 !important;
+    }
+    .finance-overview-summaries .finance-summary-card .amount {
+      margin-top: 0;
+      line-height: 1.2;
+      overflow-wrap: anywhere;
     }
     .finance-overview-summaries .finance-summary-card:first-child {
       grid-column: 1 / -1;
-      padding: 22px;
+      padding: 18px;
+      gap: 8px;
+    }
+    .finance-overview-summaries .finance-summary-card:first-child .finance-summary-label {
+      font-size: 14px !important;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .finance-overview-summaries .finance-summary-card:first-child .amount {
+      font-size: 30px;
     }
     .finance-overview-summaries .finance-summary-card:not(:first-child) .amount {
       font-size: clamp(18px, 5vw, 24px);
-      overflow-wrap: anywhere;
-    }
-    .finance-mobile-actions {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 8px;
-    }
-    .finance-mobile-actions a {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 7px;
-      min-width: 0;
-      min-height: 74px;
-      padding: 8px 2px;
-      color: #18352c;
-      font-size: 11px;
-      font-weight: 600;
-      line-height: 1.2;
-      text-align: center;
-      text-decoration: none;
-      overflow-wrap: anywhere;
-    }
-    .finance-mobile-action-icon {
-      display: grid;
-      place-items: center;
-      width: 44px;
-      height: 44px;
-      border-radius: 14px;
-      background: #e7f4eb;
-      color: #087f5b;
-    }
-    .finance-mobile-actions a:focus-visible {
-      outline: 2px solid #087f5b;
-      outline-offset: 2px;
     }
     .finance-overview-recent-mobile {
       display: grid;
     }
-    .finance-overview-recent-desktop {
+    .finance-overview .finance-overview-recent-desktop {
       display: none;
     }
     .finance-overview-recent-list {
@@ -710,12 +731,6 @@ export const Workspace = styled.div`
       gap: 8px;
       padding: 14px 16px 12px;
     }
-    .finance-mobile-title {
-      display: block;
-      color: #0b3d32;
-      font-size: 18px;
-      letter-spacing: -0.4px;
-    }
     .finance-context {
       display: grid;
       grid-template-columns: minmax(0, 1fr) minmax(125px, 0.7fr);
@@ -725,9 +740,11 @@ export const Workspace = styled.div`
     .finance-context label {
       min-width: 0;
     }
-    .finance-context select,
-    .finance-context input {
+    .finance-topbar .finance-context select,
+    .finance-topbar .finance-context input {
       min-height: 44px;
+      min-width: 0;
+      width: 100%;
       max-width: 100%;
     }
     .finance-single-unit {
@@ -805,6 +822,9 @@ export const Workspace = styled.div`
       border-radius: 16px;
       background: #fff;
       box-shadow: 0 14px 42px #0b3d3226;
+    }
+    .finance-mobile-more[hidden] {
+      display: none;
     }
     .finance-mobile-more a {
       display: flex;

@@ -21,7 +21,7 @@ export function FinanceCharts({ overview }: { overview: FinanceOverview }) {
         gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,330px),1fr))",
       }}
     >
-      <section className="card stack">
+      <section className="card stack finance-daily-chart">
         <div className="row spread">
           <h2>Movimentação do mês</h2>
           <div className="row muted">

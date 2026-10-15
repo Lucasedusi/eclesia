@@ -5,15 +5,12 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   ChevronRight,
-  HandCoins,
-  Plus,
   Wallet,
 } from "lucide-react";
 import type {
   FinanceOverview as Overview,
   FinanceTransactionPage,
 } from "../types/finance-query.types";
-import type { FinanceCapabilities } from "../types/finance.types";
 import { formatMoney } from "../utils/finance-money";
 import { financeLocation } from "../utils/finance-navigation";
 import { FinanceCharts } from "./finance-charts";
@@ -125,18 +122,16 @@ export function FinanceOverview({
   recent,
   unit,
   month,
-  capabilities,
 }: {
   overview: Overview;
   recent: FinanceTransactionPage;
   unit: string;
   month: string;
-  capabilities: FinanceCapabilities;
 }) {
-  const { navigate } = useFinanceNavigation();
   const cards = [
     {
       label: "Saldo ao final do período",
+      mobileLabel: "SALDO FINAL",
       value: overview.closingCents,
       icon: Wallet,
       featured: true,
@@ -144,6 +139,7 @@ export function FinanceOverview({
     {
       tone: "income",
       label: "Entradas no mês",
+      mobileLabel: "Entradas",
       value: overview.incomeCents,
       icon: ArrowDownLeft,
       featured: false,
@@ -151,42 +147,15 @@ export function FinanceOverview({
     {
       tone: "expense",
       label: "Saídas no mês",
+      mobileLabel: "Saídas",
       value: overview.expenseCents,
       icon: ArrowUpRight,
       featured: false,
     },
   ];
-  const shortcuts = [
-    {
-      label: "Atendimento",
-      path: "/financeiro/atendimento",
-      icon: HandCoins,
-      show: capabilities.create,
-    },
-    {
-      label: "Nova entrada",
-      path: "/financeiro/lancamentos",
-      icon: Plus,
-      extras: { novo: "entrada" },
-      show: capabilities.create,
-    },
-    {
-      label: "Nova saída",
-      path: "/financeiro/lancamentos",
-      icon: ArrowUpRight,
-      extras: { novo: "saida" },
-      show: capabilities.create,
-    },
-    {
-      label: "Caixas",
-      path: "/financeiro/caixas",
-      icon: Wallet,
-      show: true,
-    },
-  ];
   return (
     <div className="stack finance-overview">
-      <div className="row spread">
+      <div className="row spread finance-overview-heading">
         <div>
           <h1>Visão geral</h1>
           <p className="muted">
@@ -210,7 +179,10 @@ export function FinanceOverview({
             }
           >
             <div className="row spread">
-              <span style={{ fontSize: 12, opacity: 0.8 }}>{card.label}</span>
+              <span className="finance-summary-label" style={{ fontSize: 12, opacity: 0.8 }}>
+                <span className="finance-summary-label-desktop">{card.label}</span>
+                <span className="finance-summary-label-mobile">{card.mobileLabel}</span>
+              </span>
               <span className="finance-summary-icon">
                 <card.icon
                   size={22}
@@ -230,9 +202,14 @@ export function FinanceOverview({
                 card.featured && card.value < 0 ? { color: "#FFD4D7" } : undefined
               }
             >
-              {formatMoney(card.value)}
+              <span className="finance-summary-value-desktop">{formatMoney(card.value)}</span>
+              <span className="finance-summary-value-mobile">
+                {formatMoney(card.value).split("\u00a0")[0]}{"\u00a0"}
+                <wbr />
+                {formatMoney(card.value).split("\u00a0")[1]}
+              </span>
             </div>
-            <span style={{ fontSize: 11, opacity: 0.75 }}>
+            <span className="finance-summary-caption" style={{ fontSize: 11, opacity: 0.75 }}>
               {card.featured
                 ? "Posição consolidada dos caixas"
                 : "Lançamentos confirmados"}
@@ -240,36 +217,9 @@ export function FinanceOverview({
           </section>
         ))}
       </div>
-      <nav className="finance-mobile-actions" aria-label="Ações rápidas">
-        {shortcuts
-          .filter((shortcut) => shortcut.show)
-          .map((shortcut) => {
-            const href = financeLocation(
-              shortcut.path,
-              unit,
-              month,
-              shortcut.extras,
-            );
-            return (
-              <Link
-                key={shortcut.label}
-                href={href}
-                onNavigate={(event) => {
-                  event.preventDefault();
-                  navigate(href);
-                }}
-              >
-                <span className="finance-mobile-action-icon">
-                  <shortcut.icon size={20} aria-hidden="true" />
-                </span>
-                <span>{shortcut.label}</span>
-              </Link>
-            );
-          })}
-      </nav>
       <RecentTransactions recent={recent} unit={unit} month={month} mobile />
       <div
-        className="card row spread"
+        className="card row spread finance-overview-breakdown"
         style={{ padding: "16px 22px", fontSize: 12 }}
       >
         <span>

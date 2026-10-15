@@ -78,25 +78,18 @@ function renderOverview(create: boolean) {
         },
         unit: "unit-1",
         month: "2026-10",
-        capabilities: selected,
       }),
     ),
   );
 }
 
 describe("finance mobile overview", () => {
-  it("offers scoped quick actions before the charts", () => {
+  it("keeps recent entries and their scoped full-list link", () => {
     const html = renderOverview(true);
-    expect(html).toContain('aria-label="Ações rápidas"');
-    expect(html).toContain(
-      "/financeiro/lancamentos?novo=entrada&amp;unidade=unit-1&amp;mes=2026-10",
-    );
-    expect(html).toContain(
-      "/financeiro/lancamentos?novo=saida&amp;unidade=unit-1&amp;mes=2026-10",
-    );
-    expect(html.indexOf("Últimos lançamentos")).toBeLessThan(
-      html.indexOf("Movimentação do mês"),
-    );
+    expect(html).toContain("/financeiro/lancamentos?unidade=unit-1&amp;mes=2026-10");
+    expect(html).toContain("Pessoa Exemplo");
+    expect(html).toContain("Oferta");
+    expect(html).toContain("12,00");
   });
 
   it("does not offer entry actions without create capability", () => {

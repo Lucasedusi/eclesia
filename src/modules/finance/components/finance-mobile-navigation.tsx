@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArrowLeft, Ellipsis, type LucideIcon } from "lucide-react";
+import { FinancePwaInstall } from "./finance-pwa-install";
 import { financeLocation } from "../utils/finance-navigation";
 
 type Item = { label: string; path: string; icon: LucideIcon };
@@ -61,22 +62,22 @@ export function FinanceMobileNavigation({
 
   return (
     <nav className="finance-mobile-navigation no-print" aria-label="Navegação financeira mobile">
-      {moreOpen && (
-        <div id="finance-mobile-more" className="finance-mobile-more" role="group" aria-label="Mais opções">
-          {secondary.map((item) => link(item, false))}
-          <Link
-            href="/"
-            onNavigate={(event) => {
-              event.preventDefault();
-              setMoreOpen(false);
-              navigate("/");
-            }}
-          >
-            <ArrowLeft size={20} aria-hidden="true" />
-            <span>Voltar ao sistema</span>
-          </Link>
-        </div>
-      )}
+      {/* Keep installation listening while the menu is closed. */}
+      <div id="finance-mobile-more" className="finance-mobile-more" role="group" aria-label="Mais opções" hidden={!moreOpen}>
+        {secondary.map((item) => link(item, false))}
+        <FinancePwaInstall />
+        <Link
+          href="/"
+          onNavigate={(event) => {
+            event.preventDefault();
+            setMoreOpen(false);
+            navigate("/");
+          }}
+        >
+          <ArrowLeft size={20} aria-hidden="true" />
+          <span>Voltar ao sistema</span>
+        </Link>
+      </div>
       <div className="finance-mobile-navigation-row">
         {primary.map((item) => link(item, true))}
         <button

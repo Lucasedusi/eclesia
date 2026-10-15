@@ -26,7 +26,8 @@ test.describe("authenticated finance PWA", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     const response = await page.goto("/financeiro");
     expect(response?.headers()["cache-control"]).toContain("no-store");
-    await expect(page.getByRole("button", { name: "Instalar aplicativo" })).toBeVisible();
+    await page.getByRole("button", { name: "Mais", exact: true }).click();
+    await expect(page.getByRole("group", { name: "Mais opções" }).getByRole("button", { name: "Instalar aplicativo" })).toBeVisible();
     await page.evaluate(async () => {
       await navigator.serviceWorker.ready;
       if (!navigator.serviceWorker.controller) await new Promise<void>((resolve) => navigator.serviceWorker.addEventListener("controllerchange", () => resolve(), { once: true }));
@@ -41,6 +42,50 @@ test.describe("authenticated finance PWA", () => {
     await page.reload();
     await expect(page.getByRole("heading", { name: "Sem conexão" })).toBeVisible();
     await page.context().setOffline(false);
+  });
+
+  test("installation offered while More is closed remains available in the menu", async ({ page }) => {
+    await page.setViewportSize({ width: 393, height: 852 });
+    await page.goto("/financeiro");
+    const more = page.getByRole("button", { name: "Mais", exact: true });
+    await more.click();
+    await more.click();
+    await expect(page.getByRole("button", { name: "Instalar aplicativo" })).toBeHidden();
+    await page.evaluate(() => {
+      const event = new Event("beforeinstallprompt", { cancelable: true });
+      Object.assign(event, {
+        prompt: async () => { document.documentElement.dataset.installPrompted = "true"; },
+        userChoice: Promise.resolve({ outcome: "accepted" }),
+      });
+      window.dispatchEvent(event);
+    });
+    await more.click();
+    await page.getByRole("group", { name: "Mais opções" }).getByRole("button", { name: "Instalar aplicativo" }).click();
+    await expect(page.locator("html")).toHaveAttribute("data-install-prompted", "true");
+    await page.evaluate(() => window.dispatchEvent(new Event("appinstalled")));
+    await expect(page.getByRole("button", { name: "Instalar aplicativo" })).toBeHidden();
+  });
+
+  test("iPhone installation guidance is available in More and can be dismissed", async ({ page }) => {
+    await page.addInitScript(() => Object.defineProperty(navigator, "userAgent", { value: "iPhone" }));
+    await page.setViewportSize({ width: 393, height: 852 });
+    await page.goto("/financeiro");
+    await page.getByRole("button", { name: "Mais", exact: true }).click();
+    await page.getByRole("button", { name: "Instalar aplicativo" }).click();
+    await expect(page.getByText("No iPhone, abra no Safari", { exact: false })).toBeVisible();
+    await page.getByRole("button", { name: "Fechar orientação de instalação" }).click();
+    await expect(page.getByText("No iPhone, abra no Safari", { exact: false })).toBeHidden();
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("group", { name: "Mais opções" })).toBeHidden();
+  });
+
+  test("installed standalone app does not offer installation in More", async ({ page }) => {
+    await page.addInitScript(() => Object.defineProperty(navigator, "standalone", { value: true }));
+    await page.setViewportSize({ width: 393, height: 852 });
+    await page.goto("/financeiro");
+    await page.getByRole("button", { name: "Mais", exact: true }).click();
+    await expect(page.getByRole("group", { name: "Mais opções" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Instalar aplicativo" })).toBeHidden();
   });
 
   test("expired finance access returns to finance after login", async ({ browser, page }) => {

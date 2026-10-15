@@ -281,7 +281,6 @@ export function FinanceShell({
                 <ChevronLeft size={16} />
               )}
             </button>
-            <strong className="finance-mobile-title">Financeiro</strong>
             <FinanceContextBar
               units={context.units}
               selectedUnitId={unit.id}
