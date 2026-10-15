@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Download, RefreshCw, WifiOff, X } from "lucide-react";
+import { planFinancePwaUpdate } from "./finance-pwa-update";
 
 type InstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -45,8 +46,10 @@ export function FinancePwaController({
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
   const [installHelp, setInstallHelp] = useState(false);
   const [waiting, setWaiting] = useState<ServiceWorker | null>(null);
+  const [readyToReload, setReadyToReload] = useState(false);
   const [updateMessage, setUpdateMessage] = useState("");
   const reloadOnControl = useRef(false);
+  const hadController = useRef(false);
 
   useEffect(() => {
     const installed = () => {
@@ -69,30 +72,52 @@ export function FinancePwaController({
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
     let mounted = true;
+    let registration: ServiceWorkerRegistration | null = null;
+    let installing: ServiceWorker | null = null;
+    hadController.current = Boolean(navigator.serviceWorker.controller);
+    const showWaiting = () => {
+      if (mounted && registration?.waiting) setWaiting(registration.waiting);
+    };
+    const onStateChange = () => {
+      if (installing?.state === "installed" && navigator.serviceWorker.controller) showWaiting();
+    };
+    const onUpdateFound = () => {
+      installing?.removeEventListener("statechange", onStateChange);
+      installing = registration?.installing ?? null;
+      installing?.addEventListener("statechange", onStateChange);
+    };
     const onControllerChange = () => {
-      if (reloadOnControl.current) window.location.reload();
+      if (reloadOnControl.current) {
+        reloadOnControl.current = false;
+        if (hasUnsavedChanges()) {
+          setWaiting(null);
+          setReadyToReload(true);
+          setUpdateMessage("Salve ou descarte o preenchimento antes de atualizar o aplicativo.");
+        } else {
+          window.location.reload();
+        }
+      } else if (hadController.current) {
+        setWaiting(null);
+        setReadyToReload(true);
+        setUpdateMessage("Uma atualização está pronta para recarregar.");
+      }
+      hadController.current = true;
     };
     navigator.serviceWorker.addEventListener("controllerchange", onControllerChange);
-    void navigator.serviceWorker.register("/financeiro-sw.js", { scope: "/" }).then((registration) => {
+    void navigator.serviceWorker.register("/financeiro-sw.js", { scope: "/" }).then((activeRegistration) => {
       if (!mounted) return;
-      const showWaiting = () => {
-        if (registration.waiting) setWaiting(registration.waiting);
-      };
+      registration = activeRegistration;
       showWaiting();
-      registration.addEventListener("updatefound", () => {
-        const installing = registration.installing;
-        installing?.addEventListener("statechange", () => {
-          if (installing.state === "installed" && navigator.serviceWorker.controller)
-            showWaiting();
-        });
-      });
+      registration.addEventListener("updatefound", onUpdateFound);
       void registration.update().catch(() => {});
     }).catch(() => {});
     return () => {
       mounted = false;
       navigator.serviceWorker.removeEventListener("controllerchange", onControllerChange);
+      registration?.removeEventListener("updatefound", onUpdateFound);
+      installing?.removeEventListener("statechange", onStateChange);
     };
-  }, []);
+  }, [hasUnsavedChanges]);
 
   async function install() {
     if (!installPrompt) {
@@ -105,11 +130,20 @@ export function FinancePwaController({
   }
 
   function update() {
-    if (!waiting) return;
-    if (hasUnsavedChanges()) {
+    const decision = planFinancePwaUpdate({
+      waiting: Boolean(waiting),
+      alreadyActivated: readyToReload,
+      dirty: hasUnsavedChanges(),
+    });
+    if (decision === "BLOCKED") {
       setUpdateMessage("Salve ou descarte o preenchimento antes de atualizar o aplicativo.");
       return;
     }
+    if (decision === "RELOAD") {
+      window.location.reload();
+      return;
+    }
+    if (decision !== "ACTIVATE" || !waiting) return;
     setUpdateMessage("Atualizando o aplicativo…");
     reloadOnControl.current = true;
     waiting.postMessage({ type: "SKIP_WAITING" });
@@ -123,7 +157,7 @@ export function FinancePwaController({
           <span>Sem conexão. Mantenha esta tela aberta; operações financeiras exigem internet.</span>
         </div>
       )}
-      {waiting && (
+      {(waiting || readyToReload) && (
         <div className="finance-pwa-update" role="status">
           <span>Uma atualização está pronta.</span>
           <button type="button" onClick={update}>

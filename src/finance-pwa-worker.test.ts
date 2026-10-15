@@ -53,4 +53,15 @@ describe("finance service worker cache", () => {
     expect(state.requests).toEqual(["https://example.test/financeiro/lancamentos"]);
     expect(state.cached).toEqual([]);
   });
+
+  it("never writes a successful private finance response to Cache Storage", async () => {
+    const state = worker(true);
+    let result: Promise<Response> | undefined;
+    state.listeners.get("fetch")?.({
+      request: { url: "https://example.test/financeiro", mode: "navigate", method: "GET" },
+      respondWith: (promise) => { result = promise; },
+    });
+    expect(await (await result)!.text()).toBe("private finance HTML");
+    expect(state.cached).toEqual([]);
+  });
 });
