@@ -294,6 +294,26 @@ export function FinanceEntryForm({
         ?.querySelector<HTMLInputElement>("[data-person-search]")
         ?.focus();
   }, [identityVersion]);
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+    const keepFocusedFieldVisible = () => {
+      if (
+        !window.matchMedia("(max-width: 760px)").matches ||
+        viewport.height >= window.innerHeight * 0.85
+      )
+        return;
+      const focused = document.activeElement;
+      if (
+        focused instanceof HTMLElement &&
+        form.current?.contains(focused) &&
+        focused.matches("input, select, textarea")
+      )
+        focused.scrollIntoView({ block: "center", inline: "nearest" });
+    };
+    viewport.addEventListener("resize", keepFocusedFieldVisible);
+    return () => viewport.removeEventListener("resize", keepFocusedFieldVisible);
+  }, []);
   useFinanceDirtyGuard(dirty || ambiguous, () => save("SAVE"), discard);
   return (
     <form
@@ -700,45 +720,116 @@ export function FinanceEntryForm({
       </fieldset>
       <aside
         className={
-          mode === "ATTENDANCE" ? "finance-attendance-summary stack" : "stack"
+          mode === "ATTENDANCE"
+            ? "finance-attendance-summary finance-entry-summary stack"
+            : "finance-entry-summary stack"
         }
       >
-        {mode === "ATTENDANCE" && (
-          <div className="finance-attendance-total stack">
-            <h3>Resumo do atendimento</h3>
-            <p className="muted">
-              {state.personLabel ||
-                (state.contributor?.kind === "COLLECTIVE"
-                  ? "Contribuição coletiva"
-                  : "Identifique a pessoa para começar")}
-            </p>
+        <section
+          className="finance-entry-review stack"
+          aria-label={mode === "ATTENDANCE" ? "Conferência do atendimento" : "Conferência do lançamento"}
+        >
+          <h3>Conferir antes de confirmar</h3>
+          <dl>
+            <div>
+              <dt>{direction === "EXPENSE" ? "Favorecido" : "Pessoa"}</dt>
+              <dd>
+                {direction === "EXPENSE"
+                  ? state.beneficiaryName || "Não informado"
+                  : state.personLabel ||
+                    (state.contributor?.kind === "COLLECTIVE"
+                      ? "Contribuição coletiva"
+                      : "Não identificada")}
+              </dd>
+            </div>
+            <div>
+              <dt>Data</dt>
+              <dd>{state.date.split("-").reverse().join("/")}</dd>
+            </div>
+            <div>
+              <dt>Caixa ou conta</dt>
+              <dd>{box?.name || "Não selecionado"}</dd>
+            </div>
+            <div>
+              <dt>Forma de pagamento</dt>
+              <dd>
+                {catalogs.paymentMethods.find((method) => method.id === state.paymentMethodId)?.name ||
+                  "Não selecionada"}
+              </dd>
+            </div>
+          </dl>
+          <div className="finance-entry-review-items">
             <span className="muted">
               {lines.length}{" "}
-              {lines.length === 1 ? "contribuição" : "contribuições"}
+              {direction === "EXPENSE"
+                ? lines.length === 1
+                  ? "item"
+                  : "itens"
+                : lines.length === 1
+                  ? "contribuição"
+                  : "contribuições"}
             </span>
-            <span>Total do atendimento</span>
-            <strong data-testid="attendance-total" style={{ fontSize: 25 }}>
+            {lines.map((line, index) => (
+              <div key={index} className="row spread">
+                <span className="finance-entry-review-item-label">
+                  <span>
+                    {catalogs.categories.find((category) => category.id === line.categoryId)?.name ||
+                      `Item ${index + 1} sem categoria`}
+                  </span>
+                  {line.departmentId && (
+                    <small className="muted">
+                      {catalogs.departments.find((department) => department.id === line.departmentId)?.name}
+                    </small>
+                  )}
+                  {line.titheClassificationId && (
+                    <small className="muted">
+                      Dízimo: {catalogs.classifications.find((classification) => classification.id === line.titheClassificationId)?.name}
+                    </small>
+                  )}
+                </span>
+                <strong>{line.amount ? `R$ ${line.amount}` : "Sem valor"}</strong>
+              </div>
+            ))}
+          </div>
+          <div className="finance-entry-review-total row spread">
+            <span>
+              {mode === "ATTENDANCE" ? "Total do atendimento" : "Total do lançamento"}
+            </span>
+            <strong data-testid={mode === "ATTENDANCE" ? "attendance-total" : undefined}>
               {formatMoney(total)}
             </strong>
           </div>
-        )}
-        <div className="row">
-          <Button
-            type="submit"
-            variant={direction === "EXPENSE" ? "danger" : "primary"}
-            className={mode === "ATTENDANCE" ? "finance-attendance-action" : undefined}
-            aria-busy={busy}
-            disabled={busy || uploading}
-          >
-            <span className="finance-action-icon">{busy ? <span className="finance-spinner" aria-hidden="true" /> : <Save size={16} aria-hidden="true" />}</span>
-            <span className="finance-action-label">{initialTransaction
-              ? "Salvar correção"
-              : mode === "ATTENDANCE"
-                ? "Confirmar atendimento"
-                : "Salvar"}</span>
-          </Button>
+        </section>
+        <div className="finance-entry-actions">
+          <div className="finance-entry-primary-action">
+            <span className="finance-entry-primary-total">
+              Total <strong>{formatMoney(total)}</strong>
+            </span>
+            <Button
+              type="submit"
+              variant={direction === "EXPENSE" ? "danger" : "primary"}
+              className={mode === "ATTENDANCE" ? "finance-attendance-action" : undefined}
+              aria-busy={busy}
+              disabled={busy || uploading}
+            >
+              <span className="finance-action-icon">
+                {busy ? (
+                  <span className="finance-spinner" aria-hidden="true" />
+                ) : (
+                  <Save size={16} aria-hidden="true" />
+                )}
+              </span>
+              <span className="finance-action-label">
+                {initialTransaction
+                  ? "Salvar correção"
+                  : mode === "ATTENDANCE"
+                    ? "Confirmar atendimento"
+                    : "Salvar"}
+              </span>
+            </Button>
+          </div>
           {!initialTransaction && (
-            <>
+            <div className="finance-entry-secondary-actions">
               <Button
                 variant="outline"
                 disabled={busy || uploading}
@@ -755,7 +846,7 @@ export function FinanceEntryForm({
               >
                 <span className="finance-action-icon"><Printer size={16} aria-hidden="true" /></span><span className="finance-action-label">Salvar e imprimir</span>
               </Button>
-            </>
+            </div>
           )}
         </div>
       </aside>

@@ -11,7 +11,7 @@ export function FinanceAttendance(props: {
   capabilities: FinanceCapabilities;
 }) {
   return (
-    <div className="stack">
+    <div className="stack finance-attendance-page">
       <div className="row spread">
         <div>
           <h1>Atendimento</h1>
@@ -21,7 +21,7 @@ export function FinanceAttendance(props: {
         </div>
       </div>
       <div>
-        <section className="card stack">
+        <section className="card stack finance-attendance-card">
           <div className="row">
             <ShieldCheck color="#087F5B" size={18} />
             <span className="muted">

@@ -16,7 +16,7 @@ export function FinanceTransactionDrawer(
             : "Nova entrada"
       }
       description="A confirmação registra o lançamento e atualiza o caixa."
-      className="finance-drawer"
+      className="finance-drawer finance-entry-drawer"
       busy={status.busy}
       onClose={() => {
         if (
