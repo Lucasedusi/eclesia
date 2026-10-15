@@ -45,7 +45,7 @@ export function FinanceReceipt({
   return (
     <div className="stack">
       <style>{`@media print{@page{size:${width}mm auto;margin:3mm}html,body{background:white!important}.financial-receipt{width:${width - 6}mm!important;max-width:${width - 6}mm!important;border:0!important;padding:0!important;margin:0!important;font-size:10px!important}.financial-receipt h1{font-size:17px!important}.financial-receipt .receipt-number{overflow-wrap:anywhere}}`}</style>
-      <div className="no-print row finance-receipt-controls">
+      <div className="no-print row finance-receipt-controls finance-mobile-receipt-controls">
         <label>
           Largura do papel
           <select

@@ -873,6 +873,7 @@ export const Workspace = styled.div`
   .finance-report-controls button {
     height: 42px;
     min-height: 42px;
+    min-width: 180px;
     padding: 8px 18px;
   }
   .finance-report-empty {
@@ -912,8 +913,16 @@ export const Workspace = styled.div`
     color: #922b30;
   }
   @media (max-width: 760px) {
+    .finance-reports .card {
+      padding: 18px;
+    }
     .finance-report-types {
       grid-template-columns: 1fr;
+    }
+    .finance-report-controls {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 12px;
     }
     .finance-report-controls label {
       min-width: 0;
@@ -922,12 +931,42 @@ export const Workspace = styled.div`
     }
     .finance-report-controls button {
       width: 100%;
+      min-width: 0;
+      min-height: 48px;
     }
     .finance-report-option {
       padding: 15px;
     }
     .finance-report-ready .row {
       flex-wrap: wrap;
+    }
+    .finance-report-ready-actions {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      width: 100%;
+      gap: 8px;
+    }
+    .finance-report-ready-actions .finance-report-link {
+      justify-content: center;
+      min-height: 48px;
+      width: 100%;
+    }
+    .finance-receipt-controls {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      align-items: stretch;
+      width: 100%;
+      gap: 12px;
+    }
+    .finance-receipt-controls > * {
+      width: 100%;
+      min-width: 0;
+    }
+    .finance-receipt-controls button {
+      min-height: 48px;
+    }
+    .finance .financial-receipt {
+      width: min(100%, 80mm);
     }
   }
 `;

@@ -209,7 +209,7 @@ export function FinanceReports({
             </label>
           ))}
         </fieldset>
-        <div className="finance-report-controls">
+        <div className="finance-report-controls finance-mobile-report-controls">
           <label>
             Caixas e contas
             <select
@@ -231,7 +231,6 @@ export function FinanceReports({
           <Button
             onClick={() => void generate()}
             disabled={busy || isPending}
-            style={{ minWidth: 180 }}
           >
             {busy ? (
               <span className="finance-spinner" aria-hidden="true" />
@@ -269,7 +268,7 @@ export function FinanceReports({
                   : "Use Abrir PDF para visualizar o relatório em uma nova aba."}
               </p>
             </div>
-            <div className="row">
+            <div className="row finance-report-ready-actions">
               <a
                 className="finance-report-link"
                 href={visiblePdf.url}
