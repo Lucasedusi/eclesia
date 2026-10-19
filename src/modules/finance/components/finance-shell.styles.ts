@@ -215,7 +215,7 @@ export const FinanceStyles = createGlobalStyle`
   #finance-modal-root .finance-transfer-submit{width:100%;min-width:0;min-height:48px}
   #finance-modal-root .finance-entry-drawer .finance-entry-review{background:#F4F8F5;border:1px solid #E0EAE3;border-radius:14px;padding:16px}
   #finance-modal-root .finance-entry-drawer [data-modal-header]{position:relative;z-index:1;transition:box-shadow .15s}
-  #finance-modal-root .finance-entry-drawer [data-modal-header][data-scrolled=true]{box-shadow:0 8px 12px -10px #18352C55}
+  #finance-modal-root .finance-entry-drawer [data-modal-header][data-scrolled=true]{border-bottom:1px solid #cccccc61; padding-bottom: 10px}
   #finance-modal-root .finance-entry-drawer .finance-entry-secondary-actions button{display:grid;grid-template-columns:50px minmax(0,1fr);gap:12px;text-align:left;justify-content:stretch;min-width:0;white-space:normal}
   #finance-modal-root .finance-entry-drawer .finance-entry-secondary-actions .finance-action-icon{display:flex;align-items:center;justify-content:flex-start;border-right:1px solid currentColor;min-height:22px}
   #finance-modal-root .finance-entry-drawer .finance-entry-secondary-actions .finance-action-label{line-height:1.4;min-width:0}
@@ -678,7 +678,9 @@ export const Workspace = styled.div`
     .finance-overview .finance-daily-chart,
     .finance-summary-label-desktop,
     .finance-summary-value-desktop,
-    .finance-overview-summaries .finance-summary-card:not(:first-child) .finance-summary-caption {
+    .finance-overview-summaries
+      .finance-summary-card:not(:first-child)
+      .finance-summary-caption {
       display: none;
     }
     .finance-summary-label-mobile,
@@ -724,7 +726,9 @@ export const Workspace = styled.div`
       padding: 18px;
       gap: 8px;
     }
-    .finance-overview-summaries .finance-summary-card:first-child .finance-summary-label {
+    .finance-overview-summaries
+      .finance-summary-card:first-child
+      .finance-summary-label {
       font-size: 14px !important;
       font-weight: 700;
       letter-spacing: 0.5px;

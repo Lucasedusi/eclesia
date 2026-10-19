@@ -83,9 +83,7 @@ for (const mode of ["SINGLE", "ATTENDANCE"] as const) {
       .click();
     await expect(
       form.getByText(
-        mode === "SINGLE"
-          ? "Lançamento confirmado."
-          : "Atendimento confirmado.",
+        mode === "SINGLE" ? "Confirmado." : "Atendimento confirmado.",
         { exact: false },
       ),
     ).toBeVisible();
@@ -102,7 +100,9 @@ for (const mode of ["SINGLE", "ATTENDANCE"] as const) {
     expect(pdf.getPageCount()).toBeGreaterThan(0);
     // Verify descriptions in the persisted transaction details as well as a valid PDF.
     await page.goto(`/financeiro/lancamentos?unidade=${f.unitId}&mes=2026-10`);
-    await expect(page.getByRole("table").getByText(label, { exact: true })).toBeVisible();
+    await expect(
+      page.getByRole("table").getByText(label, { exact: true }),
+    ).toBeVisible();
     if (mode === "ATTENDANCE")
       await expect(
         page.getByRole("table").getByText(`${label} missões`, { exact: true }),

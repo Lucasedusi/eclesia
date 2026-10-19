@@ -56,7 +56,7 @@ test("attendance groups tithe, worship and missions into one receipt", async ({
     page.getByRole("combobox", { name: "Caixa ou conta", exact: true }),
   ).toHaveValue(f.boxes[f.unitId].cash);
   const href = await page
-    .getByRole("link", { name: "Abrir comprovante" })
+    .getByRole("link", { name: "Comprovante", exact: true })
     .getAttribute("href");
   await page.goto(href!);
   await expect(page.getByTestId("receipt-item")).toHaveCount(3);

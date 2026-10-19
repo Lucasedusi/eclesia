@@ -64,7 +64,7 @@ test("mobile attendance keeps two contributions and one receipt", async ({
   await expect(page.getByText("2 contribuições")).toBeVisible();
   await page.getByRole("button", { name: "Salvar", exact: true }).click();
   await expect(page.getByText("Atendimento confirmado.", { exact: false })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Abrir comprovante" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Comprovante", exact: true })).toBeVisible();
 });
 
 test("uncertain mobile save preserves the filled form", async ({ page }) => {

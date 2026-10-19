@@ -85,7 +85,8 @@ for (const width of [320, 1440]) {
     if (width < 761) {
       await expect(dialog.getByText('A confirmação registra o lançamento.', { exact: true })).toBeVisible();
       await review.scrollIntoViewIfNeeded();
-      await expect(dialog.locator('[data-modal-header]')).not.toHaveCSS('box-shadow', 'none');
+      await expect(dialog.locator('[data-modal-header]')).toHaveCSS('border-bottom-style', 'solid');
+      await expect(dialog.locator('[data-modal-header]')).toHaveCSS('border-bottom-width', '1px');
       for (const name of ['Salvar e continuar', 'Salvar e imprimir']) {
         const action = dialog.getByRole('button', { name, exact: true });
         await expect(action.locator('.finance-action-icon')).toHaveCSS('border-right-width', '1px');

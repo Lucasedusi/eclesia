@@ -312,7 +312,8 @@ export function FinanceEntryForm({
         focused.scrollIntoView({ block: "center", inline: "nearest" });
     };
     viewport.addEventListener("resize", keepFocusedFieldVisible);
-    return () => viewport.removeEventListener("resize", keepFocusedFieldVisible);
+    return () =>
+      viewport.removeEventListener("resize", keepFocusedFieldVisible);
   }, []);
   useFinanceDirtyGuard(dirty || ambiguous, () => save("SAVE"), discard);
   return (
@@ -341,7 +342,7 @@ export function FinanceEntryForm({
                   month,
                 )}
               >
-                <Printer size={16} aria-hidden="true" /> Abrir comprovante
+                <Printer size={16} aria-hidden="true" /> Comprovante
               </Link>
             </>
           )}
@@ -727,7 +728,11 @@ export function FinanceEntryForm({
       >
         <section
           className="finance-entry-review stack"
-          aria-label={mode === "ATTENDANCE" ? "Conferência do atendimento" : "Conferência do lançamento"}
+          aria-label={
+            mode === "ATTENDANCE"
+              ? "Conferência do atendimento"
+              : "Conferência do lançamento"
+          }
         >
           <h3>Conferir antes de confirmar</h3>
           <dl>
@@ -753,8 +758,9 @@ export function FinanceEntryForm({
             <div>
               <dt>Forma de pagamento</dt>
               <dd>
-                {catalogs.paymentMethods.find((method) => method.id === state.paymentMethodId)?.name ||
-                  "Não selecionada"}
+                {catalogs.paymentMethods.find(
+                  (method) => method.id === state.paymentMethodId,
+                )?.name || "Não selecionada"}
               </dd>
             </div>
           </dl>
@@ -773,29 +779,50 @@ export function FinanceEntryForm({
               <div key={index} className="row spread">
                 <span className="finance-entry-review-item-label">
                   <span>
-                    {catalogs.categories.find((category) => category.id === line.categoryId)?.name ||
-                      `Item ${index + 1} sem categoria`}
+                    {catalogs.categories.find(
+                      (category) => category.id === line.categoryId,
+                    )?.name || `Item ${index + 1} sem categoria`}
                   </span>
                   {line.departmentId && (
                     <small className="muted">
-                      {catalogs.departments.find((department) => department.id === line.departmentId)?.name}
+                      {
+                        catalogs.departments.find(
+                          (department) => department.id === line.departmentId,
+                        )?.name
+                      }
                     </small>
                   )}
                   {line.titheClassificationId && (
                     <small className="muted">
-                      Dízimo: {catalogs.classifications.find((classification) => classification.id === line.titheClassificationId)?.name}
+                      Dízimo:{" "}
+                      {
+                        catalogs.classifications.find(
+                          (classification) =>
+                            classification.id === line.titheClassificationId,
+                        )?.name
+                      }
                     </small>
                   )}
                 </span>
-                {mode === "ATTENDANCE" && <strong>{line.amount ? `R$ ${line.amount}` : "Sem valor"}</strong>}
+                {mode === "ATTENDANCE" && (
+                  <strong>
+                    {line.amount ? `R$ ${line.amount}` : "Sem valor"}
+                  </strong>
+                )}
               </div>
             ))}
           </div>
           <div className="finance-entry-review-total row spread">
             <span>
-              {mode === "ATTENDANCE" ? "Total do atendimento" : "Total do lançamento"}
+              {mode === "ATTENDANCE"
+                ? "Total do atendimento"
+                : "Total do lançamento"}
             </span>
-            <strong data-testid={mode === "ATTENDANCE" ? "attendance-total" : undefined}>
+            <strong
+              data-testid={
+                mode === "ATTENDANCE" ? "attendance-total" : undefined
+              }
+            >
               {formatMoney(total)}
             </strong>
           </div>
@@ -808,7 +835,9 @@ export function FinanceEntryForm({
             <Button
               type="submit"
               variant={direction === "EXPENSE" ? "danger" : "primary"}
-              className={mode === "ATTENDANCE" ? "finance-attendance-action" : undefined}
+              className={
+                mode === "ATTENDANCE" ? "finance-attendance-action" : undefined
+              }
               aria-busy={busy}
               disabled={busy || uploading}
             >
@@ -821,7 +850,11 @@ export function FinanceEntryForm({
               </span>
               <span className="finance-action-label">
                 <span className="finance-desktop-only">
-                  {initialTransaction ? "Salvar correção" : mode === "ATTENDANCE" ? "Confirmar atendimento" : "Salvar"}
+                  {initialTransaction
+                    ? "Salvar correção"
+                    : mode === "ATTENDANCE"
+                      ? "Confirmar atendimento"
+                      : "Salvar"}
                 </span>
                 <span className="finance-mobile-only">Salvar</span>
               </span>
@@ -832,18 +865,32 @@ export function FinanceEntryForm({
               <Button
                 variant="outline"
                 disabled={busy || uploading}
-                className={mode === "ATTENDANCE" ? "finance-attendance-action" : undefined}
+                className={
+                  mode === "ATTENDANCE"
+                    ? "finance-attendance-action"
+                    : undefined
+                }
                 onClick={() => void save("CONTINUE")}
               >
-                <span className="finance-action-icon"><ArrowRight size={16} aria-hidden="true" /></span><span className="finance-action-label">Salvar e continuar</span>
+                <span className="finance-action-icon">
+                  <ArrowRight size={16} aria-hidden="true" />
+                </span>
+                <span className="finance-action-label">Salvar e continuar</span>
               </Button>
               <Button
                 variant="outline"
                 disabled={busy || uploading}
-                className={mode === "ATTENDANCE" ? "finance-attendance-action" : undefined}
+                className={
+                  mode === "ATTENDANCE"
+                    ? "finance-attendance-action"
+                    : undefined
+                }
                 onClick={() => void save("PRINT")}
               >
-                <span className="finance-action-icon"><Printer size={16} aria-hidden="true" /></span><span className="finance-action-label">Salvar e imprimir</span>
+                <span className="finance-action-icon">
+                  <Printer size={16} aria-hidden="true" />
+                </span>
+                <span className="finance-action-label">Salvar e imprimir</span>
               </Button>
             </div>
           )}
