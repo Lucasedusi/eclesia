@@ -65,6 +65,10 @@ export function FinanceTransactionsTable({
     advancedFilterCount > 0 || Boolean(filters.search) || filters.direction !== "ALL";
   function filter(data: FormData) {
     const query = new URLSearchParams({ unidade: unit, mes: month });
+    if (filters.dateFrom && filters.dateTo) {
+      query.set("dateFrom", filters.dateFrom);
+      query.set("dateTo", filters.dateTo);
+    }
     for (const [k, v] of data)
       if (typeof v === "string" && v && v !== "ALL") query.set(k, v);
     navigate(`${path}?${query}`);
@@ -78,6 +82,7 @@ export function FinanceTransactionsTable({
     filter(data);
   }
   async function openDetail(id: string) {
+    if (loading === id) return;
     const request = ++sequence.current;
     setLoading(id);
     setError("");
@@ -87,7 +92,7 @@ export function FinanceTransactionsTable({
       if (response.ok) setDetail(response.data);
       else setError(response.message);
     } catch {
-      setError("Não foi possível abrir o lançamento.");
+      if (request === sequence.current) setError("Não foi possível abrir o lançamento. Toque novamente para tentar.");
     } finally {
       if (request === sequence.current) setLoading(null);
     }
@@ -135,6 +140,7 @@ export function FinanceTransactionsTable({
               type="button"
               variant="outline"
               className="finance-filter-toggle"
+              data-active={advanced || advancedFilterCount > 0}
               aria-label={`Filtros avançados${advancedFilterCount > 0 ? `, ${advancedFilterCount} filtro${advancedFilterCount !== 1 ? "s" : ""} ativo${advancedFilterCount !== 1 ? "s" : ""}` : ""}`}
               aria-expanded={advanced}
               aria-controls="finance-advanced-filters"
@@ -233,9 +239,18 @@ export function FinanceTransactionsTable({
                 </label>
               ))}
             </div>
+            {advancedFilterCount > 0 && (
+              <div className="finance-mobile-only finance-advanced-reset">
+                <Button type="button" variant="ghost" size="sm" onClick={() => {
+                  const data = new FormData(filterForm.current!);
+                  for (const key of ["status", "titheClassificationId", "departmentId", "categoryId", "cashboxId", "paymentMethodId", "memberId"]) data.delete(key);
+                  filter(data);
+                }}><X size={14} />Limpar filtros</Button>
+              </div>
+            )}
           </div>
           {(advanced || hasActiveFilters) && (
-            <div className={`row${advanced ? "" : " finance-mobile-filter-reset"}`} style={{ justifyContent: "flex-end" }}>
+            <div className="row finance-desktop-only" style={{ justifyContent: "flex-end" }}>
               <Button
                 type="button"
                 variant="ghost"
@@ -277,6 +292,7 @@ export function FinanceTransactionsTable({
             <FinanceMobileTransactionCards
               items={result.items}
               onOpen={openDetail}
+              loadingId={loading}
             />
             <div className="table-scroll finance-desktop-transactions">
             <table>

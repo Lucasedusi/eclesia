@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useEffect, useId, useRef } from "react";
+import { ReactNode, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { CheckCircle2, LoaderCircle, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,7 @@ type ModalSize = S.StyledModalSize;
 type ModalProps = {
   open?: boolean;
   title: string;
-  description?: string;
+  description?: ReactNode;
   icon?: ReactNode;
   children?: ReactNode;
   footer?: ReactNode;
@@ -35,6 +35,7 @@ type ModalProps = {
   size?: ModalSize;
   className?: string;
   busy?: boolean;
+  headerShadowOnScroll?: boolean;
 };
 
 export function Modal({
@@ -48,7 +49,9 @@ export function Modal({
   size = "md",
   className,
   busy = false,
+  headerShadowOnScroll = false,
 }: ModalProps) {
+  const [bodyScrolled, setBodyScrolled] = useState(false);
   const dialogRef = useRef<HTMLElement>(null);
   const closeHandlerRef = useRef(onClose);
   const busyRef = useRef(busy);
@@ -167,7 +170,7 @@ export function Modal({
         $size={size}
         className={className}
       >
-        <S.Header>
+        <S.Header data-modal-header data-scrolled={headerShadowOnScroll && bodyScrolled ? "true" : undefined}>
           {icon && <S.IconSlot>{icon}</S.IconSlot>}
 
           <S.TitleArea>
@@ -180,7 +183,7 @@ export function Modal({
           </S.CloseButton>
         </S.Header>
 
-        {children && <S.Body>{children}</S.Body>}
+        {children && <S.Body onScroll={headerShadowOnScroll ? (event) => setBodyScrolled(event.currentTarget.scrollTop > 4) : undefined}>{children}</S.Body>}
         {footer && <S.Footer>{footer}</S.Footer>}
       </S.Dialog>
     </S.Overlay>,

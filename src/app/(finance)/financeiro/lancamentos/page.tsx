@@ -1,5 +1,7 @@
 import { FinanceSkeleton } from "@/modules/finance/components/finance-skeleton";
 import { Suspense } from "react";
+import Link from "next/link";
+import { financeLocation } from "@/modules/finance/utils/finance-navigation";
 import {
   resolveFinancePage,
   type FinanceSearchParams,
@@ -27,9 +29,16 @@ async function Content({
   );
   const [catalogs, result, transfers] = await Promise.all([
     listFinanceCatalogs(context),
-    listFinanceTransactions(context, filters),
-    listFinanceTransfers(context, month, Number(search.transferPage ?? 1)),
+    listFinanceTransactions(context, filters).catch((error: unknown) => {
+      if (error instanceof Error && error.message === "FINANCE_DATE_RANGE_UNAVAILABLE") return null;
+      throw error;
+    }),
+    listFinanceTransfers(context, month, Number(search.transferPage ?? 1), filters),
   ]);
+  if (!result) return <section className="card stack" role="alert">
+    <p>A consulta por intervalo precisa de uma atualização do financeiro neste ambiente. A consulta por mês continua disponível.</p>
+    <Link href={financeLocation("/financeiro/lancamentos", context.congregationId, month)}>Consultar por mês</Link>
+  </section>;
   return (
     <FinanceTransactionsWorkspace
       catalogs={catalogs}

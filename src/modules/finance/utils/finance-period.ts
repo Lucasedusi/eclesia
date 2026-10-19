@@ -33,6 +33,32 @@ export function todayLocal() {
   }).format(new Date());
 }
 
+function shiftCivilDate(date: string, days: number) {
+  const value = new Date(`${date}T12:00:00Z`);
+  value.setUTCDate(value.getUTCDate() + days);
+  return value.toISOString().slice(0, 10);
+}
+
+export function recentFinanceRange(days: 3 | 7, today = todayLocal()) {
+  if (!isLocalDate(today)) throw new Error("INVALID_INPUT");
+  const dateFrom = shiftCivilDate(today, 1 - days);
+  if (!isLocalDate(dateFrom)) throw new Error("INVALID_INPUT");
+  return { dateFrom, dateTo: today };
+}
+
+export function financeQueryRange(input: { month: string; dateFrom?: string; dateTo?: string }) {
+  if (input.dateFrom === undefined && input.dateTo === undefined) return monthRange(input.month);
+  if (!input.dateFrom || !input.dateTo || !isLocalDate(input.dateFrom) || !isLocalDate(input.dateTo) || input.dateFrom > input.dateTo)
+    throw new Error("INVALID_INPUT");
+  return { start: input.dateFrom, end: shiftCivilDate(input.dateTo, 1) };
+}
+
+export function formatFinanceDateRange(from: string, to: string) {
+  const sameYear = from.slice(0, 4) === to.slice(0, 4);
+  const first = (sameYear ? from.slice(5) : from).split("-").reverse().join("/");
+  return `${first} a ${to.split("-").reverse().join("/")}`;
+}
+
 export function formatFinanceMonth(month: string, long = false) {
   const [year, part] = month.split("-");
   const index = Number(part) - 1;

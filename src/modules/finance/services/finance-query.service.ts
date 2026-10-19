@@ -11,6 +11,7 @@ import { financeFiltersSchema } from "../validations/finance-query.schemas";
 import { monthSchema } from "../validations/finance-catalog.schemas";
 import { decimalToCents } from "../utils/finance-money";
 import { throwFinanceDatabaseError } from "../utils/finance-errors";
+import { financeQueryRange } from "../utils/finance-period";
 export async function getFinanceOverview(
   context: FinanceContext,
   input: { month: string },
@@ -39,7 +40,12 @@ export async function listFinanceTransactions(
     p_filters: filters,
   });
   if (error) throwFinanceDatabaseError(error);
-  return data as FinanceTransactionPage;
+  const result = data as FinanceTransactionPage & { dateFrom?: string; dateTo?: string };
+  // An older database ignores unknown JSON filters. Never present its monthly
+  // results as if they belonged to a requested cross-month interval.
+  if (filters.dateFrom && (result.dateFrom !== filters.dateFrom || result.dateTo !== filters.dateTo))
+    throw new Error("FINANCE_DATE_RANGE_UNAVAILABLE");
+  return result;
 }
 export async function getFinanceTransaction(
   context: FinanceContext,
@@ -158,13 +164,13 @@ export async function listFinanceTransfers(
   context: FinanceContext,
   month: string,
   page = 1,
+  dates: { dateFrom?: string; dateTo?: string } = {},
 ) {
   if (!context.capabilities.view) throw new Error("FORBIDDEN");
   monthSchema.parse(month);
   if (!Number.isSafeInteger(page) || page < 1) throw new Error("INVALID_INPUT");
   const c = await createClient();
-  const [year, m] = month.split("-").map(Number),
-    end = `${m === 12 ? year + 1 : year}-${String(m === 12 ? 1 : m + 1).padStart(2, "0")}-01`;
+  const { start, end } = financeQueryRange({ month, ...dates });
   const { data, error, count } = await c
     .from("financial_transfers")
     .select(
@@ -174,7 +180,7 @@ export async function listFinanceTransfers(
     .eq("church_id", context.churchId)
     .eq("congregation_id", context.congregationId)
     .is("deleted_at", null)
-    .gte("transaction_date", `${month}-01`)
+    .gte("transaction_date", start)
     .lt("transaction_date", end)
     .order("transaction_date", { ascending: false })
     .order("id", { ascending: false })

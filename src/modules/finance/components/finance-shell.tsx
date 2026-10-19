@@ -30,6 +30,7 @@ import type { FinanceUnit } from "../types/finance.types";
 import { financeLocation } from "../utils/finance-navigation";
 import { FinanceThemeProvider } from "./finance-theme-provider";
 import { FinanceContextBar } from "./finance-context-bar";
+import { FinanceTransactionPeriod } from "./finance-transaction-period";
 import { FinanceMobileNavigation } from "./finance-mobile-navigation";
 import { FinancePwaController } from "./finance-pwa-controller";
 import { Workspace } from "./finance-shell.styles";
@@ -285,6 +286,22 @@ export function FinanceShell({
               units={context.units}
               selectedUnitId={unit.id}
               month={month}
+              transactionPeriod={path === "/financeiro/lancamentos" ? <FinanceTransactionPeriod
+                month={month}
+                dateFrom={search.get("dateFrom") ?? undefined}
+                dateTo={search.get("dateTo") ?? undefined}
+                onApply={(selectedMonth, range) => {
+                  const query = new URLSearchParams(search);
+                  query.set("unidade", unit.id);
+                  query.set("mes", selectedMonth);
+                  for (const key of ["page", "transferPage", "novo", "dateFrom", "dateTo"]) query.delete(key);
+                  if (range) {
+                    query.set("dateFrom", range.dateFrom);
+                    query.set("dateTo", range.dateTo);
+                  }
+                  navigate(`${path}?${query}`);
+                }}
+              /> : undefined}
               onChange={(u, m) => navigate(financeLocation(path, u, m))}
             />
             <div className="row">

@@ -5,11 +5,13 @@ export function FinanceContextBar({
   selectedUnitId,
   month,
   onChange,
+  transactionPeriod,
 }: {
   units: FinanceUnit[];
   selectedUnitId: string;
   month: string;
   onChange: (unit: string, month: string) => void;
+  transactionPeriod?: React.ReactNode;
 }) {
   return (
     <div className="finance-context">
@@ -34,7 +36,7 @@ export function FinanceContextBar({
           </select>
         )}
       </label>
-      <label>
+      <label className={transactionPeriod ? "finance-desktop-only" : undefined}>
         Período
         <input
           aria-label="Período"
@@ -47,6 +49,7 @@ export function FinanceContextBar({
           }}
         />
       </label>
+      {transactionPeriod}
     </div>
   );
 }

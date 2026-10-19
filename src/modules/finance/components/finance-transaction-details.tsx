@@ -44,7 +44,7 @@ export function FinanceTransactionDetails({
           <span className="badge">
             {t.status === "CANCELLED" ? "Cancelado" : "Confirmado"}
           </span>
-          <span className="muted">Revisão {t.revision}</span>
+          <span className="muted finance-desktop-only finance-detail-revision">Revisão {t.revision}</span>
         </div>
         <strong
           style={{
@@ -177,8 +177,9 @@ export function FinanceTransactionDetails({
             ))}
           </section>
         )}
-        <section className="stack">
-          <h3>Histórico de alterações</h3>
+        <details className="finance-transaction-history">
+          <summary>Histórico de alterações <span className="muted">{t.history.length} registro{t.history.length !== 1 ? "s" : ""}</span></summary>
+          <div className="stack">
           {t.history.map((h) => (
             <div className="card" key={h.revision}>
               <strong>Revisão {h.revision}</strong>
@@ -196,7 +197,8 @@ export function FinanceTransactionDetails({
               </span>
             </div>
           ))}
-        </section>
+          </div>
+        </details>
       </div>
     </Modal>
   );

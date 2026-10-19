@@ -67,6 +67,7 @@ test("mobile transfers stay separate from entry and expense totals", async ({
   const before = await totals.textContent();
   await page.getByRole("button", { name: "Transferir", exact: true }).click();
   const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Data", { exact: true }).fill("2026-10-19");
   await dialog.getByRole("combobox", { name: "Origem" }).selectOption(f.boxes[f.headquartersId].cash);
   await dialog.getByRole("combobox", { name: "Destino" }).selectOption(f.boxes[f.headquartersId].bank);
   await dialog.getByLabel("Valor (R$)").fill("1,00");
@@ -78,4 +79,11 @@ test("mobile transfers stay separate from entry and expense totals", async ({
   await expect(page.locator(".finance-mobile-transfers").getByText(description)).toBeVisible();
   await expect(page.locator(".finance-mobile-transfers")).toBeVisible();
   await expect(totals).toHaveText(before!);
+  // Transfers follow the same inclusive interval as the transaction list.
+  await page.goto(`/financeiro/lancamentos?unidade=${f.headquartersId}&mes=2026-10&dateFrom=2026-09-29&dateTo=2026-10-05`);
+  await expect(page.getByRole("list", { name: "Lançamentos em cartões" })).toBeVisible();
+  await expect(page.locator(".finance-mobile-transfers").getByText(description)).toHaveCount(0);
+  await page.goto(`/financeiro/lancamentos?unidade=${f.headquartersId}&mes=2026-10&dateFrom=2026-09-29&dateTo=2026-10-19`);
+  await page.getByText("Transferências entre caixas", { exact: true }).click();
+  await expect(page.locator(".finance-mobile-transfers").getByText(description)).toBeVisible();
 });

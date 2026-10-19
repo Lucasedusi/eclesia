@@ -1,8 +1,11 @@
 import { z } from "zod";
 import { monthSchema } from "./finance-catalog.schemas";
+import { isLocalDate } from "../utils/finance-period";
 export const financeFiltersSchema = z
   .object({
     month: monthSchema,
+    dateFrom: z.string().refine(isLocalDate, "Informe uma data válida.").optional(),
+    dateTo: z.string().refine(isLocalDate, "Informe uma data válida.").optional(),
     search: z.string().trim().max(160).default(""),
     direction: z.enum(["ALL", "INCOME", "EXPENSE"]).default("ALL"),
     status: z.enum(["ALL", "CONFIRMED", "CANCELLED"]).default("ALL"),
@@ -14,5 +17,9 @@ export const financeFiltersSchema = z
     memberId: z.uuid().optional(),
     page: z.coerce.number().int().min(1).max(100000).default(1),
   })
-  .strict();
+  .strict()
+  .refine(({ dateFrom, dateTo }) =>
+    (dateFrom === undefined && dateTo === undefined) ||
+    (dateFrom !== undefined && dateTo !== undefined && dateFrom <= dateTo),
+  { path: ["dateTo"], message: "Informe as duas datas, com o fim igual ou posterior ao início." });
 export type FinanceFilters = z.infer<typeof financeFiltersSchema>;

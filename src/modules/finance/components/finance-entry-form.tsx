@@ -787,7 +787,7 @@ export function FinanceEntryForm({
                     </small>
                   )}
                 </span>
-                <strong>{line.amount ? `R$ ${line.amount}` : "Sem valor"}</strong>
+                {mode === "ATTENDANCE" && <strong>{line.amount ? `R$ ${line.amount}` : "Sem valor"}</strong>}
               </div>
             ))}
           </div>
