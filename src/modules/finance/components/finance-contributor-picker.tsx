@@ -1,6 +1,6 @@
 "use client";
 import { useRef, useState, useId } from "react";
-import { Search, UserCheck, QrCode, Loader2 } from "lucide-react";
+import { Search, UserCheck, QrCode, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { ContributorRef } from "../types/finance-command.types";
 import type {
@@ -112,19 +112,23 @@ export function FinanceContributorPicker({
         </label>
       )}
       {kind === "MEMBER" && value?.kind === "MEMBER" ? (
-        <div className="notice row">
-          <UserCheck size={20} />
-          <strong>{label}</strong>
+        <div className="notice finance-selected-person">
+          <span className="finance-selected-person-identity">
+            <UserCheck size={20} aria-hidden="true" />
+            <strong>{label}</strong>
+          </span>
           <Button
             variant="outline"
             size="sm"
+            className="finance-selected-person-remove"
+            aria-label="Remover pessoa selecionada"
             onClick={() => {
               onChange(null, "");
               setResults([]);
               setQuery("");
             }}
           >
-            Trocar pessoa
+            <Trash2 size={18} aria-hidden="true" />
           </Button>
         </div>
       ) : (

@@ -81,6 +81,6 @@ test.describe("read only congregation", () => {
     });
     await expect(mobile).toBeVisible();
     await expect(mobile.getByText("Atendimento", { exact: true })).toHaveCount(0);
-    await expect(page.getByRole("button", { name: "Nova entrada" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Entrada", exact: true })).toHaveCount(0);
   });
 });

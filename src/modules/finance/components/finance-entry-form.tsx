@@ -820,11 +820,10 @@ export function FinanceEntryForm({
                 )}
               </span>
               <span className="finance-action-label">
-                {initialTransaction
-                  ? "Salvar correção"
-                  : mode === "ATTENDANCE"
-                    ? "Confirmar atendimento"
-                    : "Salvar"}
+                <span className="finance-desktop-only">
+                  {initialTransaction ? "Salvar correção" : mode === "ATTENDANCE" ? "Confirmar atendimento" : "Salvar"}
+                </span>
+                <span className="finance-mobile-only">Salvar</span>
               </span>
             </Button>
           </div>

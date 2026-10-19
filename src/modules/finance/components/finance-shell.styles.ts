@@ -3,6 +3,20 @@ import styled, { createGlobalStyle } from "styled-components";
 
 export const FinanceStyles = createGlobalStyle`
 
+ :is(.finance,#finance-modal-root) .finance-mobile-only{display:none}
+ :is(.finance,#finance-modal-root) .finance-detail-actions,:is(.finance,#finance-modal-root) .finance-cancellation-actions{display:contents}
+ :is(.finance,#finance-modal-root) .finance-selected-person.notice{display:grid;grid-template-columns:minmax(0,1fr) 44px;gap:12px;align-items:center}
+ :is(.finance,#finance-modal-root) .finance-selected-person-identity{display:flex;align-items:center;gap:10px;min-width:0}
+ :is(.finance,#finance-modal-root) .finance-selected-person-identity svg{flex-shrink:0}
+ :is(.finance,#finance-modal-root) .finance-selected-person-identity strong{min-width:0;overflow-wrap:anywhere}
+ :is(.finance,#finance-modal-root) button.finance-selected-person-remove{width:44px;height:44px;min-width:44px;padding:0;justify-content:center}
+ #finance-modal-root .finance-cancellation-scope{display:grid;gap:10px;margin:0;padding:0;border:0;min-width:0}
+ #finance-modal-root .finance-cancellation-scope legend{margin-bottom:12px;font-size:14px;font-weight:600}
+ #finance-modal-root .finance-cancellation-scope label{display:flex;align-items:center;gap:10px;min-height:48px;padding:10px 12px;border:1px solid #DCE7DF;border-radius:10px;cursor:pointer}
+ #finance-modal-root .finance-cancellation-scope label:has(:checked){background:#EDF7F0;border-color:#6B9F89}
+ #finance-modal-root .finance-cancellation-scope input[type=radio]{width:18px;min-height:18px;height:18px;padding:0;flex-shrink:0;accent-color:#087F5B}
+ #finance-modal-root .finance-cancellation-scope p{margin:0;padding:12px;border-radius:10px;background:#F5F8F6;line-height:1.5}
+
  .finance,#finance-modal-root{color:#18352C;font-family:var(--font-app),sans-serif}
  .finance h1{font-size:28px;font-weight:600;letter-spacing:-.8px;margin:0}.finance h2{font-size:18px;font-weight:500;margin:0}.finance h3{font-size:15px;font-weight:500;margin:0}.finance p{line-height:1.6}
  .finance .muted,#finance-modal-root .muted{color:#6D7F76;font-size:13px}.finance .eyebrow{font-size:11px;letter-spacing:1.6px;text-transform:uppercase;font-weight:600;color:#6D7F76}
@@ -38,6 +52,7 @@ export const FinanceStyles = createGlobalStyle`
  :is(.finance,#finance-modal-root) .finance-search-input input{padding-right:45px}
  :is(.finance,#finance-modal-root) .finance-search-input button{position:absolute;right:3px;top:3px;bottom:3px;width:36px;display:grid;place-items:center;border:0;border-radius:6px;background:#EDF5EF;color:#176348;cursor:pointer}
  :is(.finance,#finance-modal-root) .finance-search-input button:focus-visible{outline:2px solid #6B9F89;outline-offset:-2px}
+ :is(.finance,#finance-modal-root) .finance-search-input button.finance-submit-search{display:none}
  :is(.finance,#finance-modal-root) .finance-icon-button{width:42px;min-width:42px;height:42px;min-height:42px!important;padding:0;flex-shrink:0}
  :is(.finance,#finance-modal-root) .finance-payment-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px}
  :is(.finance,#finance-modal-root) .finance-payment-tiles legend{grid-column:1/-1}
@@ -140,6 +155,39 @@ export const FinanceStyles = createGlobalStyle`
  @media(max-width:1100px){.finance .finance-attendance-form{grid-template-columns:minmax(0,1fr)}.finance .finance-attendance-summary{position:static}.finance .finance-attendance-summary>.row{display:flex}}
  @media(max-width:480px){:is(.finance,#finance-modal-root) .finance-person-search{grid-template-columns:1fr}.finance .finance-attendance-summary>.row{display:grid}}
  @media(max-width:760px){
+  :is(.finance,#finance-modal-root) .finance-desktop-only{display:none}
+  :is(.finance,#finance-modal-root) .finance-mobile-only{display:inline-flex}
+  :is(.finance,#finance-modal-root) .finance-button-content{align-items:center;justify-content:center;gap:8px}
+  .finance .finance-mobile-page-heading,.finance .finance-search-label{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+  .finance .finance-mobile-page-heading p{display:none}
+  .finance .finance-transactions-heading{display:block}
+  .finance .finance-transaction-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;width:100%}
+  .finance .finance-transaction-actions button{display:flex;flex-direction:column;gap:8px;min-width:0;min-height:80px;padding:12px 6px;border-radius:14px;border:1px solid #DCE7DF;background:#EDF2F0;color:#52695E;font-size:13px;box-shadow:none}
+  .finance .finance-transaction-actions button svg{width:22px;height:22px;flex-shrink:0}
+  .finance .finance-transaction-actions .finance-income-action{order:0;background:#E5F4EC;border-color:#D3EADD;color:#087F5B}
+  .finance .finance-transaction-actions .finance-expense-action{order:1;background:#FCECEE;border-color:#F1D8DC;color:#AD3E46}
+  .finance .finance-transaction-actions .finance-transfer-action{order:2}
+  .finance .finance-transactions-list{padding:16px;gap:16px}
+  .finance .finance-filter-bar{display:grid;grid-template-columns:minmax(0,1fr) 44px;gap:8px}
+  .finance .finance-filter-bar>label{grid-column:auto;min-width:0!important;gap:0}
+  :is(.finance,#finance-modal-root) .finance-filter-bar input{height:44px;padding-right:80px;font-size:13px}
+  :is(.finance,#finance-modal-root) .finance-search-input button.finance-submit-search{display:grid;width:38px;min-height:38px;right:3px;top:3px;bottom:3px}
+  :is(.finance,#finance-modal-root) .finance-filter-bar .finance-clear-search{right:41px;width:36px;min-height:38px}
+  :is(.finance,#finance-modal-root) .finance-filter-bar .finance-search-loading{right:51px}
+  .finance .finance-filter-bar .finance-filter-toggle{position:relative;width:44px;height:44px;min-height:44px;padding:0;gap:0}
+  .finance .finance-filter-toggle .finance-active-filter-count{position:absolute;right:-4px;top:-6px;min-width:18px;height:18px;display:grid;place-items:center;padding:0 4px;font-size:10px;border-radius:10px;background:#0B3D32;color:white}
+  .finance .finance-filter-totals{display:block;padding:10px 14px}
+  .finance .finance-pagination{display:grid;grid-template-columns:44px auto 44px;justify-content:center;gap:8px;align-items:center}
+  .finance .finance-pagination>.muted{grid-column:2;grid-row:1;font-size:12px;text-align:center}
+  .finance .finance-pagination-buttons{display:contents}
+  .finance .finance-pagination-buttons button{grid-row:1;width:44px;height:44px;min-height:44px;padding:0}
+  .finance .finance-pagination-buttons button:first-child{grid-column:1}
+  .finance .finance-pagination-buttons button:last-child{grid-column:3}
+  #finance-modal-root .finance-transaction-details{inset:0;width:100%;max-width:100%;border-radius:0;padding:16px 16px calc(16px + env(safe-area-inset-bottom))}
+  #finance-modal-root .finance-detail-actions,#finance-modal-root .finance-cancellation-actions{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:10px;min-width:0;width:100%}
+  #finance-modal-root .finance-detail-actions button,#finance-modal-root .finance-cancellation-actions button{min-width:0;min-height:48px;padding:10px 8px;font-size:14px;gap:8px;white-space:nowrap}
+  #finance-modal-root .finance-transfer-submit{width:100%;min-width:0;min-height:48px}
+  #finance-modal-root .finance-entry-drawer .finance-entry-review{background:#F4F8F5;border:1px solid #E0EAE3;border-radius:14px;padding:16px}
   .finance .finance-pwa-status{padding:0 16px}
   .finance .finance-pwa-install{display:grid;gap:8px}
   .finance .finance-pwa-install>button{justify-content:flex-start;min-height:48px;padding:10px 12px;border:0;background:transparent;color:#18352C;font-size:14px;font-weight:400}
@@ -172,18 +220,18 @@ export const FinanceStyles = createGlobalStyle`
   :is(.finance,#finance-modal-root) .finance-entry-summary{position:static;min-width:0}
   :is(.finance,#finance-modal-root) .finance-entry-secondary-actions{display:grid;grid-template-columns:1fr;gap:8px;width:100%}
   :is(.finance,#finance-modal-root) .finance-entry-secondary-actions button{min-height:44px}
-  :is(.finance,#finance-modal-root) .finance-entry-primary-action{position:fixed;left:0;right:0;bottom:calc(66px + env(safe-area-inset-bottom));z-index:100;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.45fr);align-items:center;gap:12px;padding:9px 16px;border-top:1px solid #DCE7DF;background:#FFFFFFF7;box-shadow:0 -5px 20px #0B3D3210}
+  :is(.finance,#finance-modal-root) .finance-entry-primary-action{position:fixed;left:0;right:0;bottom:calc(66px + env(safe-area-inset-bottom));z-index:100;display:grid;grid-template-columns:minmax(0,1fr) minmax(108px,.8fr);align-items:center;gap:16px;padding:12px max(16px,env(safe-area-inset-right)) 12px max(16px,env(safe-area-inset-left));border-top:1px solid #DCE7DF;background:#FFF;box-shadow:0 -5px 20px #0B3D3210}
   :is(.finance,#finance-modal-root) .finance-entry-primary-total{display:grid;gap:2px;font-size:11px;color:#6D7F76;min-width:0}
   :is(.finance,#finance-modal-root) .finance-entry-primary-total strong{font-size:16px;color:#087F5B;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
-  :is(.finance,#finance-modal-root) .finance-entry-primary-action button{min-height:48px;width:100%}
-  .finance .finance-entry-primary-action button.finance-attendance-action{grid-template-columns:20px minmax(0,1fr);gap:8px;padding:10px}
+  :is(.finance,#finance-modal-root) .finance-entry-primary-action button{min-height:48px;width:100%;min-width:0;padding:10px 12px;font-size:14px;white-space:nowrap;gap:8px}
+  .finance .finance-entry-primary-action button.finance-attendance-action{display:flex;justify-content:center;gap:8px;padding:10px}
   .finance .finance-entry-primary-action button.finance-attendance-action .finance-action-icon{border:0}
   .finance .finance-attendance-form{padding-bottom:82px}
   .finance .finance-attendance-card{padding:16px}
   #finance-modal-root .finance-entry-drawer{inset:0;width:100vw;max-width:100vw;height:100dvh;max-height:100dvh;border-radius:0;padding:16px}
-  #finance-modal-root .finance-entry-drawer form{padding-bottom:92px}
+  #finance-modal-root .finance-entry-drawer form{padding-bottom:calc(96px + env(safe-area-inset-bottom))}
   #finance-modal-root .finance-entry-drawer button[aria-label="Fechar modal"]{min-width:44px;min-height:44px}
-  #finance-modal-root .finance-entry-primary-action{bottom:0;z-index:1001;padding-bottom:calc(9px + env(safe-area-inset-bottom))}
+  #finance-modal-root .finance-entry-primary-action{bottom:0;z-index:1001;padding-bottom:calc(16px + env(safe-area-inset-bottom))}
   :is(.finance,#finance-modal-root) :is(input,select,textarea):focus{scroll-margin-block:80px 170px}
  }
  @media(prefers-reduced-motion:reduce){.finance *,#finance-modal-root *{animation:none!important;transition:none!important}}
@@ -287,8 +335,8 @@ export const Workspace = styled.div`
     text-transform: uppercase;
     letter-spacing: 0.7px;
   }
-  .finance-context select,
-  .finance-context input {
+  .finance-topbar .finance-context select,
+  .finance-topbar .finance-context input {
     font-size: 12px;
     min-height: 36px;
     padding: 7px 10px;
@@ -467,19 +515,6 @@ export const Workspace = styled.div`
     .row.finance-mobile-filter-reset {
       display: flex;
     }
-    .finance-filter-bar {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 8px;
-    }
-    .finance-filter-bar > label {
-      grid-column: 1 / -1;
-      min-width: 0 !important;
-    }
-    .finance-filter-bar > button {
-      min-height: 44px;
-      margin: 0;
-    }
     .finance-mobile-nature {
       display: flex;
       gap: 6px;
@@ -509,11 +544,6 @@ export const Workspace = styled.div`
     .finance-desktop-transactions {
       display: none;
     }
-    .finance-filter-totals {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 5px 10px;
-    }
     .finance-filter-totals > span:first-child {
       grid-column: 1 / -1;
       font-weight: 600;
@@ -524,20 +554,7 @@ export const Workspace = styled.div`
     }
     .finance-mobile-transaction-cards {
       display: grid;
-      gap: 16px;
-      list-style: none;
-      margin: 0;
-      padding: 0;
-    }
-    .finance-mobile-transaction-cards h3 {
-      margin: 0 0 8px;
-      color: #6d7f76;
-      font-size: 12px;
-      font-weight: 600;
-    }
-    .finance-mobile-transaction-cards ul {
-      display: grid;
-      gap: 8px;
+      gap: 10px;
       list-style: none;
       margin: 0;
       padding: 0;
@@ -573,7 +590,7 @@ export const Workspace = styled.div`
       overflow-wrap: anywhere;
     }
     .finance-mobile-transaction-main > span,
-    .finance-mobile-transaction-main > small {
+    .finance-mobile-transaction-main > time {
       color: #6d7f76;
       font-size: 11px;
     }
@@ -730,12 +747,14 @@ export const Workspace = styled.div`
     }
     .finance-topbar {
       display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      justify-content: stretch;
       gap: 8px;
       padding: 14px 16px 12px;
     }
     .finance-context {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(125px, 0.7fr);
+      grid-template-columns: minmax(0, 1fr) minmax(150px, 1.1fr);
       gap: 12px;
       width: 100%;
     }

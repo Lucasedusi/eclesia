@@ -12,7 +12,7 @@ export function FinanceAttendance(props: {
 }) {
   return (
     <div className="stack finance-attendance-page">
-      <div className="row spread">
+      <div className="row spread finance-mobile-page-heading">
         <div>
           <h1>Atendimento</h1>
           <p className="muted">

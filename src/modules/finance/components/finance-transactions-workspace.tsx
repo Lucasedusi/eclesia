@@ -50,6 +50,7 @@ export function FinanceTransactionsWorkspace({
       id: string;
       revision: number;
       kind: "CANCEL_TRANSACTION" | "CANCEL_ATTENDANCE" | "CANCEL_TRANSFER";
+      attendance?: { id: string; revision: number };
     } | null>(null),
     [transfer, setTransfer] = useState<{ existing?: TransferRow } | null>(null),
     navigation = useFinanceNavigation(),
@@ -92,9 +93,9 @@ export function FinanceTransactionsWorkspace({
         result={result}
         filters={filters}
         actions={
-          <div className="row">
+          <div className="row finance-transaction-actions">
             {capabilities.transfer && (
-              <Button variant="outline" onClick={() => setTransfer({})}>
+              <Button variant="outline" className="finance-transfer-action" onClick={() => setTransfer({})}>
                 <ArrowLeftRight size={16} />
                 Transferir
               </Button>
@@ -107,11 +108,13 @@ export function FinanceTransactionsWorkspace({
                   onClick={() => setEntry({ direction: "EXPENSE" })}
                 >
                   <ArrowUpRight size={16} />
-                  Nova saída
+                  <span className="finance-desktop-only">Nova saída</span>
+                  <span className="finance-mobile-only">Saída</span>
                 </Button>
-                <Button onClick={() => setEntry({ direction: "INCOME" })}>
+                <Button className="finance-income-action" onClick={() => setEntry({ direction: "INCOME" })}>
                   <Plus size={16} />
-                  Nova entrada
+                  <span className="finance-desktop-only">Nova entrada</span>
+                  <span className="finance-mobile-only">Entrada</span>
                 </Button>
               </>
             )}
@@ -119,7 +122,7 @@ export function FinanceTransactionsWorkspace({
         }
         detailActions={(t, close) =>
           t.status !== "CANCELLED" ? (
-            <>
+            <div className="finance-detail-actions">
               {capabilities.update && (
                 <Button
                   variant="outline"
@@ -136,6 +139,7 @@ export function FinanceTransactionsWorkspace({
                 <>
                   <Button
                     variant="danger"
+                    className="finance-desktop-only"
                     onClick={() => {
                       close();
                       setCancel({
@@ -147,9 +151,28 @@ export function FinanceTransactionsWorkspace({
                   >
                     Cancelar lançamento
                   </Button>
+                  <Button
+                    variant="danger"
+                    className="finance-mobile-only"
+                    onClick={() => {
+                      close();
+                      setCancel({
+                        id: t.id,
+                        revision: t.revision,
+                        kind: "CANCEL_TRANSACTION",
+                        attendance: t.attendanceId && t.attendanceRevision != null
+                          ? { id: t.attendanceId, revision: t.attendanceRevision }
+                          : undefined,
+                      });
+                    }}
+                  >
+                    <X size={17} aria-hidden="true" />
+                    Cancelar
+                  </Button>
                   {t.attendanceId && (
                     <Button
                       variant="outline"
+                      className="finance-desktop-only"
                       onClick={() => {
                         close();
                         setCancel({
@@ -164,7 +187,7 @@ export function FinanceTransactionsWorkspace({
                   )}
                 </>
               )}
-            </>
+            </div>
           ) : undefined
         }
       />

@@ -3,6 +3,7 @@ import { useFinanceNavigation } from "./finance-shell";
 import { FinanceMoneyInput } from "./finance-money-input";
 import { useRef, useState } from "react";
 
+import { ArrowLeftRight, Save } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import type { Cashbox } from "../types/finance-catalog.types";
@@ -91,12 +92,17 @@ export function FinanceTransferDialog({
   }
   return (
     <Modal
+      className="finance-transfer-dialog"
       title={existing ? "Corrigir transferência" : "Transferir entre caixas"}
       busy={busy || uncertain}
       onClose={onClose}
       footer={
-        <Button loading={busy} onClick={() => void save()}>
-          Confirmar transferência
+        <Button className="finance-transfer-submit" loading={busy} onClick={() => void save()}>
+          <span className="finance-desktop-only">Confirmar transferência</span>
+          <span className="finance-mobile-only finance-button-content">
+            {existing ? <Save size={18} aria-hidden="true" /> : <ArrowLeftRight size={18} aria-hidden="true" />}
+            {existing ? "Salvar" : "Transferir"}
+          </span>
         </Button>
       }
     >

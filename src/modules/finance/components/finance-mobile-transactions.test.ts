@@ -98,7 +98,7 @@ function renderTransactions(activeFilter = false) {
 }
 
 describe("mobile finance transactions", () => {
-  it("groups transaction cards by date with status and signed amounts", () => {
+  it("keeps each date inside its transaction card with status and signed amount", () => {
     const html = renderTransactions();
     expect(html).toContain('aria-label="Lançamentos em cartões"');
     expect(html).toContain("Pessoa Exemplo");
@@ -108,6 +108,14 @@ describe("mobile finance transactions", () => {
     expect(html).toContain("+ R$ 12,34");
     expect(html).toContain("− R$ 5,00");
     expect(html).toContain("Cancelado");
+    const cards = [...html.matchAll(/<button[^>]*class="finance-mobile-transaction-card"[\s\S]*?<\/button>/g)].map(([card]) => card);
+    expect(cards).toHaveLength(2);
+    expect(cards[0]).toContain('<time dateTime="2026-10-14">14/10/2026</time>');
+    expect(cards[1]).toContain('<time dateTime="2026-10-13">13/10/2026</time>');
+    for (const card of cards) {
+      expect(card).not.toContain("Tesouraria");
+      expect(card).not.toContain("Classificação:");
+    }
   });
 
   it("shows immediate nature chips and the active advanced filter count", () => {

@@ -194,7 +194,7 @@ if (command === "setup") {
     .insert({
       church_id: fixture.churchId,
       congregation_id: fixture.headquartersId,
-      full_name: "Pessoa Financeiro Teste",
+      full_name: "Pessoa Financeiro Teste de Nome Muito Longo Para Conferência no Celular",
       member_code: "FIN001",
     })
     .select("id")

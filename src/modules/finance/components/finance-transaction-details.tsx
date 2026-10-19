@@ -29,7 +29,7 @@ export function FinanceTransactionDetails({
   return (
     <Modal
       title="Detalhes do lançamento"
-      className="finance-drawer"
+      className="finance-drawer finance-transaction-details"
       onClose={onClose}
       footer={actions}
     >

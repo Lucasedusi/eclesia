@@ -94,14 +94,14 @@ export function FinanceTransactionsTable({
   }
   return (
     <div className="stack">
-      <div className="row spread">
-        <div>
+      <div className="row spread finance-transactions-heading">
+        <div className="finance-mobile-page-heading">
           <h1>Lançamentos</h1>
           <p className="muted">Entradas e saídas do mês, sempre à mão.</p>
         </div>
         {actions}
       </div>
-      <section className="card stack">
+      <section className="card stack finance-transactions-list">
         <form
           className="stack"
           ref={filterForm}
@@ -117,7 +117,7 @@ export function FinanceTransactionsTable({
         >
           <div className="row finance-filter-bar">
             <label style={{ flex: 1, minWidth: 200 }}>
-              Buscar
+              <span className="finance-search-label">Buscar</span>
               <TransactionSearch
                 initialValue={filters.search ?? ""}
                 busy={isPending}
@@ -128,22 +128,25 @@ export function FinanceTransactionsTable({
                 }}
               />
             </label>
-            <Button type="submit" style={{ alignSelf: "end" }}>
+            <Button type="submit" className="finance-desktop-only" style={{ alignSelf: "end" }}>
               <Search size={16} /> Filtrar
             </Button>
             <Button
               type="button"
               variant="outline"
+              className="finance-filter-toggle"
+              aria-label={`Filtros avançados${advancedFilterCount > 0 ? `, ${advancedFilterCount} filtro${advancedFilterCount !== 1 ? "s" : ""} ativo${advancedFilterCount !== 1 ? "s" : ""}` : ""}`}
               aria-expanded={advanced}
               aria-controls="finance-advanced-filters"
               onClick={() => setAdvanced(!advanced)}
               style={{ alignSelf: "end" }}
             >
               <SlidersHorizontal size={16} />
-              Filtros avançados
+              <span className="finance-desktop-only">Filtros avançados</span>
               {advancedFilterCount > 0 && (
                 <span className="finance-active-filter-count">
-                  {advancedFilterCount} filtro{advancedFilterCount !== 1 ? "s" : ""} ativo{advancedFilterCount !== 1 ? "s" : ""}
+                  <span className="finance-desktop-only">{advancedFilterCount} filtro{advancedFilterCount !== 1 ? "s" : ""} ativo{advancedFilterCount !== 1 ? "s" : ""}</span>
+                  <span className="finance-mobile-only" aria-hidden="true">{advancedFilterCount}</span>
                 </span>
               )}
             </Button>
@@ -252,11 +255,11 @@ export function FinanceTransactionsTable({
           <span>
             {result.totalCount} resultado{result.totalCount !== 1 ? "s" : ""}
           </span>
-          <span>
+          <span className="finance-desktop-only">
             Entradas filtradas{" "}
             <strong>{formatMoney(result.filteredIncomeCents)}</strong>
           </span>
-          <span>
+          <span className="finance-desktop-only">
             Saídas filtradas{" "}
             <strong>{formatMoney(result.filteredExpenseCents)}</strong>
           </span>
@@ -360,11 +363,11 @@ export function FinanceTransactionsTable({
             </div>
           </>
         )}
-        <div className="row spread">
+        <div className="row spread finance-pagination">
           <span className="muted">
-            Página {result.page} de {result.pageCount} · até 20 por página
+            Página {result.page} de {result.pageCount}<span className="finance-desktop-only"> · até 20 por página</span>
           </span>
-          <div className="row">
+          <div className="row finance-pagination-buttons">
             <Button
               variant="outline"
               size="sm"
@@ -408,11 +411,14 @@ function TransactionSearch({ initialValue, busy, onClear }: {
   const [value, setValue] = useState(initialValue);
   const input = useRef<HTMLInputElement>(null);
   return <span className="finance-search-input">
-    <input ref={input} name="search" value={value} onChange={event => setValue(event.target.value)} placeholder="Pessoa, descrição ou documento" maxLength={160} />
+    <input ref={input} aria-label="Buscar" name="search" value={value} onChange={event => setValue(event.target.value)} placeholder="Pessoa, descrição ou documento" maxLength={160} />
     {busy ? <span className="finance-search-loading" role="status" aria-label="Buscando lançamentos"><Loader2 size={16} className="finance-spin" aria-hidden="true" /></span> : value && <button type="button" className="finance-clear-search" aria-label="Limpar busca" onClick={() => {
       setValue("");
       onClear();
       input.current?.focus();
     }}><X size={15} aria-hidden="true" /></button>}
+    <button type="submit" className="finance-mobile-only finance-submit-search" aria-label="Buscar lançamentos" disabled={busy}>
+      <Search size={18} aria-hidden="true" />
+    </button>
   </span>;
 }

@@ -29,7 +29,12 @@ test("mobile transaction cards share filters, totals and details with the deskto
   await expect(desktopTable).toHaveCount(1);
   await expect(desktopTable).toBeHidden();
   await expect(cards.getByText("Oferta de culto").first()).toBeVisible();
-  await expect(page.getByText("Entradas filtradas")).toBeVisible();
+  await expect(page.getByText("Entradas filtradas")).toBeHidden();
+  for (const card of await cards.getByRole("button").all()) {
+    await expect(card.locator("time")).toHaveText(/\d{2}\/\d{2}\/\d{4}/);
+    await expect(card).not.toContainText("Tesouraria");
+    await expect(card).not.toContainText("Classificação:");
+  }
 
   await cards.getByRole("button", { name: /Oferta de culto/ }).first().click();
   await expect(page.getByRole("dialog", { name: "Detalhes do lançamento" })).toBeVisible();
@@ -57,7 +62,8 @@ test("mobile transfers stay separate from entry and expense totals", async ({
   await page.goto(
     `/financeiro/lancamentos?unidade=${f.headquartersId}&mes=2026-10`,
   );
-  const totals = page.locator(".finance-filter-totals");
+  await expect(page.getByRole("button", { name: "Transferir", exact: true })).toBeVisible();
+  const totals = page.locator(".finance-filter-totals:visible");
   const before = await totals.textContent();
   await page.getByRole("button", { name: "Transferir", exact: true }).click();
   const dialog = page.getByRole("dialog");
@@ -66,7 +72,7 @@ test("mobile transfers stay separate from entry and expense totals", async ({
   await dialog.getByLabel("Valor (R$)").fill("1,00");
   const description = `Transferência mobile ${Date.now()}`;
   await dialog.getByLabel("Descrição").fill(description);
-  await dialog.getByRole("button", { name: "Confirmar transferência" }).click();
+  await dialog.getByRole("button", { name: "Transferir", exact: true }).click();
   await expect(dialog).toHaveCount(0);
   await page.getByText("Transferências entre caixas", { exact: true }).click();
   await expect(page.locator(".finance-mobile-transfers").getByText(description)).toBeVisible();

@@ -44,7 +44,7 @@ test("thermal receipt keeps width and print controls within the phone", async ({
   await page.getByRole("textbox", { name: "Nome da pessoa" }).fill("Comprovante mobile teste");
   await page.getByRole("combobox", { name: "Categoria" }).selectOption(f.offeringId);
   await page.getByLabel("Valor (R$)").fill("1234");
-  await page.getByRole("button", { name: "Confirmar atendimento" }).click();
+  await page.getByRole("button", { name: "Salvar", exact: true }).click();
   const href = await page.getByRole("link", { name: "Abrir comprovante" }).getAttribute("href");
   await page.goto(href!);
   const width = page.getByRole("combobox", { name: "Largura do papel" });

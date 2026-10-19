@@ -21,12 +21,12 @@ function fixture(): {
   return JSON.parse(readFileSync(process.env.E2E_FINANCE_FIXTURE!, "utf8"));
 }
 
-for (const width of [320, 390]) {
+for (const width of [320, 393, 430]) {
   test(`entry drawer remains usable at ${width}px`, async ({ page }) => {
     const f = fixture();
     await page.setViewportSize({ width, height: 700 });
     await page.goto(`/financeiro/lancamentos?unidade=${f.unitId}&mes=2026-10`);
-    await page.getByRole("button", { name: "Nova entrada", exact: true }).click();
+    await page.getByRole("button", { name: "Entrada", exact: true }).click();
     const dialog = page.getByRole("dialog", { name: "Nova entrada" });
     await expect(dialog).toBeVisible();
     await expect.poll(async () => (await dialog.boundingBox())!.width).toBeGreaterThanOrEqual(width - 2);
@@ -62,7 +62,7 @@ test("mobile attendance keeps two contributions and one receipt", async ({
   await expect(page.getByTestId("attendance-total")).toHaveText("R$ 17,34");
   await expect(page.getByText("Conferir antes de confirmar")).toBeVisible();
   await expect(page.getByText("2 contribuições")).toBeVisible();
-  await page.getByRole("button", { name: "Confirmar atendimento" }).click();
+  await page.getByRole("button", { name: "Salvar", exact: true }).click();
   await expect(page.getByText("Atendimento confirmado.", { exact: false })).toBeVisible();
   await expect(page.getByRole("link", { name: "Abrir comprovante" })).toBeVisible();
 });
@@ -71,7 +71,7 @@ test("uncertain mobile save preserves the filled form", async ({ page }) => {
   const f = fixture();
   await page.setViewportSize({ width: 390, height: 780 });
   await page.goto(`/financeiro/lancamentos?unidade=${f.unitId}&mes=2026-10`);
-  await page.getByRole("button", { name: "Nova entrada", exact: true }).click();
+  await page.getByRole("button", { name: "Entrada", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Nova entrada" });
   await dialog.getByRole("combobox", { name: "Caixa ou conta" }).selectOption(f.boxes[f.unitId].cash);
   await dialog.getByRole("combobox", { name: "Identificação" }).selectOption("UNREGISTERED");
