@@ -55,6 +55,10 @@ describe("mobile finance documents", () => {
     expect(html).toContain("Nome:");
     expect(html).not.toContain("Pessoa:");
     expect(html).toContain("14/10/2026");
-    expect(html).toContain("20/10/2026 às 16:00");
+    expect(html).toContain("Data:");
+    expect(html).not.toContain("Data do lançamento:");
+    expect(html).not.toContain("Registrado em:");
+    expect(html).not.toContain("20/10/2026");
+    expect(html).toContain('dateTime="2026-10-20T19:00:00Z">16:00</time>');
   });
 });

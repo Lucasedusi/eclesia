@@ -29,7 +29,9 @@ test("thermal receipt preserves registration time and fits both paper widths", a
   await expect(receipt).toContainText("Nome: Maria Aparecida");
   await expect(receipt.locator("time").first()).toHaveText("15/10/2026");
   const registered = receipt.locator("time").nth(1);
-  await expect(registered).toHaveText(/\d{2}\/\d{2}\/\d{4} às \d{2}:\d{2}/);
+  await expect(registered).toHaveText(/^\d{2}:\d{2}$/);
+  await expect(receipt).toContainText(/Data: 15\/10\/2026 às \d{2}:\d{2}/);
+  await expect(receipt).not.toContainText("Registrado em:");
   const timestamp = await registered.getAttribute("datetime");
   const text = await registered.innerText();
   const name = await header.getByRole("heading").innerText();

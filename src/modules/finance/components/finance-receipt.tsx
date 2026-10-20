@@ -20,12 +20,11 @@ export function FinanceReceipt({
     [busy, setBusy] = useState(false),
     started = useRef(false);
   const logo = useRef<HTMLImageElement>(null);
-  const registeredAt = new Intl.DateTimeFormat("pt-BR", {
+  const registeredTime = new Intl.DateTimeFormat("pt-BR", {
     timeZone: "America/Sao_Paulo",
-    dateStyle: "short",
     timeStyle: "short",
     hourCycle: "h23",
-  }).format(new Date(receipt.registeredAt)).replace(", ", " às ");
+  }).format(new Date(receipt.registeredAt));
   const requestPrint = useCallback(async () => {
     setBusy(true);
     setError("");
@@ -54,7 +53,7 @@ export function FinanceReceipt({
   }, [autoPrint, requestPrint]);
   return (
     <div className="stack">
-      <style>{`@media print{@page{size:${width}mm auto;margin:3mm}html,body{background:white!important}.financial-receipt{width:${width - 6}mm!important;max-width:${width - 6}mm!important;border:0!important;padding:0!important;margin:0!important;font-size:10px!important}.financial-receipt h1{font-size:12px!important}.financial-receipt .receipt-number{overflow-wrap:anywhere}}`}</style>
+      <style>{`@media print{@page{size:${width}mm auto;margin:3mm}html,body{background:white!important}.financial-receipt{width:${width - 6}mm!important;max-width:${width - 6}mm!important;border:0!important;padding:0!important;margin:0!important;font-size:10px!important}.financial-receipt h1{font-size:11px!important}.financial-receipt .receipt-number{overflow-wrap:anywhere}}`}</style>
       <div className="no-print row finance-receipt-controls finance-mobile-receipt-controls">
         <label>
           Largura do papel
@@ -106,7 +105,7 @@ export function FinanceReceipt({
               style={{ width: "14mm", height: "14mm", objectFit: "contain", filter: "grayscale(1) contrast(1.2)" }}
             />
           )}
-          <h1 style={{ fontSize: 14, lineHeight: 1.35, letterSpacing: 0, margin: 0 }}>{receipt.churchName}</h1>
+          <h1 style={{ fontSize: 13, lineHeight: 1.35, letterSpacing: 0, margin: 0 }}>{receipt.churchName}</h1>
           <strong>{receipt.congregationName}</strong>
           {receipt.congregationAddress && (
             <address style={{ fontSize: "0.9em", fontStyle: "normal", lineHeight: 1.4 }}>
@@ -131,9 +130,8 @@ export function FinanceReceipt({
           </strong>
         )}
         <div>
-          Data do lançamento: <time dateTime={receipt.date}>{receipt.date.split("-").reverse().join("/")}</time>
-          <br />
-          Registrado em: <time dateTime={receipt.registeredAt}>{registeredAt}</time>
+          Data: <time dateTime={receipt.date}>{receipt.date.split("-").reverse().join("/")}</time>
+          {" às "}<time dateTime={receipt.registeredAt}>{registeredTime}</time>
           <br />
           Nome: {receipt.personName || "Contribuição coletiva"}
           <br />
