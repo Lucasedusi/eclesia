@@ -113,6 +113,8 @@ export const FinanceStyles = createGlobalStyle`
  .finance .finance-attendance-action>.finance-action-icon{display:flex;align-items:center;justify-content:flex-start;border-right:1px solid currentColor;min-height:22px}
  .finance .finance-attendance-action>.finance-action-label{line-height:1.4}
  :is(.finance,#finance-modal-root) .finance-entry-review{gap:12px}
+ #finance-modal-root .finance-entry-drawer .finance-entry-review{background:#F4F8F5;border:1px solid #E0EAE3;border-radius:14px;padding:16px}
+ #finance-modal-root .finance-unsaved-actions{display:contents}
  :is(.finance,#finance-modal-root) .finance-entry-review h3{font-size:15px;font-weight:650;margin:0}
  :is(.finance,#finance-modal-root) .finance-entry-review dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:0}
  :is(.finance,#finance-modal-root) .finance-entry-review dl>div{min-width:0}
@@ -166,11 +168,19 @@ export const FinanceStyles = createGlobalStyle`
  .finance-skeleton-block{animation:finance-pulse 1.4s ease-in-out infinite}
  @keyframes finance-spin{to{transform:rotate(360deg)}}
  @keyframes finance-pulse{50%{opacity:.42}}
+ @media(min-width:761px){:is(.finance,#finance-modal-root) .finance-attendance-summary .finance-entry-actions{display:grid;grid-template-columns:minmax(0,1fr)}}
  @media(max-width:1100px){.finance .finance-attendance-form{grid-template-columns:minmax(0,1fr)}.finance .finance-attendance-summary{position:static}.finance .finance-attendance-summary>.row{display:flex}}
  @media(max-width:480px){:is(.finance,#finance-modal-root) .finance-person-search{grid-template-columns:1fr}.finance .finance-attendance-summary>.row{display:grid}}
  @media(max-width:760px){
   :is(.finance,#finance-modal-root) .finance-desktop-only{display:none}
   :is(.finance,#finance-modal-root) .finance-mobile-only{display:inline-flex}
+  .finance .finance-progress{white-space:nowrap;max-width:calc(100vw - 32px)}
+  .finance .finance-progress .finance-spinner{flex-shrink:0}
+  #finance-modal-root .finance-unsaved-modal{padding:16px;border-radius:16px}
+  #finance-modal-root .finance-unsaved-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;width:100%;min-width:0}
+  #finance-modal-root .finance-unsaved-actions button{flex-direction:column;gap:8px;min-width:0;min-height:80px;padding:12px 4px;font-size:13px;line-height:1.3;white-space:normal;border-radius:12px}
+  #finance-modal-root .finance-unsaved-actions button.finance-discard-action{background:#FFF2F3;border-color:#F0D4D9;color:#B83D4C}
+  #finance-modal-root .finance-unsaved-actions button.finance-discard-action:hover:not(:disabled){background:#FBE6E9}
   :is(.finance,#finance-modal-root) .finance-transaction-period.finance-mobile-only{display:grid;gap:8px;min-width:0}
   .finance .finance-period-label{font-size:10px;letter-spacing:.6px;font-weight:600;text-transform:uppercase;color:#52695E}
   .finance .finance-period-trigger{display:flex;align-items:center;justify-content:space-between;gap:6px;min-height:44px;width:100%;min-width:0;border:1px solid #CFDCD3;border-radius:8px;padding:8px 10px;background:white;color:#18352C;font:inherit;font-size:12px;text-align:left;cursor:pointer}
@@ -214,7 +224,6 @@ export const FinanceStyles = createGlobalStyle`
   #finance-modal-root .finance-detail-actions,#finance-modal-root .finance-cancellation-actions{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:10px;min-width:0;width:100%}
   #finance-modal-root .finance-detail-actions button,#finance-modal-root .finance-cancellation-actions button{min-width:0;min-height:48px;padding:10px 8px;font-size:14px;gap:8px;white-space:nowrap}
   #finance-modal-root .finance-transfer-submit{width:100%;min-width:0;min-height:48px}
-  #finance-modal-root .finance-entry-drawer .finance-entry-review{background:#F4F8F5;border:1px solid #E0EAE3;border-radius:14px;padding:16px}
   #finance-modal-root .finance-entry-drawer [data-modal-header]{position:relative;z-index:1;transition:box-shadow .15s}
   #finance-modal-root .finance-entry-drawer [data-modal-header][data-scrolled=true]{border-bottom:1px solid #cccccc61; padding-bottom: 10px}
   #finance-modal-root .finance-entry-drawer .finance-entry-secondary-actions button{display:grid;grid-template-columns:50px minmax(0,1fr);gap:12px;text-align:left;justify-content:stretch;min-width:0;white-space:normal}

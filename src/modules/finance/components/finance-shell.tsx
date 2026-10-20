@@ -23,6 +23,9 @@ import {
   Landmark,
   Leaf,
   Files,
+  Pencil,
+  Trash2,
+  Save,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
@@ -323,7 +326,9 @@ export function FinanceShell({
           </header>
           {isPending && (
             <div className="finance-progress no-print" role="status">
-              <span className="finance-spinner" /> Atualizando financeiro…
+              <span className="finance-spinner" aria-hidden="true" />
+              <span className="finance-desktop-only">Atualizando financeiro…</span>
+              <span className="finance-mobile-only">Atualizando</span>
             </div>
           )}
           <FinancePwaController hasUnsavedChanges={hasUnsavedChanges} />
@@ -340,17 +345,26 @@ export function FinanceShell({
         </Workspace>
         <Modal
           open={pending !== null}
+          className="finance-unsaved-modal"
           title="Há alterações não salvas"
-          description="Escolha o que fazer antes de mudar de tela ou congregação."
+          description={
+            <>
+              <span className="finance-desktop-only">Escolha o que fazer antes de mudar de tela ou congregação.</span>
+              <span className="finance-mobile-only">Continue editando ou escolha como sair desta tela.</span>
+            </>
+          }
           busy={saving}
           onClose={() => setPending(null)}
           footer={
-            <>
+            <div className="finance-unsaved-actions">
               <Button variant="outline" onClick={() => setPending(null)}>
-                Continuar editando
+                <Pencil className="finance-mobile-only" size={22} aria-hidden="true" />
+                <span className="finance-desktop-only">Continuar editando</span>
+                <span className="finance-mobile-only">Editar</span>
               </Button>
               <Button
                 variant="outline"
+                className="finance-discard-action"
                 onClick={() => {
                   for (const g of [...guards.current])
                     if (g.dirty && g.discard() === false) return;
@@ -359,7 +373,9 @@ export function FinanceShell({
                   if (target) push(target);
                 }}
               >
-                Descartar
+                <Trash2 className="finance-mobile-only" size={22} aria-hidden="true" />
+                <span className="finance-desktop-only">Descartar</span>
+                <span className="finance-mobile-only">Descartar</span>
               </Button>
               <Button
                 loading={saving}
@@ -376,9 +392,11 @@ export function FinanceShell({
                   }
                 }}
               >
-                Salvar e continuar
+                {!saving && <Save className="finance-mobile-only" size={22} aria-hidden="true" />}
+                <span className="finance-desktop-only">Salvar e continuar</span>
+                <span className="finance-mobile-only">Salvar</span>
               </Button>
-            </>
+            </div>
           }
         />
       </NavigationContext.Provider>

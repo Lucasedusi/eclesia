@@ -73,10 +73,21 @@ export function FinanceReports({
         spinner.className = "spinner";
         spinner.setAttribute("aria-hidden", "true");
         const title = tab.document.createElement("h1");
-        title.textContent = "Preparando o PDF…";
+        const responsiveText = (desktop: string, mobile: string) => {
+          const regular = tab!.document.createElement("span");
+          regular.className = "desktop";
+          regular.textContent = desktop;
+          const compact = tab!.document.createElement("span");
+          compact.className = "mobile";
+          compact.textContent = mobile;
+          return [regular, compact];
+        };
+        title.append(...responsiveText("Preparando o PDF…", "Preparando relatório…"));
         const message = tab.document.createElement("p");
-        message.textContent =
-          "Você pode aguardar nesta aba. O relatório abrirá assim que estiver pronto.";
+        message.append(...responsiveText(
+          "Você pode aguardar nesta aba. O relatório abrirá assim que estiver pronto.",
+          "O PDF abrirá assim que estiver pronto.",
+        ));
         waiting.append(spinner, title, message);
         const style = tab.document.createElement("style");
         style.textContent = `
@@ -84,11 +95,21 @@ export function FinanceReports({
           main { margin:24px; padding:36px; max-width:420px; text-align:center; background:white; border:1px solid #dfe8e2; border-radius:16px; }
           h1 { font-size:20px; margin:18px 0 10px; } p { color:#52675c; line-height:1.6; }
           .spinner { display:inline-block; width:30px; height:30px; border:3px solid #dfe8e2; border-top-color:#087e5c; border-radius:50%; animation:spin .8s linear infinite; }
+          .mobile { display:none; }
+          @media (max-width:760px) {
+            body { min-height:100dvh; padding:16px; box-sizing:border-box; }
+            main { box-sizing:border-box; width:100%; max-width:360px; margin:0; padding:28px 20px; }
+            .desktop { display:none; }
+            .mobile { display:inline; }
+          }
           @keyframes spin { to { transform:rotate(360deg); } }
           @media (prefers-reduced-motion:reduce) { .spinner { animation:none; } }
         `;
+        const viewport = tab.document.createElement("meta");
+        viewport.name = "viewport";
+        viewport.content = "width=device-width, initial-scale=1";
         tab.document.documentElement.lang = "pt-BR";
-        tab.document.head.append(style);
+        tab.document.head.append(viewport, style);
         tab.document.body.replaceChildren(waiting);
       }
     } catch {

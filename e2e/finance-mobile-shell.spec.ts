@@ -63,7 +63,7 @@ test("changing month with unsaved attendance asks before navigation", async ({
   await expect(
     page.getByRole("dialog", { name: "Há alterações não salvas" }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Continuar editando" }).click();
+  await page.getByRole("button", { name: "Editar", exact: true }).click();
   await expect(
     page.getByRole("textbox", { name: "Nome da pessoa", exact: true }),
   ).toHaveValue("Pessoa em preenchimento");

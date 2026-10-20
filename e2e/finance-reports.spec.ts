@@ -171,7 +171,8 @@ test("filters discard an in-flight report and mobile stays within viewport", asy
     .click();
   const popup = await popupEvent;
   await expect(page.getByText("Preparando o PDF…")).toBeVisible();
-  await expect(popup.getByRole("status")).toContainText("Preparando o PDF…");
+  await popup.setViewportSize({ width: 390, height: 844 });
+  await expect(popup.getByRole("heading", { name: "Preparando relatório…" })).toBeVisible();
   await expect(popup.locator(".spinner")).toBeVisible();
   await expect(popup.locator(".spinner")).toHaveCSS("animation-name", "spin");
   await popup.emulateMedia({ reducedMotion: "reduce" });
