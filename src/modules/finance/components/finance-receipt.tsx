@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState, useCallback } from "react";
+import Image from "next/image";
 import { Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { ReceiptDTO } from "../types/finance-command.types";
@@ -18,6 +19,13 @@ export function FinanceReceipt({
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     started = useRef(false);
+  const logo = useRef<HTMLImageElement>(null);
+  const registeredAt = new Intl.DateTimeFormat("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    dateStyle: "short",
+    timeStyle: "short",
+    hourCycle: "h23",
+  }).format(new Date(receipt.registeredAt)).replace(", ", " às ");
   const requestPrint = useCallback(async () => {
     setBusy(true);
     setError("");
@@ -27,6 +35,8 @@ export function FinanceReceipt({
         setError(result.message);
         return;
       }
+      // Data URI is loaded locally; decoding also covers automatic printing.
+      await logo.current?.decode().catch(() => {});
       window.print();
     } catch {
       setError(
@@ -44,7 +54,7 @@ export function FinanceReceipt({
   }, [autoPrint, requestPrint]);
   return (
     <div className="stack">
-      <style>{`@media print{@page{size:${width}mm auto;margin:3mm}html,body{background:white!important}.financial-receipt{width:${width - 6}mm!important;max-width:${width - 6}mm!important;border:0!important;padding:0!important;margin:0!important;font-size:10px!important}.financial-receipt h1{font-size:17px!important}.financial-receipt .receipt-number{overflow-wrap:anywhere}}`}</style>
+      <style>{`@media print{@page{size:${width}mm auto;margin:3mm}html,body{background:white!important}.financial-receipt{width:${width - 6}mm!important;max-width:${width - 6}mm!important;border:0!important;padding:0!important;margin:0!important;font-size:10px!important}.financial-receipt h1{font-size:12px!important}.financial-receipt .receipt-number{overflow-wrap:anywhere}}`}</style>
       <div className="no-print row finance-receipt-controls finance-mobile-receipt-controls">
         <label>
           Largura do papel
@@ -82,10 +92,28 @@ export function FinanceReceipt({
           overflowWrap: "anywhere",
         }}
       >
-        <header style={{ textAlign: "center" }}>
-          <h1 style={{ fontSize: 23 }}>eclesias</h1>
+        <header style={{ textAlign: "center", display: "grid", justifyItems: "center", gap: 6 }}>
+          {receipt.logoDataUri && (
+            <Image
+              ref={logo}
+              src={receipt.logoDataUri}
+              alt="Logo da igreja"
+              width={64}
+              height={64}
+              unoptimized
+              loading="eager"
+              onError={(event) => { event.currentTarget.style.display = "none"; }}
+              style={{ width: "14mm", height: "14mm", objectFit: "contain", filter: "grayscale(1) contrast(1.2)" }}
+            />
+          )}
+          <h1 style={{ fontSize: 14, lineHeight: 1.35, letterSpacing: 0, margin: 0 }}>{receipt.churchName}</h1>
           <strong>{receipt.congregationName}</strong>
-          <p>
+          {receipt.congregationAddress && (
+            <address style={{ fontSize: "0.9em", fontStyle: "normal", lineHeight: 1.4 }}>
+              {receipt.congregationAddress}
+            </address>
+          )}
+          <p style={{ margin: 0 }}>
             {receipt.direction === "EXPENSE"
               ? "Comprovante de saída"
               : "Comprovante de contribuição"}
@@ -103,9 +131,11 @@ export function FinanceReceipt({
           </strong>
         )}
         <div>
-          Data: {receipt.date.split("-").reverse().join("/")}
+          Data do lançamento: <time dateTime={receipt.date}>{receipt.date.split("-").reverse().join("/")}</time>
           <br />
-          Pessoa: {receipt.personName || "Contribuição coletiva"}
+          Registrado em: <time dateTime={receipt.registeredAt}>{registeredAt}</time>
+          <br />
+          Nome: {receipt.personName || "Contribuição coletiva"}
           <br />
           Pagamento: {receipt.paymentMethodName}
         </div>
@@ -162,6 +192,7 @@ export function FinanceReceipt({
               ? "Registro de saída de recursos."
               : "Obrigado por sua contribuição."}
           </p>
+          <p><strong>Eclesias</strong></p>
         </footer>
       </article>
     </div>

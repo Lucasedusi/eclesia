@@ -31,6 +31,10 @@ describe("mobile finance documents", () => {
       receipt: {
         direction: "INCOME", id: "receipt-1", number: "A-1", revision: 1, status: "ACTIVE",
         congregationName: "Centro", personName: "Pessoa Teste", date: "2026-10-14",
+        churchName: "Assembleia de Deus — Campo de Porangatu",
+        congregationAddress: "Rua da Igreja, 25 · Centro · Porangatu / GO",
+        logoDataUri: "data:image/png;base64,iVBORw0KGgo=",
+        registeredAt: "2026-10-20T19:00:00Z",
         paymentMethodName: "Dinheiro", totalCents: 1234,
         items: [{ transactionId: "item-1", categoryName: "Oferta", departmentName: "Missões", classificationName: null, amountCents: 1234 }],
       },
@@ -40,5 +44,17 @@ describe("mobile finance documents", () => {
     expect(html).toContain("80 mm");
     expect(html).toContain("Imprimir comprovante");
     expect(html).toContain("Missões");
+    const header = html.match(/<header[^>]*>([\s\S]*?)<\/header>/)![1];
+    const footer = html.match(/<footer[^>]*>([\s\S]*?)<\/footer>/)![1];
+    expect(header).toContain("Assembleia de Deus — Campo de Porangatu");
+    expect(header).toContain("Rua da Igreja, 25");
+    expect(header).toContain('alt="Logo da igreja"');
+    expect(header.toLowerCase()).not.toContain("eclesias");
+    expect(footer).toContain("Eclesias");
+    expect(footer).toContain("Obrigado por sua contribuição.");
+    expect(html).toContain("Nome:");
+    expect(html).not.toContain("Pessoa:");
+    expect(html).toContain("14/10/2026");
+    expect(html).toContain("20/10/2026 às 16:00");
   });
 });
