@@ -72,8 +72,10 @@ function Adjustment({
       busy={busy || uncertain}
       onClose={onClose}
       footer={
-        <Button loading={busy} onClick={() => void save()}>
-          Registrar ajuste
+        <Button className="finance-mobile-full-action" loading={busy} onClick={() => void save()}>
+          <Scale size={18} aria-hidden="true" className="finance-mobile-only" />
+          <span className="finance-desktop-only">Registrar ajuste</span>
+          <span className="finance-mobile-only">Ajustar</span>
         </Button>
       }
     >
@@ -139,7 +141,7 @@ export function FinanceCashboxes({
   return (
     <div className="stack">
       <div className="row spread finance-secondary-heading">
-        <div>
+        <div className="finance-mobile-page-heading">
           <h1>Caixas e contas</h1>
           <p className="muted">
             Saldos atuais e formas de recebimento desta congregação.

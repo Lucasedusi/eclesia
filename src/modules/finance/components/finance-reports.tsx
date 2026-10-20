@@ -158,7 +158,7 @@ export function FinanceReports({
   const visiblePdf = isPending ? null : pdf;
   return (
     <div className="stack finance-reports">
-      <header className="finance-page-header">
+      <header className="finance-page-header finance-mobile-page-heading">
         <div>
           <h1>Relatórios</h1>
           <p className="muted">

@@ -1,6 +1,6 @@
 "use client";
 import { formatFinanceMonth } from "../utils/finance-period";
-import { Banknote, CreditCard, QrCode, ReceiptText, Check } from "lucide-react";
+import { Banknote, CreditCard, QrCode, ReceiptText, Check, Save } from "lucide-react";
 import { FinanceMoneyInput } from "./finance-money-input";
 import { useRef, useState } from "react";
 
@@ -155,11 +155,13 @@ export function FinanceCatalogForm({
       }}
       footer={
         <>
-          <Button variant="outline" onClick={onClose} disabled={busy}>
+          <Button className="finance-desktop-only" variant="outline" onClick={onClose} disabled={busy}>
             Cancelar
           </Button>
-          <Button loading={busy} onClick={() => void save()}>
-            Salvar cadastro
+          <Button className="finance-mobile-full-action" loading={busy} onClick={() => void save()}>
+            <Save size={18} aria-hidden="true" className="finance-mobile-only" />
+            <span className="finance-desktop-only">Salvar cadastro</span>
+            <span className="finance-mobile-only">Salvar</span>
           </Button>
         </>
       }

@@ -43,27 +43,32 @@ export function FinanceStatements({
   return (
     <div className="stack">
       <div className="row spread no-print finance-secondary-heading">
-        <div>
+        <div className="finance-mobile-page-heading">
           <h1>Demonstrativos</h1>
           <p className="muted">
             Confira a distribuição mensal e consulte todas as versões.
           </p>
         </div>
-        <div className="row finance-secondary-heading-actions">
+        <div className="row finance-secondary-heading-actions finance-statement-actions">
           {versions.length > 0 && (
-            <Button variant="outline" onClick={() => setHistoryOpen(true)}>
-              <History size={16} />
-              Visualizar histórico
+            <Button aria-label="Visualizar histórico" variant="outline" onClick={() => setHistoryOpen(true)}>
+              <History size={16} aria-hidden="true" />
+              <span className="finance-desktop-only">Visualizar histórico</span>
+              <span className="finance-mobile-only" aria-hidden="true">Histórico</span>
             </Button>
           )}
           {statement && (
-            <Button variant="outline" onClick={() => window.print()}>
-              <Printer size={16} />
-              Imprimir demonstrativo
+            <Button aria-label="Imprimir demonstrativo" variant="outline" onClick={() => window.print()}>
+              <Printer size={16} aria-hidden="true" />
+              <span className="finance-desktop-only">Imprimir demonstrativo</span>
+              <span className="finance-mobile-only" aria-hidden="true">Imprimir</span>
             </Button>
           )}
           {canGenerate && (
             <Button
+              className="finance-statement-generate"
+              aria-label={versions.length ? "Gerar nova versão" : "Gerar demonstrativo"}
+              aria-busy={busy}
               loading={busy}
               disabled={!configured}
               onClick={async () => {
@@ -92,8 +97,9 @@ export function FinanceStatements({
                 }
               }}
             >
-              <FilePlus2 size={16} />
-              {versions.length ? "Gerar nova versão" : "Gerar demonstrativo"}
+              <FilePlus2 size={16} aria-hidden="true" />
+              <span className="finance-desktop-only">{versions.length ? "Gerar nova versão" : "Gerar demonstrativo"}</span>
+              <span className="finance-mobile-only" aria-hidden="true">Gerar</span>
             </Button>
           )}
         </div>

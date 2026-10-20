@@ -83,7 +83,7 @@ export function FinanceSettings({
   }
   return (
     <div className="stack">
-      <div className="row spread">
+      <div className="row spread finance-mobile-page-heading">
         <div>
           <h1>Configurações financeiras</h1>
           <p className="muted">
