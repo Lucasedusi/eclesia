@@ -83,7 +83,7 @@ test("attendance groups tithe, worship and missions into one receipt", async ({
     await page.emulateMedia({ media: "print" });
     const receipt = page.locator(".financial-receipt");
     expect(await receipt.evaluate((e) => e.scrollWidth)).toBeLessThanOrEqual(
-      Math.ceil(((paper - 6) * 96) / 25.4) + 1,
+      Math.ceil(((paper === 58 ? 47 : 74) * 96) / 25.4) + 1,
     );
     await page.pdf({
       path: `tmp/finance-receipt-${paper}.pdf`,

@@ -23,6 +23,7 @@ export type ReceiptDTO = {
   revision: number;
   status: string;
   churchName: string;
+  churchDocument: string | null;
   logoDataUri: string | null;
   congregationName: string;
   congregationAddress: string | null;

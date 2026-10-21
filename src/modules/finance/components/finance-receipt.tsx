@@ -20,6 +20,10 @@ export function FinanceReceipt({
     [busy, setBusy] = useState(false),
     started = useRef(false);
   const logo = useRef<HTMLImageElement>(null);
+  // Reserve 1 mm on the right of the 48 mm print head without shifting the left edge.
+  const printableWidth = width === 58 ? 47 : width - 6;
+  const leftMargin = width === 58 ? 5 : 3;
+  const rightMargin = width - printableWidth - leftMargin;
   const registeredTime = new Intl.DateTimeFormat("pt-BR", {
     timeZone: "America/Sao_Paulo",
     timeStyle: "short",
@@ -53,7 +57,29 @@ export function FinanceReceipt({
   }, [autoPrint, requestPrint]);
   return (
     <div className="stack">
-      <style>{`@media print{@page{size:${width}mm auto;margin:3mm}html,body{background:white!important}.financial-receipt{width:${width - 6}mm!important;max-width:${width - 6}mm!important;border:0!important;padding:0!important;margin:0!important;font-size:10px!important}.financial-receipt h1{font-size:11px!important}.financial-receipt .receipt-number{overflow-wrap:anywhere}}`}</style>
+      <style>{`
+        @media print {
+          /* Use the roll size selected in the printer driver; "58mm auto" is invalid CSS. */
+          @page { size: auto; margin: 3mm ${rightMargin}mm 3mm ${leftMargin}mm; }
+          html, body { background: white !important; }
+          .financial-receipt {
+            width: ${printableWidth}mm !important;
+            max-width: 100% !important;
+            box-sizing: border-box;
+            border: 0 !important;
+            padding: 0 !important;
+            /* Stay in the left printable strip if the driver reports a wider page (e.g. A4). */
+            margin: 0 !important;
+            font-size: 10px !important;
+          }
+          .financial-receipt h1 { font-size: 11px !important; }
+          ${width === 58 ? `
+            html, body { margin: 0 !important; padding: 0 !important; }
+            .financial-receipt .receipt-amount-row { flex-wrap: wrap; gap: 4px 8px; }
+            .financial-receipt .receipt-amount-row > span { margin-left: auto; white-space: nowrap; }
+          ` : ""}
+        }
+      `}</style>
       <div className="no-print row finance-receipt-controls finance-mobile-receipt-controls">
         <label>
           Largura do papel
@@ -71,6 +97,7 @@ export function FinanceReceipt({
         </Button>
         <span className="muted">
           O navegador abrirá a escolha da impressora.
+          {width === 58 && " Use papel de 58 mm, escala 100% e margens padrão: o comprovante reserva 47 mm para impressão."}
         </span>
       </div>
       {error && (
@@ -91,7 +118,7 @@ export function FinanceReceipt({
           overflowWrap: "anywhere",
         }}
       >
-        <header style={{ textAlign: "center", display: "grid", justifyItems: "center", gap: 6 }}>
+        <header style={{ textAlign: "center", display: "grid", justifyItems: "center", gap: 6, borderBottom: "1px dashed black", paddingBottom: 8 }}>
           {receipt.logoDataUri && (
             <Image
               ref={logo}
@@ -107,11 +134,6 @@ export function FinanceReceipt({
           )}
           <h1 style={{ fontSize: 13, lineHeight: 1.35, letterSpacing: 0, margin: 0 }}>{receipt.churchName}</h1>
           <strong>{receipt.congregationName}</strong>
-          {receipt.congregationAddress && (
-            <address style={{ fontSize: "0.9em", fontStyle: "normal", lineHeight: 1.4 }}>
-              {receipt.congregationAddress}
-            </address>
-          )}
           <p style={{ margin: 0 }}>
             {receipt.direction === "EXPENSE"
               ? "Comprovante de saída"
@@ -130,10 +152,11 @@ export function FinanceReceipt({
           </strong>
         )}
         <div>
+          <strong style={{ display: "block", textAlign: "left", fontSize: "0.9em", marginBottom: 2 }}>
+            {receipt.personName || "Contribuição coletiva"}
+          </strong>
           Data: <time dateTime={receipt.date}>{receipt.date.split("-").reverse().join("/")}</time>
           {" às "}<time dateTime={receipt.registeredAt}>{registeredTime}</time>
-          <br />
-          Nome: {receipt.personName || "Contribuição coletiva"}
           <br />
           Pagamento: {receipt.paymentMethodName}
         </div>
@@ -151,6 +174,7 @@ export function FinanceReceipt({
               style={{ marginBottom: 9 }}
             >
               <div
+                className="receipt-amount-row"
                 style={{
                   display: "flex",
                   justifyContent: "space-between",
@@ -162,7 +186,7 @@ export function FinanceReceipt({
                   {formatMoney(item.amountCents)}
                 </span>
               </div>
-              <small>
+              <small style={{ fontSize: "0.95em" }}>
                 {item.departmentName}
                 {item.classificationName ? ` · ${item.classificationName}` : ""}
               </small>
@@ -170,6 +194,7 @@ export function FinanceReceipt({
           ))}
         </div>
         <div
+          className="receipt-amount-row"
           style={{
             display: "flex",
             justifyContent: "space-between",
@@ -179,18 +204,24 @@ export function FinanceReceipt({
         >
           Total <span>{formatMoney(receipt.totalCents)}</span>
         </div>
-        <footer style={{ textAlign: "center", fontSize: 9 }}>
-          <p className="receipt-number">
-            {receipt.number}
-            <br />
-            Versão {receipt.revision}
-          </p>
-          <p>
+        <footer style={{ borderTop: "1px dashed black", paddingTop: 8, textAlign: "center", fontSize: 9, display: "grid", gap: 6, lineHeight: 1.4 }}>
+          <p style={{ margin: 0 }}>
             {receipt.direction === "EXPENSE"
               ? "Registro de saída de recursos."
               : "Obrigado por sua contribuição."}
           </p>
-          <p><strong>Eclesias</strong></p>
+          {receipt.direction === "INCOME" && (
+            <p style={{ margin: 0 }}>Deus ama quem dá com alegria</p>
+          )}
+          {(receipt.congregationAddress || receipt.churchDocument) && (
+            <div style={{ paddingTop: 8, display: "grid", gap: 4 }}>
+              {receipt.congregationAddress && (
+                <address style={{ fontStyle: "normal" }}>{receipt.congregationAddress}</address>
+              )}
+              {receipt.churchDocument && <p style={{ margin: 0 }}>CNPJ: {receipt.churchDocument}</p>}
+            </div>
+          )}
+          <p style={{ margin: 0, fontSize: 8 }}>Eclesias</p>
         </footer>
       </article>
     </div>

@@ -31,7 +31,7 @@ export async function getFinanceReceipt(
   const { data, client } = await findFinanceReceipt(context, receiptId);
   const [church, settings, unit] = await Promise.all([
     client.from("churches")
-      .select("name,logo_url")
+      .select("name,logo_url,document")
       .eq("id", context.churchId)
       .is("deleted_at", null)
       .maybeSingle(),
@@ -61,6 +61,7 @@ export async function getFinanceReceipt(
     status: data.receipt_status,
     churchName: settings.data?.display_church_name?.trim() || church.data.name,
     logoDataUri,
+    churchDocument: church.data.document?.trim() || null,
     congregationAddress: [
       [unit.data.address, unit.data.number].filter(Boolean).join(", "),
       unit.data.complement,

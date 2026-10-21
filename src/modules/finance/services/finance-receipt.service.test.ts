@@ -28,7 +28,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   rows = {
     financial_receipts: { id: receiptId, snapshot, receipt_status: "ISSUED", receipt_type: "INCOME", created_at: recordedAt, printed_at: "2026-10-21T12:00:00Z" },
-    churches: { name: "Nome cadastral", logo_url: "church-logo" },
+    churches: { name: "Nome cadastral", logo_url: "church-logo", document: " 12.345.678/0001-90 " },
     app_settings: { display_church_name: "Nome do campo", logo_url: "configured-logo" },
     congregations: { address: "Rua da Igreja", number: "25", complement: null, district: "Centro", city: "Porangatu", state: "GO", zip_code: "76550-000" },
   };
@@ -47,6 +47,7 @@ it("enriches an authorized receipt with scoped identity and its persisted regist
   const result = await getFinanceReceipt(ctx, receiptId);
   expect(result).toMatchObject({
     churchName: "Nome do campo",
+    churchDocument: "12.345.678/0001-90",
     logoDataUri: "data:image/png;base64,bG9nbw==",
     congregationAddress: "Rua da Igreja, 25 · Centro · Porangatu / GO · CEP 76550-000",
     congregationName: snapshot.congregationName,
@@ -64,11 +65,13 @@ it("enriches an authorized receipt with scoped identity and its persisted regist
 
 it("falls back to the church name and safely omits unavailable address and logo", async () => {
   rows.app_settings = null;
+  rows.churches = { name: "Nome cadastral", logo_url: null, document: null };
   rows.congregations = {};
   m.logo.mockResolvedValue(null);
   const result = await getFinanceReceipt(ctx, receiptId);
   expect(result.churchName).toBe("Nome cadastral");
   expect(result.congregationAddress).toBeNull();
+  expect(result.churchDocument).toBeNull();
   expect(result.logoDataUri).toBeNull();
 });
 

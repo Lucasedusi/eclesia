@@ -32,6 +32,7 @@ describe("mobile finance documents", () => {
         direction: "INCOME", id: "receipt-1", number: "A-1", revision: 1, status: "ACTIVE",
         congregationName: "Centro", personName: "Pessoa Teste", date: "2026-10-14",
         churchName: "Assembleia de Deus — Campo de Porangatu",
+        churchDocument: "12.345.678/0001-90",
         congregationAddress: "Rua da Igreja, 25 · Centro · Porangatu / GO",
         logoDataUri: "data:image/png;base64,iVBORw0KGgo=",
         registeredAt: "2026-10-20T19:00:00Z",
@@ -47,12 +48,23 @@ describe("mobile finance documents", () => {
     const header = html.match(/<header[^>]*>([\s\S]*?)<\/header>/)![1];
     const footer = html.match(/<footer[^>]*>([\s\S]*?)<\/footer>/)![1];
     expect(header).toContain("Assembleia de Deus — Campo de Porangatu");
-    expect(header).toContain("Rua da Igreja, 25");
+    expect(header).not.toContain("Rua da Igreja, 25");
+    expect(footer).toContain("Rua da Igreja, 25");
+    expect(footer).toContain("CNPJ: 12.345.678/0001-90");
+    expect(footer).toContain("Deus ama quem dá com alegria");
+    expect(footer).not.toContain("A-1");
+    expect(footer).not.toContain("Versão");
+    expect(footer.indexOf("contribuição")).toBeLessThan(footer.indexOf("Deus ama"));
+    expect(footer.indexOf("Deus ama")).toBeLessThan(footer.indexOf("<address"));
+    expect(footer.indexOf("<address")).toBeLessThan(footer.indexOf("CNPJ:"));
+    expect(footer.indexOf("CNPJ:")).toBeLessThan(footer.indexOf("Eclesias"));
     expect(header).toContain('alt="Logo da igreja"');
     expect(header.toLowerCase()).not.toContain("eclesias");
     expect(footer).toContain("Eclesias");
     expect(footer).toContain("Obrigado por sua contribuição.");
-    expect(html).toContain("Nome:");
+    expect(html).not.toContain("Nome:");
+    expect(html).toContain('<strong style="display:block;text-align:left;font-size:0.9em;margin-bottom:2px">Pessoa Teste</strong>');
+    expect(html.indexOf("Pessoa Teste")).toBeLessThan(html.indexOf("Data:"));
     expect(html).not.toContain("Pessoa:");
     expect(html).toContain("14/10/2026");
     expect(html).toContain("Data:");
