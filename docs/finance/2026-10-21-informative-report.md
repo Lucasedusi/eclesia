@@ -4,7 +4,11 @@ Implementado na branch `codex/finance-informative-report`, a partir de `fd63ae6`
 
 ## Escopo aprovado
 
-Novo modelo na aba Relatórios, exclusivo para administradores, com congregação herdada do cabeçalho, meses inicial/final inclusivos, prebenda bruta e repasse opcionais, e saldo final. PDF com identidade visual dos modelos existentes, abertura em nova aba e download. O resumo usa os saldos das extremidades e soma entradas/saídas, sem somar saldos mensais.
+Novo modelo na aba Relatórios, exclusivo para administradores, com congregação herdada do cabeçalho, meses inicial/final inclusivos, prebenda bruta e repasse opcionais, e saldo final. PDF com identidade visual dos modelos existentes, abertura em nova aba e download.
+
+Após a revisão visual, o PDF foi simplificado: congregação/período alinhados ao título, faixa verde clara em **Evolução Mensal**, sem quadros superiores/inferiores, sem resumo final e sem textos genéricos sobre os cálculos e ajustes. Permanecem apenas as notas condicionais de demonstrativo ausente ou desatualizado, quando as colunas opcionais estão selecionadas. Os cálculos e os demais modelos de relatório permanecem os mesmos.
+
+Validação desta revisão de layout: lint sem avisos, TypeScript e os 523 testes aprovados; quatro combinações de colunas e paginação longa renderizadas e inspecionadas. Build e E2E não foram repetidos nesta revisão exclusivamente visual. Nenhum servidor foi iniciado; a conferência autenticada local ficou com o usuário, conforme solicitado.
 
 Prebenda bruta vem do demonstrativo após aplicar o teto, antes dos descontos. Repasse inclui somente a distribuição percentual sobre a base elegível destinada à catedral; taxas fixas e descontos da prebenda não entram. A última versão de cada mês é consultada, com ausência e desatualização explícitas. A geração não altera dados financeiros.
 

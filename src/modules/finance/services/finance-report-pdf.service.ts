@@ -543,20 +543,14 @@ export async function createFinanceReportPdf(
   rule(y);
   y += 17;
   {
-    draw(
+    const titleLines = wrap(
       `RELATÓRIO FINANCEIRO ${kind.toLocaleUpperCase("pt-BR")}`,
-      M,
-      y,
+      data.type === "INFORMATIVE" ? CW - 236 : CW,
       10,
       bold,
     );
-    if (data.type === "INFORMATIVE") y += 19;
-    const unitLines = wrap(
-      data.congregationName,
-      data.type === "INFORMATIVE" ? CW : 220,
-      9,
-      bold,
-    );
+    titleLines.forEach((l, i) => draw(l, M, y + i * 13, 10, bold));
+    const unitLines = wrap(data.congregationName, 220, 9, bold);
     unitLines.forEach((l, i) =>
       draw(l, W - M - bold.widthOfTextAtSize(l, 9), y + i * 12, 9, bold),
     );
@@ -568,7 +562,7 @@ export async function createFinanceReportPdf(
       regular,
       muted,
     );
-    y += Math.max(30, unitLines.length * 12 + 23);
+    y += Math.max(30, titleLines.length * 13 + 10, unitLines.length * 12 + 23);
   }
   const s = data.summary;
   const metrics = [
@@ -600,8 +594,6 @@ export async function createFinanceReportPdf(
     });
     y += 63;
   }
-  indicators();
-  y += 20;
   if (data.type === "INFORMATIVE") {
     const headers = [
       "Mês",
@@ -617,12 +609,7 @@ export async function createFinanceReportPdf(
       value === null || value === undefined
         ? "Não disponível"
         : `${money(value)}${stale ? "*" : ""}`;
-    paragraph(
-      "Evolução mensal · Todos os caixas e contas · Valores em R$",
-      8,
-      muted,
-      8,
-    );
+    band("Evolução Mensal", green);
     table(
       {
         title: "Evolução mensal",
@@ -660,22 +647,6 @@ export async function createFinanceReportPdf(
       ]),
     );
     if (data.includePrebend || data.includeTransfer) {
-      const definitions = [
-        data.includePrebend
-          ? "Prebenda bruta: após o teto, antes dos descontos."
-          : "",
-        data.includeTransfer
-          ? "Repasse: percentual sobre a base elegível; não inclui taxas fixas nem descontos da prebenda."
-          : "",
-      ]
-        .filter(Boolean)
-        .join(" ");
-      paragraph(
-        `${definitions} Valores calculados na última versão do demonstrativo de cada mês; não representam pagamentos e não são descontados novamente do saldo.`,
-        8,
-        muted,
-        5,
-      );
       if (data.months.some((row) => !row.statement))
         paragraph(
           "Não disponível: demonstrativo ainda não gerado para o mês.",
@@ -697,39 +668,10 @@ export async function createFinanceReportPdf(
           5,
         );
     }
-    for (const row of data.months) {
-      const changes = [
-        row.summary.openingMovementCents
-          ? `aberturas de caixa ${formatMoney(row.summary.openingMovementCents)}`
-          : "",
-        row.summary.adjustmentCents
-          ? `ajustes ${formatMoney(row.summary.adjustmentCents)}`
-          : "",
-      ].filter(Boolean);
-      if (changes.length)
-        paragraph(
-          `${formatFinanceMonth(row.month)}: ${changes.join(" · ")}. Incluídos no saldo final, fora das entradas e saídas.`,
-          8,
-          muted,
-          4,
-        );
-    }
-    heading("Resumo do período", ink, 110);
-    indicators();
-    paragraph(
-      "Saldo inicial do primeiro mês e saldo final do último. Entradas e saídas somadas no período; transferências internas não compõem essas movimentações.",
-      8,
-      muted,
-      4,
-    );
-    paragraph(
-      "Valores registrados até a emissão. Nova emissão pode refletir correções posteriores.",
-      8,
-      muted,
-      0,
-    );
     return finish();
   }
+  indicators();
+  y += 20;
   const directions = ["INCOME", "EXPENSE"] as const;
   const sections = data.cashboxes.flatMap((box) =>
     directions.map((direction) => ({ direction, box })),

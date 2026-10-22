@@ -8,7 +8,7 @@ Na mesma aba **Relatórios**, administradores da igreja podem selecionar **Infor
 - Marque ou desmarque **Incluir prebenda bruta** e **Incluir repasse** independentemente.
 - Gere o PDF para abrir em nova aba, imprimir ou baixar pelo fluxo já existente.
 
-A tabela apresenta **Mês, Saldo inicial, Entradas, Saídas, Prebenda bruta (opcional), Repasse (opcional) e Saldo final**. O resumo do período usa o saldo inicial do primeiro mês e o saldo final do último, somando apenas as movimentações. Os saldos mensais não são somados. Aberturas e ajustes são explicados por mês quando existirem. Transferências internas não entram nas receitas e despesas consolidadas.
+A tabela apresenta **Mês, Saldo inicial, Entradas, Saídas, Prebenda bruta (opcional), Repasse (opcional) e Saldo final**, sob a faixa verde clara **Evolução Mensal**. Congregação e período ficam à direita, alinhados ao título. O PDF não exibe quadros de indicadores, resumo final nem explicações de aberturas e ajustes. Esses movimentos continuam considerados nos saldos; transferências internas não entram nas receitas e despesas consolidadas.
 
 As colunas calculadas usam a última versão existente do demonstrativo de cada mês:
 
