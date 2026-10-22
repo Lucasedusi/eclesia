@@ -6,6 +6,7 @@ import {
 } from "@/modules/finance/services/finance-page.service";
 import { FinanceSkeleton } from "@/modules/finance/components/finance-skeleton";
 import { FinanceReports } from "@/modules/finance/components/finance-reports";
+import { canViewInformativeReport } from "@/modules/finance/utils/finance-report-access";
 async function Content({
   searchParams,
 }: {
@@ -19,6 +20,7 @@ async function Content({
       unit={context.congregationId}
       month={month}
       cashboxes={data ?? []}
+      canViewInformative={canViewInformativeReport(context)}
     />
   );
 }

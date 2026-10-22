@@ -127,7 +127,7 @@ test("treasurer only sees own congregation and cannot request another PDF", asyn
     name: "Congregação",
     exact: true,
   });
-  await expect(page.locator(".finance-single-unit")).toHaveText("Unit A");
+  await expect(page.locator(".finance-single-unit:visible")).toHaveText("Unit A");
   await expect(select).toHaveCount(0);
   const own = await context.request.post("/api/finance/reports/pdf", {
     data: { congregationId: f.unitId, type: "ANALYTIC", month: "2026-10" },

@@ -1,5 +1,26 @@
 # Relatórios financeiros
 
+## Informativo por congregação — administradores
+
+Na mesma aba **Relatórios**, administradores da igreja podem selecionar **Informativo por congregação**. O modelo utiliza a congregação selecionada no topo e consolida todos os seus caixas e contas, inclusive o histórico de caixas inativos.
+
+- Informe **Mês inicial** e **Mês final**. Ambos entram no relatório, inclusive meses sem movimentação. O padrão são os três meses terminando no mês selecionado no cabeçalho. Cada emissão aceita até 60 meses.
+- Marque ou desmarque **Incluir prebenda bruta** e **Incluir repasse** independentemente.
+- Gere o PDF para abrir em nova aba, imprimir ou baixar pelo fluxo já existente.
+
+A tabela apresenta **Mês, Saldo inicial, Entradas, Saídas, Prebenda bruta (opcional), Repasse (opcional) e Saldo final**. O resumo do período usa o saldo inicial do primeiro mês e o saldo final do último, somando apenas as movimentações. Os saldos mensais não são somados. Aberturas e ajustes são explicados por mês quando existirem. Transferências internas não entram nas receitas e despesas consolidadas.
+
+As colunas calculadas usam a última versão existente do demonstrativo de cada mês:
+
+- **Prebenda bruta:** valor após o teto configurado, antes do dízimo e demais descontos.
+- **Repasse:** soma dos itens destinados à catedral com natureza de distribuição e cálculo percentual sobre a base elegível (`CATHEDRAL`, `DISTRIBUTION`, `ELIGIBLE_INCOME_PERCENT`). Respeita as regras históricas e a participação dos departamentos. Não inclui itens fixos, como contador, sistema e seguro, nem descontos sobre a prebenda. Não usa o total geral a entregar à catedral.
+- **Não disponível:** não há demonstrativo gerado para o mês; é diferente de um cálculo de valor zero.
+- **Asterisco:** a última versão está desatualizada. O PDF identifica mês e versão; seus valores calculados são preservados, enquanto entradas, saídas e saldos refletem os registros atuais. Gere uma nova versão na aba Demonstrativos se quiser atualizar o cálculo antes da emissão.
+
+Prebenda e repasse não representam pagamentos e não reduzem novamente o saldo. Emitir o informativo não cria demonstrativos, despesas ou qualquer movimentação. Com as duas colunas desmarcadas, a emissão não depende de demonstrativos.
+
+A opção fica oculta para outros perfis; requisições diretas também são negadas na aplicação e no banco. O relatório preserva o isolamento por igreja e congregação e utiliza uma consulta de leitura consistente para todo o período.
+
 ## Como usar
 
 1. Abra **Financeiro → Relatórios**.

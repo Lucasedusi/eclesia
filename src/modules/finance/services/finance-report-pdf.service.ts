@@ -4,6 +4,8 @@ import path from "node:path";
 import fontkit from "@pdf-lib/fontkit";
 import { PDFDocument, rgb, type PDFPage, type PDFImage } from "pdf-lib";
 import sharp from "sharp";
+import type { FinanceInformativeReportDocument } from "../types/finance-informative-report.types";
+import { formatFinanceMonth } from "../utils/finance-period";
 import type { FinanceReportDocument } from "../types/finance-report.types";
 import { wrapReportText } from "../utils/finance-report-layout";
 import { formatMoney } from "../utils/finance-money";
@@ -28,20 +30,29 @@ function fonts() {
   ));
 }
 export async function createFinanceReportPdf(
-  data: FinanceReportDocument,
+  data: FinanceReportDocument | FinanceInformativeReportDocument,
 ): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   doc.registerFontkit(fontkit);
   const [r, b] = await fonts();
   const regular = await doc.embedFont(r, { subset: true }),
     bold = await doc.embedFont(b, { subset: true });
-  const kind = data.type === "ANALYTIC" ? "Analítico" : "Sintético";
+  const kind =
+    data.type === "INFORMATIVE"
+      ? "Informativo"
+      : data.type === "ANALYTIC"
+        ? "Analítico"
+        : "Sintético";
   const analytic = data.type === "ANALYTIC";
-  const month = new Date(`${data.month}-15T12:00:00Z`).toLocaleDateString(
-    "pt-BR",
-    { month: "long", year: "numeric", timeZone: "UTC" },
-  );
-  doc.setTitle(`Relatório ${kind} · ${data.congregationName} · ${data.month}`);
+  const month =
+    data.type === "INFORMATIVE"
+      ? `${formatFinanceMonth(data.startMonth)} a ${formatFinanceMonth(data.endMonth)}`
+      : new Date(`${data.month}-15T12:00:00Z`).toLocaleDateString("pt-BR", {
+          month: "long",
+          year: "numeric",
+          timeZone: "UTC",
+        });
+  doc.setTitle(`Relatório ${kind} · ${data.congregationName} · ${month}`);
   doc.setAuthor(data.church.name);
   doc.setCreator("Eclesias");
   let activeCashboxName = "";
@@ -156,6 +167,8 @@ export async function createFinanceReportPdf(
     right?: number[];
     color?: ReturnType<typeof rgb>;
     keepAfter?: number;
+    bodySize?: number;
+    columnColors?: Record<number, ReturnType<typeof rgb>>;
     rowStyles?: {
       indent?: number;
       gap?: number;
@@ -173,8 +186,9 @@ export async function createFinanceReportPdf(
       color = ink,
       keepAfter = analytic ? 37 : 10,
       rowStyles = [],
+      bodySize = 7.5,
+      columnColors = {},
     } = options;
-    const bodySize = 7.5;
     const headerSize = 7;
     const leading = 10;
     const padding = analytic ? 8 : 6;
@@ -302,7 +316,7 @@ export async function createFinanceReportPdf(
               y + padding / 2 + j * leading,
               bodySize,
               font,
-              i === row.length - 1 ? color : ink,
+              columnColors[i] ?? (i === row.length - 1 ? color : ink),
             ),
           );
           x += widths[i];
@@ -430,6 +444,33 @@ export async function createFinanceReportPdf(
     }
     y += 6;
   }
+  function finish() {
+    const issued = new Date(data.generatedAt).toLocaleString("pt-BR", {
+      timeZone: "America/Sao_Paulo",
+    });
+    doc.getPages().forEach((p, i) => {
+      page = p;
+      rule(H - 37);
+      draw(
+        `Emissão ${data.emissionId.slice(0, 8)} · ${issued}`,
+        M,
+        H - 28,
+        8,
+        regular,
+        muted,
+      );
+      const label = `Página ${i + 1} de ${doc.getPageCount()}`;
+      draw(
+        label,
+        W - M - regular.widthOfTextAtSize(label, 8),
+        H - 28,
+        8,
+        regular,
+        muted,
+      );
+    });
+    return doc.save();
+  }
   newPage(true);
   let logoWidth = 0;
   let logo: { image: PDFImage; width: number; height: number } | null = null;
@@ -509,7 +550,13 @@ export async function createFinanceReportPdf(
       10,
       bold,
     );
-    const unitLines = wrap(data.congregationName, 220, 9, bold);
+    if (data.type === "INFORMATIVE") y += 19;
+    const unitLines = wrap(
+      data.congregationName,
+      data.type === "INFORMATIVE" ? CW : 220,
+      9,
+      bold,
+    );
     unitLines.forEach((l, i) =>
       draw(l, W - M - bold.widthOfTextAtSize(l, 9), y + i * 12, 9, bold),
     );
@@ -525,7 +572,10 @@ export async function createFinanceReportPdf(
   }
   const s = data.summary;
   const metrics = [
-    ["Saldo anterior", s.openingCents],
+    [
+      data.type === "INFORMATIVE" ? "Saldo inicial" : "Saldo anterior",
+      s.openingCents,
+    ],
     ["Entradas", s.incomeCents],
     ["Saídas", s.expenseCents],
     ["Saldo final", s.closingCents],
@@ -552,6 +602,134 @@ export async function createFinanceReportPdf(
   }
   indicators();
   y += 20;
+  if (data.type === "INFORMATIVE") {
+    const headers = [
+      "Mês",
+      "Saldo inicial",
+      "Entradas",
+      "Saídas",
+      ...(data.includePrebend ? ["Prebenda bruta"] : []),
+      ...(data.includeTransfer ? ["Repasse"] : []),
+      "Saldo final",
+    ];
+    const money = (value: number) => formatMoney(value).replace(/R\$\s*/, "");
+    const calculated = (value: number | null | undefined, stale: boolean) =>
+      value === null || value === undefined
+        ? "Não disponível"
+        : `${money(value)}${stale ? "*" : ""}`;
+    paragraph(
+      "Evolução mensal · Todos os caixas e contas · Valores em R$",
+      8,
+      muted,
+      8,
+    );
+    table(
+      {
+        title: "Evolução mensal",
+        headers,
+        widths: [
+          58,
+          ...Array(headers.length - 1).fill((CW - 58) / (headers.length - 1)),
+        ],
+        right: headers.map((_, i) => i).slice(1),
+        bodySize: headers.length === 7 ? 7 : 7.5,
+        columnColors: { 2: green, 3: red },
+      },
+      data.months.map((row) => [
+        formatFinanceMonth(row.month),
+        money(row.summary.openingCents),
+        money(row.summary.incomeCents),
+        money(row.summary.expenseCents),
+        ...(data.includePrebend
+          ? [
+              calculated(
+                row.statement?.grossPrebendCents,
+                row.statement?.stale ?? false,
+              ),
+            ]
+          : []),
+        ...(data.includeTransfer
+          ? [
+              calculated(
+                row.statement?.transferCents,
+                row.statement?.stale ?? false,
+              ),
+            ]
+          : []),
+        money(row.summary.closingCents),
+      ]),
+    );
+    if (data.includePrebend || data.includeTransfer) {
+      const definitions = [
+        data.includePrebend
+          ? "Prebenda bruta: após o teto, antes dos descontos."
+          : "",
+        data.includeTransfer
+          ? "Repasse: percentual sobre a base elegível; não inclui taxas fixas nem descontos da prebenda."
+          : "",
+      ]
+        .filter(Boolean)
+        .join(" ");
+      paragraph(
+        `${definitions} Valores calculados na última versão do demonstrativo de cada mês; não representam pagamentos e não são descontados novamente do saldo.`,
+        8,
+        muted,
+        5,
+      );
+      if (data.months.some((row) => !row.statement))
+        paragraph(
+          "Não disponível: demonstrativo ainda não gerado para o mês.",
+          8,
+          muted,
+          5,
+        );
+      const stale = data.months
+        .filter((row) => row.statement?.stale)
+        .map(
+          (row) =>
+            `${formatFinanceMonth(row.month)} (versão ${row.statement!.revision})`,
+        );
+      if (stale.length)
+        paragraph(
+          `* Demonstrativo desatualizado: ${stale.join(", ")}. Os valores calculados preservam essa versão; entradas, saídas e saldos refletem os registros atuais.`,
+          8,
+          muted,
+          5,
+        );
+    }
+    for (const row of data.months) {
+      const changes = [
+        row.summary.openingMovementCents
+          ? `aberturas de caixa ${formatMoney(row.summary.openingMovementCents)}`
+          : "",
+        row.summary.adjustmentCents
+          ? `ajustes ${formatMoney(row.summary.adjustmentCents)}`
+          : "",
+      ].filter(Boolean);
+      if (changes.length)
+        paragraph(
+          `${formatFinanceMonth(row.month)}: ${changes.join(" · ")}. Incluídos no saldo final, fora das entradas e saídas.`,
+          8,
+          muted,
+          4,
+        );
+    }
+    heading("Resumo do período", ink, 110);
+    indicators();
+    paragraph(
+      "Saldo inicial do primeiro mês e saldo final do último. Entradas e saídas somadas no período; transferências internas não compõem essas movimentações.",
+      8,
+      muted,
+      4,
+    );
+    paragraph(
+      "Valores registrados até a emissão. Nova emissão pode refletir correções posteriores.",
+      8,
+      muted,
+      0,
+    );
+    return finish();
+  }
   const directions = ["INCOME", "EXPENSE"] as const;
   const sections = data.cashboxes.flatMap((box) =>
     directions.map((direction) => ({ direction, box })),
@@ -936,29 +1114,5 @@ export async function createFinanceReportPdf(
     muted,
     0,
   );
-  const issued = new Date(data.generatedAt).toLocaleString("pt-BR", {
-    timeZone: "America/Sao_Paulo",
-  });
-  doc.getPages().forEach((p, i) => {
-    page = p;
-    rule(H - 37);
-    draw(
-      `Emissão ${data.emissionId.slice(0, 8)} · ${issued}`,
-      M,
-      H - 28,
-      8,
-      regular,
-      muted,
-    );
-    const label = `Página ${i + 1} de ${doc.getPageCount()}`;
-    draw(
-      label,
-      W - M - regular.widthOfTextAtSize(label, 8),
-      H - 28,
-      8,
-      regular,
-      muted,
-    );
-  });
-  return doc.save();
+  return finish();
 }

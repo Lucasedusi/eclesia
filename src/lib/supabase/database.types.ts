@@ -8478,6 +8478,10 @@ export type Database = {
         }[]
       }
       get_event_stats: { Args: { p_church_id: string }; Returns: Json }
+      get_finance_informative_report: {
+        Args: { p_church_id: string; p_options: Json; p_unit: string }
+        Returns: Json
+      }
       get_finance_overview: {
         Args: { p_church_id: string; p_month: string; p_unit: string }
         Returns: Json

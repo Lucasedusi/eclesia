@@ -929,6 +929,47 @@ export const Workspace = styled.div`
     margin-bottom: 12px;
     font-size: 13px;
   }
+  .finance-report-types[data-administrative] {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .finance-informative-period {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+  .finance-informative-columns {
+    border: 0;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .finance-informative-columns legend {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+  .finance-informative-columns label {
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+    gap: 8px;
+    cursor: pointer;
+  }
+  .finance-informative-columns input {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    accent-color: #087c59;
+  }
+  .finance-informative-help { font-size: 12px; }
+  @media (max-width: 900px) {
+    .finance-report-types[data-administrative] { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 480px) {
+    .finance-informative-period { grid-template-columns: 1fr; }
+  }
   .finance-report-option {
     display: flex;
     flex-direction: row;

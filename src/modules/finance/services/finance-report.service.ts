@@ -104,6 +104,16 @@ export async function getFinanceReport(
       BigInt(s.expenseCents);
   if (!consistent)
     throw new FinanceReportError("REPORT_RECONCILIATION_REQUIRED");
+  return {
+    ...projection,
+    emissionId: randomUUID(),
+    ...(await loadFinanceReportIdentity(context)),
+  };
+}
+
+export async function loadFinanceReportIdentity(context: FinanceContext) {
+  if (!context.capabilities.view) throw new FinanceReportError("FORBIDDEN");
+  const client = await createClient();
   const [church, settings, unit] = await Promise.all([
     client
       .from("churches")
@@ -141,8 +151,6 @@ export async function getFinanceReport(
     client,
   );
   return {
-    ...projection,
-    emissionId: randomUUID(),
     congregationName: unit.data.name,
     congregationAddress:
       [

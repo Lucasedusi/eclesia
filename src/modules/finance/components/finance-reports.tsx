@@ -6,22 +6,47 @@ import {
   FileDown,
   FileText,
   ExternalLink,
+  CalendarRange,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useFinanceNavigation } from "./finance-shell";
+import {
+  financeInformativeReportOptionsSchema,
+  informativeStartMonth,
+} from "../validations/finance-informative-report.schemas";
 export function FinanceReports({
   unit,
   month,
   cashboxes,
+  canViewInformative = false,
 }: {
   unit: string;
   month: string;
   cashboxes: { id: string; name: string; status: string }[];
+  canViewInformative?: boolean;
 }) {
-  const [type, setType] = useState<"ANALYTIC" | "SYNTHETIC">("SYNTHETIC"),
+  const [type, setType] = useState<"ANALYTIC" | "SYNTHETIC" | "INFORMATIVE">(
+      "SYNTHETIC",
+    ),
     [box, setBox] = useState(""),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
+  const [startMonth, setStartMonth] = useState(() =>
+    informativeStartMonth(month),
+  );
+  const [endMonth, setEndMonth] = useState(month);
+  const [includePrebend, setIncludePrebend] = useState(true);
+  const [includeTransfer, setIncludeTransfer] = useState(true);
+  const informative = type === "INFORMATIVE";
+  const informativeOptions = {
+    type: "INFORMATIVE" as const,
+    startMonth,
+    endMonth,
+    includePrebend,
+    includeTransfer,
+  };
+  const periodValidation =
+    financeInformativeReportOptionsSchema.safeParse(informativeOptions);
   const [pdf, setPdf] = useState<{
     url: string;
     name: string;
@@ -59,6 +84,10 @@ export function FinanceReports({
   }
   async function generate() {
     invalidate();
+    if (informative && !periodValidation.success) {
+      setError(periodValidation.error.issues[0].message);
+      return;
+    }
     // Reserve the tab during the click; opening after fetch may be blocked.
     let tab: Window | null = null;
     try {
@@ -82,12 +111,16 @@ export function FinanceReports({
           compact.textContent = mobile;
           return [regular, compact];
         };
-        title.append(...responsiveText("Preparando o PDF…", "Preparando relatório…"));
+        title.append(
+          ...responsiveText("Preparando o PDF…", "Preparando relatório…"),
+        );
         const message = tab.document.createElement("p");
-        message.append(...responsiveText(
-          "Você pode aguardar nesta aba. O relatório abrirá assim que estiver pronto.",
-          "O PDF abrirá assim que estiver pronto.",
-        ));
+        message.append(
+          ...responsiveText(
+            "Você pode aguardar nesta aba. O relatório abrirá assim que estiver pronto.",
+            "O PDF abrirá assim que estiver pronto.",
+          ),
+        );
         waiting.append(spinner, title, message);
         const style = tab.document.createElement("style");
         style.textContent = `
@@ -126,9 +159,9 @@ export function FinanceReports({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           congregationId: unit,
-          type,
-          month,
-          ...(box ? { cashboxId: box } : {}),
+          ...(informative
+            ? informativeOptions
+            : { type, month, ...(box ? { cashboxId: box } : {}) }),
         }),
         signal: request.signal,
       });
@@ -158,7 +191,9 @@ export function FinanceReports({
       setPdf({
         opened,
         url: objectUrl,
-        name: `relatorio-${type === "ANALYTIC" ? "analitico" : "sintetico"}-${month}.pdf`,
+        name: informative
+          ? `relatorio-informativo-${startMonth}-a-${endMonth}.pdf`
+          : `relatorio-${type === "ANALYTIC" ? "analitico" : "sintetico"}-${month}.pdf`,
       });
     } catch (e) {
       tab?.close();
@@ -183,13 +218,16 @@ export function FinanceReports({
         <div>
           <h1>Relatórios</h1>
           <p className="muted">
-            Confira a movimentação do mês e prepare os documentos para
+            Confira a movimentação financeira e prepare os documentos para
             impressão.
           </p>
         </div>
       </header>
       <section className="card stack" aria-label="Opções do relatório">
-        <fieldset className="finance-report-types">
+        <fieldset
+          className="finance-report-types"
+          data-administrative={canViewInformative || undefined}
+        >
           <legend>Tipo de relatório</legend>
           {[
             {
@@ -205,6 +243,17 @@ export function FinanceReports({
                 "Confira cada entrada e saída, com pessoas e descrições.",
               Icon: ListOrdered,
             },
+            ...(canViewInformative
+              ? [
+                  {
+                    value: "INFORMATIVE",
+                    title: "Informativo por congregação",
+                    description:
+                      "Compare os meses, com prebenda e repasse opcionais.",
+                    Icon: CalendarRange,
+                  },
+                ]
+              : []),
           ].map(({ value, title, description, Icon }) => (
             <label
               key={value}
@@ -230,28 +279,102 @@ export function FinanceReports({
             </label>
           ))}
         </fieldset>
+        {informative && (
+          <div className="stack finance-informative-options">
+            <p className="muted">
+              Todos os caixas e contas da congregação selecionada no topo.
+            </p>
+            <div className="finance-informative-period">
+              <label>
+                Mês inicial
+                <input
+                  type="month"
+                  min="2000-01"
+                  max="2099-12"
+                  value={startMonth}
+                  onChange={(e) => {
+                    invalidate();
+                    setStartMonth(e.target.value);
+                  }}
+                />
+              </label>
+              <label>
+                Mês final
+                <input
+                  type="month"
+                  min="2000-01"
+                  max="2099-12"
+                  value={endMonth}
+                  onChange={(e) => {
+                    invalidate();
+                    setEndMonth(e.target.value);
+                  }}
+                />
+              </label>
+            </div>
+            {!periodValidation.success && (
+              <p role="alert" className="finance-report-error">
+                {periodValidation.error.issues[0].message}
+              </p>
+            )}
+            <fieldset className="finance-informative-columns">
+              <legend>Colunas opcionais</legend>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={includePrebend}
+                  onChange={(e) => {
+                    invalidate();
+                    setIncludePrebend(e.target.checked);
+                  }}
+                />
+                Incluir prebenda bruta
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={includeTransfer}
+                  onChange={(e) => {
+                    invalidate();
+                    setIncludeTransfer(e.target.checked);
+                  }}
+                />
+                Incluir repasse
+              </label>
+            </fieldset>
+            <p className="muted finance-informative-help">
+              Prebenda e repasse usam a última versão do demonstrativo de cada
+              mês. Meses sem demonstrativo e versões desatualizadas serão
+              identificados no PDF.
+            </p>
+          </div>
+        )}
         <div className="finance-report-controls finance-mobile-report-controls">
-          <label>
-            Caixas e contas
-            <select
-              value={box}
-              onChange={(e) => {
-                invalidate();
-                setBox(e.target.value);
-              }}
-            >
-              <option value="">Todos os caixas e contas</option>
-              {cashboxes.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                  {b.status !== "ACTIVE" ? " · Inativo" : ""}
-                </option>
-              ))}
-            </select>
-          </label>
+          {!informative && (
+            <label>
+              Caixas e contas
+              <select
+                value={box}
+                onChange={(e) => {
+                  invalidate();
+                  setBox(e.target.value);
+                }}
+              >
+                <option value="">Todos os caixas e contas</option>
+                {cashboxes.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name}
+                    {b.status !== "ACTIVE" ? " · Inativo" : ""}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           <Button
             onClick={() => void generate()}
-            disabled={busy || isPending}
+            disabled={
+              busy || isPending || (informative && !periodValidation.success)
+            }
           >
             {busy ? (
               <span className="finance-spinner" aria-hidden="true" />
@@ -315,8 +438,9 @@ export function FinanceReports({
           <FileText size={34} aria-hidden="true" />
           <h2>Uma visão clara das finanças</h2>
           <p>
-            Selecione o modelo e gere o relatório do período escolhido no
-            cabeçalho.
+            {informative
+              ? "Confira o período e as colunas desejadas para gerar o informativo da congregação."
+              : "Selecione o modelo e gere o relatório do período escolhido no cabeçalho."}
           </p>
           <small>
             PDF em A4, pronto para conferir, imprimir ou compartilhar com a

@@ -7,11 +7,19 @@ import { getFinanceReport } from "@/modules/finance/services/finance-report.serv
 import { createFinanceReportPdf } from "@/modules/finance/services/finance-report-pdf.service";
 import { financeReportOptionsSchema } from "@/modules/finance/validations/finance-report.schemas";
 import { FinanceReportError } from "@/modules/finance/types/finance-report.types";
+import { financeInformativeReportOptionsSchema } from "@/modules/finance/validations/finance-informative-report.schemas";
+import { getFinanceInformativeReport } from "@/modules/finance/services/finance-informative-report.service";
+import { canViewInformativeReport } from "@/modules/finance/utils/finance-report-access";
 import {
   PublicRequestBodyError,
   readBoundedJsonBody,
 } from "@/modules/events/utils/public-request";
-const schema = financeReportOptionsSchema.extend({ congregationId: z.uuid() });
+const schema = z.union([
+  financeReportOptionsSchema.extend({ congregationId: z.uuid() }),
+  financeInformativeReportOptionsSchema.safeExtend({
+    congregationId: z.uuid(),
+  }),
+]);
 const headers = {
   "Cache-Control": "private, no-store",
   "X-Content-Type-Options": "nosniff",
@@ -47,9 +55,20 @@ export async function POST(request: Request) {
       congregationId,
       permission: FINANCE_PERMISSIONS.view,
     });
-    const report = await getFinanceReport(context, options);
+    if (options.type === "INFORMATIVE" && !canViewInformativeReport(context))
+      return failure(
+        "Este relatório está disponível somente para administradores.",
+        403,
+      );
+    const report =
+      options.type === "INFORMATIVE"
+        ? await getFinanceInformativeReport(context, options)
+        : await getFinanceReport(context, options);
     const bytes = await createFinanceReportPdf(report);
-    const name = `relatorio-${options.type === "ANALYTIC" ? "analitico" : "sintetico"}-${options.month}.pdf`;
+    const name =
+      options.type === "INFORMATIVE"
+        ? `relatorio-informativo-${options.startMonth}-a-${options.endMonth}.pdf`
+        : `relatorio-${options.type === "ANALYTIC" ? "analitico" : "sintetico"}-${options.month}.pdf`;
     return new NextResponse(Buffer.from(bytes), {
       headers: {
         ...headers,
@@ -65,7 +84,7 @@ export async function POST(request: Request) {
     if (error instanceof FinanceReportError) {
       if (error.code === "REPORT_TOO_LARGE")
         return failure(
-          "Este relatório ultrapassa o limite de 10.000 linhas. Selecione um caixa ou utilize o modelo sintético.",
+          "Este relatório excede o limite de geração. Reduza o período ou selecione um caixa nos modelos mensais.",
           422,
         );
       if (error.code === "REPORT_RECONCILIATION_REQUIRED")
