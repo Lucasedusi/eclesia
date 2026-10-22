@@ -3757,6 +3757,143 @@ export type Database = {
           },
         ]
       }
+      finance_delivery_deadlines: {
+        Row: {
+          church_id: string
+          created_at: string
+          created_by: string
+          deleted_at: string | null
+          due_day: number
+          effective_month: string
+          id: string
+          operation_key: string
+          payload: Json
+          revision: number
+        }
+        Insert: {
+          church_id: string
+          created_at?: string
+          created_by: string
+          deleted_at?: string | null
+          due_day: number
+          effective_month: string
+          id?: string
+          operation_key: string
+          payload: Json
+          revision: number
+        }
+        Update: {
+          church_id?: string
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          due_day?: number
+          effective_month?: string
+          id?: string
+          operation_key?: string
+          payload?: Json
+          revision?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_delivery_deadlines_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_delivery_deadlines_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_delivery_events: {
+        Row: {
+          action: string
+          church_id: string
+          congregation_id: string
+          created_at: string
+          created_by: string
+          deleted_at: string | null
+          delivery_date: string | null
+          due_date: string
+          id: string
+          operation_key: string
+          payload: Json
+          reason: string
+          reference_month: string
+          report_delivery_id: string
+          revision: number
+        }
+        Insert: {
+          action: string
+          church_id: string
+          congregation_id: string
+          created_at?: string
+          created_by: string
+          deleted_at?: string | null
+          delivery_date?: string | null
+          due_date: string
+          id?: string
+          operation_key: string
+          payload: Json
+          reason?: string
+          reference_month: string
+          report_delivery_id: string
+          revision: number
+        }
+        Update: {
+          action?: string
+          church_id?: string
+          congregation_id?: string
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          delivery_date?: string | null
+          due_date?: string
+          id?: string
+          operation_key?: string
+          payload?: Json
+          reason?: string
+          reference_month?: string
+          report_delivery_id?: string
+          revision?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_delivery_events_church_id_congregation_id_fkey"
+            columns: ["church_id", "congregation_id"]
+            isOneToOne: false
+            referencedRelation: "congregations"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "finance_delivery_events_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_delivery_events_church_id_report_delivery_id_fkey"
+            columns: ["church_id", "report_delivery_id"]
+            isOneToOne: false
+            referencedRelation: "report_deliveries"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "finance_delivery_events_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       financial_attendances: {
         Row: {
           cancel_reason: string | null
@@ -8486,6 +8623,10 @@ export type Database = {
         Args: { p_church_id: string; p_month: string; p_unit: string }
         Returns: Json
       }
+      get_finance_ranking_report: {
+        Args: { p_church_id: string; p_options: Json }
+        Returns: Json
+      }
       get_finance_report: {
         Args: { p_church_id: string; p_options: Json; p_unit: string }
         Returns: Json
@@ -8525,6 +8666,14 @@ export type Database = {
         Returns: boolean
       }
       is_valid_cpf: { Args: { p_value: string }; Returns: boolean }
+      list_finance_deliveries: {
+        Args: {
+          p_church_id: string
+          p_include_inactive: boolean
+          p_month: string
+        }
+        Returns: Json
+      }
       list_finance_operators: {
         Args: { p_church_id: string; p_unit: string }
         Returns: Json
@@ -8863,6 +9012,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      record_finance_delivery: {
+        Args: { p_church_id: string; p_payload: Json }
+        Returns: Json
+      }
       record_finance_print_request: {
         Args: { p_church_id: string; p_receipt_id: string }
         Returns: undefined
@@ -9041,6 +9194,10 @@ export type Database = {
       rollback_member_import: { Args: { p_batch_id: string }; Returns: Json }
       safe_uuid: { Args: { p_value: string }; Returns: string }
       save_finance_catalog: {
+        Args: { p_church_id: string; p_payload: Json }
+        Returns: Json
+      }
+      save_finance_delivery_deadline: {
         Args: { p_church_id: string; p_payload: Json }
         Returns: Json
       }

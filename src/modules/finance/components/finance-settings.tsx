@@ -1,4 +1,6 @@
 "use client";
+import { FinanceDeliveryDeadline } from "./finance-delivery-deadline";
+import type { DeliveryRule } from "../types/finance-administrative.types";
 import { FinanceEmpty } from "./finance-empty";
 import { FinanceSkeleton } from "./finance-skeleton";
 import { useFinanceNavigation } from "./finance-shell";
@@ -19,6 +21,8 @@ import {
 } from "./finance-catalog-form";
 import { FinanceRuleEditor } from "./finance-rule-editor";
 export function FinanceSettings({
+  initialArea,
+  deliveryRules,
   latestStatementMonth,
   currentMonth,
   catalogs,
@@ -28,6 +32,8 @@ export function FinanceSettings({
   rules,
   units,
 }: {
+  initialArea?: "DELIVERY";
+  deliveryRules: DeliveryRule[];
   latestStatementMonth: string | null;
   currentMonth: string;
   catalogs: FinanceCatalogs;
@@ -39,8 +45,8 @@ export function FinanceSettings({
 }) {
   const { isPending } = useFinanceNavigation();
   const [rulesDirty, setRulesDirty] = useState(false);
-  const [tab, setTab] = useState<CatalogEntity | "RULES">(
-      "DEPARTMENT",
+  const [tab, setTab] = useState<CatalogEntity | "RULES" | "DELIVERY">(
+      initialArea ?? "DEPARTMENT",
     ),
     [editing, setEditing] = useState<{
       entity: CatalogEntity;
@@ -52,6 +58,7 @@ export function FinanceSettings({
     { id: "CLASSIFICATION", label: "Classificações" },
     { id: "PAYMENT_METHOD", label: "Formas de pagamento" },
     { id: "RULES", label: "Regras do demonstrativo" },
+    { id: "DELIVERY", label: "Prazo de entrega" },
   ] as const;
   const rows: CatalogItem[] =
     tab === "DEPARTMENT"
@@ -91,7 +98,10 @@ export function FinanceSettings({
           </p>
         </div>
       </div>
-      <div className="tabs finance-settings-tabs" aria-label="Áreas das configurações financeiras">
+      <div
+        className="tabs finance-settings-tabs"
+        aria-label="Áreas das configurações financeiras"
+      >
         {tabs.map((t) => (
           <button
             key={t.id}
@@ -111,7 +121,14 @@ export function FinanceSettings({
           </button>
         ))}
       </div>
-      {tab === "RULES" ? (
+      {tab === "DELIVERY" ? (
+        <FinanceDeliveryDeadline
+          key={Math.max(0, ...deliveryRules.map((r) => r.revision))}
+          rules={deliveryRules}
+          currentMonth={currentMonth}
+          onDirtyChange={setRulesDirty}
+        />
+      ) : tab === "RULES" ? (
         <FinanceRuleEditor
           key={`${unit}-${month}-${rules[0]?.id ?? "new"}`}
           latestStatementMonth={latestStatementMonth}
@@ -156,7 +173,9 @@ export function FinanceSettings({
                       <td data-label="Nome">
                         <strong>{r.name}</strong>
                       </td>
-                      <td className="muted" data-label="Configuração">{details(r.id)}</td>
+                      <td className="muted" data-label="Configuração">
+                        {details(r.id)}
+                      </td>
                       <td data-label="Situação">
                         <span className="badge">
                           {r.status === "ACTIVE" ? "Ativo" : "Inativo"}

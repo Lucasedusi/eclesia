@@ -930,8 +930,15 @@ export const Workspace = styled.div`
     font-size: 13px;
   }
   .finance-report-types[data-administrative] {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+  .finance-delivery-fields { padding: 0; margin: 0; border: 0; min-width: 0; }
+  .finance-delivery-actions { flex-wrap: wrap; gap: 8px; }
+  .finance-delivery-tabs { overflow-x: auto; }
+  .finance-delivery-tabs button { white-space: nowrap; }
+  .finance-delivery-late, .finance-delivery-undo { color: #993b42; }
+  .finance-delivery-undo { text-align: left; background: transparent; border: 0; padding: 8px 0; cursor: pointer; }
+  .finance-deliveries input[type="checkbox"], .finance-informative-options input[type="checkbox"] { width: auto; }
   .finance-informative-period {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));

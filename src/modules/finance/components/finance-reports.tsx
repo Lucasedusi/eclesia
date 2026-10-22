@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import {
   ChartNoAxesCombined,
   ListOrdered,
@@ -8,8 +8,10 @@ import {
   ExternalLink,
   CalendarRange,
 } from "lucide-react";
+import Link from "next/link";
+import { useFinanceReportPdf } from "../hooks/use-finance-report-pdf";
+import { financeLocation } from "../utils/finance-navigation";
 import { Button } from "@/components/ui/button";
-import { useFinanceNavigation } from "./finance-shell";
 import {
   financeInformativeReportOptionsSchema,
   informativeStartMonth,
@@ -25,19 +27,19 @@ export function FinanceReports({
   cashboxes: { id: string; name: string; status: string }[];
   canViewInformative?: boolean;
 }) {
-  const [type, setType] = useState<"ANALYTIC" | "SYNTHETIC" | "INFORMATIVE">(
-      "SYNTHETIC",
-    ),
-    [box, setBox] = useState(""),
-    [busy, setBusy] = useState(false),
-    [error, setError] = useState("");
+  const [type, setType] = useState<
+      "ANALYTIC" | "SYNTHETIC" | "INFORMATIVE" | "RANKING"
+    >("SYNTHETIC"),
+    [box, setBox] = useState("");
   const [startMonth, setStartMonth] = useState(() =>
     informativeStartMonth(month),
   );
   const [endMonth, setEndMonth] = useState(month);
   const [includePrebend, setIncludePrebend] = useState(true);
   const [includeTransfer, setIncludeTransfer] = useState(true);
-  const informative = type === "INFORMATIVE";
+  const [includeInactive, setIncludeInactive] = useState(false);
+  const ranking = type === "RANKING";
+  const informative = type === "INFORMATIVE" || ranking;
   const informativeOptions = {
     type: "INFORMATIVE" as const,
     startMonth,
@@ -47,171 +49,26 @@ export function FinanceReports({
   };
   const periodValidation =
     financeInformativeReportOptionsSchema.safeParse(informativeOptions);
-  const [pdf, setPdf] = useState<{
-    url: string;
-    name: string;
-    opened: boolean;
-  } | null>(null);
-  const controller = useRef<AbortController | null>(null),
-    url = useRef<string | null>(null),
-    pendingTab = useRef<Window | null>(null);
-  const { isPending } = useFinanceNavigation();
-  useEffect(
-    () => () => {
-      controller.current?.abort();
-      pendingTab.current?.close();
-      if (url.current) URL.revokeObjectURL(url.current);
-    },
-    [],
-  );
-  useEffect(() => {
-    if (isPending) {
-      controller.current?.abort();
-      pendingTab.current?.close();
-      pendingTab.current = null;
-    }
-  }, [isPending]);
-  function invalidate() {
-    controller.current?.abort();
-    pendingTab.current?.close();
-    pendingTab.current = null;
-    controller.current = null;
-    if (url.current) URL.revokeObjectURL(url.current);
-    url.current = null;
-    setPdf(null);
-    setError("");
-    setBusy(false);
-  }
-  async function generate() {
-    invalidate();
-    if (informative && !periodValidation.success) {
-      setError(periodValidation.error.issues[0].message);
-      return;
-    }
-    // Reserve the tab during the click; opening after fetch may be blocked.
-    let tab: Window | null = null;
-    try {
-      tab = window.open("about:blank", "_blank");
-      if (tab) {
-        tab.opener = null;
-        tab.document.title = "Preparando relatório — Eclesias";
-        const waiting = tab.document.createElement("main");
-        waiting.setAttribute("role", "status");
-        waiting.setAttribute("aria-busy", "true");
-        const spinner = tab.document.createElement("span");
-        spinner.className = "spinner";
-        spinner.setAttribute("aria-hidden", "true");
-        const title = tab.document.createElement("h1");
-        const responsiveText = (desktop: string, mobile: string) => {
-          const regular = tab!.document.createElement("span");
-          regular.className = "desktop";
-          regular.textContent = desktop;
-          const compact = tab!.document.createElement("span");
-          compact.className = "mobile";
-          compact.textContent = mobile;
-          return [regular, compact];
-        };
-        title.append(
-          ...responsiveText("Preparando o PDF…", "Preparando relatório…"),
-        );
-        const message = tab.document.createElement("p");
-        message.append(
-          ...responsiveText(
-            "Você pode aguardar nesta aba. O relatório abrirá assim que estiver pronto.",
-            "O PDF abrirá assim que estiver pronto.",
-          ),
-        );
-        waiting.append(spinner, title, message);
-        const style = tab.document.createElement("style");
-        style.textContent = `
-          body { margin:0; min-height:100vh; display:grid; place-items:center; background:#f5f8f6; color:#183d2e; font:14px system-ui,sans-serif; }
-          main { margin:24px; padding:36px; max-width:420px; text-align:center; background:white; border:1px solid #dfe8e2; border-radius:16px; }
-          h1 { font-size:20px; margin:18px 0 10px; } p { color:#52675c; line-height:1.6; }
-          .spinner { display:inline-block; width:30px; height:30px; border:3px solid #dfe8e2; border-top-color:#087e5c; border-radius:50%; animation:spin .8s linear infinite; }
-          .mobile { display:none; }
-          @media (max-width:760px) {
-            body { min-height:100dvh; padding:16px; box-sizing:border-box; }
-            main { box-sizing:border-box; width:100%; max-width:360px; margin:0; padding:28px 20px; }
-            .desktop { display:none; }
-            .mobile { display:inline; }
-          }
-          @keyframes spin { to { transform:rotate(360deg); } }
-          @media (prefers-reduced-motion:reduce) { .spinner { animation:none; } }
-        `;
-        const viewport = tab.document.createElement("meta");
-        viewport.name = "viewport";
-        viewport.content = "width=device-width, initial-scale=1";
-        tab.document.documentElement.lang = "pt-BR";
-        tab.document.head.append(viewport, style);
-        tab.document.body.replaceChildren(waiting);
-      }
-    } catch {
-      tab?.close();
-      tab = null;
-    }
-    pendingTab.current = tab;
-    const request = new AbortController();
-    controller.current = request;
-    setBusy(true);
-    try {
-      const response = await fetch("/api/finance/reports/pdf", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+  const {
+    busy,
+    error,
+    pdf: visiblePdf,
+    generate,
+    invalidate,
+    isPending,
+  } = useFinanceReportPdf(
+    ranking
+      ? { ...informativeOptions, type: "RANKING", includeInactive }
+      : {
           congregationId: unit,
           ...(informative
             ? informativeOptions
             : { type, month, ...(box ? { cashboxId: box } : {}) }),
-        }),
-        signal: request.signal,
-      });
-      if (!response.ok) {
-        const body = await response.json().catch(() => null);
-        throw new Error(
-          body?.message ||
-            "Não foi possível gerar o relatório. Tente novamente.",
-        );
-      }
-      if (!response.headers.get("content-type")?.includes("application/pdf"))
-        throw new Error("Entre novamente para gerar o relatório.");
-      const blob = await response.blob();
-      if (request.signal.aborted) return;
-      const objectUrl = URL.createObjectURL(blob);
-      url.current = objectUrl;
-      let opened = false;
-      if (tab && !tab.closed) {
-        try {
-          tab.location.replace(objectUrl);
-          opened = true;
-        } catch {
-          tab.close();
-        }
-      }
-      pendingTab.current = null;
-      setPdf({
-        opened,
-        url: objectUrl,
-        name: informative
-          ? `relatorio-informativo-${startMonth}-a-${endMonth}.pdf`
-          : `relatorio-${type === "ANALYTIC" ? "analitico" : "sintetico"}-${month}.pdf`,
-      });
-    } catch (e) {
-      tab?.close();
-      if (!request.signal.aborted)
-        setError(
-          e instanceof Error
-            ? e.message
-            : "Não foi possível gerar o relatório.",
-        );
-    } finally {
-      if (controller.current === request) {
-        controller.current = null;
-        pendingTab.current = null;
-        setBusy(false);
-      }
-    }
-  }
-  const visiblePdf = isPending ? null : pdf;
+        },
+    informative
+      ? `relatorio-${ranking ? "ranking" : "informativo"}-${startMonth}-a-${endMonth}.pdf`
+      : `relatorio-${type === "ANALYTIC" ? "analitico" : "sintetico"}-${month}.pdf`,
+  );
   return (
     <div className="stack finance-reports">
       <header className="finance-page-header finance-mobile-page-heading">
@@ -252,6 +109,13 @@ export function FinanceReports({
                       "Compare os meses, com prebenda e repasse opcionais.",
                     Icon: CalendarRange,
                   },
+                  {
+                    value: "RANKING",
+                    title: "Informativo geral por congregação",
+                    description:
+                      "Ranking por entradas, com totais de todas as congregações.",
+                    Icon: ListOrdered,
+                  },
                 ]
               : []),
           ].map(({ value, title, description, Icon }) => (
@@ -268,6 +132,10 @@ export function FinanceReports({
                 onChange={() => {
                   invalidate();
                   setType(value as typeof type);
+                  if (value === "RANKING") {
+                    setStartMonth(month);
+                    setEndMonth(month);
+                  }
                 }}
                 aria-label={title}
               />
@@ -282,8 +150,23 @@ export function FinanceReports({
         {informative && (
           <div className="stack finance-informative-options">
             <p className="muted">
-              Todos os caixas e contas da congregação selecionada no topo.
+              {ranking
+                ? "Todas as congregações autorizadas, incluindo a catedral. Ordenação por maiores entradas no período."
+                : "Todos os caixas e contas da congregação selecionada no topo."}
             </p>
+            {ranking && (
+              <label className="row">
+                <input
+                  type="checkbox"
+                  checked={includeInactive}
+                  onChange={(e) => {
+                    invalidate();
+                    setIncludeInactive(e.target.checked);
+                  }}
+                />
+                Incluir congregações inativas
+              </label>
+            )}
             <div className="finance-informative-period">
               <label>
                 Mês inicial
@@ -385,6 +268,25 @@ export function FinanceReports({
           </Button>
         </div>
       </section>
+      {canViewInformative && (
+        <section className="card stack">
+          <h2>Entrega de relatórios</h2>
+          <p className="muted">
+            Acompanhe o recebimento mensal das congregações e emita a lista por
+            situação.
+          </p>
+          <Link
+            className="finance-report-link"
+            href={financeLocation(
+              "/financeiro/relatorios/entregas",
+              unit,
+              month,
+            )}
+          >
+            Acompanhar entregas
+          </Link>
+        </section>
+      )}
       {error && (
         <div role="alert" className="notice finance-report-error">
           {error}

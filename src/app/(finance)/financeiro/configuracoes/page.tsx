@@ -1,3 +1,4 @@
+import { listFinanceDeliveryRules } from "@/modules/finance/services/finance-administrative.service";
 import { FinanceSkeleton } from "@/modules/finance/components/finance-skeleton";
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
@@ -18,9 +19,12 @@ async function Content({
 }: {
   searchParams: FinanceSearchParams;
 }) {
-  const { context, month } = await resolveFinancePage(searchParams, true),
+  const { context, month, search } = await resolveFinancePage(
+      searchParams,
+      true,
+    ),
     client = await createClient();
-  const [catalogs, rules, units, roles, latestMonth] =
+  const [catalogs, rules, units, roles, latestMonth, deliveryRules] =
     await Promise.all([
       listFinanceCatalogs(context),
       listStatementRules(context),
@@ -33,10 +37,13 @@ async function Content({
         .eq("status", "ACTIVE")
         .order("name"),
       latestStatementMonth(context),
+      listFinanceDeliveryRules(context),
     ]);
   if (roles.error) throw new Error("UNAVAILABLE");
   return (
     <FinanceSettings
+      initialArea={search.area === "entregas" ? "DELIVERY" : undefined}
+      deliveryRules={deliveryRules}
       latestStatementMonth={latestMonth}
       currentMonth={todayLocal().slice(0, 7)}
       catalogs={catalogs}

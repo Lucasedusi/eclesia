@@ -7,6 +7,8 @@ const m = vi.hoisted(() => ({
   report: vi.fn(),
   pdf: vi.fn(),
   informative: vi.fn(),
+  ranking: vi.fn(),
+  deliveries: vi.fn(),
 }));
 vi.mock("@/modules/auth/services/access-context.service", () => ({
   resolveAccessContext: m.access,
@@ -24,6 +26,10 @@ vi.mock(
   "@/modules/finance/services/finance-informative-report.service",
   () => ({ getFinanceInformativeReport: m.informative }),
 );
+vi.mock("@/modules/finance/services/finance-administrative.service", () => ({
+  getFinanceRankingReport: m.ranking,
+  getFinanceDeliveryReport: m.deliveries,
+}));
 import { POST } from "./route";
 const unit = "30000000-0000-4000-8000-000000000001";
 const payload = { congregationId: unit, type: "SYNTHETIC", month: "2026-10" };
@@ -156,3 +162,42 @@ it("accepts browser origin matching Host when Next rewrites the internal URL", a
     ).status,
   ).toBe(200);
 });
+
+it.each(["RANKING", "DELIVERIES"])(
+  "protects global %s PDF against a treasurer and accepts an admin without a selected unit",
+  async (type) => {
+    const body =
+      type === "RANKING"
+        ? {
+            type,
+            startMonth: "2026-09",
+            endMonth: "2026-09",
+            includeInactive: false,
+            includePrebend: true,
+            includeTransfer: false,
+          }
+        : {
+            type,
+            month: "2026-09",
+            includeInactive: false,
+            filter: "PENDING",
+            search: "",
+          };
+    const ctx = {
+      capabilities: { view: true },
+      auth: {
+        profile: { status: "ACTIVE" },
+        access: { role: "TREASURER", scope: "CHURCH", status: "ACTIVE" },
+      },
+    };
+    m.context.mockResolvedValue(ctx);
+    expect((await request(body)).status).toBe(403);
+    m.context.mockResolvedValue({
+      ...ctx,
+      auth: { ...ctx.auth, access: { ...ctx.auth.access, role: "ADMIN" } },
+    });
+    m.ranking.mockResolvedValue({ type: "RANKING" });
+    m.deliveries.mockResolvedValue({ type: "DELIVERIES" });
+    expect((await request(body)).status).toBe(200);
+  },
+);

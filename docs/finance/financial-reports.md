@@ -1,5 +1,19 @@
 # Relatórios financeiros
 
+## Informativo geral por congregação — administradores
+
+Em **Relatórios**, escolha **Informativo geral por congregação**. Informe os meses inicial e final; o padrão é o mês do cabeçalho. O relatório abrange todas as congregações autorizadas, incluindo a catedral, independentemente da unidade selecionada no topo. Congregações ativas entram por padrão; marque **Incluir congregações inativas** para consultar também as inativas.
+
+A ordem é por maiores entradas, com desempate por nome. A tabela contém congregação, entradas, saídas, saldo final acumulado e, opcionalmente, repasse e prebenda bruta. A última linha soma as colunas entre congregações. O saldo é o encerramento do último mês, sem somar saldos mensais. As regras e os avisos dos valores opcionais são os mesmos do informativo individual; ausências tornam os respectivos valores/totais parciais. Transferências internas não entram nas receitas/despesas.
+
+## Entrega de relatórios — administradores
+
+Em **Relatórios → Acompanhar entregas**, selecione a referência e use **Todas**, **Entregues** ou **Não entregues**. A busca por nome e a inclusão de inativas também são aplicadas ao PDF. A catedral não participa desse controle.
+
+**Registrar entrega** permite informar a data real do recebimento, após o fim da referência e até hoje. Gerar ou imprimir um demonstrativo não marca entrega. O recebimento pode ser registrado sem demonstrativo no sistema e não gera movimentação financeira. **Corrigir** permite ajustar a data ou desfazer o registro, exigindo motivo e preservando o histórico de responsáveis e horários.
+
+Em **Configurações financeiras → Prazo de entrega**, defina o dia limite do mês seguinte e a referência inicial de vigência. O padrão é dia 8. Uma nova regra não modifica referências anteriores; dias inexistentes são ajustados ao último dia do mês. A classificação diferencia aguardando entrega, pendência em atraso, entrega no prazo e entrega com atraso.
+
 ## Informativo por congregação — administradores
 
 Na mesma aba **Relatórios**, administradores da igreja podem selecionar **Informativo por congregação**. O modelo utiliza a congregação selecionada no topo e consolida todos os seus caixas e contas, inclusive o histórico de caixas inativos.

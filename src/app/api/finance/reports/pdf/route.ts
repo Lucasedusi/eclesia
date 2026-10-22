@@ -9,12 +9,22 @@ import { financeReportOptionsSchema } from "@/modules/finance/validations/financ
 import { FinanceReportError } from "@/modules/finance/types/finance-report.types";
 import { financeInformativeReportOptionsSchema } from "@/modules/finance/validations/finance-informative-report.schemas";
 import { getFinanceInformativeReport } from "@/modules/finance/services/finance-informative-report.service";
+import {
+  rankingOptionsSchema,
+  deliveryOptionsSchema,
+} from "@/modules/finance/validations/finance-administrative.schemas";
+import {
+  getFinanceRankingReport,
+  getFinanceDeliveryReport,
+} from "@/modules/finance/services/finance-administrative.service";
 import { canViewInformativeReport } from "@/modules/finance/utils/finance-report-access";
 import {
   PublicRequestBodyError,
   readBoundedJsonBody,
 } from "@/modules/events/utils/public-request";
 const schema = z.union([
+  rankingOptionsSchema.safeExtend({ congregationId: z.uuid().optional() }),
+  deliveryOptionsSchema.extend({ congregationId: z.uuid().optional() }),
   financeReportOptionsSchema.extend({ congregationId: z.uuid() }),
   financeInformativeReportOptionsSchema.safeExtend({
     congregationId: z.uuid(),
@@ -55,20 +65,31 @@ export async function POST(request: Request) {
       congregationId,
       permission: FINANCE_PERMISSIONS.view,
     });
-    if (options.type === "INFORMATIVE" && !canViewInformativeReport(context))
+    if (
+      ["INFORMATIVE", "RANKING", "DELIVERIES"].includes(options.type) &&
+      !canViewInformativeReport(context)
+    )
       return failure(
         "Este relatório está disponível somente para administradores.",
         403,
       );
     const report =
-      options.type === "INFORMATIVE"
-        ? await getFinanceInformativeReport(context, options)
-        : await getFinanceReport(context, options);
+      options.type === "RANKING"
+        ? await getFinanceRankingReport(context, options)
+        : options.type === "DELIVERIES"
+          ? await getFinanceDeliveryReport(context, options)
+          : options.type === "INFORMATIVE"
+            ? await getFinanceInformativeReport(context, options)
+            : await getFinanceReport(context, options);
     const bytes = await createFinanceReportPdf(report);
     const name =
-      options.type === "INFORMATIVE"
-        ? `relatorio-informativo-${options.startMonth}-a-${options.endMonth}.pdf`
-        : `relatorio-${options.type === "ANALYTIC" ? "analitico" : "sintetico"}-${options.month}.pdf`;
+      options.type === "RANKING"
+        ? `ranking-congregacoes-${options.startMonth}-a-${options.endMonth}.pdf`
+        : options.type === "DELIVERIES"
+          ? `entrega-relatorios-${options.month}-${options.filter.toLowerCase()}.pdf`
+          : options.type === "INFORMATIVE"
+            ? `relatorio-informativo-${options.startMonth}-a-${options.endMonth}.pdf`
+            : `relatorio-${options.type === "ANALYTIC" ? "analitico" : "sintetico"}-${options.month}.pdf`;
     return new NextResponse(Buffer.from(bytes), {
       headers: {
         ...headers,

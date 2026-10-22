@@ -1,4 +1,10 @@
 import "server-only";
+import type {
+  RankingDocument,
+  DeliveryDocument,
+} from "../types/finance-administrative.types";
+import { deliveryTimeliness } from "../utils/finance-administrative";
+import { financeMonthIndex } from "../validations/finance-informative-report.schemas";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import fontkit from "@pdf-lib/fontkit";
@@ -30,22 +36,31 @@ function fonts() {
   ));
 }
 export async function createFinanceReportPdf(
-  data: FinanceReportDocument | FinanceInformativeReportDocument,
+  data:
+    | FinanceReportDocument
+    | FinanceInformativeReportDocument
+    | RankingDocument
+    | DeliveryDocument,
 ): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   doc.registerFontkit(fontkit);
   const [r, b] = await fonts();
   const regular = await doc.embedFont(r, { subset: true }),
     bold = await doc.embedFont(b, { subset: true });
+  const globalReport = data.type === "RANKING" || data.type === "DELIVERIES";
   const kind =
-    data.type === "INFORMATIVE"
-      ? "Informativo"
-      : data.type === "ANALYTIC"
-        ? "Analítico"
-        : "Sintético";
+    data.type === "RANKING"
+      ? "Informativo geral"
+      : data.type === "DELIVERIES"
+        ? "Entrega de relatórios"
+        : data.type === "INFORMATIVE"
+          ? "Informativo"
+          : data.type === "ANALYTIC"
+            ? "Analítico"
+            : "Sintético";
   const analytic = data.type === "ANALYTIC";
   const month =
-    data.type === "INFORMATIVE"
+    data.type === "INFORMATIVE" || data.type === "RANKING"
       ? `${formatFinanceMonth(data.startMonth)} a ${formatFinanceMonth(data.endMonth)}`
       : new Date(`${data.month}-15T12:00:00Z`).toLocaleDateString("pt-BR", {
           month: "long",
@@ -507,13 +522,15 @@ export async function createFinanceReportPdf(
     CW - logoWidth,
     8.5,
   );
-  const addressLines = wrap(
-    data.congregationAddress
-      ? `Endereço: ${data.congregationAddress}`
-      : "Endereço não informado",
-    CW - logoWidth,
-    8,
-  );
+  const addressLines = globalReport
+    ? []
+    : wrap(
+        data.congregationAddress
+          ? `Endereço: ${data.congregationAddress}`
+          : "Endereço não informado",
+        CW - logoWidth,
+        8,
+      );
   const identityHeight =
     churchLines.length * 16 +
     identityLines.length * 12 +
@@ -544,8 +561,10 @@ export async function createFinanceReportPdf(
   y += 17;
   {
     const titleLines = wrap(
-      `RELATÓRIO FINANCEIRO ${kind.toLocaleUpperCase("pt-BR")}`,
-      data.type === "INFORMATIVE" ? CW - 236 : CW,
+      data.type === "DELIVERIES"
+        ? "ENTREGA DE RELATÓRIOS"
+        : `RELATÓRIO FINANCEIRO ${kind.toLocaleUpperCase("pt-BR")}`,
+      data.type === "INFORMATIVE" || globalReport ? CW - 236 : CW,
       10,
       bold,
     );
@@ -563,6 +582,131 @@ export async function createFinanceReportPdf(
       muted,
     );
     y += Math.max(30, titleLines.length * 13 + 10, unitLines.length * 12 + 23);
+  }
+  if (data.type === "RANKING") {
+    const money = (value: number) => formatMoney(value).replace(/R\$\s*/, "");
+    const months =
+      financeMonthIndex(data.endMonth) - financeMonthIndex(data.startMonth) + 1;
+    const optional = (value: number, missing: number, stale = false) =>
+      missing === months
+        ? "Não disponível"
+        : `${money(value)}${missing ? " (parcial)" : ""}${stale ? "*" : ""}`;
+    const headers = [
+      "Congregação",
+      "Entradas",
+      "Saídas",
+      "Saldo final",
+      ...(data.includeTransfer ? ["Repasse"] : []),
+      ...(data.includePrebend ? ["Prebenda bruta"] : []),
+    ];
+    band("Ranking por entradas", green);
+    table(
+      {
+        title: "Ranking por entradas",
+        headers,
+        widths: [
+          165,
+          ...Array(headers.length - 1).fill((CW - 165) / (headers.length - 1)),
+        ],
+        right: headers.map((_, i) => i).slice(1),
+        bodySize: headers.length === 6 ? 7 : 7.5,
+        columnColors: { 1: green, 2: red },
+      },
+      [
+        ...data.rows.map((row) => [
+          `${row.name}${row.status !== "ACTIVE" ? " · Inativa" : ""}`,
+          money(row.incomeCents),
+          money(row.expenseCents),
+          money(row.closingCents),
+          ...(data.includeTransfer
+            ? [
+                optional(
+                  row.transferCents,
+                  row.missingMonths,
+                  row.staleMonths.length > 0,
+                ),
+              ]
+            : []),
+          ...(data.includePrebend
+            ? [
+                optional(
+                  row.grossPrebendCents,
+                  row.missingMonths,
+                  row.staleMonths.length > 0,
+                ),
+              ]
+            : []),
+        ]),
+        [
+          "Total geral",
+          money(data.totals.incomeCents),
+          money(data.totals.expenseCents),
+          money(data.totals.closingCents),
+          ...(data.includeTransfer
+            ? [
+                `${money(data.totals.transferCents)}${data.totals.missingMonths ? " (parcial)" : ""}`,
+              ]
+            : []),
+          ...(data.includePrebend
+            ? [
+                `${money(data.totals.grossPrebendCents)}${data.totals.missingMonths ? " (parcial)" : ""}`,
+              ]
+            : []),
+        ].map((text) => [{ text, bold: true }]),
+      ],
+    );
+    if (!data.rows.length)
+      paragraph(
+        "Nenhuma congregação encontrada para os filtros selecionados.",
+        8,
+      );
+    if (data.includePrebend || data.includeTransfer) {
+      if (data.totals.missingMonths)
+        paragraph(
+          "Valores e totais parciais: há meses sem demonstrativo. Não disponível indica ausência em todo o período.",
+          8,
+        );
+      if (data.rows.some((r) => r.staleMonths.length))
+        paragraph("* Inclui valores de demonstrativos desatualizados.", 8);
+    }
+    return finish();
+  }
+  if (data.type === "DELIVERIES") {
+    const date = (v: string) => v.split("-").reverse().join("/");
+    const label = {
+      ALL: "Todas",
+      DELIVERED: "Entregues",
+      PENDING: "Não entregues",
+    }[data.filter];
+    band(`Entrega de relatórios · ${label}`, green);
+    paragraph(
+      `Prazo: ${date(data.dueDate)}${data.includeInactive ? " · Inclui inativas" : ""}${data.search ? ` · Busca: ${data.search}` : ""}`,
+      8,
+    );
+    table(
+      {
+        title: "Entrega de relatórios",
+        headers: ["Congregação", "Situação", "Data da entrega", "Prazo"],
+        widths: [220, 95, 105, CW - 420],
+      },
+      data.rows.map((row) => [
+        `${row.name}${row.status !== "ACTIVE" ? " · Inativa" : ""}`,
+        row.deliveryDate ? "Entregue" : "Não entregue",
+        row.deliveryDate ? date(row.deliveryDate) : "—",
+        deliveryTimeliness(row.deliveryDate, data.dueDate, data.today),
+      ]),
+    );
+    if (!data.rows.length)
+      paragraph(
+        "Nenhuma congregação encontrada para os filtros selecionados.",
+        8,
+      );
+    const delivered = data.rows.filter((r) => r.deliveryDate).length;
+    paragraph(
+      `Total: ${data.rows.length} congregações · Entregues: ${delivered} · Não entregues: ${data.rows.length - delivered}`,
+      8,
+    );
+    return finish();
   }
   const s = data.summary;
   const metrics = [
