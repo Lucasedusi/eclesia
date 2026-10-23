@@ -22,12 +22,12 @@ export type BankImportBatch = {
   id: string; cashboxId: string; cashboxName: string; fileName: string;
   createdAt: string; dateFrom: string | null; dateTo: string | null;
   total: number; pending: number; incomeCents: number; expenseCents: number;
-  reconciliation: ParsedBankStatement["reconciliation"]; balances: BankBalance[];
+  reconciliation: ParsedBankStatement["reconciliation"]; reconciliationReason: string | null; balances: BankBalance[];
 };
 export type BankImportItem = ParsedBankRow & {
   id: string; batchId: string; revision: number; status: BankImportStatus;
   draft: Record<string, unknown>; reason: string | null;
-  stale: boolean; canonicalId: string | null;
+  stale: boolean; changed: boolean; cancelled: boolean; canonicalId: string | null;
   result: { transactionIds?: string[]; attendanceId?: string | null; transferId?: string | null; receiptId?: string | null } | null;
   historyEvents: { action: string; reason: string | null; at: string; actor: string }[];
 };
