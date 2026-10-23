@@ -22,7 +22,10 @@ import {
   PublicRequestBodyError,
   readBoundedJsonBody,
 } from "@/modules/events/utils/public-request";
+import { categoryReportOptionsSchema } from "@/modules/finance/validations/finance-category-report.schemas";
+import { getFinanceCategoryReport } from "@/modules/finance/services/finance-category-report.service";
 const schema = z.union([
+  categoryReportOptionsSchema.safeExtend({ congregationId: z.uuid() }),
   rankingOptionsSchema.safeExtend({ congregationId: z.uuid().optional() }),
   deliveryOptionsSchema.extend({ congregationId: z.uuid().optional() }),
   financeReportOptionsSchema.extend({ congregationId: z.uuid() }),
@@ -59,7 +62,10 @@ export async function POST(request: Request) {
       return failure("Origem da solicitação inválida.", 403);
     const parsed = schema.safeParse(await readBoundedJsonBody(request, 4096));
     if (!parsed.success)
-      return failure("Confira o tipo, período e caixa selecionados.", 400);
+      return failure(
+        "Confira o tipo, período, categorias e caixa selecionados.",
+        400,
+      );
     const { congregationId, ...options } = parsed.data;
     const context = await requireFinanceContext({
       congregationId,
@@ -74,22 +80,26 @@ export async function POST(request: Request) {
         403,
       );
     const report =
-      options.type === "RANKING"
-        ? await getFinanceRankingReport(context, options)
-        : options.type === "DELIVERIES"
-          ? await getFinanceDeliveryReport(context, options)
-          : options.type === "INFORMATIVE"
-            ? await getFinanceInformativeReport(context, options)
-            : await getFinanceReport(context, options);
+      options.type === "CATEGORY"
+        ? await getFinanceCategoryReport(context, options)
+        : options.type === "RANKING"
+          ? await getFinanceRankingReport(context, options)
+          : options.type === "DELIVERIES"
+            ? await getFinanceDeliveryReport(context, options)
+            : options.type === "INFORMATIVE"
+              ? await getFinanceInformativeReport(context, options)
+              : await getFinanceReport(context, options);
     const bytes = await createFinanceReportPdf(report);
     const name =
-      options.type === "RANKING"
-        ? `ranking-congregacoes-${options.startMonth}-a-${options.endMonth}.pdf`
-        : options.type === "DELIVERIES"
-          ? `entrega-relatorios-${options.month}-${options.filter.toLowerCase()}.pdf`
-          : options.type === "INFORMATIVE"
-            ? `relatorio-informativo-${options.startMonth}-a-${options.endMonth}.pdf`
-            : `relatorio-${options.type === "ANALYTIC" ? "analitico" : "sintetico"}-${options.month}.pdf`;
+      options.type === "CATEGORY"
+        ? `relatorio-categorias-${options.dateFrom}-a-${options.dateTo}.pdf`
+        : options.type === "RANKING"
+          ? `ranking-congregacoes-${options.startMonth}-a-${options.endMonth}.pdf`
+          : options.type === "DELIVERIES"
+            ? `entrega-relatorios-${options.month}-${options.filter.toLowerCase()}.pdf`
+            : options.type === "INFORMATIVE"
+              ? `relatorio-informativo-${options.startMonth}-a-${options.endMonth}.pdf`
+              : `relatorio-${options.type === "ANALYTIC" ? "analitico" : "sintetico"}-${options.month}.pdf`;
     return new NextResponse(Buffer.from(bytes), {
       headers: {
         ...headers,
@@ -103,9 +113,11 @@ export async function POST(request: Request) {
     if (error instanceof Error && error.message === "FORBIDDEN")
       return failure("Congregação ou caixa fora do seu acesso.", 403);
     if (error instanceof FinanceReportError) {
+      if (error.code === "INVALID_INPUT")
+        return failure("Confira as datas e as categorias selecionadas.", 400);
       if (error.code === "REPORT_TOO_LARGE")
         return failure(
-          "Este relatório excede o limite de geração. Reduza o período ou selecione um caixa nos modelos mensais.",
+          "Este relatório excede o limite de geração. Reduza o período, selecione um caixa ou use uma apresentação resumida.",
           422,
         );
       if (error.code === "REPORT_RECONCILIATION_REQUIRED")

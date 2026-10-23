@@ -1,4 +1,5 @@
 import "server-only";
+import type { CategoryReportDocument } from "../types/finance-category-report.types";
 import type {
   RankingDocument,
   DeliveryDocument,
@@ -40,7 +41,8 @@ export async function createFinanceReportPdf(
     | FinanceReportDocument
     | FinanceInformativeReportDocument
     | RankingDocument
-    | DeliveryDocument,
+    | DeliveryDocument
+    | CategoryReportDocument,
 ): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   doc.registerFontkit(fontkit);
@@ -49,24 +51,28 @@ export async function createFinanceReportPdf(
     bold = await doc.embedFont(b, { subset: true });
   const globalReport = data.type === "RANKING" || data.type === "DELIVERIES";
   const kind =
-    data.type === "RANKING"
-      ? "Informativo geral"
-      : data.type === "DELIVERIES"
-        ? "Entrega de relatórios"
-        : data.type === "INFORMATIVE"
-          ? "Informativo"
-          : data.type === "ANALYTIC"
-            ? "Analítico"
-            : "Sintético";
+    data.type === "CATEGORY"
+      ? "Por categoria"
+      : data.type === "RANKING"
+        ? "Informativo geral"
+        : data.type === "DELIVERIES"
+          ? "Entrega de relatórios"
+          : data.type === "INFORMATIVE"
+            ? "Informativo"
+            : data.type === "ANALYTIC"
+              ? "Analítico"
+              : "Sintético";
   const analytic = data.type === "ANALYTIC";
   const month =
-    data.type === "INFORMATIVE" || data.type === "RANKING"
-      ? `${formatFinanceMonth(data.startMonth)} a ${formatFinanceMonth(data.endMonth)}`
-      : new Date(`${data.month}-15T12:00:00Z`).toLocaleDateString("pt-BR", {
-          month: "long",
-          year: "numeric",
-          timeZone: "UTC",
-        });
+    data.type === "CATEGORY"
+      ? `${data.dateFrom.split("-").reverse().join("/")} a ${data.dateTo.split("-").reverse().join("/")}`
+      : data.type === "INFORMATIVE" || data.type === "RANKING"
+        ? `${formatFinanceMonth(data.startMonth)} a ${formatFinanceMonth(data.endMonth)}`
+        : new Date(`${data.month}-15T12:00:00Z`).toLocaleDateString("pt-BR", {
+            month: "long",
+            year: "numeric",
+            timeZone: "UTC",
+          });
   doc.setTitle(`Relatório ${kind} · ${data.congregationName} · ${month}`);
   doc.setAuthor(data.church.name);
   doc.setCreator("Eclesias");
@@ -564,7 +570,9 @@ export async function createFinanceReportPdf(
       data.type === "DELIVERIES"
         ? "ENTREGA DE RELATÓRIOS"
         : `RELATÓRIO FINANCEIRO ${kind.toLocaleUpperCase("pt-BR")}`,
-      data.type === "INFORMATIVE" || globalReport ? CW - 236 : CW,
+      data.type === "INFORMATIVE" || data.type === "CATEGORY" || globalReport
+        ? CW - 236
+        : CW,
       10,
       bold,
     );
@@ -582,6 +590,99 @@ export async function createFinanceReportPdf(
       muted,
     );
     y += Math.max(30, titleLines.length * 13 + 10, unitLines.length * 12 + 23);
+  }
+  if (data.type === "CATEGORY") {
+    const color = data.direction === "EXPENSE" ? red : green;
+    const direction = data.direction === "EXPENSE" ? "Saídas" : "Entradas";
+    paragraph(
+      `${direction} · ${data.cashboxName ?? "Todos os caixas e contas"}`,
+      8,
+    );
+    band(
+      data.presentation === "SUMMARY"
+        ? "Resumo por categoria"
+        : "Lançamentos por categoria",
+      green,
+    );
+    const categoryName = (c: CategoryReportDocument["categories"][number]) =>
+      `${c.name}${c.status === "ACTIVE" ? "" : " · Inativa"}`;
+    if (!data.count)
+      paragraph("Sem movimentação para os filtros selecionados.");
+    if (data.presentation === "SUMMARY") {
+      const rows: Cell[][] = data.categories.map((c) => [
+        categoryName(c),
+        formatMoney(c.amountCents),
+      ]);
+      rows.push([
+        [{ text: "Total geral", bold: true }],
+        [{ text: formatMoney(data.totalCents), bold: true }],
+      ]);
+      table(
+        {
+          title: "Resumo por categoria",
+          headers: ["Categoria", `Total de ${direction.toLowerCase()}`],
+          widths: [CW - 140, 140],
+          right: [1],
+          columnColors: { 1: color },
+          rowStyles: rows.map((_, i) => ({
+            keepNext: i === rows.length - 2,
+            gap: i === rows.length - 1 ? 4 : 0,
+          })),
+        },
+        rows,
+      );
+    } else {
+      for (const category of data.categories) {
+        groupHeading(categoryName(category), 9, 6);
+        const rows: Cell[][] = data.rows
+          .filter((r) => r.categoryId === category.id)
+          .map((r) => [
+            r.date.split("-").reverse().join("/"),
+            [
+              r.description,
+              r.classificationName
+                ? `Classificação: ${r.classificationName}`
+                : null,
+            ]
+              .filter(Boolean)
+              .join("\n") || "—",
+            r.personName || "—",
+            r.cashboxName,
+            formatMoney(r.amountCents),
+          ]);
+        if (!rows.length)
+          rows.push(["—", "Sem movimentação", "—", "—", formatMoney(0)]);
+        rows.push([
+          "",
+          [{ text: "Subtotal", bold: true }],
+          "",
+          "",
+          [{ text: formatMoney(category.amountCents), bold: true }],
+        ]);
+        table(
+          {
+            title: categoryName(category),
+            headers: [
+              "Data",
+              "Descrição",
+              data.direction === "EXPENSE" ? "Favorecido" : "Pessoa",
+              "Caixa/conta",
+              "Valor",
+            ],
+            widths: [65, 133, 118, 110, CW - 426],
+            right: [4],
+            columnColors: { 4: color },
+            rowStyles: rows.map((_, i) => ({
+              keepNext: i === rows.length - 2,
+              gap: i === rows.length - 1 ? 4 : 0,
+            })),
+          },
+          rows,
+        );
+      }
+      band("Total geral", color, data.totalCents);
+    }
+    return finish();
   }
   if (data.type === "RANKING") {
     const money = (value: number) => formatMoney(value).replace(/R\$\s*/, "");

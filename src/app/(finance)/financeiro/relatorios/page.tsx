@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { listFinanceReportCategories } from "@/modules/finance/services/finance-category-report.service";
 import { listFinanceReportCashboxes } from "@/modules/finance/services/finance-report.service";
 import {
   resolveFinancePage,
@@ -13,13 +14,17 @@ async function Content({
   searchParams: FinanceSearchParams;
 }) {
   const { context, month } = await resolveFinancePage(searchParams);
-  const data = await listFinanceReportCashboxes(context);
+  const [data, categories] = await Promise.all([
+    listFinanceReportCashboxes(context),
+    listFinanceReportCategories(context),
+  ]);
   return (
     <FinanceReports
       key={`${context.congregationId}-${month}`}
       unit={context.congregationId}
       month={month}
       cashboxes={data ?? []}
+      categories={categories}
       canViewInformative={canViewInformativeReport(context)}
     />
   );

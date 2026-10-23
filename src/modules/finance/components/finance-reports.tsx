@@ -1,5 +1,11 @@
 "use client";
 import { useState } from "react";
+import { FinanceCategoryReportOptions } from "./finance-category-report-options";
+import type {
+  CategoryReportOptions,
+  ReportCategory,
+} from "../types/finance-category-report.types";
+import { categoryReportOptionsSchema } from "../validations/finance-category-report.schemas";
 import {
   ChartNoAxesCombined,
   ListOrdered,
@@ -21,14 +27,16 @@ export function FinanceReports({
   month,
   cashboxes,
   canViewInformative = false,
+  categories = [],
 }: {
   unit: string;
   month: string;
   cashboxes: { id: string; name: string; status: string }[];
   canViewInformative?: boolean;
+  categories?: ReportCategory[];
 }) {
   const [type, setType] = useState<
-      "ANALYTIC" | "SYNTHETIC" | "INFORMATIVE" | "RANKING"
+      "ANALYTIC" | "SYNTHETIC" | "INFORMATIVE" | "RANKING" | "CATEGORY"
     >("SYNTHETIC"),
     [box, setBox] = useState("");
   const [startMonth, setStartMonth] = useState(() =>
@@ -38,6 +46,23 @@ export function FinanceReports({
   const [includePrebend, setIncludePrebend] = useState(true);
   const [includeTransfer, setIncludeTransfer] = useState(true);
   const [includeInactive, setIncludeInactive] = useState(false);
+  const [categoryOptions, setCategoryOptions] = useState<CategoryReportOptions>(
+    () => ({
+      type: "CATEGORY",
+      dateFrom: `${month}-01`,
+      dateTo: new Date(
+        Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0),
+      )
+        .toISOString()
+        .slice(0, 10),
+      direction: "EXPENSE",
+      presentation: "SUMMARY",
+      categoryIds: [],
+    }),
+  );
+  const categoryReport = type === "CATEGORY";
+  const categoryValidation =
+    categoryReportOptionsSchema.safeParse(categoryOptions);
   const ranking = type === "RANKING";
   const informative = type === "INFORMATIVE" || ranking;
   const informativeOptions = {
@@ -61,13 +86,17 @@ export function FinanceReports({
       ? { ...informativeOptions, type: "RANKING", includeInactive }
       : {
           congregationId: unit,
-          ...(informative
-            ? informativeOptions
-            : { type, month, ...(box ? { cashboxId: box } : {}) }),
+          ...(categoryReport
+            ? { ...categoryOptions, ...(box ? { cashboxId: box } : {}) }
+            : informative
+              ? informativeOptions
+              : { type, month, ...(box ? { cashboxId: box } : {}) }),
         },
-    informative
-      ? `relatorio-${ranking ? "ranking" : "informativo"}-${startMonth}-a-${endMonth}.pdf`
-      : `relatorio-${type === "ANALYTIC" ? "analitico" : "sintetico"}-${month}.pdf`,
+    categoryReport
+      ? `relatorio-categorias-${categoryOptions.dateFrom}-a-${categoryOptions.dateTo}.pdf`
+      : informative
+        ? `relatorio-${ranking ? "ranking" : "informativo"}-${startMonth}-a-${endMonth}.pdf`
+        : `relatorio-${type === "ANALYTIC" ? "analitico" : "sintetico"}-${month}.pdf`,
   );
   return (
     <div className="stack finance-reports">
@@ -99,6 +128,13 @@ export function FinanceReports({
               description:
                 "Confira cada entrada e saída, com pessoas e descrições.",
               Icon: ListOrdered,
+            },
+            {
+              value: "CATEGORY",
+              title: "Por categoria",
+              description:
+                "Consulte receitas ou despesas em qualquer intervalo.",
+              Icon: CalendarRange,
             },
             ...(canViewInformative
               ? [
@@ -147,6 +183,21 @@ export function FinanceReports({
             </label>
           ))}
         </fieldset>
+        {categoryReport && (
+          <FinanceCategoryReportOptions
+            options={categoryOptions}
+            categories={categories}
+            onChange={(value) => {
+              invalidate();
+              setCategoryOptions(value);
+            }}
+          />
+        )}
+        {categoryReport && !categoryValidation.success && (
+          <p className="muted" role="status">
+            {categoryValidation.error.issues[0].message}
+          </p>
+        )}
         {informative && (
           <div className="stack finance-informative-options">
             <p className="muted">
@@ -256,7 +307,10 @@ export function FinanceReports({
           <Button
             onClick={() => void generate()}
             disabled={
-              busy || isPending || (informative && !periodValidation.success)
+              busy ||
+              isPending ||
+              (informative && !periodValidation.success) ||
+              (categoryReport && !categoryValidation.success)
             }
           >
             {busy ? (
@@ -340,9 +394,11 @@ export function FinanceReports({
           <FileText size={34} aria-hidden="true" />
           <h2>Uma visão clara das finanças</h2>
           <p>
-            {informative
-              ? "Confira o período e as colunas desejadas para gerar o informativo da congregação."
-              : "Selecione o modelo e gere o relatório do período escolhido no cabeçalho."}
+            {categoryReport
+              ? "Selecione o período, a movimentação e as categorias desejadas para gerar o relatório."
+              : informative
+                ? "Confira o período e as colunas desejadas para gerar o informativo da congregação."
+                : "Selecione o modelo e gere o relatório do período escolhido no cabeçalho."}
           </p>
           <small>
             PDF em A4, pronto para conferir, imprimir ou compartilhar com a

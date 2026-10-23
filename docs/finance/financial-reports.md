@@ -83,3 +83,15 @@ A4 retrato, fontes incorporadas, texto pesquisável e tabelas de 7,5 pontos nos 
 Em Nova entrada e Atendimento, selecionar **Contribuição coletiva** mostra **Descrição da contribuição** logo abaixo da identificação. Use, por exemplo, “Oferta do culto de ensino”. O campo é opcional e é a mesma descrição já utilizada nos lançamentos e relatórios; não precisa ser repetido nos detalhes adicionais.
 
 No atendimento com várias contribuições, os itens seguintes têm seu próprio campo de descrição. Ao trocar o tipo de identificação, o texto preenchido é preservado. Ao salvar e continuar, a descrição é limpa para o próximo atendimento.
+
+
+## Relatório por categoria
+
+Em **Relatórios → Por categoria**, informe data inicial e final inclusivas, escolha **Entrada** ou **Saída** e selecione uma ou várias categorias (até 50). A busca ignora acentos. Categorias de uso misto aparecem nas duas movimentações; inativas continuam disponíveis e identificadas para consulta histórica. Ao trocar a movimentação, a seleção de categorias é limpa. Os atalhos **Este mês** e **Este ano** usam o calendário de São Paulo; as datas podem ser ajustadas livremente.
+
+O relatório usa a congregação selecionada no topo e todos os seus caixas/contas por padrão, com opção de um caixa específico. O período próprio substitui o mês do cabeçalho para esta emissão. Tesoureiros e demais usuários com `finance.view` podem emitir, respeitando os escopos existentes. Os relatórios administrativos continuam restritos.
+
+- **Resumido:** categoria e total, com total geral.
+- **Detalhado:** lançamentos por categoria, em ordem de data, com descrição, pessoa/favorecido, caixa/conta e valor; subtotal por categoria e total geral. Classificações registradas nos lançamentos são preservadas.
+
+São considerados somente lançamentos confirmados, pelas datas financeiras, sem transferências internas, ajustes ou saldos de abertura. Não depende de demonstrativos. Categorias sem movimento exibem zero e o PDF identifica quando todo o filtro está vazio. O PDF não apresenta saldo inicial/final. O detalhado tem limite de 10.000 lançamentos: acima disso, a emissão solicita reduzir os filtros ou usar o resumido, sem truncar resultados.

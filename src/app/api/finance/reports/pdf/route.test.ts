@@ -9,6 +9,7 @@ const m = vi.hoisted(() => ({
   informative: vi.fn(),
   ranking: vi.fn(),
   deliveries: vi.fn(),
+  category: vi.fn(),
 }));
 vi.mock("@/modules/auth/services/access-context.service", () => ({
   resolveAccessContext: m.access,
@@ -29,6 +30,9 @@ vi.mock(
 vi.mock("@/modules/finance/services/finance-administrative.service", () => ({
   getFinanceRankingReport: m.ranking,
   getFinanceDeliveryReport: m.deliveries,
+}));
+vi.mock("@/modules/finance/services/finance-category-report.service", () => ({
+  getFinanceCategoryReport: m.category,
 }));
 import { POST } from "./route";
 const unit = "30000000-0000-4000-8000-000000000001";
@@ -201,3 +205,38 @@ it.each(["RANKING", "DELIVERIES"])(
     expect((await request(body)).status).toBe(200);
   },
 );
+
+const categoryPayload = {
+  congregationId: unit,
+  type: "CATEGORY",
+  dateFrom: "2026-01-01",
+  dateTo: "2026-12-31",
+  direction: "EXPENSE",
+  presentation: "SUMMARY",
+  categoryIds: [unit],
+};
+it("allows a treasurer category report with validated scope and period filename", async () => {
+  m.context.mockResolvedValue({
+    congregationId: unit,
+    capabilities: { view: true },
+    auth: { access: { role: "TREASURER", scope: "CONGREGATION" } },
+  });
+  m.category.mockResolvedValue({ type: "CATEGORY" });
+  const result = await request(categoryPayload);
+  expect(result.status).toBe(200);
+  expect(result.headers.get("Content-Disposition")).toContain(
+    "categorias-2026-01-01-a-2026-12-31",
+  );
+  expect(m.context).toHaveBeenCalledWith({
+    congregationId: unit,
+    permission: "finance.view",
+  });
+});
+it("rejects category filters and out-of-scope requests before creating a PDF", async () => {
+  expect((await request({ ...categoryPayload, categoryIds: [] })).status).toBe(
+    400,
+  );
+  m.context.mockRejectedValueOnce(new Error("FORBIDDEN"));
+  expect((await request(categoryPayload)).status).toBe(403);
+  expect(m.pdf).not.toHaveBeenCalled();
+});

@@ -916,6 +916,15 @@ export const Workspace = styled.div`
     }
   }
 
+  .finance-category-picker { border:0; padding:0; margin:0; min-width:0; }
+  .finance-category-picker legend { font-weight:600; margin-bottom:12px; }
+  .finance-category-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; max-height:250px; overflow-y:auto; padding:4px; }
+  .finance-category-list label { display:flex; align-items:center; gap:10px; padding:10px; background:#f5f9f6; border-radius:8px; cursor:pointer; }
+  .finance-category-list input[type="checkbox"] { width:18px; height:18px; flex-shrink:0; accent-color:#087f5b; }
+  .finance-category-list span, .finance-category-selected { overflow-wrap:anywhere; }
+  .finance-category-shortcuts { flex-wrap:wrap; }
+  .finance-category-shortcuts button { border:1px solid #d2e7db; background:#f0f8f3; border-radius:8px; padding:8px 12px; color:#086448; cursor:pointer; }
+  @media(max-width:700px){.finance-category-list { grid-template-columns:1fr; }}
   .finance-report-types {
     border: 0;
     padding: 0;
