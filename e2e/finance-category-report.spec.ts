@@ -91,13 +91,13 @@ test("administrator selects multiple income categories, exports both presentatio
     page.getByRole("button", { name: "Gerar relatório", exact: true }),
   ).toBeDisabled();
 });
-test("treasurer can generate only within their congregation and mobile filters fit", async ({
+test("treasurer can generate only within their congregation on desktop", async ({
   browser,
 }) => {
   const f = fixture();
   const context = await browser.newContext({
     storageState: "tmp/finance-treasurer-session.json",
-    viewport: { width: 375, height: 812 },
+    viewport: { width: 1280, height: 800 },
   });
   try {
     const page = await context.newPage();
@@ -119,7 +119,7 @@ test("treasurer can generate only within their congregation and mobile filters f
     await expect(
       page.getByRole("button", { name: "Gerar relatório", exact: true }),
     ).toBeDisabled();
-    await page.getByRole("button", { name: "Este mês", exact: true }).click();
+    await page.getByLabel("Data inicial", { exact: true }).fill("2026-10-01");
     await expect(
       page.getByRole("button", { name: "Gerar relatório", exact: true }),
     ).toBeEnabled();
@@ -129,7 +129,7 @@ test("treasurer can generate only within their congregation and mobile filters f
       ),
     ).toBe(true);
     await page.screenshot({
-      path: "tmp/reports/categorias-mobile.png",
+      path: "tmp/reports/categorias-tesoureiro-desktop.png",
       fullPage: true,
     });
   } finally {

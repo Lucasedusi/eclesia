@@ -100,28 +100,43 @@ test("administrator generates a period report, selects optional columns and vali
   });
 });
 
-test("informative filters fit a narrow screen and retain accessible controls", async ({
+test("mobile keeps only monthly reports and discards desktop filters on resize", async ({
   page,
 }) => {
   const f = fixture();
-  await page.setViewportSize({ width: 375, height: 812 });
   await page.goto(`/financeiro/relatorios?unidade=${f.unitId}&mes=2026-10`);
   await page
     .getByRole("radio", { name: "Informativo por congregação", exact: true })
     .check();
   await expect(page.getByLabel("Mês inicial", { exact: true })).toBeVisible();
+  await page.setViewportSize({ width: 375, height: 812 });
+  await expect(page.getByRole("radio")).toHaveCount(2);
   await expect(
-    page.getByLabel("Incluir prebenda bruta", { exact: true }),
+    page.getByRole("radio", {
+      name: "Sintético — resumo por categorias",
+      exact: true,
+    }),
   ).toBeChecked();
+  await expect(page.getByLabel("Mês inicial", { exact: true })).toHaveCount(0);
+  await expect(
+    page.getByRole("link", { name: /Entrega de relatórios/ }),
+  ).toHaveCount(0);
   expect(
     await page.evaluate(
-      () => document.documentElement.scrollWidth <= window.innerWidth,
+      () => document.documentElement.scrollWidth <= innerWidth,
     ),
   ).toBe(true);
   await page.screenshot({
-    path: "tmp/reports/informativo-mobile.png",
+    path: "tmp/reports/reports-mobile-simplified.png",
     fullPage: true,
   });
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await expect(
+    page.getByRole("radio", { name: "Por categoria", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: /Entrega de relatórios/ }),
+  ).toBeVisible();
 });
 
 test("non-administrators cannot see or generate the administrative report", async ({

@@ -13,6 +13,9 @@ import { deliveryTimeliness } from "../utils/finance-administrative";
 import { isMonth } from "../utils/finance-period";
 import { financeLocation } from "../utils/finance-navigation";
 import { useFinanceReportPdf } from "../hooks/use-finance-report-pdf";
+import { useFinanceDesktop } from "../hooks/use-finance-desktop";
+import { FinanceEmpty } from "./finance-empty";
+import { Monitor } from "lucide-react";
 import { FinanceDeliveryForm } from "./finance-delivery-form";
 const date = (v: string) => v.split("-").reverse().join("/");
 const labels = {
@@ -20,18 +23,42 @@ const labels = {
   DELIVERED: "Entregues",
   PENDING: "Não entregues",
 };
-export function FinanceDeliveries({
-  initial,
-  unit,
-  canConfigure,
-}: {
+type FinanceDeliveriesProps = {
   initial: DeliveryProjection;
   unit: string;
   canConfigure: boolean;
-}) {
+};
+export function FinanceDeliveries(props: FinanceDeliveriesProps) {
+  const desktop = useFinanceDesktop();
+  if (!desktop)
+    return (
+      <section className="card stack finance-delivery-desktop-notice">
+        <Monitor size={30} aria-hidden="true" />
+        <h1>Entrega de relatórios</h1>
+        <p className="muted">
+          Acesse pelo computador para acompanhar as entregas.
+        </p>
+        <Link
+          className="finance-report-link"
+          href={financeLocation(
+            "/financeiro/relatorios",
+            props.unit,
+            props.initial.month,
+          )}
+        >
+          Voltar aos relatórios
+        </Link>
+      </section>
+    );
+  return <FinanceDeliveriesContent {...props} />;
+}
+function FinanceDeliveriesContent({
+  initial,
+  unit,
+  canConfigure,
+}: FinanceDeliveriesProps) {
   const [data, setData] = useState(initial),
     [month, setMonth] = useState(initial.month),
-    [inactive, setInactive] = useState(initial.includeInactive),
     [filter, setFilter] = useState<DeliveryOptions["filter"]>("ALL"),
     [search, setSearch] = useState(""),
     [loading, setLoading] = useState(false),
@@ -40,10 +67,10 @@ export function FinanceDeliveries({
     [history, setHistory] = useState<DeliveryRow | null>(null);
   const request = useRef(0);
   const pdf = useFinanceReportPdf(
-    { type: "DELIVERIES", month, includeInactive: inactive, filter, search },
+    { type: "DELIVERIES", month, includeInactive: false, filter, search },
     `entrega-relatorios-${month}-${filter.toLowerCase()}.pdf`,
   );
-  async function load(m = month, inc = inactive) {
+  async function load(m = month) {
     pdf.invalidate();
     const id = ++request.current;
     if (!isMonth(m)) {
@@ -55,7 +82,7 @@ export function FinanceDeliveries({
     try {
       const r = await listFinanceDeliveriesAction({
         month: m,
-        includeInactive: inc,
+        includeInactive: false,
       });
       if (id !== request.current) return;
       if (!r.ok) {
@@ -75,7 +102,7 @@ export function FinanceDeliveries({
     !pdf.isPending &&
     !error &&
     data.month === month &&
-    data.includeInactive === inactive;
+    !data.includeInactive;
   const matching = data.rows.filter((r) =>
     r.name
       .toLocaleLowerCase("pt-BR")
@@ -93,12 +120,12 @@ export function FinanceDeliveries({
       (filter === "DELIVERED" ? !!r.deliveryDate : !r.deliveryDate),
   );
   return (
-    <div className="stack finance-deliveries">
+    <div className="stack finance-deliveries finance-desktop-only">
       <header className="row spread">
         <div>
           <h1>Entrega de relatórios</h1>
           <p className="muted">
-            Todas as congregações autorizadas, exceto a catedral.
+            Congregações ativas autorizadas, exceto a catedral.
           </p>
         </div>
         <Link
@@ -137,17 +164,6 @@ export function FinanceDeliveries({
             />
           </label>
         </div>
-        <label className="row">
-          <input
-            type="checkbox"
-            checked={inactive}
-            onChange={(e) => {
-              setInactive(e.target.checked);
-              void load(month, e.target.checked);
-            }}
-          />
-          Incluir congregações inativas
-        </label>
         <div className="row spread">
           <p className="muted">
             {ready
@@ -208,7 +224,7 @@ export function FinanceDeliveries({
           </div>
           {rows.length ? (
             <div className="table-scroll">
-              <table className="finance-mobile-card-table">
+              <table className="finance-delivery-table">
                 <thead>
                   <tr>
                     <th>Congregação</th>
@@ -228,28 +244,25 @@ export function FinanceDeliveries({
                         )}
                       </td>
                       <td data-label="Situação">
-                        {row.deliveryDate ? "Entregue" : "Não entregue"}
+                        <span
+                          className={`badge finance-delivery-badge ${row.deliveryDate ? "is-delivered" : "is-pending"}`}
+                        >
+                          {row.deliveryDate ? "Entregue" : "Não entregue"}
+                        </span>
                       </td>
                       <td data-label="Data da entrega">
                         {row.deliveryDate ? date(row.deliveryDate) : "—"}
                       </td>
-                      <td
-                        data-label="Prazo"
-                        className={
-                          deliveryTimeliness(
+                      <td data-label="Prazo">
+                        <span
+                          className={`badge finance-delivery-badge ${deliveryTimeliness(row.deliveryDate, data.dueDate, data.today).includes("atraso") ? "is-late" : row.deliveryDate ? "is-delivered" : "is-pending"}`}
+                        >
+                          {deliveryTimeliness(
                             row.deliveryDate,
                             data.dueDate,
                             data.today,
-                          ).includes("atraso")
-                            ? "finance-delivery-late"
-                            : ""
-                        }
-                      >
-                        {deliveryTimeliness(
-                          row.deliveryDate,
-                          data.dueDate,
-                          data.today,
-                        )}
+                          )}
+                        </span>
                       </td>
                       <td data-label="Ações">
                         <div className="row finance-delivery-actions">
@@ -277,9 +290,26 @@ export function FinanceDeliveries({
               </table>
             </div>
           ) : (
-            <p className="muted">
-              Nenhuma congregação encontrada para os filtros selecionados.
-            </p>
+            <FinanceEmpty>
+              <h3>
+                {search.trim()
+                  ? "Nenhuma congregação encontrada."
+                  : filter === "DELIVERED"
+                    ? "Nenhum relatório entregue neste período."
+                    : filter === "PENDING"
+                      ? "Nenhuma entrega pendente."
+                      : "Nenhuma congregação ativa para listar."}
+              </h3>
+              <p className="muted">
+                {search.trim()
+                  ? "Tente outro nome ou limpe a busca."
+                  : filter === "DELIVERED"
+                    ? "As entregas registradas aparecerão aqui."
+                    : filter === "PENDING"
+                      ? "Consulte a aba Todas para acompanhar os registros do período."
+                      : "Confira o mês selecionado e as congregações disponíveis no seu acesso."}
+              </p>
+            </FinanceEmpty>
           )}
           <p className="muted">{rows.length} congregações na listagem.</p>
         </section>

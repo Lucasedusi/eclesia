@@ -140,8 +140,8 @@ export function FinanceSettings({
           onDirtyChange={setRulesDirty}
         />
       ) : (
-        <section className="card stack">
-          <div className="row spread finance-secondary-heading">
+        <section className="card stack finance-settings-catalog">
+          <div className="row spread finance-secondary-heading finance-settings-heading">
             <h2>{tabs.find((t) => t.id === tab)?.label}</h2>
             <Button onClick={() => setEditing({ entity: tab })}>
               <Plus size={16} />
@@ -156,7 +156,13 @@ export function FinanceSettings({
             </FinanceEmpty>
           ) : (
             <div className="table-scroll">
-              <table className="finance-mobile-card-table">
+              <table className="finance-mobile-card-table finance-settings-table">
+                <colgroup>
+                  <col />
+                  <col />
+                  <col />
+                  <col />
+                </colgroup>
                 <thead>
                   <tr>
                     <th>Nome</th>

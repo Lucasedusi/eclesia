@@ -23,9 +23,9 @@ test("ranking uses all units and generates selected columns without the header u
   await expect(page.getByLabel("Mês inicial", { exact: true })).toHaveValue(
     "2026-10",
   );
-  await page
-    .getByLabel("Incluir congregações inativas", { exact: true })
-    .check();
+  await expect(
+    page.getByLabel("Incluir congregações inativas", { exact: true }),
+  ).toHaveCount(0);
   const response = page.waitForResponse(
     (r) =>
       r.url().endsWith("/api/finance/reports/pdf") &&
@@ -39,7 +39,7 @@ test("ranking uses all units and generates selected columns without the header u
   expect(res.status()).toBe(200);
   expect(res.request().postDataJSON()).toMatchObject({
     type: "RANKING",
-    includeInactive: true,
+    includeInactive: false,
   });
   expect(res.request().postDataJSON().congregationId).toBeUndefined();
   mkdirSync("tmp/reports", { recursive: true });
@@ -91,7 +91,7 @@ test("administrator records, corrects, filters, exports and undoes a receipt wit
   ).toBeVisible();
   await page.getByRole("button", { name: /^Não entregues \(/ }).click();
   await expect(
-    page.getByText("Nenhuma congregação encontrada", { exact: false }),
+    page.getByText("Nenhuma entrega pendente.", { exact: true }),
   ).toBeVisible();
   await page.getByRole("button", { name: /^Entregues \(/ }).click();
   const response = page.waitForResponse(
@@ -129,6 +129,12 @@ test("administrator records, corrects, filters, exports and undoes a receipt wit
     page.getByRole("button", { name: "Registrar entrega", exact: true }),
   ).toBeVisible();
   await page.setViewportSize({ width: 375, height: 812 });
+  await expect(
+    page.getByText("Acesse pelo computador para acompanhar as entregas."),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Registrar entrega", exact: true }),
+  ).toHaveCount(0);
   await page.screenshot({
     path: "tmp/reports/entregas-mobile.png",
     fullPage: true,
@@ -154,9 +160,13 @@ test("deadline setting changes only current/future reference months", async ({
   await expect(
     page.getByRole("heading", { name: "Prazo de entrega dos relatórios" }),
   ).toBeVisible();
-  await page.getByLabel("Dia limite de entrega", { exact: true }).filter({visible:true}).fill("12");
   await page
-    .getByLabel("Aplicar a partir do mês de referência", { exact: true }).filter({visible:true})
+    .getByLabel("Dia limite de entrega", { exact: true })
+    .filter({ visible: true })
+    .fill("12");
+  await page
+    .getByLabel("Aplicar a partir do mês de referência", { exact: true })
+    .filter({ visible: true })
     .fill(current);
   await page.getByRole("button", { name: "Salvar prazo", exact: true }).click();
   await expect(page.getByText(/: dia 12 do mês seguinte\./)).toBeVisible();
@@ -183,7 +193,7 @@ test("treasurer cannot see administrative controls or call their PDF endpoints",
     }),
   ).toHaveCount(0);
   await expect(
-    page.getByRole("link", { name: "Acompanhar entregas" }),
+    page.getByRole("link", { name: /Entrega de relatórios/ }),
   ).toHaveCount(0);
   const response = await context.request.post("/api/finance/reports/pdf", {
     data: {

@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { useFinanceDesktop } from "../hooks/use-finance-desktop";
 import { FinanceCategoryReportOptions } from "./finance-category-report-options";
 import type {
   CategoryReportOptions,
@@ -13,6 +14,8 @@ import {
   FileText,
   ExternalLink,
   CalendarRange,
+  ClipboardCheck,
+  ArrowUpRight,
 } from "lucide-react";
 import Link from "next/link";
 import { useFinanceReportPdf } from "../hooks/use-finance-report-pdf";
@@ -22,19 +25,32 @@ import {
   financeInformativeReportOptionsSchema,
   informativeStartMonth,
 } from "../validations/finance-informative-report.schemas";
-export function FinanceReports({
-  unit,
-  month,
-  cashboxes,
-  canViewInformative = false,
-  categories = [],
-}: {
+type FinanceReportsProps = {
   unit: string;
   month: string;
   cashboxes: { id: string; name: string; status: string }[];
   canViewInformative?: boolean;
   categories?: ReportCategory[];
-}) {
+};
+export function FinanceReports(props: FinanceReportsProps) {
+  const desktop = useFinanceDesktop();
+  // Remount on a layout change to discard hidden filters and pending PDFs safely.
+  return (
+    <FinanceReportsContent
+      {...props}
+      desktop={desktop}
+      key={desktop ? "desktop" : "mobile"}
+    />
+  );
+}
+function FinanceReportsContent({
+  unit,
+  month,
+  cashboxes,
+  canViewInformative = false,
+  categories = [],
+  desktop,
+}: FinanceReportsProps & { desktop: boolean }) {
   const [type, setType] = useState<
       "ANALYTIC" | "SYNTHETIC" | "INFORMATIVE" | "RANKING" | "CATEGORY"
     >("SYNTHETIC"),
@@ -45,7 +61,6 @@ export function FinanceReports({
   const [endMonth, setEndMonth] = useState(month);
   const [includePrebend, setIncludePrebend] = useState(true);
   const [includeTransfer, setIncludeTransfer] = useState(true);
-  const [includeInactive, setIncludeInactive] = useState(false);
   const [categoryOptions, setCategoryOptions] = useState<CategoryReportOptions>(
     () => ({
       type: "CATEGORY",
@@ -83,7 +98,7 @@ export function FinanceReports({
     isPending,
   } = useFinanceReportPdf(
     ranking
-      ? { ...informativeOptions, type: "RANKING", includeInactive }
+      ? { ...informativeOptions, type: "RANKING", includeInactive: false }
       : {
           congregationId: unit,
           ...(categoryReport
@@ -154,34 +169,58 @@ export function FinanceReports({
                   },
                 ]
               : []),
-          ].map(({ value, title, description, Icon }) => (
-            <label
-              key={value}
-              className="finance-report-option"
-              data-selected={type === value}
+          ]
+            .filter(
+              (option) =>
+                desktop || ["SYNTHETIC", "ANALYTIC"].includes(option.value),
+            )
+            .map(({ value, title, description, Icon }) => (
+              <label
+                key={value}
+                className={`finance-report-option${["SYNTHETIC", "ANALYTIC"].includes(value) ? "" : " finance-desktop-only"}`}
+                data-selected={type === value}
+              >
+                <input
+                  type="radio"
+                  name="report-type"
+                  value={value}
+                  checked={type === value}
+                  onChange={() => {
+                    invalidate();
+                    setType(value as typeof type);
+                    if (value === "RANKING") {
+                      setStartMonth(month);
+                      setEndMonth(month);
+                    }
+                  }}
+                  aria-label={title}
+                />
+                <Icon size={23} aria-hidden="true" />
+                <span>
+                  <strong>{title}</strong>
+                  <small>{description}</small>
+                </span>
+              </label>
+            ))}
+          {desktop && canViewInformative && (
+            <Link
+              className="finance-report-option finance-report-delivery-link finance-desktop-only"
+              href={financeLocation(
+                "/financeiro/relatorios/entregas",
+                unit,
+                month,
+              )}
             >
-              <input
-                type="radio"
-                name="report-type"
-                value={value}
-                checked={type === value}
-                onChange={() => {
-                  invalidate();
-                  setType(value as typeof type);
-                  if (value === "RANKING") {
-                    setStartMonth(month);
-                    setEndMonth(month);
-                  }
-                }}
-                aria-label={title}
-              />
-              <Icon size={23} aria-hidden="true" />
+              <ClipboardCheck size={23} aria-hidden="true" />
               <span>
-                <strong>{title}</strong>
-                <small>{description}</small>
+                <strong>Entrega de relatórios</strong>
+                <small>
+                  Acompanhe os recebimentos e emita a lista por situação.
+                </small>
               </span>
-            </label>
-          ))}
+              <ArrowUpRight size={18} aria-hidden="true" />
+            </Link>
+          )}
         </fieldset>
         {categoryReport && (
           <FinanceCategoryReportOptions
@@ -202,22 +241,9 @@ export function FinanceReports({
           <div className="stack finance-informative-options">
             <p className="muted">
               {ranking
-                ? "Todas as congregações autorizadas, incluindo a catedral. Ordenação por maiores entradas no período."
+                ? "Congregações ativas autorizadas, incluindo a catedral. Ordenação por maiores entradas no período."
                 : "Todos os caixas e contas da congregação selecionada no topo."}
             </p>
-            {ranking && (
-              <label className="row">
-                <input
-                  type="checkbox"
-                  checked={includeInactive}
-                  onChange={(e) => {
-                    invalidate();
-                    setIncludeInactive(e.target.checked);
-                  }}
-                />
-                Incluir congregações inativas
-              </label>
-            )}
             <div className="finance-informative-period">
               <label>
                 Mês inicial
@@ -322,25 +348,6 @@ export function FinanceReports({
           </Button>
         </div>
       </section>
-      {canViewInformative && (
-        <section className="card stack">
-          <h2>Entrega de relatórios</h2>
-          <p className="muted">
-            Acompanhe o recebimento mensal das congregações e emita a lista por
-            situação.
-          </p>
-          <Link
-            className="finance-report-link"
-            href={financeLocation(
-              "/financeiro/relatorios/entregas",
-              unit,
-              month,
-            )}
-          >
-            Acompanhar entregas
-          </Link>
-        </section>
-      )}
       {error && (
         <div role="alert" className="notice finance-report-error">
           {error}

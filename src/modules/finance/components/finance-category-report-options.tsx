@@ -4,7 +4,6 @@ import type {
   CategoryReportOptions,
   ReportCategory,
 } from "../types/finance-category-report.types";
-import { todayLocal } from "../utils/finance-period";
 
 export function FinanceCategoryReportOptions({
   options,
@@ -27,18 +26,6 @@ export function FinanceCategoryReportOptions({
       normalize(c.name).includes(normalize(search.trim())),
   );
   const selected = categories.filter((c) => options.categoryIds.includes(c.id));
-  function shortcut(year: boolean) {
-    const today = todayLocal(),
-      start = year ? `${today.slice(0, 4)}-01-01` : `${today.slice(0, 7)}-01`;
-    const end = year
-      ? `${today.slice(0, 4)}-12-31`
-      : new Date(
-          Date.UTC(Number(today.slice(0, 4)), Number(today.slice(5, 7)), 0),
-        )
-          .toISOString()
-          .slice(0, 10);
-    onChange({ ...options, dateFrom: start, dateTo: end });
-  }
   return (
     <div className="stack finance-category-options">
       <p className="muted">
@@ -66,14 +53,6 @@ export function FinanceCategoryReportOptions({
             onChange={(e) => onChange({ ...options, dateTo: e.target.value })}
           />
         </label>
-      </div>
-      <div className="row finance-category-shortcuts">
-        <button type="button" onClick={() => shortcut(false)}>
-          Este mês
-        </button>
-        <button type="button" onClick={() => shortcut(true)}>
-          Este ano
-        </button>
       </div>
       <div className="finance-informative-period">
         <label>

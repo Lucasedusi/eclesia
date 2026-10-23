@@ -2,13 +2,13 @@
 
 ## Informativo geral por congregação — administradores
 
-Em **Relatórios**, escolha **Informativo geral por congregação**. Informe os meses inicial e final; o padrão é o mês do cabeçalho. O relatório abrange todas as congregações autorizadas, incluindo a catedral, independentemente da unidade selecionada no topo. Congregações ativas entram por padrão; marque **Incluir congregações inativas** para consultar também as inativas.
+Em **Relatórios**, escolha **Informativo geral por congregação**. Informe os meses inicial e final; o padrão é o mês do cabeçalho. O relatório abrange somente as congregações ativas autorizadas, incluindo a catedral, independentemente da unidade selecionada no topo.
 
 A ordem é por maiores entradas, com desempate por nome. A tabela contém congregação, entradas, saídas, saldo final acumulado e, opcionalmente, repasse e prebenda bruta. A última linha soma as colunas entre congregações. O saldo é o encerramento do último mês, sem somar saldos mensais. As regras e os avisos dos valores opcionais são os mesmos do informativo individual; ausências tornam os respectivos valores/totais parciais. Transferências internas não entram nas receitas/despesas.
 
 ## Entrega de relatórios — administradores
 
-Em **Relatórios → Acompanhar entregas**, selecione a referência e use **Todas**, **Entregues** ou **Não entregues**. A busca por nome e a inclusão de inativas também são aplicadas ao PDF. A catedral não participa desse controle.
+Em **Relatórios**, escolha **Entrega de relatórios**, a última opção da lista. Selecione a referência e use **Todas**, **Entregues** ou **Não entregues**. A listagem e o PDF consideram somente as congregações ativas autorizadas, respeitando a busca por nome. A catedral não participa desse controle. Situação e prazo aparecem como badges, com atrasos destacados em vermelho; filtros sem resultados exibem ícone e orientação contextual.
 
 **Registrar entrega** permite informar a data real do recebimento, após o fim da referência e até hoje. Gerar ou imprimir um demonstrativo não marca entrega. O recebimento pode ser registrado sem demonstrativo no sistema e não gera movimentação financeira. **Corrigir** permite ajustar a data ou desfazer o registro, exigindo motivo e preservando o histórico de responsáveis e horários.
 
@@ -36,6 +36,8 @@ Prebenda e repasse não representam pagamentos e não reduzem novamente o saldo.
 A opção fica oculta para outros perfis; requisições diretas também são negadas na aplicação e no banco. O relatório preserva o isolamento por igreja e congregação e utiliza uma consulta de leitura consistente para todo o período.
 
 ## Como usar
+
+No celular, estão disponíveis somente **Sintético** e **Analítico**. Os relatórios por categoria, informativo individual, informativo geral e o acompanhamento de entregas ficam disponíveis no desktop, respeitando as permissões de cada usuário. Um acesso direto à página de entregas pelo celular mostra uma orientação para usar o computador e um link de retorno. Ao alternar entre os layouts desktop e mobile, os filtros retornam ao Sintético e uma emissão pendente é cancelada.
 
 1. Abra **Financeiro → Relatórios**.
 2. Confira o mês no cabeçalho. A congregação segue seu acesso: o tesoureiro comum tem somente a sua; quem pode consultar outras unidades verá apenas as unidades autorizadas.
@@ -87,7 +89,7 @@ No atendimento com várias contribuições, os itens seguintes têm seu próprio
 
 ## Relatório por categoria
 
-Em **Relatórios → Por categoria**, informe data inicial e final inclusivas, escolha **Entrada** ou **Saída** e selecione uma ou várias categorias (até 50). A busca ignora acentos. Categorias de uso misto aparecem nas duas movimentações; inativas continuam disponíveis e identificadas para consulta histórica. Ao trocar a movimentação, a seleção de categorias é limpa. Os atalhos **Este mês** e **Este ano** usam o calendário de São Paulo; as datas podem ser ajustadas livremente.
+Em **Relatórios → Por categoria**, informe data inicial e final inclusivas, escolha **Entrada** ou **Saída** e selecione uma ou várias categorias (até 50). A busca ignora acentos. Categorias de uso misto aparecem nas duas movimentações; inativas continuam disponíveis e identificadas para consulta histórica. Ao trocar a movimentação, a seleção de categorias é limpa. As datas são ajustadas diretamente nos campos de início e fim.
 
 O relatório usa a congregação selecionada no topo e todos os seus caixas/contas por padrão, com opção de um caixa específico. O período próprio substitui o mês do cabeçalho para esta emissão. Tesoureiros e demais usuários com `finance.view` podem emitir, respeitando os escopos existentes. Os relatórios administrativos continuam restritos.
 
