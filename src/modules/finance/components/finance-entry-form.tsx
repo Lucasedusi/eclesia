@@ -31,6 +31,17 @@ import {
   type AttachedDocument,
 } from "./finance-document-fields";
 import { useFinanceDirtyGuard, useFinanceNavigation } from "./finance-shell";
+import type { BankImportDraft } from "../import/schemas";
+import type { FinanceActionResult } from "../types/finance.types";
+export type BankImportEntry = {
+  draft: BankImportDraft;
+  amountCents: number;
+  submit: (
+    command: FinanceCommand,
+    next: boolean,
+  ) => Promise<FinanceActionResult<FinanceMutationResult>>;
+  saveDraft: (draft: BankImportDraft) => Promise<boolean>;
+};
 type Line = Pick<
   EntryFormState,
   | "categoryId"
@@ -78,6 +89,7 @@ export function FinanceEntryForm({
   onConfirmed,
   onClose,
   onStatusChange,
+  bankImport,
 }: {
   unit: string;
   month: string;
@@ -90,13 +102,19 @@ export function FinanceEntryForm({
   onConfirmed?: (result: FinanceMutationResult) => void;
   onClose?: () => void;
   onStatusChange?: (status: { dirty: boolean; busy: boolean }) => void;
+  bankImport?: BankImportEntry;
 }) {
   const financeNavigation = useFinanceNavigation(),
     form = useRef<HTMLFormElement>(null),
     pending = useRef<FinanceCommand | null>(null),
     operationKey = useRef("");
-  const [state, setState] = useState(() => seed(date, initialTransaction)),
-    [extra, setExtra] = useState<Line[]>([]),
+  const [state, setState] = useState(
+      () => bankImport?.draft.state ?? seed(date, initialTransaction),
+    ),
+    [extra, setExtra] = useState<Line[]>(bankImport?.draft.extra ?? []),
+    [savedDocumentIds, setSavedDocumentIds] = useState<string[]>(
+      bankImport?.draft.state.documentIds ?? [],
+    ),
     [files, setFiles] = useState<AttachedDocument[]>([]),
     [dirty, setDirty] = useState(false),
     [busy, setBusy] = useState(false),
@@ -146,8 +164,8 @@ export function FinanceEntryForm({
   }
   function discard() {
     if (busy || uploading || ambiguous) return false;
-    setState(seed(date, initialTransaction));
-    setExtra([]);
+    setState(bankImport?.draft.state ?? seed(date, initialTransaction));
+    setExtra(bankImport?.draft.extra ?? []);
     setFiles([]);
     setDirty(false);
     pending.current = null;
@@ -170,6 +188,12 @@ export function FinanceEntryForm({
     setError("");
     try {
       if (!pending.current) {
+        if (bankImport && total !== bankImport.amountCents) {
+          setError(
+            "A soma das contribuições deve ser igual ao valor do extrato.",
+          );
+          return false;
+        }
         operationKey.current ||= crypto.randomUUID();
         const contributor =
           state.contributor ??
@@ -232,7 +256,9 @@ export function FinanceEntryForm({
         }
         pending.current = parsed.data;
       }
-      const result = await submitFinanceCommand(pending.current);
+      const result = bankImport
+        ? await bankImport.submit(pending.current, action === "CONTINUE")
+        : await submitFinanceCommand(pending.current);
       if (!result.ok) {
         popup?.close();
         setError(result.message);
@@ -248,6 +274,7 @@ export function FinanceEntryForm({
       operationKey.current = "";
       setAmbiguous(false);
       setDirty(false);
+      if (bankImport) return true;
       setConfirmation(result.data);
       onConfirmed?.(result.data);
       financeNavigation.refresh();
@@ -278,6 +305,18 @@ export function FinanceEntryForm({
           : "Confira os valores. Use vírgula para os centavos, por exemplo 200,00.",
       );
       return false;
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function saveDraft() {
+    if (!bankImport || busy || uploading || ambiguous) return false;
+    setBusy(true);
+    setError("");
+    try {
+      const saved = await bankImport.saveDraft({ state, extra });
+      if (saved) setDirty(false);
+      return saved;
     } finally {
       setBusy(false);
     }
@@ -315,7 +354,11 @@ export function FinanceEntryForm({
     return () =>
       viewport.removeEventListener("resize", keepFocusedFieldVisible);
   }, []);
-  useFinanceDirtyGuard(dirty || ambiguous, () => save("SAVE"), discard);
+  useFinanceDirtyGuard(
+    dirty || ambiguous,
+    () => (bankImport ? saveDraft() : save("SAVE")),
+    discard,
+  );
   return (
     <form
       ref={form}
@@ -323,7 +366,7 @@ export function FinanceEntryForm({
       className={mode === "ATTENDANCE" ? "finance-attendance-form" : "stack"}
       onSubmit={(e) => {
         e.preventDefault();
-        void save(mode === "ATTENDANCE" ? "CONTINUE" : "SAVE");
+        void save(!bankImport && mode === "ATTENDANCE" ? "CONTINUE" : "SAVE");
       }}
     >
       {confirmation && (
@@ -427,7 +470,7 @@ export function FinanceEntryForm({
               type="date"
               value={state.date}
               required
-              disabled={groupCorrection}
+              disabled={groupCorrection || Boolean(bankImport)}
               onChange={(e) => change({ date: e.target.value })}
             />
           </label>
@@ -446,7 +489,7 @@ export function FinanceEntryForm({
             <select
               value={state.cashboxId}
               required
-              disabled={groupCorrection}
+              disabled={groupCorrection || Boolean(bankImport)}
               onChange={(e) => {
                 const b = boxes.find((v) => v.id === e.target.value),
                   available = catalogs.paymentMethods.filter(
@@ -569,6 +612,7 @@ export function FinanceEntryForm({
                 <label>
                   Valor (R$)
                   <FinanceMoneyInput
+                    readOnly={Boolean(bankImport) && mode === "SINGLE"}
                     inputMode="decimal"
                     value={line.amount}
                     placeholder="0,00"
@@ -697,10 +741,28 @@ export function FinanceEntryForm({
               value={files}
               onChange={(next) => {
                 setFiles(next);
-                change({ documentIds: next.map((d) => d.id) });
+                change({
+                  documentIds: [...savedDocumentIds, ...next.map((d) => d.id)],
+                });
               }}
               onBusy={setUploading}
             />
+            {bankImport && savedDocumentIds.length > 0 && (
+              <div className="row">
+                <span>
+                  {savedDocumentIds.length} anexo(s) preservado(s) no rascunho.
+                </span>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSavedDocumentIds([]);
+                    change({ documentIds: files.map((d) => d.id) });
+                  }}
+                >
+                  Remover anexos salvos
+                </Button>
+              </div>
+            )}
           </div>
         </details>
         {initialTransaction && (
@@ -850,17 +912,38 @@ export function FinanceEntryForm({
               </span>
               <span className="finance-action-label">
                 <span className="finance-desktop-only">
-                  {initialTransaction
-                    ? "Salvar correção"
-                    : mode === "ATTENDANCE"
-                      ? "Confirmar atendimento"
-                      : "Salvar"}
+                  {bankImport
+                    ? "Finalizar"
+                    : initialTransaction
+                      ? "Salvar correção"
+                      : mode === "ATTENDANCE"
+                        ? "Confirmar atendimento"
+                        : "Salvar"}
                 </span>
                 <span className="finance-mobile-only">Salvar</span>
               </span>
             </Button>
           </div>
-          {!initialTransaction && (
+          {bankImport && (
+            <div className="finance-entry-secondary-actions">
+              <Button
+                variant="outline"
+                disabled={busy || uploading}
+                onClick={() => void save("CONTINUE")}
+              >
+                <ArrowRight size={16} />
+                Finalizar e próximo
+              </Button>
+              <Button
+                variant="outline"
+                disabled={busy || uploading || ambiguous}
+                onClick={() => void saveDraft()}
+              >
+                Salvar rascunho
+              </Button>
+            </div>
+          )}
+          {!initialTransaction && !bankImport && (
             <div className="finance-entry-secondary-actions">
               <Button
                 variant="outline"

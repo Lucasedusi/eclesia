@@ -2,6 +2,7 @@
 import { useFinanceNavigation } from "./finance-shell";
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { financeLocation } from "../utils/finance-navigation";
 import { Plus, ArrowUpRight, ArrowLeftRight, Pencil, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { FinanceCatalogs } from "../types/finance-catalog.types";
@@ -94,6 +95,7 @@ export function FinanceTransactionsWorkspace({
         filters={filters}
         actions={
           <div className="row finance-transaction-actions">
+            {capabilities.create && <Button variant="outline" className="finance-desktop-only" onClick={() => navigation.navigate(financeLocation("/financeiro/lancamentos/importacoes", unit, month))}>Importar extrato</Button>}
             {capabilities.transfer && (
               <Button variant="outline" className="finance-transfer-action" onClick={() => setTransfer({})}>
                 <ArrowLeftRight size={16} />

@@ -4,15 +4,24 @@ import type {
   FinanceErrorCode,
 } from "../types/finance.types";
 const messages: Record<FinanceErrorCode, string> = {
-  BANK_IMPORT_FILE: "Envie um XLSX do Sicoob de até 5 MB e 5.000 movimentos, com uma única aba e sem fórmulas, macros ou vínculos externos.",
-  BANK_IMPORT_CONFLICT: "Este item foi atualizado por outra pessoa. Recarregue a conferência antes de continuar.",
-  BANK_IMPORT_STATE: "A situação deste item não permite esta ação. Recarregue a conferência e consulte o histórico.",
-  BANK_IMPORT_SOURCE_MISMATCH: "Data, conta, direção e total devem corresponder ao movimento do extrato.",
-  BANK_IMPORT_TARGET_MISMATCH: "O registro escolhido não corresponde integralmente à conta, data, direção e valor deste movimento.",
-  BANK_IMPORT_TARGET_USED: "Este registro já está vinculado a outra linha. Confira se é o mesmo movimento importado novamente.",
-  BANK_IMPORT_DUPLICATE_REVIEW: "Há uma linha idêntica em outra importação. Vincule a mesma movimentação ou justifique por que são movimentos distintos.",
-  BANK_IMPORT_RECONCILIATION: "Confira a divergência dos saldos do arquivo e informe um motivo para prosseguir.",
-  BANK_IMPORT_INVALID_ROW: "Esta linha contém dados que não puderam ser lidos. Confira o arquivo original; ela não pode gerar um lançamento.",
+  BANK_IMPORT_FILE:
+    "Envie um XLSX do Sicoob de até 5 MB e 5.000 movimentos, com uma única aba e sem fórmulas, macros ou vínculos externos.",
+  BANK_IMPORT_CONFLICT:
+    "Este item foi atualizado por outra pessoa. Recarregue a conferência antes de continuar.",
+  BANK_IMPORT_STATE:
+    "A situação deste item não permite esta ação. Recarregue a conferência e consulte o histórico.",
+  BANK_IMPORT_SOURCE_MISMATCH:
+    "Data, conta, direção e total devem corresponder ao movimento do extrato.",
+  BANK_IMPORT_TARGET_MISMATCH:
+    "O registro escolhido não corresponde integralmente à conta, data, direção e valor deste movimento.",
+  BANK_IMPORT_TARGET_USED:
+    "Este registro já está vinculado a outra linha. Confira se é o mesmo movimento importado novamente.",
+  BANK_IMPORT_DUPLICATE_REVIEW:
+    "Há uma linha idêntica em outra importação. Vincule a mesma movimentação ou justifique por que são movimentos distintos.",
+  BANK_IMPORT_RECONCILIATION:
+    "Confira a divergência dos saldos do arquivo e informe um motivo para prosseguir.",
+  BANK_IMPORT_INVALID_ROW:
+    "Esta linha contém dados que não puderam ser lidos. Confira o arquivo original; ela não pode gerar um lançamento.",
   FORBIDDEN: "Seu acesso não permite esta operação nesta congregação.",
   STATEMENT_REASON_REQUIRED:
     "Informe uma justificativa de pelo menos 5 caracteres: a alteração afeta um período passado ou com demonstrativo já gerado.",
