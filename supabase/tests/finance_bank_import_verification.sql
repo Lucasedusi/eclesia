@@ -114,15 +114,29 @@ begin
  perform public.finance_bank_import_item(c,u,linked,1,gen_random_uuid(),'POST',jsonb_build_object('command',command,'reconciliationReason','Conferência fictícia de saldo'));
  perform pg_temp.assert_true((select reconciliation_reason is not null from public.finance_bank_import_batches where church_id=c and id=(r->>'id')::uuid),'balance decision audited');
  begin perform public.get_finance_bank_import('20000000-0000-4000-8000-000000000002',u,b,'{}'); raise exception 'cross church accepted'; exception when insufficient_privilege then null; end;
+ -- Bulk reads preserve every source/draft/audit field and live link status.
+ for r in select jsonb_build_object('id',id) from public.finance_bank_import_batches where church_id=c loop
+  workspace:=public.get_finance_bank_import(c,u,(r->>'id')::uuid,'{"status":"ALL"}');
+  perform pg_temp.assert_true(workspace->'items'=(select jsonb_agg(private.bank_import_item_dto(c,id) order by row_number) from public.finance_bank_import_items where church_id=c and batch_id=(r->>'id')::uuid and deleted_at is null),'bulk projection retains source, draft, aliases, audit and health');
+ end loop;
+ workspace:=public.get_finance_bank_import(c,u,b,'{"status":"COMPLETED","direction":"EXPENSE"}');
+ perform pg_temp.assert_true(jsonb_array_length(workspace->'items')=1 and workspace#>>'{items,0,status}'='POSTED' and (workspace#>>'{items,0,stale}')::boolean=false,'expense filter returns the healthy posted transfer');
+ workspace:=public.get_finance_bank_import(c,u,b2,'{"status":"PENDING","query":"Pessoa fictícia A"}');
+ perform pg_temp.assert_true(jsonb_array_length(workspace->'items')=1 and workspace#>>'{items,0,status}'='DUPLICATE' and (workspace#>>'{items,0,stale}')::boolean=true,'reopened canonical source puts its alias back in pending review');
+ perform pg_temp.assert_true((select count(*)=0 from private.bank_import_health_set('20000000-0000-4000-8000-000000000002',array[item])),'health set cannot cross churches');
+ perform pg_temp.assert_true(not has_function_privilege('anon','private.bank_import_health_set(uuid,uuid[])','EXECUTE'),'no anonymous bulk health access');
  -- Upper-bound queue test, entirely fictional and rolled back with the suite.
  started:=clock_timestamp();
  select jsonb_agg(jsonb_build_object('rowNumber',n+2,'date','2026-10-22','document','TESTE','history','PIX RECEBIDO','complement','Volume fictício '||n,'amountCents',100)) into r from generate_series(1,5000) n;
  r:=public.prepare_finance_bank_import(c,u,box,repeat('d',64),'volume-ficticio.xlsx',jsonb_set(d,'{rows}',r));
  workspace:=public.get_finance_bank_import(c,u,(r->>'id')::uuid,'{}');
  perform pg_temp.assert_true((workspace#>>'{counts,total}')::int=5000 and jsonb_array_length(workspace->'items')=50 and (workspace->>'pageCount')::int=100,'5000 rows are paginated without truncating source');
+ workspace:=public.get_finance_bank_import(c,u,(r->>'id')::uuid,'{"page":2}');
+ perform pg_temp.assert_true(jsonb_array_length(workspace->'items')=50 and (workspace#>>'{items,0,rowNumber}')::int=53,'second page preserves row ordering');
  raise notice '5000 fictional rows prepared and paginated in % ms',round(extract(epoch from clock_timestamp()-started)*1000);
  perform set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000003',true);
  perform pg_temp.assert_true((select count(*)=0 from public.finance_bank_import_items where batch_id=b),'RLS hides other unit items');
+ perform pg_temp.assert_true((select count(*)=0 from private.bank_import_health_set(c,array[item,item3])),'bulk health respects the caller unit scope');
  begin perform public.finance_bank_import_item(c,u,item,4,gen_random_uuid(),'IGNORE','{"reason":"Outra unidade"}'); raise exception 'cross scope accepted'; exception when insufficient_privilege then null; end;
 end $$;
 rollback;

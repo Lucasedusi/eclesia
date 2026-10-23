@@ -102,3 +102,23 @@ A página foi aberta no Chrome com a sessão existente, na congregação Catedra
 Os Advisors online não retornaram erros. Apontaram avisos gerais de segurança e os 16 avisos de desempenho já documentados. Para o importador, o aviso sobre funções `SECURITY DEFINER` executáveis por usuários autenticados abrange `prepare_finance_bank_import` e `finance_bank_import_item`: a execução é intencional, com autorização interna por igreja/congregação/permissão, `search_path` vazio e execução anônima revogada. Os auxiliares privados de gravação não são executáveis por usuários autenticados. A tabela interna de operações sem policy e os índices novos ainda sem uso aparecem como informações esperadas. Nenhuma alteração adicional foi aplicada em resposta aos Advisors.
 
 A validação desta etapa foi de implantação e leitura autenticada. Os testes de gravação e concorrência permanecem restritos ao ambiente local, conforme a seção anterior. O código e os tipos gerados não precisaram de ajustes; a branch continua `codex/finance-bank-statement-import`.
+
+## Correção da lentidão após upload — pronta localmente
+
+Os logs online do incidente posterior confirmaram sucesso na preparação do arquivo e erro PostgreSQL `57014` ao montar a conferência. As consultas falharam após aproximadamente oito segundos, o limite configurado para o usuário autenticado. O contexto apontou `get_finance_bank_import` → `bank_import_item_dto` → `bank_import_units` → `can_access_finance_unit`: cada item reiniciava a leitura e suas verificações de escopo.
+
+A migração adicional `20261023210550_finance_bank_import_batched_reads` reúne a leitura da página e a conferência dos vínculos em consultas de conjunto. Mantém `SECURITY INVOKER`, RLS, escopo por igreja/congregação, autorização do chamador e o limite de tempo. A leitura de pendências no histórico usa a mesma conferência em conjunto. Não altera lançamentos, rotinas de gravação ou migrações anteriores.
+
+### Evidências locais
+
+- Reprodução com 15 congregações e página de 50 movimentos: antes, 3.829 ms e 55 avaliações do conjunto de escopos; depois, 229–276 ms e três avaliações. O teste de regressão falhou antes da correção e passou depois.
+- Página com 50 movimentos finalizados: 661 ms e seis avaliações, com os vínculos conferidos contra os lançamentos atuais.
+- 5.000 movimentos fictícios: preparação e leitura das duas primeiras páginas em aproximadamente 0,8 segundo.
+- SQL: filtros, ordem/paginação, rascunhos, dados de origem, histórico, transferências, atendimento completo, alias após cancelamento/reabertura, restrição anônima, outras congregações e outras igrejas aprovados. Os dados de teste são revertidos ao final.
+- Lint, typecheck e 583 testes unitários aprovados; três cenários de navegador aprovados, incluindo upload e abertura imediata da conferência.
+- Tipos regenerados do banco local, sem diferença. Nenhuma alteração de interface pública.
+- Advisors locais: nenhum aviso ou erro novo no recurso; permanecem os 16 avisos gerais e os dois erros SQL preexistentes já detalhados acima. Build não foi repetido nesta correção exclusivamente SQL, sem alteração do código da aplicação ou configuração.
+
+Arquivos de teste: `supabase/tests/finance_bank_import_read_performance.sql` e `supabase/tests/finance_bank_import_verification.sql`. Logs adicionais em `tmp/bank-import-reads-*` (ignorados pelo Git).
+
+Esta migração adicional foi aplicada **somente localmente**. A autorização anterior abrangia exclusivamente as sete primeiras migrações; a aplicação desta oitava atualização online ainda depende de autorização. A branch permanece separada e sem publicação na `main`.
