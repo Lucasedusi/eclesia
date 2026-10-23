@@ -1,8 +1,8 @@
 # Especificação — Lançamento via extrato bancário
 
-Data: 23/10/2026. Estado: proposta detalhada para aprovação.
+Data: 23/10/2026. Estado: aprovada pelo usuário; implementada e verificada localmente na branch `codex/finance-bank-statement-import`.
 
-O usuário aceitou as recomendações da análise de viabilidade: importação do XLSX do Sicoob, conferência no computador, conta bancária selecionada uma vez, fila persistente e confirmação individual dos movimentos. As decisões adicionais descritas abaixo são propostas para esta primeira versão. A implementação será feita em branch separada após aprovação; publicação na `main` e alterações no banco remoto dependem de autorização própria.
+O usuário aprovou as recomendações da análise e as decisões desta especificação: importação do XLSX do Sicoob, conferência no computador, conta bancária selecionada uma vez, fila persistente e confirmação individual dos movimentos. A implementação foi autorizada em branch separada, sem subagentes, com testes locais. Publicação na `main` e alterações no banco remoto dependem de autorização própria.
 
 ## Intenção e resultado esperado
 
