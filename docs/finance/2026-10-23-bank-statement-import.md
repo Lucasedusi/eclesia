@@ -1,4 +1,4 @@
-# Importação de extrato bancário — entrega local
+# Importação de extrato bancário — implementação e validação
 
 Implementação de 23/10/2026 na branch `codex/finance-bank-statement-import`, a partir de `b83b43c`. Especificação aprovada: `docs/superpowers/specs/2026-10-23-finance-bank-statement-import-design.md`.
 
@@ -35,7 +35,7 @@ As rotinas verificam igreja, congregação, conta e permissões; as relações i
 
 A origem `IMPORT` é definida antes da inserção do histórico imutável. O comando financeiro público continua usando origem `MANUAL`; o núcleo que recebe a origem é privado, sem execução concedida ao cliente.
 
-Sete migrações novas foram aplicadas exclusivamente no Supabase local. As migrações anteriores permaneceram intactas. Os ajustes descobertos nos testes foram registrados em migrações adicionais, preservando o histórico. Os tipos foram regenerados pelo CLI local.
+Na validação inicial, sete migrações novas foram aplicadas exclusivamente no Supabase local. As migrações anteriores permaneceram intactas. Os ajustes descobertos nos testes foram registrados em migrações adicionais, preservando o histórico. Os tipos foram regenerados pelo CLI local. A aplicação online posteriormente autorizada está registrada abaixo.
 
 ## Verificação em 23/10/2026
 
@@ -81,4 +81,24 @@ node scripts/verify-finance-bank-import-concurrency.mjs
 
 O roteiro SQL está em `supabase/tests/finance_bank_import_verification.sql`; ele inclui `finance_fixture.sql` da mesma pasta e termina com rollback. A aplicação de migrações deve usar explicitamente `--local` durante esta avaliação.
 
-Os logs completos desta execução estão no diretório ignorado `tmp/`, com prefixo `finance-bank-import-`. Nenhum merge, push, PR ou alteração no banco online foi realizado. Publicação e migração remota continuam dependentes de autorização do usuário.
+Os logs completos da validação inicial estão no diretório ignorado `tmp/`, com prefixo `finance-bank-import-`. Nenhum merge, push ou PR foi realizado. A publicação do código continua dependente de autorização do usuário.
+
+## Aplicação online autorizada — 23/10/2026
+
+Após o erro `UNAVAILABLE`, confirmou-se que a aplicação em `localhost:3000` usava o banco online, ainda sem a estrutura de importação. O usuário autorizou explicitamente apenas as sete migrações abaixo, mantendo a branch separada e sem publicar na `main`:
+
+- `20261023191152_finance_bank_statement_import`
+- `20261023192322_finance_bank_import_cashbox_reference`
+- `20261023192503_finance_bank_import_source_audit`
+- `20261023192623_finance_bank_import_decision_reason`
+- `20261023194835_finance_bank_import_reference_indexes`
+- `20261023195052_finance_bank_import_scoped_reads`
+- `20261023195713_finance_bank_import_pending_summary`
+
+A simulação confirmou exatamente essa lista. A aplicação terminou com sucesso, sem seeds, alteração de roles ou atualização do Vault. O histórico remoto confirmou as sete versões e a existência da consulta de importações. As cinco tabelas novas têm RLS habilitado.
+
+A página foi aberta no Chrome com a sessão existente, na congregação Catedral, conectada ao banco online: resposta HTTP 200, título **Importar extrato bancário**, conta bancária disponível, seletor de XLSX e histórico vazio. O erro `UNAVAILABLE` não reapareceu. A verificação não enviou extratos nem criou lançamentos ou dados de teste online.
+
+Os Advisors online não retornaram erros. Apontaram avisos gerais de segurança e os 16 avisos de desempenho já documentados. Para o importador, o aviso sobre funções `SECURITY DEFINER` executáveis por usuários autenticados abrange `prepare_finance_bank_import` e `finance_bank_import_item`: a execução é intencional, com autorização interna por igreja/congregação/permissão, `search_path` vazio e execução anônima revogada. Os auxiliares privados de gravação não são executáveis por usuários autenticados. A tabela interna de operações sem policy e os índices novos ainda sem uso aparecem como informações esperadas. Nenhuma alteração adicional foi aplicada em resposta aos Advisors.
+
+A validação desta etapa foi de implantação e leitura autenticada. Os testes de gravação e concorrência permanecem restritos ao ambiente local, conforme a seção anterior. O código e os tipos gerados não precisaram de ajustes; a branch continua `codex/finance-bank-statement-import`.
