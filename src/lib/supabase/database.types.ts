@@ -7,11 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.15"
-  }
   graphql_public: {
     Tables: {
       [_ in never]: never
@@ -3751,6 +3746,406 @@ export type Database = {
           {
             foreignKeyName: "events_updated_by_fkey"
             columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_bank_import_batches: {
+        Row: {
+          balances: Json
+          cashbox_id: string
+          church_id: string
+          congregation_id: string
+          created_at: string
+          created_by: string
+          deleted_at: string | null
+          file_hash: string
+          file_name: string
+          id: string
+          parser_version: string
+          reconciliation: string
+          reconciliation_reason: string | null
+          updated_at: string
+        }
+        Insert: {
+          balances?: Json
+          cashbox_id: string
+          church_id: string
+          congregation_id: string
+          created_at?: string
+          created_by: string
+          deleted_at?: string | null
+          file_hash: string
+          file_name: string
+          id?: string
+          parser_version: string
+          reconciliation: string
+          reconciliation_reason?: string | null
+          updated_at?: string
+        }
+        Update: {
+          balances?: Json
+          cashbox_id?: string
+          church_id?: string
+          congregation_id?: string
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          file_hash?: string
+          file_name?: string
+          id?: string
+          parser_version?: string
+          reconciliation?: string
+          reconciliation_reason?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_bank_import_batches_church_id_cashbox_id_fkey"
+            columns: ["church_id", "cashbox_id"]
+            isOneToOne: false
+            referencedRelation: "financial_cashboxes"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "finance_bank_import_batches_church_id_congregation_id_fkey"
+            columns: ["church_id", "congregation_id"]
+            isOneToOne: false
+            referencedRelation: "congregations"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "finance_bank_import_batches_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_bank_import_batches_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_bank_import_events: {
+        Row: {
+          action: string
+          actor_name: string
+          church_id: string
+          congregation_id: string
+          created_at: string
+          created_by: string
+          id: string
+          item_id: string
+          reason: string | null
+          revision: number
+        }
+        Insert: {
+          action: string
+          actor_name: string
+          church_id: string
+          congregation_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          item_id: string
+          reason?: string | null
+          revision: number
+        }
+        Update: {
+          action?: string
+          actor_name?: string
+          church_id?: string
+          congregation_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          item_id?: string
+          reason?: string | null
+          revision?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_bank_import_events_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_bank_import_events_church_id_item_id_fkey"
+            columns: ["church_id", "item_id"]
+            isOneToOne: false
+            referencedRelation: "finance_bank_import_items"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "finance_bank_import_events_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_bank_import_items: {
+        Row: {
+          amount_cents: number | null
+          batch_id: string
+          canonical_id: string | null
+          cashbox_id: string
+          church_id: string
+          complement: string
+          congregation_id: string
+          created_at: string
+          created_by: string
+          deleted_at: string | null
+          document: string
+          draft: Json
+          fingerprint: string
+          history: string
+          id: string
+          issue: string | null
+          reason: string | null
+          result: Json | null
+          revision: number
+          row_number: number
+          source_date: string
+          source_value: string
+          status: string
+          transaction_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount_cents?: number | null
+          batch_id: string
+          canonical_id?: string | null
+          cashbox_id: string
+          church_id: string
+          complement?: string
+          congregation_id: string
+          created_at?: string
+          created_by: string
+          deleted_at?: string | null
+          document?: string
+          draft?: Json
+          fingerprint: string
+          history?: string
+          id?: string
+          issue?: string | null
+          reason?: string | null
+          result?: Json | null
+          revision?: number
+          row_number: number
+          source_date?: string
+          source_value?: string
+          status?: string
+          transaction_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount_cents?: number | null
+          batch_id?: string
+          canonical_id?: string | null
+          cashbox_id?: string
+          church_id?: string
+          complement?: string
+          congregation_id?: string
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          document?: string
+          draft?: Json
+          fingerprint?: string
+          history?: string
+          id?: string
+          issue?: string | null
+          reason?: string | null
+          result?: Json | null
+          revision?: number
+          row_number?: number
+          source_date?: string
+          source_value?: string
+          status?: string
+          transaction_date?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_bank_import_items_church_id_congregation_id_cashb_fkey1"
+            columns: [
+              "church_id",
+              "congregation_id",
+              "cashbox_id",
+              "canonical_id",
+            ]
+            isOneToOne: false
+            referencedRelation: "finance_bank_import_items"
+            referencedColumns: [
+              "church_id",
+              "congregation_id",
+              "cashbox_id",
+              "id",
+            ]
+          },
+          {
+            foreignKeyName: "finance_bank_import_items_church_id_congregation_id_cashbo_fkey"
+            columns: ["church_id", "congregation_id", "cashbox_id", "batch_id"]
+            isOneToOne: false
+            referencedRelation: "finance_bank_import_batches"
+            referencedColumns: [
+              "church_id",
+              "congregation_id",
+              "cashbox_id",
+              "id",
+            ]
+          },
+          {
+            foreignKeyName: "finance_bank_import_items_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_bank_import_items_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_bank_import_links: {
+        Row: {
+          cashbox_id: string
+          church_id: string
+          congregation_id: string
+          created_at: string
+          deleted_at: string | null
+          finance_revision: number
+          id: string
+          item_id: string
+          transaction_id: string | null
+          transfer_id: string | null
+        }
+        Insert: {
+          cashbox_id: string
+          church_id: string
+          congregation_id: string
+          created_at?: string
+          deleted_at?: string | null
+          finance_revision: number
+          id?: string
+          item_id: string
+          transaction_id?: string | null
+          transfer_id?: string | null
+        }
+        Update: {
+          cashbox_id?: string
+          church_id?: string
+          congregation_id?: string
+          created_at?: string
+          deleted_at?: string | null
+          finance_revision?: number
+          id?: string
+          item_id?: string
+          transaction_id?: string | null
+          transfer_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_bank_import_links_church_id_congregation_id_cashbo_fkey"
+            columns: ["church_id", "congregation_id", "cashbox_id", "item_id"]
+            isOneToOne: false
+            referencedRelation: "finance_bank_import_items"
+            referencedColumns: [
+              "church_id",
+              "congregation_id",
+              "cashbox_id",
+              "id",
+            ]
+          },
+          {
+            foreignKeyName: "finance_bank_import_links_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_bank_import_links_church_id_transaction_id_fkey"
+            columns: ["church_id", "transaction_id"]
+            isOneToOne: false
+            referencedRelation: "financial_transactions"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "finance_bank_import_links_church_id_transfer_id_fkey"
+            columns: ["church_id", "transfer_id"]
+            isOneToOne: false
+            referencedRelation: "financial_transfers"
+            referencedColumns: ["church_id", "id"]
+          },
+        ]
+      }
+      finance_bank_import_operations: {
+        Row: {
+          church_id: string
+          congregation_id: string
+          created_at: string
+          created_by: string
+          id: string
+          item_id: string
+          operation_key: string
+          payload_hash: string
+          result: Json
+        }
+        Insert: {
+          church_id: string
+          congregation_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          item_id: string
+          operation_key: string
+          payload_hash: string
+          result: Json
+        }
+        Update: {
+          church_id?: string
+          congregation_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          item_id?: string
+          operation_key?: string
+          payload_hash?: string
+          result?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_bank_import_operations_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_bank_import_operations_church_id_item_id_fkey"
+            columns: ["church_id", "item_id"]
+            isOneToOne: false
+            referencedRelation: "finance_bank_import_items"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "finance_bank_import_operations_created_by_fkey"
+            columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -8591,6 +8986,27 @@ export type Database = {
         Args: { p_event_id: string }
         Returns: number
       }
+      finance_bank_import_candidates: {
+        Args: {
+          p_church_id: string
+          p_item: string
+          p_query?: string
+          p_unit: string
+        }
+        Returns: Json
+      }
+      finance_bank_import_item: {
+        Args: {
+          p_action: string
+          p_church_id: string
+          p_item: string
+          p_operation_key: string
+          p_payload: Json
+          p_revision: number
+          p_unit: string
+        }
+        Returns: Json
+      }
       generate_finance_statement: {
         Args: {
           p_church_id: string
@@ -8615,6 +9031,15 @@ export type Database = {
         }[]
       }
       get_event_stats: { Args: { p_church_id: string }; Returns: Json }
+      get_finance_bank_import: {
+        Args: {
+          p_batch: string
+          p_church_id: string
+          p_filters?: Json
+          p_unit: string
+        }
+        Returns: Json
+      }
       get_finance_category_report: {
         Args: { p_church_id: string; p_options: Json; p_unit: string }
         Returns: Json
@@ -8670,6 +9095,15 @@ export type Database = {
         Returns: boolean
       }
       is_valid_cpf: { Args: { p_value: string }; Returns: boolean }
+      list_finance_bank_imports: {
+        Args: {
+          p_cashbox?: string
+          p_church_id: string
+          p_page?: number
+          p_unit: string
+        }
+        Returns: Json
+      }
       list_finance_deliveries: {
         Args: {
           p_church_id: string
@@ -8732,6 +9166,17 @@ export type Database = {
       normalize_member_import_name: {
         Args: { p_value: string }
         Returns: string
+      }
+      prepare_finance_bank_import: {
+        Args: {
+          p_cashbox: string
+          p_church_id: string
+          p_data: Json
+          p_file_hash: string
+          p_file_name: string
+          p_unit: string
+        }
+        Returns: Json
       }
       prepare_finance_upload: {
         Args: {
@@ -9534,3 +9979,4 @@ export const Constants = {
     Enums: {},
   },
 } as const
+
