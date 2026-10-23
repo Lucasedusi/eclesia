@@ -4,7 +4,19 @@ import { newEntryState } from "../utils/finance-entry-session";
 const id = "10000000-0000-4000-8000-000000000001";
 const base = { unit: id, itemId: id, revision: 1, operationKey: id };
 it("allows an incomplete contributor in a server draft", () => {
-  expect(bankImportMutationSchema.safeParse({ ...base, action: "SAVE_DRAFT", payload: { state: { ...newEntryState("2026-10-21"), contributor: { kind: "UNREGISTERED", name: "" } }, extra: [] } }).success).toBe(true);
+  expect(
+    bankImportMutationSchema.safeParse({
+      ...base,
+      action: "SAVE_DRAFT",
+      payload: {
+        state: {
+          ...newEntryState("2026-10-21"),
+          contributor: { kind: "UNREGISTERED", name: "" },
+        },
+        extra: [],
+      },
+    }).success,
+  ).toBe(true);
 });
 it("requires audited reasons and rejects injected origin fields", () => {
   expect(

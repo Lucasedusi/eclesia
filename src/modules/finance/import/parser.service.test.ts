@@ -76,6 +76,17 @@ describe("Sicoob statement parser", () => {
     expect(parsed.rows.every((r) => r.issue)).toBe(true);
     expect(parsed.rows[0].date).toBeNull();
     expect(parsed.rows[1].amountCents).toBeNull();
+    expect(parsed.rows[3].amountCents).toBeNull();
+  });
+  it("reconciles a prior calendar-day closing balance with the next day's movements", async () => {
+    const parsed = await parseBankStatement(
+      await file([
+        ["01/03/2026", "1", "PIX", "Exemplo fictício", 10],
+        ["28/02/2026", "", "SALDO ANTERIOR", "", 100],
+        ["01/03/2026", "", "SALDO DO DIA", "", 110],
+      ]),
+    );
+    expect(parsed.reconciliation).toBe("MATCHED");
   });
   it("reports unmatched balances and never repairs the amount", async () => {
     const parsed = await parseBankStatement(

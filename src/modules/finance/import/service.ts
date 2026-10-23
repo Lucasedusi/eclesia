@@ -43,6 +43,8 @@ export async function prepareBankImport(
     .eq("status", "ACTIVE")
     .is("deleted_at", null)
     .single();
+  if (account.error && account.error.code !== "PGRST116")
+    throwFinanceDatabaseError(account.error);
   if (!account.data) throw new Error("INACTIVE_REFERENCE");
   const bytes = Buffer.from(await file.arrayBuffer());
   let parsed;

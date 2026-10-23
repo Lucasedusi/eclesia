@@ -99,6 +99,13 @@ describe("authorized bank import services", () => {
     });
   });
   it("keeps database internals out of errors and requires both capabilities", async () => {
+    mocks.single.mockResolvedValue({
+      data: null,
+      error: { message: "connection details", code: "08006" },
+    });
+    await expect(
+      prepareBankImport(context, box, new File(["fictional"], "teste.xlsx")),
+    ).rejects.toThrow("UNAVAILABLE");
     mocks.rpc.mockResolvedValue({
       data: null,
       error: { message: "sensitive database detail" },

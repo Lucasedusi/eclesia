@@ -48,14 +48,12 @@ test("statement review persists a draft, posts once, advances and restores an ig
   await page
     .getByRole("combobox", { name: "Conta bancária", exact: true })
     .selectOption(f.boxes[f.unitId].bank);
-  await page
-    .getByLabel("Extrato XLSX do Sicoob")
-    .setInputFiles({
-      name: "teste-banco.xlsx",
-      mimeType:
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      buffer: bytes,
-    });
+  await page.getByLabel("Extrato XLSX do Sicoob").setInputFiles({
+    name: "teste-banco.xlsx",
+    mimeType:
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    buffer: bytes,
+  });
   await page
     .getByRole("button", { name: "Preparar importação", exact: true })
     .click();
@@ -123,14 +121,12 @@ test("statement review persists a draft, posts once, advances and restores an ig
   await page
     .getByRole("combobox", { name: "Conta bancária", exact: true })
     .selectOption(f.boxes[f.unitId].bank);
-  await page
-    .getByLabel("Extrato XLSX do Sicoob")
-    .setInputFiles({
-      name: "mesmo-arquivo.xlsx",
-      mimeType:
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      buffer: bytes,
-    });
+  await page.getByLabel("Extrato XLSX do Sicoob").setInputFiles({
+    name: "mesmo-arquivo.xlsx",
+    mimeType:
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    buffer: bytes,
+  });
   await page
     .getByRole("button", { name: "Preparar importação", exact: true })
     .click();
@@ -151,49 +147,230 @@ test("statement review persists a draft, posts once, advances and restores an ig
   });
 });
 
-test("links a manual expense, creates a transfer and recognizes an overlapping statement", async ({ page }) => {
-  test.skip(!process.env.E2E_FINANCE_FIXTURE, "Local financial fixture required");
+test("a lost confirmation response retries the same posting and retains invalid rows", async ({
+  page,
+}) => {
+  test.skip(
+    !process.env.E2E_FINANCE_FIXTURE,
+    "Local financial fixture required",
+  );
+  const f = JSON.parse(readFileSync(process.env.E2E_FINANCE_FIXTURE!, "utf8"));
+  const workbook = new ExcelJS.Workbook(),
+    sheet = workbook.addWorksheet("LANÇAMENTOS");
+  sheet.addRow(["EXTRATO CONTA CORRENTE"]);
+  sheet.addRow([
+    "DATA",
+    "DOCUMENTO",
+    "HISTÓRICO",
+    "INFORMAÇÕES COMPLEMENTARES",
+    "VALOR",
+  ]);
+  sheet.addRow([
+    "22/10/2026",
+    "PIX",
+    "PIX RECEBIDO",
+    `Retentativa fictícia ${randomUUID()}`,
+    27.19,
+  ]);
+  sheet.addRow([
+    "22/10/2026",
+    "INVÁLIDO",
+    "AJUSTE A CONFERIR",
+    "Linha fictícia sem valor",
+    0,
+  ]);
+  await page.goto(
+    `/financeiro/lancamentos/importacoes?unidade=${f.unitId}&mes=2026-10`,
+  );
+  await page
+    .getByLabel("Extrato XLSX do Sicoob")
+    .setInputFiles({
+      name: "retentativa-ficticia.xlsx",
+      mimeType:
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      buffer: Buffer.from(await workbook.xlsx.writeBuffer()),
+    });
+  await page
+    .getByRole("button", { name: "Preparar importação", exact: true })
+    .click();
+  await expect(
+    page.getByText("Conferir leitura", { exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Conferir linha 3", exact: true })
+    .click();
+  await page
+    .getByRole("combobox", { name: "Identificação", exact: true })
+    .selectOption("COLLECTIVE");
+  await page
+    .getByRole("combobox", { name: "Categoria", exact: true })
+    .selectOption(f.offeringId);
+  let dropped = false;
+  await page.route("**/financeiro/**", async (route) => {
+    const request = route.request();
+    if (
+      !dropped &&
+      request.method() === "POST" &&
+      request.headers()["next-action"] &&
+      request.postData()?.includes('"action":"POST"')
+    ) {
+      dropped = true;
+      await route.fetch(); // The server commits, then the browser loses the response.
+      await route.abort("failed");
+    } else await route.continue();
+  });
+  await page.getByRole("button", { name: "Finalizar", exact: true }).click();
+  await expect(
+    page.getByRole("button", {
+      name: "Conferir a mesma tentativa",
+      exact: true,
+    }),
+  ).toBeVisible();
+  expect(dropped).toBe(true);
+  await page
+    .getByRole("button", { name: "Conferir a mesma tentativa", exact: true })
+    .click();
+  await expect(
+    page.getByText("Este item possui uma referência financeira registrada."),
+  ).toBeVisible();
+  await expect(page.getByText("1 concluído", { exact: false })).toBeVisible();
+  await page
+    .getByRole("button", { name: "Voltar à fila", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Conferir linha 4", exact: true })
+    .click();
+  await expect(
+    page.getByRole("alert").filter({ hasText: "Valor inválido" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Finalizar", exact: true }),
+  ).toHaveCount(0);
+});
+
+test("links a manual expense, creates a transfer and recognizes an overlapping statement", async ({
+  page,
+}) => {
+  test.skip(
+    !process.env.E2E_FINANCE_FIXTURE,
+    "Local financial fixture required",
+  );
   test.setTimeout(60000);
   const f = JSON.parse(readFileSync(process.env.E2E_FINANCE_FIXTURE!, "utf8"));
-  const reference = randomUUID(), cents = 3000 + Math.floor(Math.random() * 10000), value = (cents / 100).toFixed(2).replace(".", ",");
-  page.on("dialog", dialog => dialog.accept());
+  const reference = randomUUID(),
+    cents = 3000 + Math.floor(Math.random() * 10000),
+    value = (cents / 100).toFixed(2).replace(".", ",");
+  page.on("dialog", (dialog) => dialog.accept());
   await page.goto(`/financeiro/lancamentos?unidade=${f.unitId}&mes=2026-10`);
   await page.getByRole("button", { name: "Nova saída", exact: true }).click();
   const manual = page.getByRole("dialog");
   await manual.getByLabel("Data", { exact: true }).fill("2026-10-22");
-  await manual.getByRole("combobox", { name: "Caixa ou conta", exact: true }).selectOption(f.boxes[f.unitId].bank);
-  await manual.getByRole("combobox", { name: "Categoria", exact: true }).selectOption(f.expenseId);
+  await manual
+    .getByRole("combobox", { name: "Caixa ou conta", exact: true })
+    .selectOption(f.boxes[f.unitId].bank);
+  await manual
+    .getByRole("combobox", { name: "Categoria", exact: true })
+    .selectOption(f.expenseId);
   await manual.getByLabel("Valor (R$)", { exact: true }).fill(value);
   await manual.getByRole("button", { name: "Salvar", exact: true }).click();
   await expect(manual).toHaveCount(0);
-  const workbook = new ExcelJS.Workbook(), sheet = workbook.addWorksheet("LANÇAMENTOS");
+  const workbook = new ExcelJS.Workbook(),
+    sheet = workbook.addWorksheet("LANÇAMENTOS");
   sheet.addRow(["EXTRATO CONTA CORRENTE"]);
-  sheet.addRow(["DATA", "DOCUMENTO", "HISTÓRICO", "INFORMAÇÕES COMPLEMENTARES", "VALOR"]);
-  sheet.addRow(["22/10/2026", "PIX", "PIX ENVIADO", `Despesa fictícia ${reference}`, -cents / 100]);
-  sheet.addRow(["22/10/2026", "TRF", "TRANSFERÊNCIA", `Transferência fictícia ${reference}`, 52.37]);
+  sheet.addRow([
+    "DATA",
+    "DOCUMENTO",
+    "HISTÓRICO",
+    "INFORMAÇÕES COMPLEMENTARES",
+    "VALOR",
+  ]);
+  sheet.addRow([
+    "22/10/2026",
+    "PIX",
+    "PIX ENVIADO",
+    `Despesa fictícia ${reference}`,
+    -cents / 100,
+  ]);
+  sheet.addRow([
+    "22/10/2026",
+    "TRF",
+    "TRANSFERÊNCIA",
+    `Transferência fictícia ${reference}`,
+    52.37,
+  ]);
   async function upload() {
-    await page.goto(`/financeiro/lancamentos/importacoes?unidade=${f.unitId}&mes=2026-10`);
-    await page.getByLabel("Extrato XLSX do Sicoob").setInputFiles({ name: `vinculos-${reference}.xlsx`, mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", buffer: Buffer.from(await workbook.xlsx.writeBuffer()) });
-    await page.getByRole("button", { name: "Preparar importação", exact: true }).click();
-    await expect(page.getByText("2 movimentos", { exact: false })).toBeVisible();
+    await page.goto(
+      `/financeiro/lancamentos/importacoes?unidade=${f.unitId}&mes=2026-10`,
+    );
+    await page
+      .getByLabel("Extrato XLSX do Sicoob")
+      .setInputFiles({
+        name: `vinculos-${reference}.xlsx`,
+        mimeType:
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        buffer: Buffer.from(await workbook.xlsx.writeBuffer()),
+      });
+    await page
+      .getByRole("button", { name: "Preparar importação", exact: true })
+      .click();
+    await expect(
+      page.getByText("2 movimentos", { exact: false }),
+    ).toBeVisible();
   }
   await upload();
-  await page.getByRole("button", { name: "Conferir linha 3", exact: true }).click();
-  await page.getByRole("button", { name: "Vincular este registro", exact: true }).filter({ hasNot: page.locator("[disabled]") }).first().click();
-  await expect(page.getByRole("button", { name: "Desfazer vínculo", exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Voltar à fila", exact: true }).click();
-  await page.getByRole("button", { name: "Conferir linha 4", exact: true }).click();
-  await page.getByRole("button", { name: "Transferência interna", exact: true }).click();
-  await page.getByRole("combobox", { name: "Outra conta ou caixa", exact: true }).selectOption(f.boxes[f.unitId].cash);
-  await page.getByLabel("Descrição da transferência").fill(`Transferência de teste ${reference}`);
-  await page.getByRole("button", { name: "Confirmar transferência", exact: true }).click();
-  await expect(page.getByText("Este item possui uma referência financeira registrada.")).toBeVisible();
+  await page
+    .getByRole("button", { name: "Conferir linha 3", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Vincular este registro", exact: true })
+    .filter({ hasNot: page.locator("[disabled]") })
+    .first()
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Desfazer vínculo", exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Voltar à fila", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Conferir linha 4", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Transferência interna", exact: true })
+    .click();
+  await page
+    .getByRole("combobox", { name: "Outra conta ou caixa", exact: true })
+    .selectOption(f.boxes[f.unitId].cash);
+  await page
+    .getByLabel("Descrição da transferência")
+    .fill(`Transferência de teste ${reference}`);
+  await page
+    .getByRole("button", { name: "Confirmar transferência", exact: true })
+    .click();
+  await expect(
+    page.getByText("Este item possui uma referência financeira registrada."),
+  ).toBeVisible();
   // Change workbook metadata, retaining the exact source rows, to simulate a second export.
   workbook.created = new Date("2026-10-22T11:00:00Z");
   await upload();
-  await page.getByRole("button", { name: "Conferir linha 4", exact: true }).click();
-  await expect(page.getByLabel("Motivo para tratar como movimento distinto")).toBeVisible();
-  await page.getByRole("button", { name: "É o mesmo movimento", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Desfazer vínculo", exact: true })).toBeVisible();
-  await expect(page.getByText("Mesmo movimento", { exact: false }).filter({ visible: true }).first()).toBeVisible();
+  await page
+    .getByRole("button", { name: "Conferir linha 4", exact: true })
+    .click();
+  await expect(
+    page.getByLabel("Motivo para tratar como movimento distinto"),
+  ).toBeVisible();
+  await page
+    .locator(".bank-import-choice")
+    .filter({ hasText: reference })
+    .getByRole("button", { name: "É o mesmo movimento", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Desfazer vínculo", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page
+      .getByText("Mesmo movimento", { exact: false })
+      .filter({ visible: true })
+      .first(),
+  ).toBeVisible();
 });

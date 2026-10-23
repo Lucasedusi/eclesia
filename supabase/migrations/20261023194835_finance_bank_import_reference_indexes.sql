@@ -1,0 +1,8 @@
+-- Cover audit actors and tenant-composite references identified by local Advisors.
+create index finance_bank_import_batch_actor on public.finance_bank_import_batches(created_by);
+create index finance_bank_import_item_actor on public.finance_bank_import_items(created_by);
+create index finance_bank_import_event_actor on public.finance_bank_import_events(created_by);
+create index finance_bank_import_operation_actor on public.finance_bank_import_operations(created_by);
+create index finance_bank_import_item_batch_scope on public.finance_bank_import_items(church_id,congregation_id,cashbox_id,batch_id);
+create index finance_bank_import_item_canonical_scope on public.finance_bank_import_items(church_id,congregation_id,cashbox_id,canonical_id);
+create index finance_bank_import_link_scope on public.finance_bank_import_links(church_id,congregation_id,cashbox_id,item_id);

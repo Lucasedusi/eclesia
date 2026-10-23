@@ -51,6 +51,7 @@ export type BankImportItem = ParsedBankRow & {
   draft: Record<string, unknown>;
   reason: string | null;
   stale: boolean;
+  possibleDuplicate: boolean;
   changed: boolean;
   cancelled: boolean;
   canonicalId: string | null;

@@ -76,9 +76,11 @@ export function BankImportReview({
     [transferDescription, setTransferDescription] = useState("");
   const [reviewKind, setReviewKind] = useState<"ENTRY" | "TRANSFER">("ENTRY");
   const [candidateVersion, setCandidateVersion] = useState(0);
+  const [candidateSearch, setCandidateSearch] = useState("");
+  const [candidateQuery, setCandidateQuery] = useState("");
   useEffect(() => {
     let active = true;
-    getBankImportCandidatesAction(unit, item.id)
+    getBankImportCandidatesAction(unit, item.id, candidateQuery)
       .then((result) => {
         if (!active) return;
         setLoading(false);
@@ -98,8 +100,8 @@ export function BankImportReview({
     return () => {
       active = false;
     };
-  }, [unit, item.id, item.revision, candidateVersion]);
-  const strong = candidates.some((c) => c.strong),
+  }, [unit, item.id, item.revision, candidateVersion, candidateQuery]);
+  const strong = item.possibleDuplicate || candidates.some((c) => c.strong),
     isPending = item.status === "PENDING",
     locked = busy || uncertain;
   const decisions = {
@@ -352,6 +354,33 @@ export function BankImportReview({
               Compare os registros antes de criar um novo lançamento. Um vínculo
               usa o registro já existente e mantém o saldo.
             </p>
+            <form
+              className="row"
+              onSubmit={(e) => {
+                e.preventDefault();
+                setLoading(true);
+                setCandidateQuery(candidateSearch.trim());
+                setCandidateVersion((v) => v + 1);
+              }}
+            >
+              <label>
+                Buscar registros compatíveis
+                <input
+                  value={candidateSearch}
+                  maxLength={100}
+                  disabled={locked}
+                  onChange={(e) => setCandidateSearch(e.target.value)}
+                  placeholder="Categoria, pessoa ou descrição"
+                />
+              </label>
+              <Button
+                type="submit"
+                variant="outline"
+                disabled={locked || loading}
+              >
+                Buscar registros
+              </Button>
+            </form>
             {loading && (
               <p role="status">Consultando movimentos compatíveis…</p>
             )}

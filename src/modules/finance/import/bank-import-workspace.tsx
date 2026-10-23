@@ -264,6 +264,11 @@ export function BankImportWorkspace({
                               Conferir leitura
                             </p>
                           )}
+                          {i.possibleDuplicate && i.status === "PENDING" && (
+                            <p className="bank-import-expense">
+                              Possível duplicidade
+                            </p>
+                          )}
                           {i.stale && (
                             <p className="bank-import-expense">
                               Vínculo a conferir

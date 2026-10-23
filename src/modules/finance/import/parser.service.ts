@@ -247,7 +247,7 @@ export async function parseBankStatement(
       document,
       history,
       complement,
-      amountCents,
+      amountCents: amountCents === 0 ? null : amountCents,
       issue,
       fingerprint,
     });
@@ -263,11 +263,14 @@ export async function parseBankStatement(
     .map((r) => r.date)
     .filter((v): v is string => !!v)
     .sort();
+  const previousDay = dates.length ? new Date(`${dates[0]}T12:00:00Z`) : null;
+  previousDay?.setUTCDate(previousDay.getUTCDate() - 1);
   if (
     !rows.some((r) => r.issue) &&
     start.length === 1 &&
     end.length === 1 &&
-    start[0].date === dates[0] &&
+    (start[0].date === dates[0] ||
+      start[0].date === previousDay?.toISOString().slice(0, 10)) &&
     end[0].date === dates.at(-1) &&
     start[0].amountCents !== null &&
     end[0].amountCents !== null
