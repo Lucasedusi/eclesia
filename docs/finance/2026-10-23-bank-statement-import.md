@@ -103,7 +103,7 @@ Os Advisors online não retornaram erros. Apontaram avisos gerais de segurança 
 
 A validação desta etapa foi de implantação e leitura autenticada. Os testes de gravação e concorrência permanecem restritos ao ambiente local, conforme a seção anterior. O código e os tipos gerados não precisaram de ajustes; a branch continua `codex/finance-bank-statement-import`.
 
-## Correção da lentidão após upload — pronta localmente
+## Correção da lentidão após upload
 
 Os logs online do incidente posterior confirmaram sucesso na preparação do arquivo e erro PostgreSQL `57014` ao montar a conferência. As consultas falharam após aproximadamente oito segundos, o limite configurado para o usuário autenticado. O contexto apontou `get_finance_bank_import` → `bank_import_item_dto` → `bank_import_units` → `can_access_finance_unit`: cada item reiniciava a leitura e suas verificações de escopo.
 
@@ -121,4 +121,14 @@ A migração adicional `20261023210550_finance_bank_import_batched_reads` reúne
 
 Arquivos de teste: `supabase/tests/finance_bank_import_read_performance.sql` e `supabase/tests/finance_bank_import_verification.sql`. Logs adicionais em `tmp/bank-import-reads-*` (ignorados pelo Git).
 
-Esta migração adicional foi aplicada **somente localmente**. A autorização anterior abrangia exclusivamente as sete primeiras migrações; a aplicação desta oitava atualização online ainda depende de autorização. A branch permanece separada e sem publicação na `main`.
+### Aplicação online autorizada — 23/10/2026
+
+Após autorização específica do usuário, a simulação confirmou somente `20261023210550_finance_bank_import_batched_reads.sql` pendente. Essa oitava atualização foi aplicada com sucesso ao banco online, sem seeds, alteração de roles ou atualização do Vault. O histórico remoto confirmou a versão. As funções de leitura verificadas continuam `SECURITY INVOKER`, com `search_path` vazio e sem execução anônima; as cinco tabelas de importação permanecem com RLS habilitado.
+
+Com a sessão autenticada existente no Chrome, foram abertas as conferências dos extratos já importados em Canaã e na Catedral. Ambas exibiram **Conferência do extrato**, 33 movimentos pendentes e as ações de conferência, sem `UNAVAILABLE` e sem erros no console. A verificação foi somente de leitura: nenhum novo extrato ou lançamento foi criado.
+
+Na janela da verificação (24/10/2026, 00:24–00:25:30 UTC; noite de 23/10 no horário local), os logs online registraram três respostas HTTP 200 de `get_finance_bank_import`, com duração de 344, 370 e 490 ms. As páginas responderam em 3,5 segundos na primeira abertura, incluindo inicialização de sessão, e 982 ms na segunda. Esses valores são observações desta verificação, não uma garantia de latência.
+
+Os Advisors online foram executados novamente: nenhum erro e nenhum achado nas funções modificadas; permanecem os avisos gerais já descritos acima. Não houve alteração adicional em resposta aos avisos. A suíte local descrita nesta seção não foi repetida, pois nesta etapa apenas se aplicou a migração já testada e se verificou a leitura online.
+
+O servidor temporário foi encerrado e a porta 3000 ficou livre. A branch permanece `codex/finance-bank-statement-import`, sem merge ou publicação na `main`.
