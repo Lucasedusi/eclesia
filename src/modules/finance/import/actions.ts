@@ -7,13 +7,18 @@ import { cacheTags } from "@/lib/cache-tags";
 import { requireFinanceContext } from "../services/finance-access.service";
 import { financeFailure } from "../utils/finance-errors";
 import type { FinanceActionResult } from "../types/finance.types";
-import { bankImportMutationSchema } from "./schemas";
+import { bankImportMutationSchema, bankImportLifecycleSchema } from "./schemas";
 import {
+  manageBankImport,
   getBankImportCandidates,
   mutateBankImport,
   prepareBankImport,
 } from "./service";
-import type { BankImportCandidate, BankImportItem } from "./types";
+import type {
+  BankImportCandidate,
+  BankImportItem,
+  BankImportLifecycleResult,
+} from "./types";
 
 export async function prepareBankImportAction(
   form: FormData,
@@ -68,6 +73,24 @@ export async function getBankImportCandidatesAction(
       ok: true,
       data: await getBankImportCandidates(context, itemId, query),
     };
+  } catch (error) {
+    unstable_rethrow(error);
+    return financeFailure(error);
+  }
+}
+
+export async function manageBankImportAction(
+  input: unknown,
+): Promise<FinanceActionResult<BankImportLifecycleResult>> {
+  try {
+    const value = bankImportLifecycleSchema.parse(input);
+    const context = await requireFinanceContext({
+      congregationId: value.unit,
+      permission: PERMISSIONS.financeCreate,
+    });
+    const data = await manageBankImport(context, value);
+    revalidatePath("/financeiro/lancamentos/importacoes", "layout");
+    return { ok: true, data };
   } catch (error) {
     unstable_rethrow(error);
     return financeFailure(error);

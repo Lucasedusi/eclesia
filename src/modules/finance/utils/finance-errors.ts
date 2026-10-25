@@ -4,6 +4,7 @@ import type {
   FinanceErrorCode,
 } from "../types/finance.types";
 const messages: Record<FinanceErrorCode, string> = {
+  BANK_IMPORT_DELETE_BLOCKED: "Este extrato ou item possui histórico financeiro e não pode ser excluído.",
   BANK_IMPORT_FILE:
     "Envie um XLSX do Sicoob de até 5 MB e 5.000 movimentos, com uma única aba e sem fórmulas, macros ou vínculos externos.",
   BANK_IMPORT_CONFLICT:

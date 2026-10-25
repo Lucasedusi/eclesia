@@ -363,7 +363,11 @@ export function FinanceEntryForm({
     <form
       ref={form}
       key={identityVersion}
-      className={mode === "ATTENDANCE" ? "finance-attendance-form" : "stack"}
+      className={
+        mode === "ATTENDANCE" || bankImport
+          ? "finance-attendance-form"
+          : "stack"
+      }
       onSubmit={(e) => {
         e.preventDefault();
         void save(!bankImport && mode === "ATTENDANCE" ? "CONTINUE" : "SAVE");
@@ -530,6 +534,36 @@ export function FinanceEntryForm({
             </select>
           </label>
         </div>
+        {bankImport && extra.length > 0 && (
+          <div className="bank-import-warning">
+            <p>
+              Este rascunho antigo divide o movimento em várias contribuições.
+              As classificações foram preservadas.
+            </p>
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (
+                  !window.confirm(
+                    "Unificar o valor na primeira classificação e remover as demais contribuições deste rascunho?",
+                  )
+                )
+                  return;
+                setExtra([]);
+                setState((current) => ({
+                  ...current,
+                  amount: centsToDecimal(bankImport.amountCents).replace(
+                    ".",
+                    ",",
+                  ),
+                }));
+                setDirty(true);
+              }}
+            >
+              Usar uma classificação
+            </Button>
+          </div>
+        )}
         {lines.map((line, index) => {
           const category = catalogs.categories.find(
             (c) => c.id === line.categoryId,
@@ -545,7 +579,7 @@ export function FinanceEntryForm({
               }}
             >
               <legend>
-                {mode === "ATTENDANCE"
+                {mode === "ATTENDANCE" && !bankImport
                   ? `Contribuição ${index + 1}`
                   : direction === "EXPENSE"
                     ? "Dados da saída"
@@ -612,7 +646,7 @@ export function FinanceEntryForm({
                 <label>
                   Valor (R$)
                   <FinanceMoneyInput
-                    readOnly={Boolean(bankImport) && mode === "SINGLE"}
+                    readOnly={Boolean(bankImport) && extra.length === 0}
                     inputMode="decimal"
                     value={line.amount}
                     placeholder="0,00"
@@ -646,7 +680,7 @@ export function FinanceEntryForm({
                   </label>
                 )}
               </div>
-              {mode === "ATTENDANCE" && index > 0 && (
+              {mode === "ATTENDANCE" && !bankImport && index > 0 && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -664,7 +698,7 @@ export function FinanceEntryForm({
             </fieldset>
           );
         })}
-        {mode === "ATTENDANCE" && (
+        {mode === "ATTENDANCE" && !bankImport && (
           <Button
             variant="outline"
             onClick={() => {
@@ -783,7 +817,7 @@ export function FinanceEntryForm({
       </fieldset>
       <aside
         className={
-          mode === "ATTENDANCE"
+          mode === "ATTENDANCE" || bankImport
             ? "finance-attendance-summary finance-entry-summary stack"
             : "finance-entry-summary stack"
         }
@@ -876,7 +910,7 @@ export function FinanceEntryForm({
           </div>
           <div className="finance-entry-review-total row spread">
             <span>
-              {mode === "ATTENDANCE"
+              {mode === "ATTENDANCE" && !bankImport
                 ? "Total do atendimento"
                 : "Total do lançamento"}
             </span>
@@ -898,7 +932,9 @@ export function FinanceEntryForm({
               type="submit"
               variant={direction === "EXPENSE" ? "danger" : "primary"}
               className={
-                mode === "ATTENDANCE" ? "finance-attendance-action" : undefined
+                mode === "ATTENDANCE" || bankImport
+                  ? "finance-attendance-action"
+                  : undefined
               }
               aria-busy={busy}
               disabled={busy || uploading}
@@ -930,16 +966,25 @@ export function FinanceEntryForm({
                 variant="outline"
                 disabled={busy || uploading}
                 onClick={() => void save("CONTINUE")}
+                className="finance-attendance-action"
               >
-                <ArrowRight size={16} />
-                Finalizar e próximo
+                <span className="finance-action-icon">
+                  <ArrowRight size={16} />
+                </span>
+                <span className="finance-action-label">
+                  Finalizar e próximo
+                </span>
               </Button>
               <Button
                 variant="outline"
                 disabled={busy || uploading || ambiguous}
                 onClick={() => void saveDraft()}
+                className="finance-attendance-action"
               >
-                Salvar rascunho
+                <span className="finance-action-icon">
+                  <Save size={16} />
+                </span>
+                <span className="finance-action-label">Salvar rascunho</span>
               </Button>
             </div>
           )}

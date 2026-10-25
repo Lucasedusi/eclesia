@@ -1,4 +1,16 @@
 "use client";
+import {
+  ArrowDownLeft,
+  ArrowUpRight,
+  List,
+  ListChecks,
+  CheckCheck,
+  ClipboardCheck,
+  ChevronLeft,
+  ChevronRight,
+  Clock3,
+} from "lucide-react";
+import { BankImportLifecycleButton } from "./bank-import-lifecycle";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useFinanceNavigation } from "../components/finance-shell";
@@ -46,7 +58,8 @@ export function BankImportWorkspace({
           <div>
             <h1>Conferência do extrato</h1>
             <p className="muted">
-              {batch.cashboxName} · {batch.fileName} · {batch.total} movimentos
+              {batch.cashboxName} · {batch.fileName} · {batch.total}{" "}
+              {batch.total === 1 ? "movimento" : "movimentos"}
             </p>
           </div>
           <Button
@@ -61,72 +74,52 @@ export function BankImportWorkspace({
               )
             }
           >
-            Todas as importações
+            <List size={16} /> Todas as importações
           </Button>
         </header>
-        <section className="bank-import-card stack">
-          <div className="bank-import-summary">
+        <div className="bank-import-summary">
+          <section className="bank-import-card bank-import-metric">
             <div>
-              <span className="muted">Entradas no arquivo</span>
-              <strong>{formatMoney(batch.incomeCents)}</strong>
+              <span>Entradas consideradas</span>
+              <ArrowDownLeft size={22} />
             </div>
+            <strong>{formatMoney(batch.incomeCents)}</strong>
+            <small>Movimentos incluídos na conferência</small>
+          </section>
+          <section className="bank-import-card bank-import-metric is-expense">
             <div>
-              <span className="muted">Saídas no arquivo</span>
-              <strong className="bank-import-expense">
-                {formatMoney(batch.expenseCents)}
-              </strong>
+              <span>Saídas consideradas</span>
+              <ArrowUpRight size={22} />
             </div>
+            <strong>{formatMoney(batch.expenseCents)}</strong>
+            <small>Movimentos incluídos na conferência</small>
+          </section>
+          <section className="bank-import-card bank-import-metric is-progress">
             <div>
-              <span className="muted">Conferência</span>
-              <strong>
-                {counts.completed}/{counts.total}
-              </strong>
+              <span>Conferência</span>
+              <ListChecks size={22} />
             </div>
-          </div>
-          <p className="muted">
-            {counts.pending} pendente(s) · {counts.completed} concluído(s) ·{" "}
-            {counts.ignored} ignorado(s)
-          </p>
-          <details>
-            <summary>Referências de saldo do extrato</summary>
-            <div className="stack" style={{ marginTop: 12 }}>
-              <p
-                className={
-                  batch.reconciliation === "MISMATCH"
-                    ? "bank-import-warning"
-                    : "notice"
-                }
-              >
-                {batch.reconciliation === "MATCHED"
-                  ? "Saldos do arquivo conferem."
-                  : batch.reconciliation === "MISMATCH"
-                    ? "Os movimentos não correspondem à diferença entre os saldos do arquivo. Confira antes de prosseguir."
-                    : "Não foi possível conferir um intervalo completo de saldos neste arquivo."}
-              </p>
-              {batch.balances.map((b, index) => (
-                <div className="row spread" key={index}>
-                  <span>
-                    {b.label} ·{" "}
-                    {b.date?.split("-").reverse().join("/") ??
-                      "Data indisponível"}
-                  </span>
-                  <strong>
-                    {b.amountCents === null
-                      ? "Valor indisponível"
-                      : formatMoney(b.amountCents)}
-                  </strong>
-                </div>
-              ))}
-              {batch.reconciliationReason && (
-                <p>Motivo registrado: {batch.reconciliationReason}</p>
-              )}
-              <p className="muted">
-                Estas referências verificam a leitura do arquivo. O saldo do
-                caixa no Eclesias depende dos lançamentos já confirmados.
-              </p>
-            </div>
-          </details>
-        </section>
+            <strong>
+              {counts.completed}/{counts.total}
+            </strong>
+            <small>Movimentos concluídos</small>
+          </section>
+        </div>
+        <div
+          className="bank-import-card bank-import-counts"
+          aria-label="Situação da conferência"
+        >
+          <span>
+            <Clock3 size={16} /> <strong>{counts.pending}</strong> pendente(s)
+          </span>
+          <span>
+            <CheckCheck size={16} /> <strong>{counts.completed}</strong>{" "}
+            concluído(s)
+          </span>
+          <span>
+            <List size={16} /> <strong>{counts.ignored}</strong> ignorado(s)
+          </span>
+        </div>
         {selected ? (
           <BankImportReview
             key={selected.id}
@@ -180,6 +173,7 @@ export function BankImportWorkspace({
                   <option value="COMPLETED">Concluídos</option>
                   <option value="IGNORED">Ignorados</option>
                   <option value="ALL">Todos</option>
+                  <option value="DELETED">Excluídos</option>
                 </select>
               </label>
               <label>
@@ -256,8 +250,12 @@ export function BankImportWorkspace({
                           </span>
                         </td>
                         <td>
-                          <span className="bank-import-status">
-                            {bankImportStatus[i.status]}
+                          <span
+                            className={`bank-import-status status-${i.deleted ? "DELETED" : i.status}`}
+                          >
+                            {i.deleted
+                              ? "Excluído"
+                              : bankImportStatus[i.status]}
                           </span>
                           {i.issue && (
                             <p className="bank-import-expense">
@@ -279,14 +277,29 @@ export function BankImportWorkspace({
                           )}
                         </td>
                         <td>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            aria-label={`Conferir linha ${i.rowNumber}`}
-                            onClick={() => setSelected(i)}
-                          >
-                            Conferir
-                          </Button>
+                          {!i.deleted && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              aria-label={`Conferir linha ${i.rowNumber}`}
+                              onClick={() => setSelected(i)}
+                            >
+                              <ClipboardCheck size={14} /> Conferir
+                            </Button>
+                          )}
+                          <BankImportLifecycleButton
+                            label={`${i.deleted ? "Restaurar" : "Excluir"} linha ${i.rowNumber}`}
+                            disabled={!i.canDelete}
+                            target={{
+                              unit,
+                              batchId: batch.id,
+                              itemId: i.id,
+                              revision: i.revision,
+                              action: i.deleted
+                                ? "RESTORE_ITEM"
+                                : "DELETE_ITEM",
+                            }}
+                          />
                         </td>
                       </tr>
                     ))}
@@ -294,31 +307,42 @@ export function BankImportWorkspace({
                 </table>
               </div>
             )}
-            <div className="row spread">
-              <span className="muted">
-                Página {workspace.page} de {workspace.pageCount}
-              </span>
-              <div className="row">
-                <Button
-                  variant="outline"
-                  disabled={workspace.page <= 1}
-                  onClick={() =>
-                    navigation.navigate(filterURL({ page: workspace.page - 1 }))
-                  }
-                >
-                  Anterior
-                </Button>
-                <Button
-                  variant="outline"
-                  disabled={workspace.page >= workspace.pageCount}
-                  onClick={() =>
-                    navigation.navigate(filterURL({ page: workspace.page + 1 }))
-                  }
-                >
-                  Próxima
-                </Button>
-              </div>
-            </div>
+            {workspace.pageCount > 1 && (
+              <nav
+                className="bank-import-pagination"
+                aria-label="Páginas do extrato"
+              >
+                <span className="muted">
+                  Página {workspace.page} de {workspace.pageCount}
+                </span>
+                <div className="row">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    disabled={workspace.page <= 1}
+                    onClick={() =>
+                      navigation.navigate(
+                        filterURL({ page: workspace.page - 1 }),
+                      )
+                    }
+                  >
+                    <ChevronLeft size={16} /> Anterior
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    disabled={workspace.page >= workspace.pageCount}
+                    onClick={() =>
+                      navigation.navigate(
+                        filterURL({ page: workspace.page + 1 }),
+                      )
+                    }
+                  >
+                    Próxima <ChevronRight size={16} />
+                  </Button>
+                </div>
+              </nav>
+            )}
           </section>
         )}
       </div>

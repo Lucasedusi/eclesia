@@ -9150,6 +9150,18 @@ export type Database = {
         }
         Returns: Json
       }
+      manage_finance_bank_import: {
+        Args: {
+          p_action: string
+          p_batch: string
+          p_church_id: string
+          p_item: string
+          p_operation_key: string
+          p_revision: number
+          p_unit: string
+        }
+        Returns: Json
+      }
       manage_member_role: {
         Args: {
           p_end_date?: string

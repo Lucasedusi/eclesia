@@ -115,10 +115,28 @@ export const bankImportFiltersSchema = z
   .object({
     page: z.coerce.number().int().min(1).max(10000).default(1),
     status: z
-      .enum(["PENDING", "COMPLETED", "IGNORED", "ALL"])
+      .enum(["PENDING", "COMPLETED", "IGNORED", "ALL", "DELETED"])
       .default("PENDING"),
     direction: z.enum(["INCOME", "EXPENSE", "ALL"]).default("ALL"),
     query: z.string().trim().max(100).default(""),
   })
   .strict();
 export type BankImportFilters = z.infer<typeof bankImportFiltersSchema>;
+
+const lifecycleBase = {
+  unit: z.uuid(),
+  batchId: z.uuid(),
+  operationKey: z.uuid(),
+};
+export const bankImportLifecycleSchema = z.discriminatedUnion("action", [
+  z.object({ ...lifecycleBase, action: z.literal("DELETE_BATCH") }).strict(),
+  z
+    .object({
+      ...lifecycleBase,
+      action: z.enum(["DELETE_ITEM", "RESTORE_ITEM"]),
+      itemId: z.uuid(),
+      revision: z.number().int().positive(),
+    })
+    .strict(),
+]);
+export type BankImportLifecycle = z.infer<typeof bankImportLifecycleSchema>;

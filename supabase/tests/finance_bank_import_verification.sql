@@ -117,7 +117,7 @@ begin
  -- Bulk reads preserve every source/draft/audit field and live link status.
  for r in select jsonb_build_object('id',id) from public.finance_bank_import_batches where church_id=c loop
   workspace:=public.get_finance_bank_import(c,u,(r->>'id')::uuid,'{"status":"ALL"}');
-  perform pg_temp.assert_true(workspace->'items'=(select jsonb_agg(private.bank_import_item_dto(c,id) order by row_number) from public.finance_bank_import_items where church_id=c and batch_id=(r->>'id')::uuid and deleted_at is null),'bulk projection retains source, draft, aliases, audit and health');
+  perform pg_temp.assert_true((select jsonb_agg(value-'canDelete'-'deleted' order by ord) from jsonb_array_elements(workspace->'items') with ordinality a(value,ord))=(select jsonb_agg(private.bank_import_item_dto(c,id) order by row_number) from public.finance_bank_import_items where church_id=c and batch_id=(r->>'id')::uuid and deleted_at is null),'bulk projection retains source, draft, aliases, audit and health');
  end loop;
  workspace:=public.get_finance_bank_import(c,u,b,'{"status":"COMPLETED","direction":"EXPENSE"}');
  perform pg_temp.assert_true(jsonb_array_length(workspace->'items')=1 and workspace#>>'{items,0,status}'='POSTED' and (workspace#>>'{items,0,stale}')::boolean=false,'expense filter returns the healthy posted transfer');

@@ -32,6 +32,7 @@ export type BankImportBatch = {
   cashboxId: string;
   cashboxName: string;
   fileName: string;
+  canDelete?: boolean;
   createdAt: string;
   dateFrom: string | null;
   dateTo: string | null;
@@ -46,6 +47,8 @@ export type BankImportBatch = {
 export type BankImportItem = ParsedBankRow & {
   id: string;
   batchId: string;
+  canDelete?: boolean;
+  deleted?: boolean;
   revision: number;
   status: BankImportStatus;
   draft: Record<string, unknown>;
@@ -90,4 +93,11 @@ export type BankImportCandidate = {
   strong: boolean;
   compatible: boolean;
   status: string;
+};
+
+export type BankImportLifecycleResult = {
+  batchId: string;
+  itemId: string | null;
+  deleted: boolean;
+  replayed: boolean;
 };

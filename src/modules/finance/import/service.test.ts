@@ -21,6 +21,7 @@ vi.mock("./parser.service", () => ({
   parseBankStatement: mocks.parse,
 }));
 import {
+  manageBankImport,
   prepareBankImport,
   mutateBankImport,
   getBankImportCandidates,
@@ -121,4 +122,35 @@ describe("authorized bank import services", () => {
       ),
     ).rejects.toThrow("FORBIDDEN");
   });
+});
+
+it("lifecycle keeps church ownership server-side and rejects invalid scope", async () => {
+  const value = {
+    unit,
+    batchId: box,
+    itemId,
+    revision: 3,
+    operationKey: input.operationKey,
+    action: "DELETE_ITEM",
+  };
+  mocks.rpc.mockResolvedValue({
+    data: { batchId: box, itemId, deleted: true },
+    error: null,
+  });
+  await manageBankImport(context, value);
+  expect(mocks.rpc).toHaveBeenLastCalledWith(
+    "manage_finance_bank_import",
+    expect.objectContaining({
+      p_church_id: churchId,
+      p_unit: unit,
+      p_item: itemId,
+      p_revision: 3,
+    }),
+  );
+  await expect(
+    manageBankImport(context, { ...value, unit: box }),
+  ).rejects.toThrow("FORBIDDEN");
+  await expect(
+    manageBankImport(context, { ...value, churchId: box }),
+  ).rejects.toThrow();
 });

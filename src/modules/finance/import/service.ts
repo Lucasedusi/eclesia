@@ -6,8 +6,13 @@ import type { Json } from "@/lib/supabase/database.types";
 import type { FinanceContext } from "../types/finance.types";
 import { throwFinanceDatabaseError } from "../utils/finance-errors";
 import { BANK_IMPORT_MAX_BYTES, parseBankStatement } from "./parser.service";
-import { bankImportFiltersSchema, bankImportMutationSchema } from "./schemas";
+import {
+  bankImportFiltersSchema,
+  bankImportMutationSchema,
+  bankImportLifecycleSchema,
+} from "./schemas";
 import type {
+  BankImportLifecycleResult,
   BankImportBatch,
   BankImportCandidate,
   BankImportItem,
@@ -145,4 +150,25 @@ export async function getBankImportCandidates(
   });
   if (error) throwFinanceDatabaseError(error);
   return data as unknown as BankImportCandidate[];
+}
+
+export async function manageBankImport(
+  context: FinanceContext,
+  input: unknown,
+): Promise<BankImportLifecycleResult> {
+  requireImport(context);
+  const value = bankImportLifecycleSchema.parse(input);
+  if (value.unit !== context.congregationId) throw new Error("FORBIDDEN");
+  const c = await createClient();
+  const { data, error } = await c.rpc("manage_finance_bank_import", {
+    p_church_id: context.churchId,
+    p_unit: context.congregationId,
+    p_batch: value.batchId,
+    p_item: value.action === "DELETE_BATCH" ? null! : value.itemId,
+    p_revision: value.action === "DELETE_BATCH" ? null! : value.revision,
+    p_operation_key: value.operationKey,
+    p_action: value.action,
+  });
+  if (error) throwFinanceDatabaseError(error);
+  return data as unknown as BankImportLifecycleResult;
 }

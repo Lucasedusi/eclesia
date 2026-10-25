@@ -1,7 +1,121 @@
 import { test, expect } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
+import { execFileSync } from "node:child_process";
 import ExcelJS from "exceljs";
+
+test("preserves an old split draft until the operator explicitly unifies it", async ({
+  page,
+}) => {
+  test.skip(!process.env.E2E_FINANCE_FIXTURE, "Local fixture required");
+  expect(process.env.E2E_BASE_URL).toBe("http://127.0.0.1:3217");
+  const f = JSON.parse(readFileSync(process.env.E2E_FINANCE_FIXTURE!, "utf8"));
+  const book = new ExcelJS.Workbook(),
+    sheet = book.addWorksheet("LANÇAMENTOS");
+  sheet.addRow(["EXTRATO CONTA CORRENTE"]);
+  sheet.addRow([
+    "DATA",
+    "DOCUMENTO",
+    "HISTÓRICO",
+    "INFORMAÇÕES COMPLEMENTARES",
+    "VALOR",
+  ]);
+  sheet.addRow(["22/10/2026", "PIX", "PIX RECEBIDO", randomUUID(), 100]);
+  await page.goto(
+    `/financeiro/lancamentos/importacoes?unidade=${f.unitId}&mes=2026-10`,
+  );
+  await page
+    .getByLabel("Extrato XLSX do Sicoob")
+    .setInputFiles({
+      name: "rascunho-antigo.xlsx",
+      mimeType:
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      buffer: Buffer.from(await book.xlsx.writeBuffer()),
+    });
+  await page
+    .getByRole("button", { name: "Preparar importação", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Conferir linha 3", exact: true })
+    .click();
+  await page
+    .getByRole("combobox", { name: "Categoria", exact: true })
+    .selectOption(f.offeringId);
+  await page
+    .getByRole("button", { name: "Salvar rascunho", exact: true })
+    .click();
+  await expect(
+    page.getByText("Rascunho salvo.", { exact: true }),
+  ).toBeVisible();
+  const batch = new URL(page.url()).pathname.split("/").at(-1)!;
+  for (const id of [batch, f.churchId])
+    expect(id).toMatch(/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/);
+  // Simulate a draft created by the prior UI, exclusively in the local Docker fixture.
+  execFileSync(
+    "docker",
+    [
+      "exec",
+      "-i",
+      "supabase_db_eclesia",
+      "psql",
+      "-X",
+      "-v",
+      "ON_ERROR_STOP=1",
+      "-U",
+      "postgres",
+      "-d",
+      "postgres",
+    ],
+    {
+      env: {
+        ...process.env,
+        DOCKER_HOST: "unix:///Users/mac/.colima/eclesia/docker.sock",
+      },
+      input: `update public.finance_bank_import_items set draft=jsonb_set(jsonb_set(draft,'{state,amount}','"60,00"'),'{extra}',jsonb_build_array(jsonb_build_object('categoryId',draft#>>'{state,categoryId}','departmentId',draft#>>'{state,departmentId}','amount','40,00','titheClassificationId',null,'description','Classificação antiga','notes','','documentNumber',''))) where church_id='${f.churchId}' and batch_id='${batch}' and row_number=3;`,
+      stdio: ["pipe", "ignore", "pipe"],
+    },
+  );
+  await page.reload();
+  await page
+    .getByRole("button", { name: "Conferir linha 3", exact: true })
+    .click();
+  const amounts = page.getByLabel("Valor (R$)", { exact: true });
+  await expect(amounts).toHaveCount(2);
+  await expect(amounts.nth(0)).toHaveValue("60,00");
+  await expect(amounts.nth(1)).toHaveValue("40,00");
+  await expect(
+    page.getByText("As classificações foram preservadas.", { exact: false }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", {
+      name: /Adicionar contribuição|Remover contribuição/,
+    }),
+  ).toHaveCount(0);
+  page.once("dialog", (dialog) => dialog.dismiss());
+  await page
+    .getByRole("button", { name: "Usar uma classificação", exact: true })
+    .click();
+  await expect(amounts).toHaveCount(2);
+  page.once("dialog", (dialog) => dialog.accept());
+  await page
+    .getByRole("button", { name: "Usar uma classificação", exact: true })
+    .click();
+  await expect(amounts).toHaveCount(1);
+  await expect(amounts).toHaveValue("100,00");
+  await expect(amounts).toHaveAttribute("readonly", "");
+  await page
+    .getByRole("button", { name: "Salvar rascunho", exact: true })
+    .click();
+  await expect(
+    page.getByText("Rascunho salvo.", { exact: true }),
+  ).toBeVisible();
+  await page.reload();
+  await page
+    .getByRole("button", { name: "Conferir linha 3", exact: true })
+    .click();
+  await expect(amounts).toHaveCount(1);
+  await expect(amounts).toHaveValue("100,00");
+});
 
 test("statement review persists a draft, posts once, advances and restores an ignored row", async ({
   page,
@@ -58,12 +172,9 @@ test("statement review persists a draft, posts once, advances and restores an ig
     .getByRole("button", { name: "Preparar importação", exact: true })
     .click();
   await expect(page.getByText("3 movimentos", { exact: false })).toBeVisible();
-  await page
-    .getByText("Referências de saldo do extrato", { exact: true })
-    .click();
   await expect(
-    page.getByText("Saldos do arquivo conferem.", { exact: true }),
-  ).toBeVisible();
+    page.getByText("Referências de saldo do extrato", { exact: true }),
+  ).toHaveCount(0);
   const batchUrl = page.url();
   await page
     .getByRole("button", { name: "Conferir linha 3", exact: true })
@@ -97,6 +208,7 @@ test("statement review persists a draft, posts once, advances and restores an ig
   await expect(
     page.getByRole("heading", { name: "Conferir linha 4", exact: true }),
   ).toBeVisible();
+  await page.getByText("Mais opções", { exact: true }).click();
   await page
     .getByLabel("Motivo da decisão")
     .fill("Conferência adiada no teste local");
@@ -182,14 +294,12 @@ test("a lost confirmation response retries the same posting and retains invalid 
   await page.goto(
     `/financeiro/lancamentos/importacoes?unidade=${f.unitId}&mes=2026-10`,
   );
-  await page
-    .getByLabel("Extrato XLSX do Sicoob")
-    .setInputFiles({
-      name: "retentativa-ficticia.xlsx",
-      mimeType:
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      buffer: Buffer.from(await workbook.xlsx.writeBuffer()),
-    });
+  await page.getByLabel("Extrato XLSX do Sicoob").setInputFiles({
+    name: "retentativa-ficticia.xlsx",
+    mimeType:
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    buffer: Buffer.from(await workbook.xlsx.writeBuffer()),
+  });
   await page
     .getByRole("button", { name: "Preparar importação", exact: true })
     .click();
@@ -302,14 +412,12 @@ test("links a manual expense, creates a transfer and recognizes an overlapping s
     await page.goto(
       `/financeiro/lancamentos/importacoes?unidade=${f.unitId}&mes=2026-10`,
     );
-    await page
-      .getByLabel("Extrato XLSX do Sicoob")
-      .setInputFiles({
-        name: `vinculos-${reference}.xlsx`,
-        mimeType:
-          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        buffer: Buffer.from(await workbook.xlsx.writeBuffer()),
-      });
+    await page.getByLabel("Extrato XLSX do Sicoob").setInputFiles({
+      name: `vinculos-${reference}.xlsx`,
+      mimeType:
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      buffer: Buffer.from(await workbook.xlsx.writeBuffer()),
+    });
     await page
       .getByRole("button", { name: "Preparar importação", exact: true })
       .click();
@@ -321,6 +429,7 @@ test("links a manual expense, creates a transfer and recognizes an overlapping s
   await page
     .getByRole("button", { name: "Conferir linha 3", exact: true })
     .click();
+  await page.getByText("Mais opções", { exact: true }).click();
   await page
     .getByRole("button", { name: "Vincular este registro", exact: true })
     .filter({ hasNot: page.locator("[disabled]") })
@@ -335,6 +444,7 @@ test("links a manual expense, creates a transfer and recognizes an overlapping s
   await page
     .getByRole("button", { name: "Conferir linha 4", exact: true })
     .click();
+  await page.getByText("Mais opções", { exact: true }).click();
   await page
     .getByRole("button", { name: "Transferência interna", exact: true })
     .click();
@@ -356,6 +466,12 @@ test("links a manual expense, creates a transfer and recognizes an overlapping s
   await page
     .getByRole("button", { name: "Conferir linha 4", exact: true })
     .click();
+  await page
+    .getByText("Possível duplicidade — revisar antes de finalizar", {
+      exact: true,
+    })
+    .click();
+  await page.getByText("Mais opções", { exact: true }).click();
   await expect(
     page.getByLabel("Motivo para tratar como movimento distinto"),
   ).toBeVisible();
@@ -373,4 +489,116 @@ test("links a manual expense, creates a transfer and recognizes an overlapping s
       .filter({ visible: true })
       .first(),
   ).toBeVisible();
+});
+
+test("removes and recovers review rows, updates totals and removes an unused batch", async ({
+  page,
+}) => {
+  test.skip(!process.env.E2E_FINANCE_FIXTURE, "Local fixture required");
+  const f = JSON.parse(readFileSync(process.env.E2E_FINANCE_FIXTURE!, "utf8"));
+  const name = `remocao-${randomUUID()}.xlsx`;
+  const book = new ExcelJS.Workbook(),
+    sheet = book.addWorksheet("LANÇAMENTOS");
+  sheet.addRow(["EXTRATO CONTA CORRENTE"]);
+  sheet.addRow([
+    "DATA",
+    "DOCUMENTO",
+    "HISTÓRICO",
+    "INFORMAÇÕES COMPLEMENTARES",
+    "VALOR",
+  ]);
+  sheet.addRow(["22/10/2026", "PIX", "PIX RECEBIDO", name, 100]);
+  sheet.addRow(["22/10/2026", "PIX", "PIX ENVIADO", name, -25]);
+  const list = `/financeiro/lancamentos/importacoes?unidade=${f.unitId}&mes=2026-10`;
+  await page.goto(list);
+  await expect(page.getByText("Arraste seu extrato aqui")).toBeVisible();
+  await page.getByLabel("Extrato XLSX do Sicoob").setInputFiles({
+    name,
+    mimeType:
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    buffer: Buffer.from(await book.xlsx.writeBuffer()),
+  });
+  await expect(page.getByText(name, { exact: true })).toBeVisible();
+  await page
+    .getByRole("button", { name: "Preparar importação", exact: true })
+    .click();
+  await expect(page.getByText("2 movimentos", { exact: false })).toBeVisible();
+  await expect(page.locator(".bank-import-metric")).toHaveCount(3);
+  await page
+    .getByRole("button", { name: "Excluir linha 3", exact: true })
+    .click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Excluir item", exact: true })
+    .click();
+  await expect(page.getByText("1 movimento", { exact: false })).toBeVisible();
+  await expect(
+    page
+      .locator(".bank-import-metric")
+      .filter({ hasText: "Entradas consideradas" }),
+  ).toContainText("0,00");
+  await page
+    .getByRole("combobox", { name: "Situação", exact: true })
+    .selectOption("DELETED");
+  await page.getByRole("button", { name: "Filtrar", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Restaurar linha 3", exact: true })
+    .click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Restaurar item", exact: true })
+    .click();
+  await expect(page.getByText("2 movimentos", { exact: false })).toBeVisible();
+  await page
+    .getByRole("combobox", { name: "Situação", exact: true })
+    .selectOption("PENDING");
+  await page.getByRole("button", { name: "Filtrar", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Conferir linha 4", exact: true })
+    .click();
+  await expect(page.locator("form.finance-attendance-form")).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Conferir antes de confirmar" }),
+  ).toBeVisible();
+  await expect(page.getByLabel("Valor (R$)", { exact: true })).toHaveAttribute(
+    "readonly",
+    "",
+  );
+  await expect(
+    page.getByRole("button", { name: "Adicionar contribuição", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Transferência interna", exact: true }),
+  ).not.toBeVisible();
+  await page.getByText("Mais opções", { exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Transferência interna", exact: true }),
+  ).toBeVisible();
+  await page.getByText("Mais opções", { exact: true }).click();
+  await page.screenshot({
+    path: "tmp/import-refinement-expense.png",
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 1024, height: 900 });
+  await expect(page.locator("form.finance-attendance-form")).toBeVisible();
+  await expect(page.locator("body")).toHaveJSProperty("scrollWidth", 1024);
+  await page.screenshot({
+    path: "tmp/import-refinement-medium.png",
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto(list);
+  const row = page.getByRole("row").filter({ hasText: name });
+  await row
+    .getByRole("button", { name: "Excluir importação", exact: true })
+    .click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Excluir importação", exact: true })
+    .click();
+  await expect(page.getByRole("row").filter({ hasText: name })).toHaveCount(0);
+  await page.screenshot({
+    path: "tmp/import-refinement-list.png",
+    fullPage: true,
+  });
 });

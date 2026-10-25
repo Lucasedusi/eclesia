@@ -6,11 +6,13 @@ Implementação de 23/10/2026 na branch `codex/finance-bank-statement-import`, a
 
 1. No computador, abra **Financeiro → Lançamentos → Importar extrato**.
 2. Confira a congregação e escolha a conta bancária ativa correspondente ao arquivo. Envie o XLSX do Sicoob.
-3. Confira os totais, as referências de saldo e as pendências de leitura. A preparação não movimenta dinheiro.
-4. Abra um item, confira sua origem e procure registros compatíveis antes de criar um lançamento.
+3. Confira os três cartões de resumo e a faixa de pendências. A preparação não movimenta dinheiro.
+4. Abra um item e confira sua origem. Use **Mais opções** quando precisar vincular um registro existente, tratar uma transferência ou justificar uma decisão.
 5. Complete a classificação, a forma de pagamento e a pessoa quando exigida. **Salvar rascunho** permite retomar depois; **Finalizar** registra o movimento; **Finalizar e próximo** abre outra pendência.
 
-Data, direção, conta e total vêm do extrato armazenado. Para uma entrada, podem existir várias contribuições da mesma pessoa, com soma igual ao total bancário. Uma saída usa uma categoria nesta versão. O complemento bancário não é copiado automaticamente para a descrição financeira.
+Data, direção, conta e total vêm do extrato armazenado. Novos itens usam uma classificação por movimento, com valor fixo e prévia lateral tanto para entradas quanto para saídas. Rascunhos antigos com várias contribuições são preservados; **Usar uma classificação** pede confirmação antes de unificar. O complemento bancário não é copiado automaticamente para a descrição financeira.
+
+Os [refinamentos de 24/10](2026-10-24-bank-import-refinement.md) foram validados apenas localmente. A exclusão e a recuperação dependem das duas migrações novas, ainda não aplicadas online.
 
 **Já lançado:** vincule o lançamento ou o atendimento inteiro compatível. **Transferência interna:** escolha explicitamente essa opção e a outra conta/caixa da mesma congregação. A outra ponta pode ser vinculada quando seu extrato for importado. **Ignorar:** informe um motivo; a linha permanece disponível para restauração.
 

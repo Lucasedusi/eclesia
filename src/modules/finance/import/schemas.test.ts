@@ -57,3 +57,32 @@ it("bounds paginated filters and rejects unsupported mutation actions", () => {
     }).success,
   ).toBe(false);
 });
+
+it("validates lifecycle actions without allowing tenant or audit injection", async () => {
+  const { bankImportLifecycleSchema } = await import("./schemas");
+  const batch = {
+    unit: id,
+    batchId: id,
+    operationKey: id,
+    action: "DELETE_BATCH",
+  };
+  expect(bankImportLifecycleSchema.safeParse(batch).success).toBe(true);
+  expect(
+    bankImportLifecycleSchema.safeParse({ ...batch, churchId: id }).success,
+  ).toBe(false);
+  expect(
+    bankImportLifecycleSchema.safeParse({ ...batch, action: "DELETE_ITEM" })
+      .success,
+  ).toBe(false);
+  expect(
+    bankImportLifecycleSchema.safeParse({
+      ...batch,
+      action: "RESTORE_ITEM",
+      itemId: id,
+      revision: 2,
+    }).success,
+  ).toBe(true);
+  expect(bankImportFiltersSchema.safeParse({ status: "DELETED" }).success).toBe(
+    true,
+  );
+});

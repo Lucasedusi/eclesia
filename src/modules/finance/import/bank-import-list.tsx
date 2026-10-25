@@ -1,12 +1,21 @@
 "use client";
-import { useState } from "react";
-import { Upload, ArrowRight, Monitor } from "lucide-react";
+import { useRef, useState } from "react";
+import {
+  Upload,
+  ArrowRight,
+  Monitor,
+  FileSpreadsheet,
+  ChevronLeft,
+  ChevronRight,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useFinanceNavigation } from "../components/finance-shell";
 import { financeLocation } from "../utils/finance-navigation";
 import type { FinanceCatalogs } from "../types/finance-catalog.types";
 import type { BankImportBatch } from "./types";
 import { prepareBankImportAction } from "./actions";
+import { BankImportLifecycleButton } from "./bank-import-lifecycle";
 import { BankImportLayout } from "./bank-import.styles";
 
 export function BankImportMobile({
@@ -52,7 +61,30 @@ export function BankImportList({
     );
   const [busy, setBusy] = useState(false),
     [error, setError] = useState("");
+  const [file, setFile] = useState<File | null>(null),
+    [dragging, setDragging] = useState(false);
+  const fileInput = useRef<HTMLInputElement>(null);
+  function choose(file: File | undefined) {
+    if (!file) return;
+    if (
+      !/\.xlsx$/i.test(file.name) ||
+      !file.size ||
+      file.size > 5 * 1024 * 1024
+    ) {
+      setFile(null);
+      if (fileInput.current) fileInput.current.value = "";
+      setError("Selecione um arquivo XLSX de até 5 MB.");
+      return;
+    }
+    setFile(file);
+    setError("");
+  }
   async function upload(form: FormData) {
+    if (!file) {
+      setError("Selecione o extrato para continuar.");
+      return;
+    }
+    form.set("file", file);
     setBusy(true);
     setError("");
     form.set("unit", unit);
@@ -97,7 +129,7 @@ export function BankImportList({
             className="stack"
             style={{ border: 0, padding: 0 }}
           >
-            <div className="grid">
+            <div className="grid bank-import-upload-grid">
               <label>
                 Conta bancária
                 <select
@@ -115,15 +147,69 @@ export function BankImportList({
                   ))}
                 </select>
               </label>
-              <label>
-                Extrato XLSX do Sicoob
-                <input
-                  name="file"
-                  type="file"
-                  required
-                  accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                />
-              </label>
+              <div className="bank-import-upload-field">
+                <span className="bank-import-field-label">
+                  Extrato XLSX do Sicoob
+                </span>
+                <label
+                  className={`bank-import-dropzone ${dragging ? "is-dragging" : ""}`}
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                    if (!busy) setDragging(true);
+                  }}
+                  onDragLeave={() => setDragging(false)}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    setDragging(false);
+                    if (!busy) choose(event.dataTransfer.files[0]);
+                  }}
+                >
+                  <input
+                    ref={fileInput}
+                    name="file"
+                    type="file"
+                    aria-label="Extrato XLSX do Sicoob"
+                    accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    onChange={(event) => choose(event.target.files?.[0])}
+                  />
+                  <span className="bank-import-upload-icon">
+                    <Upload size={26} aria-hidden="true" />
+                  </span>
+                  <strong>Arraste seu extrato aqui</strong>
+                  <span>
+                    ou{" "}
+                    <span className="bank-import-upload-link">
+                      {file ? "substitua o arquivo" : "selecione um arquivo"}
+                    </span>
+                  </span>
+                  <small>XLSX do Sicoob · Até 5 MB</small>
+                </label>
+                {file && (
+                  <div className="bank-import-selected-file" role="status">
+                    <FileSpreadsheet size={20} aria-hidden="true" />
+                    <span>
+                      <strong>{file.name}</strong>
+                      <small>
+                        {(file.size / 1024).toLocaleString("pt-BR", {
+                          maximumFractionDigits: 1,
+                        })}{" "}
+                        KB
+                      </small>
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      aria-label="Remover arquivo selecionado"
+                      onClick={() => {
+                        setFile(null);
+                        if (fileInput.current) fileInput.current.value = "";
+                      }}
+                    >
+                      <X size={16} />
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
             <p className="muted">
               Até 5 MB e 5.000 movimentos. A conta deve corresponder ao arquivo
@@ -162,7 +248,7 @@ export function BankImportList({
                     <th>Período</th>
                     <th>Movimentos</th>
                     <th>Pendentes</th>
-                    <th>Conferência</th>
+                    <th>Ações</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -200,6 +286,15 @@ export function BankImportList({
                           Continuar
                           <ArrowRight size={14} />
                         </Button>
+                        <BankImportLifecycleButton
+                          label="Excluir importação"
+                          disabled={!b.canDelete}
+                          target={{
+                            unit,
+                            batchId: b.id,
+                            action: "DELETE_BATCH",
+                          }}
+                        />
                       </td>
                     </tr>
                   ))}
@@ -207,31 +302,38 @@ export function BankImportList({
               </table>
             </div>
           )}
-          <div className="row spread">
-            <span className="muted">
-              Página {history.page} de {history.pageCount}
-            </span>
-            <div className="row">
-              <Button
-                variant="outline"
-                disabled={history.page <= 1}
-                onClick={() =>
-                  navigation.navigate(`${base}&pagina=${history.page - 1}`)
-                }
-              >
-                Anterior
-              </Button>
-              <Button
-                variant="outline"
-                disabled={history.page >= history.pageCount}
-                onClick={() =>
-                  navigation.navigate(`${base}&pagina=${history.page + 1}`)
-                }
-              >
-                Próxima
-              </Button>
-            </div>
-          </div>
+          {history.pageCount > 1 && (
+            <nav
+              className="bank-import-pagination"
+              aria-label="Páginas de importações"
+            >
+              <span className="muted">
+                Página {history.page} de {history.pageCount}
+              </span>
+              <div className="row">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  disabled={history.page <= 1}
+                  onClick={() =>
+                    navigation.navigate(`${base}&pagina=${history.page - 1}`)
+                  }
+                >
+                  <ChevronLeft size={16} /> Anterior
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  disabled={history.page >= history.pageCount}
+                  onClick={() =>
+                    navigation.navigate(`${base}&pagina=${history.page + 1}`)
+                  }
+                >
+                  Próxima <ChevronRight size={16} />
+                </Button>
+              </div>
+            </nav>
+          )}
         </section>
       </div>
     </BankImportLayout>

@@ -20,6 +20,7 @@ export type FinanceContext = {
   capabilities: FinanceCapabilities;
 };
 export type FinanceErrorCode =
+  | "BANK_IMPORT_DELETE_BLOCKED"
   | "BANK_IMPORT_FILE"
   | "BANK_IMPORT_CONFLICT"
   | "BANK_IMPORT_STATE"

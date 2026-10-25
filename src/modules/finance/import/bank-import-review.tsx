@@ -1,5 +1,11 @@
 "use client";
 import Link from "next/link";
+import {
+  ArrowLeft,
+  RefreshCw,
+  MoreHorizontal,
+  ArrowLeftRight,
+} from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { FinanceEntryForm } from "../components/finance-entry-form";
@@ -39,6 +45,9 @@ const events: Record<string, string> = {
   RESTORE: "Pendência restaurada",
   REOPEN: "Conferência reaberta",
   UNLINK: "Vínculo desfeito",
+  DELETE_ITEM: "Item excluído",
+  RESTORE_ITEM: "Item restaurado",
+  DELETE_BATCH: "Importação excluída",
 };
 export function BankImportReview({
   unit,
@@ -75,10 +84,12 @@ export function BankImportReview({
   const [otherBox, setOtherBox] = useState(""),
     [transferDescription, setTransferDescription] = useState("");
   const [reviewKind, setReviewKind] = useState<"ENTRY" | "TRANSFER">("ENTRY");
+  const [optionsOpen, setOptionsOpen] = useState(false);
   const [candidateVersion, setCandidateVersion] = useState(0);
   const [candidateSearch, setCandidateSearch] = useState("");
   const [candidateQuery, setCandidateQuery] = useState("");
   useEffect(() => {
+    if (!optionsOpen || item.status !== "PENDING" || item.issue) return;
     let active = true;
     getBankImportCandidatesAction(unit, item.id, candidateQuery)
       .then((result) => {
@@ -100,7 +111,16 @@ export function BankImportReview({
     return () => {
       active = false;
     };
-  }, [unit, item.id, item.revision, candidateVersion, candidateQuery]);
+  }, [
+    unit,
+    item.id,
+    item.revision,
+    candidateVersion,
+    candidateQuery,
+    optionsOpen,
+    item.status,
+    item.issue,
+  ]);
   const strong = item.possibleDuplicate || candidates.some((c) => c.strong),
     isPending = item.status === "PENDING",
     locked = busy || uncertain;
@@ -244,7 +264,7 @@ export function BankImportReview({
             disabled={locked || formStatus.busy}
             onClick={close}
           >
-            Voltar à fila
+            <ArrowLeft size={16} /> Voltar à fila
           </Button>
           <Button
             variant="outline"
@@ -254,7 +274,7 @@ export function BankImportReview({
               navigation.refresh();
             }}
           >
-            Recarregar
+            <RefreshCw size={16} /> Recarregar
           </Button>
         </div>
       </header>
@@ -346,129 +366,42 @@ export function BankImportReview({
           </Link>
         </div>
       )}
-      {isPending && !item.issue && (
-        <>
-          <section className="stack">
-            <h3>Conferir registros existentes</h3>
-            <p className="muted">
-              Compare os registros antes de criar um novo lançamento. Um vínculo
-              usa o registro já existente e mantém o saldo.
+      {isPending && !item.issue && strong && (
+        <details className="bank-import-warning">
+          <summary>Possível duplicidade — revisar antes de finalizar</summary>
+          <p>
+            Use Mais opções para vincular o mesmo movimento, ou informe por que
+            este movimento é distinto.
+          </p>
+          {strong && (
+            <label>
+              Motivo para tratar como movimento distinto
+              <textarea
+                value={duplicateReason}
+                maxLength={1000}
+                disabled={locked || formStatus.busy}
+                onChange={(e) => setDuplicateReason(e.target.value)}
+                placeholder="Preencha somente se for criar ou vincular outro movimento."
+              />
+            </label>
+          )}
+        </details>
+      )}
+      {isPending &&
+        !item.issue &&
+        batch.reconciliation === "MISMATCH" &&
+        !batch.reconciliationReason && (
+          <details className="bank-import-warning">
+            <summary>
+              Divergência no arquivo — conferir antes de finalizar
+            </summary>
+            <p>
+              Os movimentos lidos não correspondem à diferença entre os saldos
+              do arquivo original.
             </p>
-            <form
-              className="row"
-              onSubmit={(e) => {
-                e.preventDefault();
-                setLoading(true);
-                setCandidateQuery(candidateSearch.trim());
-                setCandidateVersion((v) => v + 1);
-              }}
-            >
-              <label>
-                Buscar registros compatíveis
-                <input
-                  value={candidateSearch}
-                  maxLength={100}
-                  disabled={locked}
-                  onChange={(e) => setCandidateSearch(e.target.value)}
-                  placeholder="Categoria, pessoa ou descrição"
-                />
-              </label>
-              <Button
-                type="submit"
-                variant="outline"
-                disabled={locked || loading}
-              >
-                Buscar registros
-              </Button>
-            </form>
-            {loading && (
-              <p role="status">Consultando movimentos compatíveis…</p>
-            )}
-            {candidateError && (
-              <div role="alert">
-                {candidateError}
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setLoading(true);
-                    setCandidateVersion((v) => v + 1);
-                  }}
-                >
-                  Tentar consulta novamente
-                </Button>
-              </div>
-            )}
-            {!loading && !candidateError && candidates.length === 0 && (
-              <p className="muted">Nenhum registro compatível encontrado.</p>
-            )}
-            {candidates.map((c) => (
-              <div className="bank-import-choice" key={`${c.kind}-${c.id}`}>
-                <div>
-                  <strong>{c.label}</strong>
-                  <p className="muted">
-                    {c.date?.split("-").reverse().join("/")} ·{" "}
-                    {formatMoney(Math.abs(c.amountCents))} ·{" "}
-                    {c.strong
-                      ? "Origem idêntica em outro arquivo"
-                      : c.kind === "ITEM"
-                        ? "Outra linha importada"
-                        : "Registro financeiro existente"}
-                    {!c.compatible ? " · Indisponível para vínculo" : ""}
-                  </p>
-                </div>
-                <Button
-                  variant="outline"
-                  disabled={!c.compatible || locked || formStatus.busy}
-                  onClick={() => {
-                    if (
-                      formStatus.dirty &&
-                      !window.confirm(
-                        "Vincular este registro e descartar as alterações de classificação ainda não salvas?",
-                      )
-                    )
-                      return;
-                    if (
-                      !window.confirm(
-                        "Confirma que este registro corresponde ao movimento do extrato?",
-                      )
-                    )
-                      return;
-                    void apply(
-                      c.kind === "ITEM"
-                        ? envelope("DUPLICATE", {
-                            targetId: c.id,
-                            reason:
-                              "Mesmo movimento reconhecido na conferência",
-                          })
-                        : envelope("LINK", {
-                            targetKind: c.kind,
-                            targetId: c.id,
-                            ...decisions,
-                          }),
-                    );
-                  }}
-                >
-                  {c.kind === "ITEM"
-                    ? "É o mesmo movimento"
-                    : "Vincular este registro"}
-                </Button>
-              </div>
-            ))}
-            {strong && (
-              <label className="bank-import-warning">
-                Motivo para tratar como movimento distinto
-                <textarea
-                  value={duplicateReason}
-                  maxLength={1000}
-                  disabled={locked || formStatus.busy}
-                  onChange={(e) => setDuplicateReason(e.target.value)}
-                  placeholder="Preencha somente se for criar ou vincular outro movimento."
-                />
-              </label>
-            )}
             {batch.reconciliation === "MISMATCH" &&
               !batch.reconciliationReason && (
-                <label className="bank-import-warning">
+                <label>
                   Motivo para prosseguir com a divergência de saldos
                   <textarea
                     value={reconciliationReason}
@@ -478,207 +411,342 @@ export function BankImportReview({
                   />
                 </label>
               )}
-          </section>
-          <div className="tabs" aria-label="Tipo de registro">
-            <button
-              type="button"
-              disabled={locked || formStatus.busy}
-              aria-pressed={reviewKind === "ENTRY"}
-              onClick={() => {
-                if (
-                  !formStatus.dirty ||
-                  window.confirm("Descartar a classificação ainda não salva?")
-                ) {
-                  setFormStatus({ dirty: false, busy: false });
-                  setReviewKind("ENTRY");
-                }
-              }}
-            >
-              Lançamento
-            </button>
-            {capabilities.transfer && (
-              <button
-                type="button"
-                disabled={locked || formStatus.busy}
-                aria-pressed={reviewKind === "TRANSFER"}
-                onClick={() => {
-                  if (
-                    !formStatus.dirty ||
-                    window.confirm("Descartar a classificação ainda não salva?")
-                  ) {
-                    setFormStatus({ dirty: false, busy: false });
-                    setReviewKind("TRANSFER");
-                  }
-                }}
-              >
-                Transferência interna
-              </button>
-            )}
-          </div>
-          {reviewKind === "ENTRY" ? (
-            <fieldset
-              disabled={locked}
-              style={{ border: 0, padding: 0, minWidth: 0 }}
-            >
-              <FinanceEntryForm
-                unit={unit}
-                month={month}
-                date={item.date!}
-                catalogs={catalogs}
-                capabilities={capabilities}
-                direction={item.amountCents! > 0 ? "INCOME" : "EXPENSE"}
-                mode={item.amountCents! > 0 ? "ATTENDANCE" : "SINGLE"}
-                onStatusChange={handleStatus}
-                bankImport={{
-                  draft,
-                  amountCents: Math.abs(item.amountCents!),
-                  saveDraft: async (value) =>
-                    (await apply(envelope("SAVE_DRAFT", value))).ok,
-                  submit: async (command, next) => {
-                    const response = await apply(
-                      {
-                        ...envelope("POST", { command, ...decisions }),
-                        operationKey: command.operationKey,
-                      } as BankImportMutation,
-                      next,
+          </details>
+        )}
+      <details
+        className="bank-import-options"
+        open={optionsOpen}
+        onToggle={(event) => {
+          const open = event.currentTarget.open;
+          setOptionsOpen(open);
+          if (!open) setReviewKind("ENTRY");
+        }}
+      >
+        <summary>
+          <MoreHorizontal size={18} /> Mais opções
+        </summary>
+        <div className="stack">
+          {isPending && !item.issue && (
+            <>
+              <div className="tabs" aria-label="Tipo de registro">
+                {reviewKind === "TRANSFER" && (
+                  <button
+                    type="button"
+                    disabled={locked || formStatus.busy}
+                    aria-pressed={false}
+                    onClick={() => {
+                      if (
+                        !formStatus.dirty ||
+                        window.confirm(
+                          "Descartar a classificação ainda não salva?",
+                        )
+                      ) {
+                        setFormStatus({ dirty: false, busy: false });
+                        setReviewKind("ENTRY");
+                      }
+                    }}
+                  >
+                    <ArrowLeft size={14} /> Voltar ao lançamento
+                  </button>
+                )}
+                {capabilities.transfer && (
+                  <button
+                    type="button"
+                    disabled={locked || formStatus.busy}
+                    aria-pressed={reviewKind === "TRANSFER"}
+                    onClick={() => {
+                      if (
+                        !formStatus.dirty ||
+                        window.confirm(
+                          "Descartar a classificação ainda não salva?",
+                        )
+                      ) {
+                        setFormStatus({ dirty: false, busy: false });
+                        setReviewKind("TRANSFER");
+                      }
+                    }}
+                  >
+                    <ArrowLeftRight size={14} /> Transferência interna
+                  </button>
+                )}
+              </div>
+              {reviewKind === "TRANSFER" && (
+                <form
+                  className="stack"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    void apply(
+                      envelope("POST", {
+                        ...decisions,
+                        command: {
+                          kind: "TRANSFER",
+                          operationKey: crypto.randomUUID(),
+                          congregationId: unit,
+                          date: item.date,
+                          amountCents: Math.abs(item.amountCents!),
+                          sourceCashboxId:
+                            item.amountCents! < 0 ? batch.cashboxId : otherBox,
+                          targetCashboxId:
+                            item.amountCents! > 0 ? batch.cashboxId : otherBox,
+                          description: transferDescription,
+                        },
+                      }),
                     );
-                    if (!response.ok) return response;
-                    const r = response.data.result!;
-                    return {
-                      ok: true,
-                      data: {
-                        operationId: r.operationId!,
-                        transactionIds: r.transactionIds ?? [],
-                        attendanceId: r.attendanceId ?? null,
-                        transferId: r.transferId ?? null,
-                        receiptId: r.receiptId ?? null,
-                        revision: response.data.revision,
-                        replayed: false,
-                      },
-                    };
-                  },
-                }}
-              />
-            </fieldset>
-          ) : (
-            <form
-              className="stack"
-              onSubmit={(e) => {
-                e.preventDefault();
-                void apply(
-                  envelope("POST", {
-                    ...decisions,
-                    command: {
-                      kind: "TRANSFER",
-                      operationKey: crypto.randomUUID(),
-                      congregationId: unit,
-                      date: item.date,
-                      amountCents: Math.abs(item.amountCents!),
-                      sourceCashboxId:
-                        item.amountCents! < 0 ? batch.cashboxId : otherBox,
-                      targetCashboxId:
-                        item.amountCents! > 0 ? batch.cashboxId : otherBox,
-                      description: transferDescription,
-                    },
-                  }),
-                );
-              }}
-            >
-              <p className="notice">
-                Transferência de {money} entre caixas desta congregação. A conta
-                do extrato será{" "}
-                {item.amountCents! < 0 ? "a origem" : "o destino"}. Pagamentos a
-                terceiros devem ser classificados como saídas.
-              </p>
-              <label>
-                Outra conta ou caixa
-                <select
-                  value={otherBox}
-                  required
-                  disabled={locked}
-                  onChange={(e) => setOtherBox(e.target.value)}
+                  }}
                 >
-                  <option value="">Selecione</option>
-                  {catalogs.cashboxes
-                    .filter(
-                      (b) => b.status === "ACTIVE" && b.id !== batch.cashboxId,
-                    )
-                    .map((b) => (
-                      <option value={b.id} key={b.id}>
-                        {b.name}
-                      </option>
-                    ))}
-                </select>
-              </label>
+                  <p className="notice">
+                    Transferência de {money} entre caixas desta congregação. A
+                    conta do extrato será{" "}
+                    {item.amountCents! < 0 ? "a origem" : "o destino"}.
+                    Pagamentos a terceiros devem ser classificados como saídas.
+                  </p>
+                  <label>
+                    Outra conta ou caixa
+                    <select
+                      value={otherBox}
+                      required
+                      disabled={locked}
+                      onChange={(e) => setOtherBox(e.target.value)}
+                    >
+                      <option value="">Selecione</option>
+                      {catalogs.cashboxes
+                        .filter(
+                          (b) =>
+                            b.status === "ACTIVE" && b.id !== batch.cashboxId,
+                        )
+                        .map((b) => (
+                          <option value={b.id} key={b.id}>
+                            {b.name}
+                          </option>
+                        ))}
+                    </select>
+                  </label>
+                  <label>
+                    Descrição da transferência
+                    <input
+                      maxLength={1000}
+                      value={transferDescription}
+                      disabled={locked}
+                      onChange={(e) => setTransferDescription(e.target.value)}
+                    />
+                  </label>
+                  <Button type="submit" disabled={locked}>
+                    Confirmar transferência
+                  </Button>
+                </form>
+              )}
+              <section className="stack">
+                <p className="muted">
+                  Compare os registros antes de criar um novo lançamento. Um
+                  vínculo usa o registro já existente e mantém o saldo.
+                </p>
+                <form
+                  className="row"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    setLoading(true);
+                    setCandidateQuery(candidateSearch.trim());
+                    setCandidateVersion((v) => v + 1);
+                  }}
+                >
+                  <label>
+                    Buscar registros compatíveis
+                    <input
+                      value={candidateSearch}
+                      maxLength={100}
+                      disabled={locked}
+                      onChange={(e) => setCandidateSearch(e.target.value)}
+                      placeholder="Categoria, pessoa ou descrição"
+                    />
+                  </label>
+                  <Button
+                    type="submit"
+                    variant="outline"
+                    disabled={locked || loading}
+                  >
+                    Buscar registros
+                  </Button>
+                </form>
+                {loading && (
+                  <p role="status">Consultando movimentos compatíveis…</p>
+                )}
+                {candidateError && (
+                  <div role="alert">
+                    {candidateError}
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setLoading(true);
+                        setCandidateVersion((v) => v + 1);
+                      }}
+                    >
+                      Tentar consulta novamente
+                    </Button>
+                  </div>
+                )}
+                {!loading && !candidateError && candidates.length === 0 && (
+                  <p className="muted">
+                    Nenhum registro compatível encontrado.
+                  </p>
+                )}
+                {candidates.map((c) => (
+                  <div className="bank-import-choice" key={`${c.kind}-${c.id}`}>
+                    <div>
+                      <strong>{c.label}</strong>
+                      <p className="muted">
+                        {c.date?.split("-").reverse().join("/")} ·{" "}
+                        {formatMoney(Math.abs(c.amountCents))} ·{" "}
+                        {c.strong
+                          ? "Origem idêntica em outro arquivo"
+                          : c.kind === "ITEM"
+                            ? "Outra linha importada"
+                            : "Registro financeiro existente"}
+                        {!c.compatible ? " · Indisponível para vínculo" : ""}
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      disabled={!c.compatible || locked || formStatus.busy}
+                      onClick={() => {
+                        if (
+                          formStatus.dirty &&
+                          !window.confirm(
+                            "Vincular este registro e descartar as alterações de classificação ainda não salvas?",
+                          )
+                        )
+                          return;
+                        if (
+                          !window.confirm(
+                            "Confirma que este registro corresponde ao movimento do extrato?",
+                          )
+                        )
+                          return;
+                        void apply(
+                          c.kind === "ITEM"
+                            ? envelope("DUPLICATE", {
+                                targetId: c.id,
+                                reason:
+                                  "Mesmo movimento reconhecido na conferência",
+                              })
+                            : envelope("LINK", {
+                                targetKind: c.kind,
+                                targetId: c.id,
+                                ...decisions,
+                              }),
+                        );
+                      }}
+                    >
+                      {c.kind === "ITEM"
+                        ? "É o mesmo movimento"
+                        : "Vincular este registro"}
+                    </Button>
+                  </div>
+                ))}
+              </section>
+            </>
+          )}
+          {(isPending ||
+            item.status === "IGNORED" ||
+            item.status === "LINKED" ||
+            item.status === "DUPLICATE" ||
+            (item.status === "POSTED" && item.cancelled)) && (
+            <section className="stack">
               <label>
-                Descrição da transferência
-                <input
+                Motivo da decisão
+                <textarea
+                  value={reason}
+                  minLength={5}
                   maxLength={1000}
-                  value={transferDescription}
-                  disabled={locked}
-                  onChange={(e) => setTransferDescription(e.target.value)}
+                  disabled={locked || formStatus.busy}
+                  onChange={(e) => setReason(e.target.value)}
                 />
               </label>
-              <Button type="submit" disabled={locked}>
-                Confirmar transferência
-              </Button>
-            </form>
+              <div className="row">
+                {isPending && (
+                  <Button
+                    variant="outline"
+                    disabled={
+                      locked || formStatus.busy || reason.trim().length < 5
+                    }
+                    onClick={() => decide("IGNORE")}
+                  >
+                    Ignorar item
+                  </Button>
+                )}
+                {item.status === "IGNORED" && (
+                  <Button
+                    disabled={locked || reason.trim().length < 5}
+                    onClick={() => decide("RESTORE")}
+                  >
+                    Restaurar pendência
+                  </Button>
+                )}
+                {(item.status === "LINKED" || item.status === "DUPLICATE") && (
+                  <Button
+                    disabled={locked || reason.trim().length < 5}
+                    onClick={() => decide("UNLINK")}
+                  >
+                    Desfazer vínculo
+                  </Button>
+                )}
+                {item.status === "POSTED" && item.cancelled && (
+                  <Button
+                    disabled={locked || reason.trim().length < 5}
+                    onClick={() => decide("REOPEN")}
+                  >
+                    Reabrir conferência
+                  </Button>
+                )}
+              </div>
+            </section>
           )}
-        </>
-      )}
-      {(isPending ||
-        item.status === "IGNORED" ||
-        item.status === "LINKED" ||
-        item.status === "DUPLICATE" ||
-        (item.status === "POSTED" && item.cancelled)) && (
-        <section className="stack">
-          <h3>Decisão sobre o item</h3>
-          <label>
-            Motivo da decisão
-            <textarea
-              value={reason}
-              minLength={5}
-              maxLength={1000}
-              disabled={locked || formStatus.busy}
-              onChange={(e) => setReason(e.target.value)}
-            />
-          </label>
-          <div className="row">
-            {isPending && (
-              <Button
-                variant="outline"
-                disabled={locked || formStatus.busy || reason.trim().length < 5}
-                onClick={() => decide("IGNORE")}
-              >
-                Ignorar item
-              </Button>
-            )}
-            {item.status === "IGNORED" && (
-              <Button
-                disabled={locked || reason.trim().length < 5}
-                onClick={() => decide("RESTORE")}
-              >
-                Restaurar pendência
-              </Button>
-            )}
-            {(item.status === "LINKED" || item.status === "DUPLICATE") && (
-              <Button
-                disabled={locked || reason.trim().length < 5}
-                onClick={() => decide("UNLINK")}
-              >
-                Desfazer vínculo
-              </Button>
-            )}
-            {item.status === "POSTED" && item.cancelled && (
-              <Button
-                disabled={locked || reason.trim().length < 5}
-                onClick={() => decide("REOPEN")}
-              >
-                Reabrir conferência
-              </Button>
-            )}
-          </div>
-        </section>
+        </div>
+      </details>
+      {isPending && !item.issue && reviewKind === "ENTRY" && (
+        <fieldset
+          disabled={locked}
+          style={{ border: 0, padding: 0, minWidth: 0 }}
+        >
+          <FinanceEntryForm
+            unit={unit}
+            month={month}
+            date={item.date!}
+            catalogs={catalogs}
+            capabilities={capabilities}
+            direction={item.amountCents! > 0 ? "INCOME" : "EXPENSE"}
+            mode={item.amountCents! > 0 ? "ATTENDANCE" : "SINGLE"}
+            onStatusChange={handleStatus}
+            bankImport={{
+              draft,
+              amountCents: Math.abs(item.amountCents!),
+              saveDraft: async (value) =>
+                (await apply(envelope("SAVE_DRAFT", value))).ok,
+              submit: async (command, next) => {
+                const response = await apply(
+                  {
+                    ...envelope("POST", { command, ...decisions }),
+                    operationKey: command.operationKey,
+                  } as BankImportMutation,
+                  next,
+                );
+                if (!response.ok) return response;
+                const r = response.data.result!;
+                return {
+                  ok: true,
+                  data: {
+                    operationId: r.operationId!,
+                    transactionIds: r.transactionIds ?? [],
+                    attendanceId: r.attendanceId ?? null,
+                    transferId: r.transferId ?? null,
+                    receiptId: r.receiptId ?? null,
+                    revision: response.data.revision,
+                    replayed: false,
+                  },
+                };
+              },
+            }}
+          />
+        </fieldset>
       )}
       {item.historyEvents.length > 0 && (
         <details>

@@ -157,3 +157,20 @@ assert.equal(
 console.log(
   "PASS: two operators, one posting; lost-response replay; overlapping statement alias; exactly one ledger entry.",
 );
+
+// A review deletion and a financial posting must share the same serialization lock.
+for (const batchDelete of [false, true]) {
+  source.rows[0].complement = `Delete race ${randomUUID()}`;
+  const raceBatch = await prepare();
+  const raceItem = await sql(`select id from public.finance_bank_import_items where church_id=${quote(f.churchId)} and batch_id=${quote(raceBatch.id)};`);
+  const results = await Promise.allSettled([
+    mutation(actors.ADMIN, raceItem, randomUUID(), "POST", { command }),
+    asActor(actors.TREASURER, `public.manage_finance_bank_import(${quote(f.churchId)},${quote(f.unitId)},${quote(raceBatch.id)},${batchDelete ? "null" : quote(raceItem)},${batchDelete ? "null" : "1"},${quote(randomUUID())},${quote(batchDelete ? "DELETE_BATCH" : "DELETE_ITEM")})`),
+  ]);
+  assert.equal(results.filter(r => r.status === "fulfilled").length, 1);
+  assert.match(results.find(r => r.status === "rejected").reason.message, /FORBIDDEN|BANK_IMPORT_CONFLICT|BANK_IMPORT_STATE|BANK_IMPORT_DELETE_BLOCKED/);
+  const state = JSON.parse(await sql(`select jsonb_build_object('deleted',i.deleted_at is not null,'posted',i.status='POSTED','links',(select count(*) from public.finance_bank_import_links l where l.church_id=i.church_id and l.item_id=i.id)) from public.finance_bank_import_items i where i.church_id=${quote(f.churchId)} and i.id=${quote(raceItem)};`));
+  assert.notEqual(state.deleted, state.posted);
+  assert.equal(state.links, state.posted ? 1 : 0);
+}
+console.log("PASS: item/batch deletion versus posting is serialized, with no hidden financial posting.");
