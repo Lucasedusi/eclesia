@@ -1,6 +1,6 @@
 # Refinamentos da importação — validação local de 24/10/2026
 
-Implementação na branch `codex/finance-bank-statement-import`, sem subagentes, push, merge ou alteração no banco online.
+Implementação na branch `codex/finance-bank-statement-import`, sem subagentes, push ou merge. A implementação foi validada localmente; a aplicação online posteriormente autorizada está registrada ao final.
 
 ## Comportamento
 
@@ -15,7 +15,7 @@ Implementação na branch `codex/finance-bank-statement-import`, sem subagentes,
 
 Cancelar um lançamento ou desfazer um vínculo não libera a exclusão do histórico. Excluir dados da conferência nunca cancela movimentações financeiras.
 
-## Banco local e implantação pendente
+## Banco local e implantação
 
 Migrações criadas e aplicadas exclusivamente ao Supabase local:
 
@@ -24,7 +24,7 @@ Migrações criadas e aplicadas exclusivamente ao Supabase local:
 
 O segundo arquivo corrige um caso detectado pelo teste de totais do histórico, preservando a primeira migração já aplicada. Migrações anteriores permaneceram intactas. Tipos regenerados pelo CLI local.
 
-As duas atualizações ainda dependem de autorização para aplicação online. Na base anterior, as ações de exclusão ficam desabilitadas por ausência da capacidade retornada pelo banco; o filtro novo de excluídos requer as migrações. A configuração normal `.env.local` continua apontando para o banco online; para testar todas as alterações, use o ambiente local abaixo.
+Na entrega inicial, as duas atualizações ficaram pendentes de autorização online. Na base anterior, as ações de exclusão ficavam desabilitadas por ausência da capacidade retornada pelo banco; o filtro novo de excluídos requer as migrações. Após autorização específica, ambas foram aplicadas conforme o registro abaixo. A configuração normal `.env.local` continua apontando para o banco online; o ambiente local abaixo permanece disponível para testes com dados fictícios.
 
 ## Evidências
 
@@ -60,3 +60,15 @@ SUPABASE_TELEMETRY_DISABLED=1 node scripts/finance-local.mjs e2e e2e/finance-ban
 ```
 
 O teste SQL `supabase/tests/finance_bank_import_lifecycle.sql` inclui `finance_fixture.sql` da mesma pasta e termina com rollback. O teste de concorrência usa exclusivamente o contêiner local.
+
+## Aplicação online autorizada — 24/10/2026
+
+O usuário autorizou explicitamente somente as duas migrações acima, mantendo a branch separada e sem publicação na `main`. A simulação do CLI confirmou exatamente as versões `20261024235420` e `20261025000047`; ambas foram aplicadas com sucesso ao projeto `eclesias_bd_sp`. Não foram executados seeds, atualização de roles ou alteração de Vault.
+
+O histórico remoto confirmou as duas versões. As funções de consulta e o auxiliar de elegibilidade continuam `SECURITY INVOKER`; a nova rotina de gerenciamento usa `SECURITY DEFINER` com autenticação, permissão e escopo internos. As cinco funções verificadas têm `search_path` vazio, execução anônima revogada e execução autenticada intencional. As tabelas de importação mantêm RLS.
+
+Na sessão autenticada existente do Chrome, a página **Importar extrato bancário** abriu na Catedral com a área de upload, conta bancária e importação anterior visíveis. O servidor registrou HTTP 200 em 3,1 segundos, sem `UNAVAILABLE`; o console do navegador não apresentou erros. A conferência foi somente de leitura: não se enviou arquivo, não se excluiu item ou lote e não se criou lançamento online.
+
+Os Advisors online não retornaram erros. A nova função `manage_finance_bank_import` aparece no [aviso de funções SECURITY DEFINER executáveis por usuários autenticados](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable), junto das demais rotinas intencionalmente expostas com autorização interna. Mantêm-se os 16 avisos gerais de desempenho já registrados, além do [aviso de proteção contra senhas vazadas](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection) e informações sobre índices e tabelas internas sem policy. Nenhuma alteração adicional foi aplicada em resposta aos avisos.
+
+Os tipos e as validações locais pertencem aos mesmos arquivos SQL aplicados; não houve alteração de código nem necessidade de gerar novos tipos nesta etapa de implantação. Os testes de gravação e concorrência não foram executados online. O servidor temporário foi encerrado e a porta 3000 ficou livre. A branch permanece `codex/finance-bank-statement-import`, sem push ou merge; a `main` continua em `b83b43c5ad59176a814b4b2d92f0f062edbdfa35`.

@@ -12,7 +12,7 @@ Implementação de 23/10/2026 na branch `codex/finance-bank-statement-import`, a
 
 Data, direção, conta e total vêm do extrato armazenado. Novos itens usam uma classificação por movimento, com valor fixo e prévia lateral tanto para entradas quanto para saídas. Rascunhos antigos com várias contribuições são preservados; **Usar uma classificação** pede confirmação antes de unificar. O complemento bancário não é copiado automaticamente para a descrição financeira.
 
-Os [refinamentos de 24/10](2026-10-24-bank-import-refinement.md) foram validados apenas localmente. A exclusão e a recuperação dependem das duas migrações novas, ainda não aplicadas online.
+Os [refinamentos de 24/10](2026-10-24-bank-import-refinement.md) foram validados localmente. As duas migrações de exclusão e recuperação foram posteriormente aplicadas online com autorização específica, conforme o registro de implantação no relatório.
 
 **Já lançado:** vincule o lançamento ou o atendimento inteiro compatível. **Transferência interna:** escolha explicitamente essa opção e a outra conta/caixa da mesma congregação. A outra ponta pode ser vinculada quando seu extrato for importado. **Ignorar:** informe um motivo; a linha permanece disponível para restauração.
 
