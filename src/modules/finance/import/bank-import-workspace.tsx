@@ -11,7 +11,7 @@ import {
   Clock3,
 } from "lucide-react";
 import { BankImportLifecycleButton } from "./bank-import-lifecycle";
-import { useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useFinanceNavigation } from "../components/finance-shell";
 import { financeLocation } from "../utils/finance-navigation";
@@ -41,6 +41,14 @@ export function BankImportWorkspace({
 }) {
   const navigation = useFinanceNavigation(),
     [selected, setSelected] = useState<BankImportItem | null>(null);
+  const [message, setMessage] = useState("");
+  useLayoutEffect(
+    () => () => {
+      setSelected(null);
+      setMessage("");
+    },
+    [],
+  );
   const { batch, counts } = workspace,
     base = financeLocation(
       `/financeiro/lancamentos/importacoes/${batch.id}`,
@@ -120,6 +128,11 @@ export function BankImportWorkspace({
             <List size={16} /> <strong>{counts.ignored}</strong> ignorado(s)
           </span>
         </div>
+        {message && (
+          <p className="notice" role="status">
+            {message}
+          </p>
+        )}
         {selected ? (
           <BankImportReview
             key={selected.id}
@@ -130,20 +143,18 @@ export function BankImportWorkspace({
             catalogs={catalogs}
             capabilities={capabilities}
             onClose={() => setSelected(null)}
-            onResult={(item, next) => {
-              if (next) {
-                const remaining = workspace.items.filter(
-                  (i) => i.id !== item.id && i.status === "PENDING",
+            onResult={(item, action) => {
+              if (
+                action === "POST" ||
+                action === "LINK" ||
+                action === "DUPLICATE"
+              ) {
+                setSelected(null);
+                setMessage(
+                  action === "POST"
+                    ? "Lançamento salvo."
+                    : "Conferência atualizada.",
                 );
-                setSelected(
-                  remaining.find((i) => i.rowNumber > item.rowNumber) ??
-                    remaining[0] ??
-                    null,
-                );
-                if (!remaining.length)
-                  navigation.navigate(
-                    filterURL({ page: 1, status: "PENDING" }),
-                  );
               } else setSelected(item);
             }}
           />
@@ -193,7 +204,11 @@ export function BankImportWorkspace({
                   placeholder="Documento, histórico ou complemento"
                 />
               </label>
-              <Button type="submit" variant="outline">
+              <Button
+                type="submit"
+                variant="outline"
+                disabled={navigation.isPending}
+              >
                 Filtrar
               </Button>
             </form>
@@ -282,7 +297,11 @@ export function BankImportWorkspace({
                               size="sm"
                               variant="outline"
                               aria-label={`Conferir linha ${i.rowNumber}`}
-                              onClick={() => setSelected(i)}
+                              disabled={navigation.isPending}
+                              onClick={() => {
+                                setMessage("");
+                                setSelected(i);
+                              }}
                             >
                               <ClipboardCheck size={14} /> Conferir
                             </Button>

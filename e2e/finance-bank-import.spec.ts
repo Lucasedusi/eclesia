@@ -24,14 +24,12 @@ test("preserves an old split draft until the operator explicitly unifies it", as
   await page.goto(
     `/financeiro/lancamentos/importacoes?unidade=${f.unitId}&mes=2026-10`,
   );
-  await page
-    .getByLabel("Extrato XLSX do Sicoob")
-    .setInputFiles({
-      name: "rascunho-antigo.xlsx",
-      mimeType:
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      buffer: Buffer.from(await book.xlsx.writeBuffer()),
-    });
+  await page.getByLabel("Extrato XLSX do Sicoob").setInputFiles({
+    name: "rascunho-antigo.xlsx",
+    mimeType:
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    buffer: Buffer.from(await book.xlsx.writeBuffer()),
+  });
   await page
     .getByRole("button", { name: "Preparar importação", exact: true })
     .click();
@@ -41,6 +39,7 @@ test("preserves an old split draft until the operator explicitly unifies it", as
   await page
     .getByRole("combobox", { name: "Categoria", exact: true })
     .selectOption(f.offeringId);
+  await page.getByText("Mais opções", { exact: true }).click();
   await page
     .getByRole("button", { name: "Salvar rascunho", exact: true })
     .click();
@@ -103,6 +102,7 @@ test("preserves an old split draft until the operator explicitly unifies it", as
   await expect(amounts).toHaveCount(1);
   await expect(amounts).toHaveValue("100,00");
   await expect(amounts).toHaveAttribute("readonly", "");
+  await page.getByText("Mais opções", { exact: true }).click();
   await page
     .getByRole("button", { name: "Salvar rascunho", exact: true })
     .click();
@@ -117,7 +117,7 @@ test("preserves an old split draft until the operator explicitly unifies it", as
   await expect(amounts).toHaveValue("100,00");
 });
 
-test("statement review persists a draft, posts once, advances and restores an ignored row", async ({
+test("statement review persists a draft, posts once, returns to the queue and restores an ignored row", async ({
   page,
 }) => {
   test.skip(
@@ -186,6 +186,7 @@ test("statement review persists a draft, posts once, advances and restores an ig
   await page
     .getByRole("combobox", { name: "Categoria", exact: true })
     .selectOption(f.offeringId);
+  await page.getByText("Mais opções", { exact: true }).click();
   await page
     .getByRole("button", { name: "Salvar rascunho", exact: true })
     .click();
@@ -202,8 +203,9 @@ test("statement review persists a draft, posts once, advances and restores an ig
   await page
     .getByRole("combobox", { name: "Identificação", exact: true })
     .selectOption("COLLECTIVE");
+  await page.getByRole("button", { name: "Salvar", exact: true }).click();
   await page
-    .getByRole("button", { name: "Finalizar e próximo", exact: true })
+    .getByRole("button", { name: "Conferir linha 4", exact: true })
     .click();
   await expect(
     page.getByRole("heading", { name: "Conferir linha 4", exact: true }),
@@ -223,7 +225,7 @@ test("statement review persists a draft, posts once, advances and restores an ig
     .getByRole("button", { name: "Restaurar pendência", exact: true })
     .click();
   await expect(
-    page.getByRole("button", { name: "Finalizar", exact: true }),
+    page.getByRole("button", { name: "Salvar", exact: true }),
   ).toBeVisible();
   await page.screenshot({
     path: "tmp/finance-bank-import-review.png",
@@ -329,7 +331,7 @@ test("a lost confirmation response retries the same posting and retains invalid 
       await route.abort("failed");
     } else await route.continue();
   });
-  await page.getByRole("button", { name: "Finalizar", exact: true }).click();
+  await page.getByRole("button", { name: "Salvar", exact: true }).click();
   await expect(
     page.getByRole("button", {
       name: "Conferir a mesma tentativa",
@@ -341,12 +343,9 @@ test("a lost confirmation response retries the same posting and retains invalid 
     .getByRole("button", { name: "Conferir a mesma tentativa", exact: true })
     .click();
   await expect(
-    page.getByText("Este item possui uma referência financeira registrada."),
+    page.getByText("Lançamento salvo.", { exact: true }),
   ).toBeVisible();
   await expect(page.getByText("1 concluído", { exact: false })).toBeVisible();
-  await page
-    .getByRole("button", { name: "Voltar à fila", exact: true })
-    .click();
   await page
     .getByRole("button", { name: "Conferir linha 4", exact: true })
     .click();
@@ -354,7 +353,7 @@ test("a lost confirmation response retries the same posting and retains invalid 
     page.getByRole("alert").filter({ hasText: "Valor inválido" }),
   ).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Finalizar", exact: true }),
+    page.getByRole("button", { name: "Salvar", exact: true }),
   ).toHaveCount(0);
 });
 
@@ -435,12 +434,24 @@ test("links a manual expense, creates a transfer and recognizes an overlapping s
     .filter({ hasNot: page.locator("[disabled]") })
     .first()
     .click();
+  await page
+    .getByRole("combobox", { name: "Situação", exact: true })
+    .selectOption("COMPLETED");
+  await page.getByRole("button", { name: "Filtrar", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Conferir linha 3", exact: true })
+    .click();
+  await page.getByText("Mais opções", { exact: true }).click();
   await expect(
     page.getByRole("button", { name: "Desfazer vínculo", exact: true }),
   ).toBeVisible();
   await page
     .getByRole("button", { name: "Voltar à fila", exact: true })
     .click();
+  await page
+    .getByRole("combobox", { name: "Situação", exact: true })
+    .selectOption("PENDING");
+  await page.getByRole("button", { name: "Filtrar", exact: true }).click();
   await page
     .getByRole("button", { name: "Conferir linha 4", exact: true })
     .click();
@@ -458,8 +469,9 @@ test("links a manual expense, creates a transfer and recognizes an overlapping s
     .getByRole("button", { name: "Confirmar transferência", exact: true })
     .click();
   await expect(
-    page.getByText("Este item possui uma referência financeira registrada."),
+    page.getByText("Lançamento salvo.", { exact: true }),
   ).toBeVisible();
+  await expect(page.getByText("2 concluído", { exact: false })).toBeVisible();
   // Change workbook metadata, retaining the exact source rows, to simulate a second export.
   workbook.created = new Date("2026-10-22T11:00:00Z");
   await upload();
@@ -480,6 +492,14 @@ test("links a manual expense, creates a transfer and recognizes an overlapping s
     .filter({ hasText: reference })
     .getByRole("button", { name: "É o mesmo movimento", exact: true })
     .click();
+  await page
+    .getByRole("combobox", { name: "Situação", exact: true })
+    .selectOption("COMPLETED");
+  await page.getByRole("button", { name: "Filtrar", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Conferir linha 4", exact: true })
+    .click();
+  await page.getByText("Mais opções", { exact: true }).click();
   await expect(
     page.getByRole("button", { name: "Desfazer vínculo", exact: true }),
   ).toBeVisible();
@@ -511,7 +531,7 @@ test("removes and recovers review rows, updates totals and removes an unused bat
   sheet.addRow(["22/10/2026", "PIX", "PIX ENVIADO", name, -25]);
   const list = `/financeiro/lancamentos/importacoes?unidade=${f.unitId}&mes=2026-10`;
   await page.goto(list);
-  await expect(page.getByText("Arraste seu extrato aqui")).toBeVisible();
+  await expect(page.getByText("Selecionar ou arrastar extrato")).toBeVisible();
   await page.getByLabel("Extrato XLSX do Sicoob").setInputFiles({
     name,
     mimeType:
@@ -590,7 +610,10 @@ test("removes and recovers review rows, updates totals and removes an unused bat
   await page.goto(list);
   const row = page.getByRole("row").filter({ hasText: name });
   await row
-    .getByRole("button", { name: "Excluir importação", exact: true })
+    .getByRole("button", { name: "Ações da importação", exact: true })
+    .click();
+  await page
+    .getByRole("menuitem", { name: "Excluir importação", exact: true })
     .click();
   await page
     .getByRole("dialog")

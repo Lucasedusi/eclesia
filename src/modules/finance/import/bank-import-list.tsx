@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import {
   Upload,
   ArrowRight,
@@ -64,6 +64,16 @@ export function BankImportList({
   const [file, setFile] = useState<File | null>(null),
     [dragging, setDragging] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
+  useLayoutEffect(() => {
+    const input = fileInput.current;
+    return () => {
+      // Activity preserves this page; a new visit starts with no pending upload.
+      setFile(null);
+      setDragging(false);
+      setError("");
+      if (input) input.value = "";
+    };
+  }, []);
   function choose(file: File | undefined) {
     if (!file) return;
     if (
@@ -91,7 +101,9 @@ export function BankImportList({
     try {
       const result = await prepareBankImportAction(form);
       if (!result.ok) setError(result.message);
-      else
+      else {
+        setFile(null);
+        if (fileInput.current) fileInput.current.value = "";
         navigation.navigate(
           financeLocation(
             `/financeiro/lancamentos/importacoes/${result.data.id}`,
@@ -99,6 +111,7 @@ export function BankImportList({
             month,
           ),
         );
+      }
     } catch {
       setError(
         "Não foi possível confirmar o envio. Envie o mesmo arquivo novamente para retomar a importação.",
@@ -151,8 +164,8 @@ export function BankImportList({
                 <span className="bank-import-field-label">
                   Extrato XLSX do Sicoob
                 </span>
-                <label
-                  className={`bank-import-dropzone ${dragging ? "is-dragging" : ""}`}
+                <div
+                  className={`bank-import-upload-control ${dragging ? "is-dragging" : ""}`}
                   onDragOver={(event) => {
                     event.preventDefault();
                     if (!busy) setDragging(true);
@@ -164,38 +177,25 @@ export function BankImportList({
                     if (!busy) choose(event.dataTransfer.files[0]);
                   }}
                 >
-                  <input
-                    ref={fileInput}
-                    name="file"
-                    type="file"
-                    aria-label="Extrato XLSX do Sicoob"
-                    accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                    onChange={(event) => choose(event.target.files?.[0])}
-                  />
-                  <span className="bank-import-upload-icon">
-                    <Upload size={26} aria-hidden="true" />
-                  </span>
-                  <strong>Arraste seu extrato aqui</strong>
-                  <span>
-                    ou{" "}
-                    <span className="bank-import-upload-link">
-                      {file ? "substitua o arquivo" : "selecione um arquivo"}
+                  <label className="bank-import-dropzone" title={file?.name}>
+                    <input
+                      ref={fileInput}
+                      name="file"
+                      type="file"
+                      aria-label="Extrato XLSX do Sicoob"
+                      accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                      onChange={(event) => choose(event.target.files?.[0])}
+                    />
+                    {file ? (
+                      <FileSpreadsheet size={18} aria-hidden="true" />
+                    ) : (
+                      <Upload size={18} aria-hidden="true" />
+                    )}
+                    <span role="status">
+                      {file?.name ?? "Selecionar ou arrastar extrato"}
                     </span>
-                  </span>
-                  <small>XLSX do Sicoob · Até 5 MB</small>
-                </label>
-                {file && (
-                  <div className="bank-import-selected-file" role="status">
-                    <FileSpreadsheet size={20} aria-hidden="true" />
-                    <span>
-                      <strong>{file.name}</strong>
-                      <small>
-                        {(file.size / 1024).toLocaleString("pt-BR", {
-                          maximumFractionDigits: 1,
-                        })}{" "}
-                        KB
-                      </small>
-                    </span>
+                  </label>
+                  {file && (
                     <Button
                       size="sm"
                       variant="ghost"
@@ -207,8 +207,8 @@ export function BankImportList({
                     >
                       <X size={16} />
                     </Button>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
             <p className="muted">

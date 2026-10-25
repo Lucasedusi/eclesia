@@ -5,10 +5,14 @@ import {
   RefreshCw,
   MoreHorizontal,
   ArrowLeftRight,
+  Save,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { FinanceEntryForm } from "../components/finance-entry-form";
+import {
+  FinanceEntryForm,
+  type BankImportDraftControl,
+} from "../components/finance-entry-form";
 import {
   useFinanceDirtyGuard,
   useFinanceNavigation,
@@ -65,11 +69,15 @@ export function BankImportReview({
   item: BankImportItem;
   catalogs: FinanceCatalogs;
   capabilities: FinanceCapabilities;
-  onResult: (item: BankImportItem, next: boolean) => void;
+  onResult: (
+    item: BankImportItem,
+    action: BankImportMutation["action"],
+  ) => void;
   onClose: () => void;
 }) {
   const navigation = useFinanceNavigation(),
-    pending = useRef<{ input: BankImportMutation; next: boolean } | null>(null);
+    pending = useRef<{ input: BankImportMutation } | null>(null);
+  const draftControl = useRef<BankImportDraftControl>(null);
   const [busy, setBusy] = useState(false),
     [uncertain, setUncertain] = useState(false),
     [message, setMessage] = useState(""),
@@ -138,14 +146,14 @@ export function BankImportReview({
       payload,
     } as BankImportMutation;
   }
-  async function apply(input: BankImportMutation, next = false) {
+  async function apply(input: BankImportMutation) {
     if (busy)
       return {
         ok: false as const,
         code: "UNAVAILABLE" as const,
         message: "Aguarde a confirmação em andamento.",
       };
-    pending.current ??= { input, next };
+    pending.current ??= { input };
     setBusy(true);
     setError("");
     setMessage("");
@@ -160,15 +168,14 @@ export function BankImportReview({
         }
         return result;
       }
-      const advance = pending.current.next,
-        action = pending.current.input.action;
+      const action = pending.current.input.action;
       pending.current = null;
       setUncertain(false);
       setFormStatus({ dirty: false, busy: false });
       setMessage(
         action === "SAVE_DRAFT" ? "Rascunho salvo." : "Conferência atualizada.",
       );
-      onResult(result.data, advance);
+      onResult(result.data, action);
       navigation.refresh();
       return result;
     } catch {
@@ -426,6 +433,17 @@ export function BankImportReview({
           <MoreHorizontal size={18} /> Mais opções
         </summary>
         <div className="stack">
+          {isPending && !item.issue && reviewKind === "ENTRY" && (
+            <div>
+              <Button
+                onClick={() => void draftControl.current?.saveDraft()}
+                variant="outline"
+                disabled={locked || formStatus.busy}
+              >
+                <Save size={16} /> Salvar rascunho
+              </Button>
+            </div>
+          )}
           {isPending && !item.issue && (
             <>
               <div className="tabs" aria-label="Tipo de registro">
@@ -716,19 +734,18 @@ export function BankImportReview({
             direction={item.amountCents! > 0 ? "INCOME" : "EXPENSE"}
             mode={item.amountCents! > 0 ? "ATTENDANCE" : "SINGLE"}
             onStatusChange={handleStatus}
+            onClose={onClose}
             bankImport={{
+              draftControl,
               draft,
               amountCents: Math.abs(item.amountCents!),
               saveDraft: async (value) =>
                 (await apply(envelope("SAVE_DRAFT", value))).ok,
-              submit: async (command, next) => {
-                const response = await apply(
-                  {
-                    ...envelope("POST", { command, ...decisions }),
-                    operationKey: command.operationKey,
-                  } as BankImportMutation,
-                  next,
-                );
+              submit: async (command) => {
+                const response = await apply({
+                  ...envelope("POST", { command, ...decisions }),
+                  operationKey: command.operationKey,
+                } as BankImportMutation);
                 if (!response.ok) return response;
                 const r = response.data.result!;
                 return {

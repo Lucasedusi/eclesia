@@ -1,7 +1,13 @@
 "use client";
 import { FinanceMoneyInput } from "./finance-money-input";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+  type Ref,
+} from "react";
 
 import { Plus, Printer, Save, Trash2, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -33,12 +39,13 @@ import {
 import { useFinanceDirtyGuard, useFinanceNavigation } from "./finance-shell";
 import type { BankImportDraft } from "../import/schemas";
 import type { FinanceActionResult } from "../types/finance.types";
+export type BankImportDraftControl = { saveDraft: () => Promise<boolean> };
 export type BankImportEntry = {
+  draftControl: Ref<BankImportDraftControl>;
   draft: BankImportDraft;
   amountCents: number;
   submit: (
     command: FinanceCommand,
-    next: boolean,
   ) => Promise<FinanceActionResult<FinanceMutationResult>>;
   saveDraft: (draft: BankImportDraft) => Promise<boolean>;
 };
@@ -257,7 +264,7 @@ export function FinanceEntryForm({
         pending.current = parsed.data;
       }
       const result = bankImport
-        ? await bankImport.submit(pending.current, action === "CONTINUE")
+        ? await bankImport.submit(pending.current)
         : await submitFinanceCommand(pending.current);
       if (!result.ok) {
         popup?.close();
@@ -321,6 +328,7 @@ export function FinanceEntryForm({
       setBusy(false);
     }
   }
+  useImperativeHandle(bankImport?.draftControl, () => ({ saveDraft }));
   useEffect(() => {
     onStatusChange?.({
       dirty: dirty || ambiguous,
@@ -949,7 +957,7 @@ export function FinanceEntryForm({
               <span className="finance-action-label">
                 <span className="finance-desktop-only">
                   {bankImport
-                    ? "Finalizar"
+                    ? "Salvar"
                     : initialTransaction
                       ? "Salvar correção"
                       : mode === "ATTENDANCE"
@@ -960,34 +968,6 @@ export function FinanceEntryForm({
               </span>
             </Button>
           </div>
-          {bankImport && (
-            <div className="finance-entry-secondary-actions">
-              <Button
-                variant="outline"
-                disabled={busy || uploading}
-                onClick={() => void save("CONTINUE")}
-                className="finance-attendance-action"
-              >
-                <span className="finance-action-icon">
-                  <ArrowRight size={16} />
-                </span>
-                <span className="finance-action-label">
-                  Finalizar e próximo
-                </span>
-              </Button>
-              <Button
-                variant="outline"
-                disabled={busy || uploading || ambiguous}
-                onClick={() => void saveDraft()}
-                className="finance-attendance-action"
-              >
-                <span className="finance-action-icon">
-                  <Save size={16} />
-                </span>
-                <span className="finance-action-label">Salvar rascunho</span>
-              </Button>
-            </div>
-          )}
           {!initialTransaction && !bankImport && (
             <div className="finance-entry-secondary-actions">
               <Button

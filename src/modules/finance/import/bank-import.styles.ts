@@ -118,38 +118,55 @@ export const BankImportLayout = styled.div`
   }
   .bank-import-upload-field {
     display: grid;
-    gap: 10px;
+    gap: 8px;
+    min-width: 0;
   }
   .bank-import-field-label {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     color: #52695e;
+  }
+  .bank-import-upload-control {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    height: 42px;
+    min-width: 0;
+    border: 1px dashed #b8cec1;
+    border-radius: 8px;
+    background: #f6f9f7;
+    padding-right: 4px;
+  }
+  .bank-import-upload-control:hover,
+  .bank-import-upload-control.is-dragging,
+  .bank-import-upload-control:focus-within {
+    border-color: #087f5b;
+    background: #edf5ef;
+  }
+  .bank-import-upload-control:focus-within {
+    outline: 1px solid #087f5b;
   }
   label.bank-import-dropzone {
     position: relative;
     display: flex;
-    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 8px;
-    min-height: 196px;
-    padding: 24px;
-    border: 2px dashed #b8cec1;
-    border-radius: 12px;
-    background: #f6f9f7;
-    text-align: center;
+    gap: 10px;
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    padding: 0 12px;
     cursor: pointer;
+    font-size: 14px;
     font-weight: 400;
+    color: #176348;
   }
-  .bank-import-dropzone:hover,
-  .bank-import-dropzone.is-dragging,
-  .bank-import-dropzone:focus-within {
-    border-color: #087f5b;
-    background: #edf5ef;
+  .bank-import-dropzone > svg {
+    flex-shrink: 0;
   }
-  .bank-import-dropzone:focus-within {
-    outline: 2px solid #087f5b;
-    outline-offset: 3px;
+  .bank-import-dropzone > span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .bank-import-dropzone input {
     position: absolute;
@@ -159,41 +176,27 @@ export const BankImportLayout = styled.div`
     width: 100%;
     height: 100%;
   }
-  .bank-import-upload-icon {
-    display: flex;
-    padding: 12px;
-    border-radius: 12px;
-    background: #e3eee7;
-    color: #087f5b;
+  .bank-import-upload-control > button {
+    padding: 6px;
+    min-height: 30px;
+    width: 30px;
+    flex-shrink: 0;
   }
-  .bank-import-upload-link {
-    color: #087f5b;
-    font-weight: 600;
-    text-decoration: underline;
-  }
-  .bank-import-dropzone small {
-    color: #52695e;
-  }
-  .bank-import-selected-file {
-    display: flex;
-    gap: 12px;
-    align-items: center;
-    padding: 12px;
+  .bank-import-menu {
+    position: fixed;
+    inset: auto;
+    margin: 0;
+    width: 220px;
+    padding: 6px;
     border: 1px solid #e3eae6;
-    border-radius: 10px;
+    border-radius: 8px;
+    background: white;
+    box-shadow: 0 6px 20px #18352c18;
   }
-  .bank-import-selected-file > span {
-    flex: 1;
-    min-width: 0;
-    overflow-wrap: anywhere;
-  }
-  .bank-import-selected-file strong,
-  .bank-import-selected-file small {
-    display: block;
-  }
-  .bank-import-selected-file small {
-    color: #52695e;
-    margin-top: 4px;
+  .bank-import-menu button {
+    width: 100%;
+    justify-content: flex-start;
+    color: #923840;
   }
   .bank-import-pagination {
     display: flex;
