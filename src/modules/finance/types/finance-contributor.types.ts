@@ -1,6 +1,7 @@
 import type { z } from "zod";
 import type { contributorSearchSchema } from "../utils/finance-contributor";
 export type ContributorSearch = z.infer<typeof contributorSearchSchema>;
+export type FinanceCongregationOption = { id: string; name: string };
 export type ContributorOption = {
   id: string;
   name: string;

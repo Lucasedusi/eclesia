@@ -201,7 +201,7 @@ test("statement review persists a draft, posts once, returns to the queue and re
     page.getByRole("combobox", { name: "Categoria", exact: true }),
   ).toHaveValue(f.offeringId);
   await page
-    .getByRole("combobox", { name: "Identificação", exact: true })
+    .getByRole("combobox", { name: /Identificação/ })
     .selectOption("COLLECTIVE");
   await page.getByRole("button", { name: "Salvar", exact: true }).click();
   await page
@@ -312,7 +312,7 @@ test("a lost confirmation response retries the same posting and retains invalid 
     .getByRole("button", { name: "Conferir linha 3", exact: true })
     .click();
   await page
-    .getByRole("combobox", { name: "Identificação", exact: true })
+    .getByRole("combobox", { name: /Identificação/ })
     .selectOption("COLLECTIVE");
   await page
     .getByRole("combobox", { name: "Categoria", exact: true })

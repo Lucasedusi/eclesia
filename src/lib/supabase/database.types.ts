@@ -4295,6 +4295,7 @@ export type Database = {
           cashbox_id: string
           church_id: string
           congregation_id: string
+          contributor_congregation_id: string | null
           contributor_kind: string
           created_at: string
           created_by: string | null
@@ -4313,6 +4314,7 @@ export type Database = {
           cashbox_id: string
           church_id: string
           congregation_id: string
+          contributor_congregation_id?: string | null
           contributor_kind: string
           created_at?: string
           created_by?: string | null
@@ -4331,6 +4333,7 @@ export type Database = {
           cashbox_id?: string
           church_id?: string
           congregation_id?: string
+          contributor_congregation_id?: string | null
           contributor_kind?: string
           created_at?: string
           created_by?: string | null
@@ -4371,6 +4374,13 @@ export type Database = {
             columns: ["church_id", "member_id"]
             isOneToOne: false
             referencedRelation: "members"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "financial_attendances_contributor_congregation_fk"
+            columns: ["church_id", "contributor_congregation_id"]
+            isOneToOne: false
+            referencedRelation: "congregations"
             referencedColumns: ["church_id", "id"]
           },
           {
@@ -5885,6 +5895,7 @@ export type Database = {
           confirmed_at: string | null
           confirmed_by: string | null
           congregation_id: string | null
+          contributor_congregation_id: string | null
           contributor_kind: string | null
           created_at: string
           created_by: string | null
@@ -5930,6 +5941,7 @@ export type Database = {
           confirmed_at?: string | null
           confirmed_by?: string | null
           congregation_id?: string | null
+          contributor_congregation_id?: string | null
           contributor_kind?: string | null
           created_at?: string
           created_by?: string | null
@@ -5975,6 +5987,7 @@ export type Database = {
           confirmed_at?: string | null
           confirmed_by?: string | null
           congregation_id?: string | null
+          contributor_congregation_id?: string | null
           contributor_kind?: string | null
           created_at?: string
           created_by?: string | null
@@ -6096,6 +6109,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "congregations"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_transactions_contributor_congregation_fk"
+            columns: ["church_id", "contributor_congregation_id"]
+            isOneToOne: false
+            referencedRelation: "congregations"
+            referencedColumns: ["church_id", "id"]
           },
           {
             foreignKeyName: "financial_transactions_created_by_fkey"
@@ -9140,6 +9160,10 @@ export type Database = {
           p_severity?: string
         }
         Returns: undefined
+      }
+      lookup_finance_congregations: {
+        Args: { p_church_id: string; p_query: string; p_unit: string }
+        Returns: Json
       }
       lookup_finance_contributors: {
         Args: {

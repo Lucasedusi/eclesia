@@ -71,8 +71,10 @@ export function FinanceTransactionDetails({
             </span>
           </div>
           <div>
-            <p className="muted">Pessoa / favorecido</p>
-            {t.personName || t.beneficiaryName || "Contribuição coletiva"}
+            <p className="muted">{t.direction === "INCOME" ? "Recebido de" : "Pago a"}</p>
+            {t.personName || t.beneficiaryName || (t.direction === "INCOME" ? "Contribuição coletiva" : "Não informado")}
+            {t.contributorKind === "CONGREGATION" && <small className="muted">Congregação</small>}
+            {t.contributorKind === "ORGANIZATION" && <small className="muted">Empresa, instituição ou outros</small>}
           </div>
           <div>
             <p className="muted">Data · referência</p>

@@ -665,7 +665,7 @@ export async function createFinanceReportPdf(
             headers: [
               "Data",
               "Descrição",
-              data.direction === "EXPENSE" ? "Favorecido" : "Pessoa",
+              data.direction === "EXPENSE" ? "Pago a" : "Recebido de",
               "Caixa/conta",
               "Valor",
             ],
@@ -1161,7 +1161,7 @@ export async function createFinanceReportPdf(
               title: `${name} · ${names}${classified ? ` · ${classification.name}` : ""}`,
               headers: [
                 "Data",
-                "Pessoa / descrição",
+                "Identificação / descrição",
                 "Departamento",
                 "Pagamento",
                 "Valor",

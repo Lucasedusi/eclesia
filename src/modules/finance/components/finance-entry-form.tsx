@@ -31,6 +31,7 @@ import {
   type EntryFormState,
 } from "../utils/finance-entry-session";
 import { financeLocation } from "../utils/finance-navigation";
+import { transactionContributor } from "../utils/finance-identification";
 import { FinanceContributorPicker } from "./finance-contributor-picker";
 import {
   FinanceDocumentFields,
@@ -74,11 +75,7 @@ function seed(date: string, t?: FinanceTransactionDetail): EntryFormState {
     description: t.description ?? "",
     notes: t.notes ?? "",
     documentNumber: t.documentNumber ?? "",
-    contributor: t.memberId
-      ? { kind: "MEMBER", memberId: t.memberId }
-      : t.contributorKind === "UNREGISTERED"
-        ? { kind: "UNREGISTERED", name: t.personName ?? "" }
-        : { kind: "COLLECTIVE" },
+    contributor: transactionContributor(t),
     personLabel: t.personName ?? "",
     beneficiaryName: t.beneficiaryName ?? "",
     paymentReference: t.paymentReference ?? "",
@@ -115,9 +112,12 @@ export function FinanceEntryForm({
     form = useRef<HTMLFormElement>(null),
     pending = useRef<FinanceCommand | null>(null),
     operationKey = useRef("");
-  const [state, setState] = useState(
-      () => bankImport?.draft.state ?? seed(date, initialTransaction),
-    ),
+  const [state, setState] = useState(() => {
+      const initial = bankImport?.draft.state ?? seed(date, initialTransaction);
+      return direction === "EXPENSE" && !initial.contributor
+        ? { ...initial, contributor: { kind: "COLLECTIVE" as const } }
+        : initial;
+    }),
     [extra, setExtra] = useState<Line[]>(bankImport?.draft.extra ?? []),
     [savedDocumentIds, setSavedDocumentIds] = useState<string[]>(
       bankImport?.draft.state.documentIds ?? [],
@@ -202,15 +202,16 @@ export function FinanceEntryForm({
           return false;
         }
         operationKey.current ||= crypto.randomUUID();
-        const contributor =
-          state.contributor ??
-          (direction === "EXPENSE" ? { kind: "COLLECTIVE" } : null);
+        const contributor = state.contributor;
         const payment = {
           date: state.date,
           cashboxId: state.cashboxId,
           paymentMethodId: state.paymentMethodId,
           contributor,
-          beneficiaryName: state.beneficiaryName,
+          beneficiaryName:
+            direction === "EXPENSE" && state.contributor?.kind === "COLLECTIVE"
+              ? state.beneficiaryName
+              : undefined,
           paymentReference: state.paymentReference,
           documentIds: state.documentIds,
         };
@@ -254,7 +255,7 @@ export function FinanceEntryForm({
             parsed.error.issues
               .map((i) =>
                 i.path.includes("contributor")
-                  ? "Identifique a pessoa ou escolha contribuição coletiva."
+                  ? "Informe quem pagou ou recebeu, ou selecione a opção sem identificação quando disponível."
                   : i.message,
               )
               .join(" "),
@@ -297,7 +298,7 @@ export function FinanceEntryForm({
       if (initialTransaction || (action === "SAVE" && mode === "SINGLE")) {
         onClose?.();
       } else {
-        setState(nextEntryDefaults(state, ""));
+        setState(nextEntryDefaults(state, "", direction));
         setExtra([]);
         setFiles([]);
         setIdentityVersion((v) => v + 1);
@@ -416,17 +417,18 @@ export function FinanceEntryForm({
         style={{ border: 0, padding: 0, minWidth: 0 }}
       >
         <section className="stack finance-form-section">
-          <h3>{direction === "EXPENSE" ? "Favorecido" : "Pessoa atendida"}</h3>
+          <h3>Identificação</h3>
           {groupCorrection ? (
             <p className="notice">
               A identificação e o recebimento pertencem ao atendimento inteiro.
               Você pode corrigir a contribuição abaixo. Para alterar os dados
               comuns, cancele o atendimento e registre novamente.
             </p>
-          ) : direction === "INCOME" ? (
+          ) : (
             <FinanceContributorPicker
               key={identityVersion}
               unit={unit}
+              direction={direction}
               value={state.contributor}
               label={state.personLabel}
               canLookup={capabilities.lookupContributors}
@@ -434,6 +436,7 @@ export function FinanceEntryForm({
                 change({
                   contributor,
                   personLabel,
+                  beneficiaryName: "",
                   titheClassificationId: suggested ?? null,
                 });
                 setExtra((current) =>
@@ -444,16 +447,15 @@ export function FinanceEntryForm({
                 );
               }}
             />
-          ) : (
-            <label>
-              Favorecido (opcional)
-              <input
-                value={state.beneficiaryName}
-                maxLength={160}
-                onChange={(e) => change({ beneficiaryName: e.target.value })}
-              />
-            </label>
           )}
+          {direction === "EXPENSE" &&
+            state.contributor?.kind === "COLLECTIVE" &&
+            state.beneficiaryName && (
+              <p className="notice">
+                Identificação anterior: {state.beneficiaryName}. Selecione um
+                tipo acima para alterá-la.
+              </p>
+            )}
           {collective && (
             <div className="stack">
               <label>
@@ -841,14 +843,14 @@ export function FinanceEntryForm({
           <h3>Conferir antes de confirmar</h3>
           <dl>
             <div>
-              <dt>{direction === "EXPENSE" ? "Favorecido" : "Pessoa"}</dt>
+              <dt>{direction === "EXPENSE" ? "Pago a" : "Recebido de"}</dt>
               <dd>
-                {direction === "EXPENSE"
-                  ? state.beneficiaryName || "Não informado"
-                  : state.personLabel ||
-                    (state.contributor?.kind === "COLLECTIVE"
-                      ? "Contribuição coletiva"
-                      : "Não identificada")}
+                {state.personLabel ||
+                  state.beneficiaryName ||
+                  (direction === "INCOME" &&
+                  state.contributor?.kind === "COLLECTIVE"
+                    ? "Contribuição coletiva"
+                    : "Não informado")}
               </dd>
             </div>
             <div>
@@ -940,7 +942,7 @@ export function FinanceEntryForm({
               type="submit"
               variant={direction === "EXPENSE" ? "danger" : "primary"}
               className={
-                mode === "ATTENDANCE" || bankImport
+                mode === "ATTENDANCE" && !bankImport
                   ? "finance-attendance-action"
                   : undefined
               }

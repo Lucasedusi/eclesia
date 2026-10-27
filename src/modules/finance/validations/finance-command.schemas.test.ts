@@ -39,3 +39,31 @@ it("requires revision and reason for destructive transitions", () => {
     }).success,
   ).toBe(false);
 });
+
+it.each(["INCOME", "EXPENSE"])(
+  "accepts congregation and organization identities for %s",
+  (direction) => {
+    for (const contributor of [
+      { kind: "CONGREGATION", congregationId: id },
+      { kind: "ORGANIZATION", name: "Concessionária exemplo" },
+    ]) {
+      expect(
+        financeCommandSchema.safeParse({ ...record, direction, contributor })
+          .success,
+      ).toBe(true);
+    }
+  },
+);
+
+it("rejects forged identity labels, missing congregation and blank organization", () => {
+  for (const contributor of [
+    { kind: "CONGREGATION" },
+    { kind: "CONGREGATION", congregationId: id, name: "Nome forjado" },
+    { kind: "CONGREGATION", congregationId: id, churchId: id },
+    { kind: "ORGANIZATION", name: " " },
+    { kind: "ORGANIZATION", name: "a".repeat(161) },
+  ])
+    expect(
+      financeCommandSchema.safeParse({ ...record, contributor }).success,
+    ).toBe(false);
+});

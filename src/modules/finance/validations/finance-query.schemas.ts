@@ -15,6 +15,7 @@ export const financeFiltersSchema = z
     paymentMethodId: z.uuid().optional(),
     titheClassificationId: z.uuid().optional(),
     memberId: z.uuid().optional(),
+    contributorCongregationId: z.uuid().optional(),
     page: z.coerce.number().int().min(1).max(100000).default(1),
   })
   .strict()

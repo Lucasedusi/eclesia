@@ -153,7 +153,7 @@ export function FinanceReceipt({
         )}
         <div>
           <strong style={{ display: "block", textAlign: "left", fontSize: "0.9em", marginBottom: 2 }}>
-            {receipt.personName || "Contribuição coletiva"}
+            {receipt.personName || (receipt.direction === "INCOME" ? "Contribuição coletiva" : "Não informado")}
           </strong>
           Data: <time dateTime={receipt.date}>{receipt.date.split("-").reverse().join("/")}</time>
           {" às "}<time dateTime={receipt.registeredAt}>{registeredTime}</time>

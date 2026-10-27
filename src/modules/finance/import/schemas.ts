@@ -23,6 +23,18 @@ export const bankImportDraftSchema = z
         contributor: z
           .discriminatedUnion("kind", [
             z
+              .object({
+                kind: z.literal("CONGREGATION"),
+                congregationId: z.uuid(),
+              })
+              .strict(),
+            z
+              .object({
+                kind: z.literal("ORGANIZATION"),
+                name: z.string().max(160),
+              })
+              .strict(),
+            z
               .object({ kind: z.literal("MEMBER"), memberId: z.uuid() })
               .strict(),
             z

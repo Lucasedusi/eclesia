@@ -24,8 +24,7 @@ for (const mode of ["SINGLE", "ATTENDANCE"] as const) {
         ? page.getByRole("dialog")
         : page.locator(".finance-attendance-form");
     const identification = form.getByRole("combobox", {
-      name: "Identificação",
-      exact: true,
+      name: /Identificação/,
     });
     await identification.selectOption("COLLECTIVE");
     const description = form.getByLabel("Descrição da contribuição", {
@@ -33,7 +32,7 @@ for (const mode of ["SINGLE", "ATTENDANCE"] as const) {
     });
     await expect(description).toBeVisible();
     const a = await description.boundingBox(),
-      b = await form.getByLabel("Data", { exact: true }).boundingBox();
+      b = await form.getByLabel("Data", { exact: true }).filter({ visible: true }).boundingBox();
     expect(a!.y).toBeLessThan(b!.y);
     await expect(description).not.toHaveAttribute("required");
     const label = `Oferta do culto de ensino ${mode} ${Date.now()}`;
@@ -49,7 +48,7 @@ for (const mode of ["SINGLE", "ATTENDANCE"] as const) {
     await identification.selectOption("COLLECTIVE");
     await expect(description).toHaveValue(label);
     await expect(form.getByLabel("Descrição", { exact: true })).toHaveCount(0);
-    await form.getByLabel("Data", { exact: true }).fill("2026-10-14");
+    await form.getByLabel("Data", { exact: true }).filter({ visible: true }).fill("2026-10-14");
     await form
       .getByRole("combobox", { name: "Caixa ou conta", exact: true })
       .selectOption(f.boxes[f.unitId].cash);

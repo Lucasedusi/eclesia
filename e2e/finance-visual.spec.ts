@@ -37,7 +37,7 @@ test("finance fits small screens, keyboard focus and reduced motion", async ({
   await expect(page.locator("main h1").first()).toBeVisible();
   await page.screenshot({ path: "tmp/finance-attendance.png", fullPage: true });
   await page
-    .getByRole("combobox", { name: "Identificação", exact: true })
+    .getByRole("combobox", { name: /Identificação/ })
     .selectOption("UNREGISTERED");
   await page
     .getByRole("textbox", { name: "Nome da pessoa", exact: true })

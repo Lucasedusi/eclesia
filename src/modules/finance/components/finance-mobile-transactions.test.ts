@@ -12,11 +12,14 @@ vi.mock("next/navigation", () => ({
 vi.mock("../actions/finance-query.actions", () => ({
   getFinanceTransactionAction: () => Promise.resolve({ ok: false }),
 }));
+vi.mock("../actions/finance-contributor.actions", () => ({
+  searchFinanceCongregationsAction: () => Promise.resolve({ ok: true, data: [] }),
+}));
 vi.mock("../actions/finance-document.actions", () => ({
   getFinanceDocumentUrlAction: () => Promise.resolve({ ok: false }),
 }));
 
-function renderTransactions(activeFilter = false) {
+function renderTransactions(activeFilter = false, unnamedExpense = false) {
   const items = [
     {
       id: "entry-1",
@@ -44,7 +47,7 @@ function renderTransactions(activeFilter = false) {
       status: "CANCELLED",
       revision: 2,
       personName: null,
-      beneficiaryName: "Fornecedor Exemplo",
+      beneficiaryName: unnamedExpense ? null : "Fornecedor Exemplo",
       categoryName: "Despesa predial",
       departmentName: "Tesouraria",
       classificationName: null,
@@ -98,6 +101,11 @@ function renderTransactions(activeFilter = false) {
 }
 
 describe("mobile finance transactions", () => {
+  it("describes unnamed expenses without calling them collective contributions", () => {
+    const html = renderTransactions(false, true);
+    expect(html).toContain("Não informado");
+    expect(html).not.toContain("Contribuição coletiva");
+  });
   it("keeps each date inside its transaction card with status and signed amount", () => {
     const html = renderTransactions();
     expect(html).toContain('aria-label="Lançamentos em cartões"');

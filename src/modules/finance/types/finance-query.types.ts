@@ -22,6 +22,8 @@ export type FinanceTransactionRow = {
   revision: number;
   personName: string | null;
   beneficiaryName: string | null;
+  contributorCongregationId?: string | null;
+  contributorKind?: string | null;
   categoryName: string | null;
   departmentName: string | null;
   classificationName: string | null;

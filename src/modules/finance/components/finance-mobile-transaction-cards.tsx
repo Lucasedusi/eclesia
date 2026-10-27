@@ -31,7 +31,7 @@ export function FinanceMobileTransactionCards({
                 {item.personName ||
                   item.beneficiaryName ||
                   item.description ||
-                  "Contribuição coletiva"}
+                  (item.direction === "INCOME" ? "Contribuição coletiva" : "Não informado")}
               </span>
               <time dateTime={item.date}>
                 {item.date.split("-").reverse().join("/")}

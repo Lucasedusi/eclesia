@@ -45,6 +45,9 @@ export async function listFinanceTransactions(
   // results as if they belonged to a requested cross-month interval.
   if (filters.dateFrom && (result.dateFrom !== filters.dateFrom || result.dateTo !== filters.dateTo))
     throw new Error("FINANCE_DATE_RANGE_UNAVAILABLE");
+  if (filters.contributorCongregationId &&
+    (result as FinanceTransactionPage & { contributorCongregationId?: string }).contributorCongregationId !== filters.contributorCongregationId)
+    throw new Error("CONFIGURATION_REQUIRED");
   return result;
 }
 export async function getFinanceTransaction(
@@ -57,7 +60,7 @@ export async function getFinanceTransaction(
   const { data: t, error } = await c
     .from("financial_transactions")
     .select(
-      "id,transaction_date,transaction_type,amount,status,revision,person_name,beneficiary_name,category_name,department_name,classification_name,description,document_number,attendance_id,cashbox_id,payment_method_id,member_id,contributor_kind,category_id,department_id,tithe_classification_id,notes,payment_reference",
+      "id,transaction_date,transaction_type,amount,status,revision,person_name,beneficiary_name,category_name,department_name,classification_name,description,document_number,attendance_id,cashbox_id,payment_method_id,member_id,contributor_kind,contributor_congregation_id,category_id,department_id,tithe_classification_id,notes,payment_reference",
     )
     .eq("church_id", context.churchId)
     .eq("congregation_id", context.congregationId)
@@ -135,6 +138,7 @@ export async function getFinanceTransaction(
     paymentMethodId: t.payment_method_id ?? "",
     memberId: t.member_id,
     contributorKind: t.contributor_kind,
+    contributorCongregationId: t.contributor_congregation_id,
     categoryId: t.category_id,
     departmentId: t.department_id ?? "",
     titheClassificationId: t.tithe_classification_id,

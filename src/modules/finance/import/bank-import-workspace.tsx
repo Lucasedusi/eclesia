@@ -11,7 +11,7 @@ import {
   Clock3,
 } from "lucide-react";
 import { BankImportLifecycleButton } from "./bank-import-lifecycle";
-import { useLayoutEffect, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useFinanceNavigation } from "../components/finance-shell";
 import { financeLocation } from "../utils/finance-navigation";
@@ -42,10 +42,23 @@ export function BankImportWorkspace({
   const navigation = useFinanceNavigation(),
     [selected, setSelected] = useState<BankImportItem | null>(null);
   const [message, setMessage] = useState("");
+  const queueStart = useRef<HTMLDivElement>(null);
+  const returnToQueue = useRef(false);
+  useLayoutEffect(() => {
+    if (!selected && returnToQueue.current) {
+      returnToQueue.current = false;
+      queueStart.current?.scrollIntoView({
+        block: "start",
+        behavior: "instant",
+      });
+      queueStart.current?.focus({ preventScroll: true });
+    }
+  }, [selected, message]);
   useLayoutEffect(
     () => () => {
       setSelected(null);
       setMessage("");
+      returnToQueue.current = false;
     },
     [],
   );
@@ -128,6 +141,12 @@ export function BankImportWorkspace({
             <List size={16} /> <strong>{counts.ignored}</strong> ignorado(s)
           </span>
         </div>
+        <div
+          ref={queueStart}
+          tabIndex={-1}
+          aria-label="Início da listagem do extrato"
+          style={{ scrollMarginTop: 24 }}
+        />
         {message && (
           <p className="notice" role="status">
             {message}
@@ -149,6 +168,7 @@ export function BankImportWorkspace({
                 action === "LINK" ||
                 action === "DUPLICATE"
               ) {
+                returnToQueue.current = true;
                 setSelected(null);
                 setMessage(
                   action === "POST"

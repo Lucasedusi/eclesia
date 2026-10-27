@@ -42,9 +42,11 @@ export function newEntryState(date: string, operationKey = ""): EntryFormState {
 export function nextEntryDefaults(
   current: EntryFormState,
   operationKey: string,
+  direction: "INCOME" | "EXPENSE" = "INCOME",
 ): EntryFormState {
   return {
     ...newEntryState(current.date, operationKey),
+    contributor: direction === "EXPENSE" ? { kind: "COLLECTIVE" } : null,
     cashboxId: current.cashboxId,
     paymentMethodId: current.paymentMethodId,
     categoryId: current.categoryId,

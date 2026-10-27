@@ -38,3 +38,24 @@ it("rejects missing read capability before touching the database", async () => {
   ).rejects.toThrow("FORBIDDEN");
   expect(mocks.rpc).not.toHaveBeenCalled();
 });
+
+it("requires the database to acknowledge congregation filtering, avoiding unfiltered results on old schemas", async () => {
+  const contributorCongregationId = "30000000-0000-4000-8000-000000000002";
+  mocks.rpc.mockResolvedValue({
+    data: { items: [], contributorCongregationId },
+    error: null,
+  });
+  await expect(
+    listFinanceTransactions(context, {
+      month: "2026-10",
+      contributorCongregationId,
+    }),
+  ).resolves.toMatchObject({ contributorCongregationId });
+  mocks.rpc.mockResolvedValue({ data: { items: [] }, error: null });
+  await expect(
+    listFinanceTransactions(context, {
+      month: "2026-10",
+      contributorCongregationId,
+    }),
+  ).rejects.toThrow("CONFIGURATION_REQUIRED");
+});

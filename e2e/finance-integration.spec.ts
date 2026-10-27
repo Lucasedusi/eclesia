@@ -55,8 +55,9 @@ test("admin configures, restricted operator receives and monthly versions preser
   await dialog
     .getByRole("combobox", { name: "Caixa ou conta", exact: true })
     .selectOption(f.boxes[f.unitId].cash);
+  await dialog.getByRole("combobox", { name: /Pago a/ }).selectOption("ORGANIZATION");
   await dialog
-    .getByLabel("Favorecido (opcional)")
+    .getByLabel("Nome ou identificação")
     .fill(`Fornecedor <script> ${suffix}`);
   await dialog
     .getByRole("combobox", { name: "Categoria", exact: true })

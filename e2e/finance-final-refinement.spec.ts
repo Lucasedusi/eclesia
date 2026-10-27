@@ -19,7 +19,7 @@ async function within(container: Locator, element: Locator) {
 
 async function dirtyAttendance(page: Page) {
   await page.goto(location("atendimento"));
-  await page.getByRole("combobox", { name: "Identificação", exact: true }).selectOption("UNREGISTERED");
+  await page.getByRole("combobox", { name: /Identificação/ }).selectOption("UNREGISTERED");
   await page.getByRole("textbox", { name: "Nome da pessoa", exact: true }).fill("Conferência final fictícia");
 }
 

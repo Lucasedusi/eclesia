@@ -1,5 +1,6 @@
 "use client";
 import { FinanceEmpty } from "./finance-empty";
+import { FinanceCongregationFilter } from "./finance-congregation-picker";
 import { useFinanceNavigation } from "./finance-shell";
 import { FinanceSkeleton } from "./finance-skeleton";
 import { Loader2 } from "lucide-react";
@@ -60,6 +61,7 @@ export function FinanceTransactionsTable({
     filters.cashboxId,
     filters.paymentMethodId,
     filters.memberId,
+    filters.contributorCongregationId,
   ].filter(Boolean).length;
   const hasActiveFilters =
     advancedFilterCount > 0 || Boolean(filters.search) || filters.direction !== "ALL";
@@ -178,6 +180,10 @@ export function FinanceTransactionsTable({
             ))}
           </div>
           <div id="finance-advanced-filters" hidden={!advanced}>
+            <FinanceCongregationFilter unit={unit} initial={filters.contributorCongregationId ? {
+              id: filters.contributorCongregationId,
+              name: result.items.find((item) => item.contributorCongregationId === filters.contributorCongregationId)?.personName ?? "Congregação selecionada",
+            } : null} />
             <div className="grid" style={{ marginTop: 6 }}>
               <label className="finance-advanced-direction">
                 Natureza
@@ -243,7 +249,7 @@ export function FinanceTransactionsTable({
               <div className="finance-mobile-only finance-advanced-reset">
                 <Button type="button" variant="ghost" size="sm" onClick={() => {
                   const data = new FormData(filterForm.current!);
-                  for (const key of ["status", "titheClassificationId", "departmentId", "categoryId", "cashboxId", "paymentMethodId", "memberId"]) data.delete(key);
+                  for (const key of ["status", "titheClassificationId", "departmentId", "categoryId", "cashboxId", "paymentMethodId", "memberId", "contributorCongregationId"]) data.delete(key);
                   filter(data);
                 }}><X size={14} />Limpar filtros</Button>
               </div>
@@ -326,7 +332,7 @@ export function FinanceTransactionsTable({
                         {t.personName ||
                           t.beneficiaryName ||
                           t.description ||
-                          "Coletivo"}
+                          (t.direction === "INCOME" ? "Coletivo" : "Não informado")}
                       </div>
                     </td>
                     <td>
@@ -427,7 +433,7 @@ function TransactionSearch({ initialValue, busy, onClear }: {
   const [value, setValue] = useState(initialValue);
   const input = useRef<HTMLInputElement>(null);
   return <span className="finance-search-input">
-    <input ref={input} aria-label="Buscar" name="search" value={value} onChange={event => setValue(event.target.value)} placeholder="Pessoa, descrição ou documento" maxLength={160} />
+    <input ref={input} aria-label="Buscar" name="search" value={value} onChange={event => setValue(event.target.value)} placeholder="Nome, descrição ou documento" maxLength={160} />
     {busy ? <span className="finance-search-loading" role="status" aria-label="Buscando lançamentos"><Loader2 size={16} className="finance-spin" aria-hidden="true" /></span> : value && <button type="button" className="finance-clear-search" aria-label="Limpar busca" onClick={() => {
       setValue("");
       onClear();

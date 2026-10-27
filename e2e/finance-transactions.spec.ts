@@ -14,7 +14,7 @@ test("continuous entry preserves defaults, then supports correction and cancella
     .getByRole("combobox", { name: "Caixa ou conta", exact: true })
     .selectOption(f.boxes[f.unitId].cash);
   await dialog
-    .getByRole("combobox", { name: "Identificação", exact: true })
+    .getByRole("combobox", { name: /Identificação/ })
     .selectOption("UNREGISTERED");
   await dialog.getByLabel("Nome da pessoa", { exact: true }).fill(name);
   await dialog

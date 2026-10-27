@@ -1,5 +1,9 @@
 import { it, expect } from "vitest";
 import { newEntryState, nextEntryDefaults } from "./finance-entry-session";
+it("starts the next expense with an explicit empty identity after clearing the previous organization", () => {
+  const state = { ...newEntryState("2026-10-27"), contributor: { kind: "ORGANIZATION" as const, name: "Empresa" }, personLabel: "Empresa", beneficiaryName: "Empresa" };
+  expect(nextEntryDefaults(state, "next", "EXPENSE")).toMatchObject({ contributor: { kind: "COLLECTIVE" }, personLabel: "", beneficiaryName: "" });
+});
 it("retains working defaults and clears private contribution data only after confirmation", () => {
   const state = {
     ...newEntryState("2026-10-03", "key"),

@@ -7,6 +7,7 @@ import type {
   ContributorOption,
   ContributorSearch,
 } from "../types/finance-contributor.types";
+import { FinanceCongregationPicker } from "./finance-congregation-picker";
 import { FinanceCredentialReader } from "./finance-credential-reader";
 import { searchFinanceContributorsAction } from "../actions/finance-contributor.actions";
 export function FinanceContributorPicker({
@@ -16,6 +17,7 @@ export function FinanceContributorPicker({
   canLookup,
   onChange,
   allowCollective = true,
+  direction = "INCOME",
 }: {
   unit: string;
   value: ContributorRef | null;
@@ -27,6 +29,7 @@ export function FinanceContributorPicker({
     classification?: string | null,
   ) => void;
   allowCollective?: boolean;
+  direction?: "INCOME" | "EXPENSE";
 }) {
   const inputId = useId();
   const [kind, setKind] = useState(
@@ -65,22 +68,24 @@ export function FinanceContributorPicker({
   return (
     <div className="stack">
       <label>
-        Identificação
+        {direction === "INCOME" ? "Recebido de" : "Pago a"}
         <select
+          aria-label={`${direction === "INCOME" ? "Recebido de" : "Pago a"} — Identificação`}
           value={kind}
           onChange={(e) => {
             ++sequence.current;
             setBusy(false);
             const next = e.target.value as typeof kind;
             setKind(next);
+            setCamera(false);
             setResults([]);
             setQuery("");
             setError("");
             onChange(
               next === "COLLECTIVE"
                 ? { kind: "COLLECTIVE" }
-                : next === "UNREGISTERED"
-                  ? { kind: "UNREGISTERED", name: "" }
+                : next === "UNREGISTERED" || next === "ORGANIZATION"
+                  ? { kind: next, name: "" }
                   : null,
               "",
             );
@@ -88,28 +93,48 @@ export function FinanceContributorPicker({
         >
           {canLookup && <option value="MEMBER">Pessoa cadastrada</option>}
           <option value="UNREGISTERED">Pessoa não cadastrada</option>
-          {allowCollective && (
+          <option value="CONGREGATION">Congregação</option>
+          <option value="ORGANIZATION">Empresa, instituição ou outros</option>
+          {direction === "EXPENSE" && (
+            <option value="COLLECTIVE">Sem identificação</option>
+          )}
+          {allowCollective && direction === "INCOME" && (
             <option value="COLLECTIVE">Contribuição coletiva</option>
           )}
         </select>
       </label>
-      {kind === "UNREGISTERED" && (
+      {(kind === "UNREGISTERED" || kind === "ORGANIZATION") && (
         <label>
-          Nome da pessoa
+          {kind === "ORGANIZATION" ? "Nome ou identificação" : "Nome da pessoa"}
           <input
             data-person-search
-            value={value?.kind === "UNREGISTERED" ? value.name : ""}
+            value={value?.kind === kind ? value.name : ""}
             onChange={(e) =>
-              onChange(
-                { kind: "UNREGISTERED", name: e.target.value },
-                e.target.value,
-              )
+              onChange({ kind, name: e.target.value }, e.target.value)
             }
             required
             minLength={2}
             maxLength={160}
           />
         </label>
+      )}
+      {kind === "CONGREGATION" && (
+        <FinanceCongregationPicker
+          unit={unit}
+          value={
+            value?.kind === "CONGREGATION"
+              ? { id: value.congregationId, name: label }
+              : null
+          }
+          onChange={(option) =>
+            onChange(
+              option
+                ? { kind: "CONGREGATION", congregationId: option.id }
+                : null,
+              option?.name ?? "",
+            )
+          }
+        />
       )}
       {kind === "MEMBER" && value?.kind === "MEMBER" ? (
         <div className="notice finance-selected-person">

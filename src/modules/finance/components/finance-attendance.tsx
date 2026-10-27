@@ -25,7 +25,7 @@ export function FinanceAttendance(props: {
           <div className="row">
             <ShieldCheck color="#087F5B" size={18} />
             <span className="muted">
-              Confira a pessoa e os valores antes de confirmar.
+              Confira a identificação e os valores antes de confirmar.
             </span>
           </div>
           <FinanceEntryForm {...props} mode="ATTENDANCE" />

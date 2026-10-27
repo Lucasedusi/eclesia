@@ -54,7 +54,7 @@ test("changing month with unsaved attendance asks before navigation", async ({
   await page.setViewportSize({ width: 390, height: 800 });
   await page.goto(`/financeiro/atendimento?unidade=${unitId}&mes=2026-10`);
   await page
-    .getByRole("combobox", { name: "Identificação", exact: true })
+    .getByRole("combobox", { name: /Identificação/ })
     .selectOption("UNREGISTERED");
   await page
     .getByRole("textbox", { name: "Nome da pessoa", exact: true })

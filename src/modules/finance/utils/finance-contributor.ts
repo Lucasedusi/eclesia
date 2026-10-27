@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { isValidCpf } from "@/utils/input-masks";
+export const congregationSearchSchema = z.string().trim().min(2).max(160);
 export const contributorSearchSchema = z.discriminatedUnion("kind", [
   z
     .object({

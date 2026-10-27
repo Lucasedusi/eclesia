@@ -265,7 +265,7 @@ test("one Save posts and returns to the filtered queue, while More options saves
     .getByRole("combobox", { name: "Categoria", exact: true })
     .selectOption(f.offeringId);
   await page
-    .getByRole("combobox", { name: "Identificação", exact: true })
+    .getByRole("combobox", { name: /Identificação/ })
     .selectOption("COLLECTIVE");
   await page
     .getByRole("button", { name: "Salvar rascunho", exact: true })
@@ -362,7 +362,7 @@ test("Enter in the entry form saves the movement even with More options open", a
     .getByRole("combobox", { name: "Categoria", exact: true })
     .selectOption(f.offeringId);
   await page
-    .getByRole("combobox", { name: "Identificação", exact: true })
+    .getByRole("combobox", { name: /Identificação/ })
     .selectOption("COLLECTIVE");
   await page.getByText("Mais opções", { exact: true }).click();
   await page

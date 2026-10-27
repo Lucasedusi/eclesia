@@ -5,6 +5,15 @@ const text = z.string().trim().max(1000).optional();
 export const contributorSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("MEMBER"), memberId: z.uuid() }).strict(),
   z
+    .object({ kind: z.literal("CONGREGATION"), congregationId: z.uuid() })
+    .strict(),
+  z
+    .object({
+      kind: z.literal("ORGANIZATION"),
+      name: z.string().trim().min(2).max(160),
+    })
+    .strict(),
+  z
     .object({
       kind: z.literal("UNREGISTERED"),
       name: z.string().trim().min(2).max(160),
