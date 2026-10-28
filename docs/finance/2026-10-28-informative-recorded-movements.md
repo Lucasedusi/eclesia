@@ -1,6 +1,6 @@
 # Informativos baseados nos lançamentos
 
-Implementado em `codex/finance-bank-statement-import`, diretamente e sem subagentes. Nenhuma publicação na main ou alteração no banco online.
+Implementado em `codex/finance-bank-statement-import`, diretamente e sem subagentes. A implementação inicial foi validada localmente; a aplicação online posteriormente autorizada está registrada ao final. Nenhuma publicação na main.
 
 ## Regra dos dois relatórios
 
@@ -37,4 +37,28 @@ O vínculo é com o ID da categoria, não com seu nome. Renomear ou inativar pre
 
 Servidor web de teste encerrado; portas 3000 e 3217 livres ao final.
 
-A atualização online permanece pendente de autorização. Não foram criados lançamentos reais nem inferidos vínculos de registros antigos.
+A atualização online estava pendente ao final da implementação local. Não foram criados lançamentos reais nem inferidos vínculos de registros antigos.
+
+
+## Aplicação online autorizada — 28/10/2026
+
+Após a autorização do usuário para o necessário à ativação, a simulação confirmou somente `20261028142727_finance_informative_recorded_movements.sql`. Essa migração foi aplicada com o CLI para preservar sua versão original no histórico do projeto `eclesias_bd_sp`, sem seeds, roles ou atualização de Vault. O histórico remoto confirmou a versão e o nome esperados.
+
+Configurações realizadas pela sessão autenticada do usuário, preservando a auditoria do aplicativo:
+
+- Categoria existente **Repasse**, natureza **Entrada e saída**: uso **Repasse recebido pela Catedral**.
+- Categoria **Prebenda** não existia. Foi criada como **Saída**, uso **Prebenda bruta paga pela congregação**, departamento sugerido **Tesouraria**, ativa.
+- Não foram criados lançamentos financeiros, baixas, vínculos retroativos ou dados de teste online. Outros cadastros não foram reclassificados.
+
+A leitura posterior confirmou as classificações salvas, RLS mantida, busca de esquema vazia e ausência de execução anônima nas cinco rotinas envolvidas. Os relatórios e seus auxiliares continuam SECURITY INVOKER; o comando de catálogo mantém a autorização anterior. Os tipos gerados na validação local já correspondem à mesma migração aplicada online.
+
+Na aplicação da branch, conectada ao banco online, foram gerados com Prebenda e Repasse selecionados:
+
+- **Informativo por congregação:** Catedral, agosto a outubro de 2026; resposta HTTP 200 em aproximadamente 2,7 segundos.
+- **Informativo geral por congregação:** outubro de 2026; resposta HTTP 200 em aproximadamente 2,5 segundos.
+
+A interface confirmou “Seu relatório está pronto” e a abertura em nova aba para ambos. A ferramenta de navegação bloqueou a inspeção direta do conteúdo das abas `blob:` por sua política de URL; nenhuma tentativa de contornar essa restrição foi feita. A confirmação online está limitada à emissão HTTP 200 e ao estado de sucesso da aplicação; o conteúdo e a diagramação haviam sido verificados nos PDFs locais. A página de importação também abriu com HTTP 200, sem `UNAVAILABLE` nos registros desta conferência.
+
+Advisors sem erros ou novos avisos de segurança: os mesmos 62 avisos de [execução autenticada de funções SECURITY DEFINER](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable) e o aviso existente de [proteção contra senhas vazadas](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection). Desempenho mantém 16 avisos existentes de [avaliação por linha das políticas](https://supabase.com/docs/guides/database/database-linter?lint=0003_auth_rls_initplan) e [políticas permissivas múltiplas](https://supabase.com/docs/guides/database/database-linter?lint=0006_multiple_permissive_policies), sem nova correção necessária para esta atualização.
+
+Servidor temporário encerrado e porta 3000 livre. Branch mantida, sem push ou merge. A main permanece em `b83b43c5ad59176a814b4b2d92f0f062edbdfa35`.
