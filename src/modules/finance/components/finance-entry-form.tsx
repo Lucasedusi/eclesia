@@ -3,7 +3,6 @@ import { FinanceMoneyInput } from "./finance-money-input";
 import Link from "next/link";
 import {
   useEffect,
-  useId,
   useImperativeHandle,
   useRef,
   useState,
@@ -113,7 +112,6 @@ export function FinanceEntryForm({
   bankImport?: BankImportEntry;
 }) {
   const financeNavigation = useFinanceNavigation(),
-    referenceHelpId = useId(),
     form = useRef<HTMLFormElement>(null),
     pending = useRef<FinanceCommand | null>(null),
     operationKey = useRef("");
@@ -494,23 +492,17 @@ export function FinanceEntryForm({
               onChange={(e) => change({ date: e.target.value })}
             />
           </label>
-          <div className="finance-reference-field">
-            <label>
-              Mês de referência
-              <input
-                type="month"
-                min="2000-01"
-                max="2099-12"
-                required
-                value={state.referenceMonth}
-                aria-describedby={referenceHelpId}
-                onChange={(e) => change({ referenceMonth: e.target.value })}
-              />
-            </label>
-            <p id={referenceHelpId} className="muted">
-              Mês ao qual este pagamento se refere. Não altera o período do caixa.
-            </p>
-          </div>
+          <label>
+            Mês de referência
+            <input
+              type="month"
+              min="2000-01"
+              max="2099-12"
+              required
+              value={state.referenceMonth}
+              onChange={(e) => change({ referenceMonth: e.target.value })}
+            />
+          </label>
         </div>
         <div className="grid">
           <label>
