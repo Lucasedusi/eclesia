@@ -1,8 +1,18 @@
 import { expect, it } from "vitest";
-import { bankImportMutationSchema, bankImportFiltersSchema } from "./schemas";
+import { bankImportMutationSchema, bankImportFiltersSchema, bankImportDraftSchema } from "./schemas";
 import { newEntryState } from "../utils/finance-entry-session";
 const id = "10000000-0000-4000-8000-000000000001";
 const base = { unit: id, itemId: id, revision: 1, operationKey: id };
+it("restores legacy drafts and preserves an edited reference in new drafts", () => {
+  const legacy = { ...newEntryState("2026-11-05"), personLabel: "Preservado" } as Record<string, unknown>;
+  delete legacy.referenceMonth;
+  delete legacy.referenceMonthManual;
+  expect(bankImportDraftSchema.parse({ state: legacy, extra: [] }).state).toMatchObject({
+    referenceMonth: "2026-11", referenceMonthManual: false, personLabel: "Preservado",
+  });
+  expect(bankImportDraftSchema.parse({ state: { ...legacy, referenceMonth: "2026-10", referenceMonthManual: true }, extra: [] }).state)
+    .toMatchObject({ referenceMonth: "2026-10", referenceMonthManual: true });
+});
 it("preserves congregation selection and unfinished organization in drafts", () => {
   for (const contributor of [
     { kind: "CONGREGATION", congregationId: id },

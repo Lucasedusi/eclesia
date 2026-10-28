@@ -23,6 +23,11 @@ export const FinanceStyles = createGlobalStyle`
  .finance .stack,#finance-modal-root .stack{display:grid;gap:18px}.finance .row,#finance-modal-root .row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.finance .spread{justify-content:space-between}
  .finance .stack>*,.finance .grid>*,#finance-modal-root .stack>*,#finance-modal-root .grid>*{min-width:0}
  .finance .grid,#finance-modal-root .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:18px}
+ :is(.finance,#finance-modal-root) .finance-detail-identity{display:flex;flex-direction:column;align-items:flex-start;gap:6px;overflow-wrap:anywhere}
+ :is(.finance,#finance-modal-root) .finance-detail-identity>*{margin:0;max-width:100%;min-width:0}
+ :is(.finance,#finance-modal-root) .finance-entry-dates{align-items:start}
+ :is(.finance,#finance-modal-root) .finance-reference-field{display:grid;gap:8px}
+ :is(.finance,#finance-modal-root) .finance-reference-field>p{margin:0;font-size:12px;line-height:1.5;font-weight:400}
  .finance .card,#finance-modal-root .card{background:white;border:1px solid #E3EAE6;border-radius:18px;padding:24px;box-shadow:0 3px 12px #18352c03}
  .finance .amount{font-variant-numeric:tabular-nums;font-size:28px;letter-spacing:-.8px;font-weight:500}.finance .positive{color:#087F5B}.finance .negative{color:#B5474D}
  .finance .badge,#finance-modal-root .badge{display:inline-flex;align-items:center;gap:6px;border-radius:50px;padding:5px 10px;background:#EDF5EF;color:#176348;font-size:11px;font-weight:500}

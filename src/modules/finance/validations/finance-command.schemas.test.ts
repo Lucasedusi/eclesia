@@ -13,6 +13,22 @@ const record = {
   contributor: { kind: "COLLECTIVE" },
   items: [{ categoryId: id, departmentId: id, amountCents: 100 }],
 };
+it("accepts an independent reference for entries, expenses, attendance and corrections", () => {
+  for (const variant of [
+    { ...record, referenceMonth: "2026-09" },
+    { ...record, referenceMonth: "2026-09", direction: "EXPENSE" },
+    { ...record, referenceMonth: "2026-09", mode: "ATTENDANCE" },
+    { kind: "CORRECT_TRANSACTION", operationKey: id, congregationId: id, id,
+      expectedRevision: 1, reason: "Corrigir referência",
+      replacement: { date: record.date, referenceMonth: "2026-09", direction: record.direction,
+        cashboxId: id, paymentMethodId: id, contributor: record.contributor, item: record.items[0] } },
+  ]) expect(financeCommandSchema.safeParse(variant).success).toBe(true);
+});
+it.each(["", "2026-00", "2026-13", "1999-12", "2100-01", "2026-10-01", null])(
+  "rejects invalid reference %s", (referenceMonth) => {
+    expect(financeCommandSchema.safeParse({ ...record, referenceMonth }).success).toBe(false);
+  },
+);
 it("single means one line and attendance only receives income", () => {
   expect(financeCommandSchema.safeParse(record).success).toBe(true);
   expect(

@@ -3,6 +3,7 @@ import { FinanceMoneyInput } from "./finance-money-input";
 import Link from "next/link";
 import {
   useEffect,
+  useId,
   useImperativeHandle,
   useRef,
   useState,
@@ -28,6 +29,7 @@ import {
 import {
   newEntryState,
   nextEntryDefaults,
+  updateEntryState,
   type EntryFormState,
 } from "../utils/finance-entry-session";
 import { financeLocation } from "../utils/finance-navigation";
@@ -66,6 +68,8 @@ function seed(date: string, t?: FinanceTransactionDetail): EntryFormState {
   return {
     ...state,
     date: t.date,
+    referenceMonth: t.referenceMonth,
+    referenceMonthManual: true,
     cashboxId: t.cashboxId,
     paymentMethodId: t.paymentMethodId,
     categoryId: t.categoryId,
@@ -109,6 +113,7 @@ export function FinanceEntryForm({
   bankImport?: BankImportEntry;
 }) {
   const financeNavigation = useFinanceNavigation(),
+    referenceHelpId = useId(),
     form = useRef<HTMLFormElement>(null),
     pending = useRef<FinanceCommand | null>(null),
     operationKey = useRef("");
@@ -157,7 +162,7 @@ export function FinanceEntryForm({
     }
   }, 0);
   function change(patch: Partial<EntryFormState>) {
-    setState((current) => ({ ...current, ...patch }));
+    setState((current) => updateEntryState(current, patch));
     setDirty(true);
   }
   function changeLine(index: number, patch: Partial<Line>) {
@@ -205,6 +210,7 @@ export function FinanceEntryForm({
         const contributor = state.contributor;
         const payment = {
           date: state.date,
+          referenceMonth: state.referenceMonth,
           cashboxId: state.cashboxId,
           paymentMethodId: state.paymentMethodId,
           contributor,
@@ -476,7 +482,7 @@ export function FinanceEntryForm({
         <h3 className="finance-section-title">
           {direction === "EXPENSE" ? "Pagamento" : "Recebimento"}
         </h3>
-        <div className="grid">
+        <div className="grid finance-entry-dates">
           <label>
             Data
             <input
@@ -488,14 +494,23 @@ export function FinanceEntryForm({
               onChange={(e) => change({ date: e.target.value })}
             />
           </label>
-          <label>
-            Referência
-            <input
-              readOnly
-              value={state.date.slice(0, 7).split("-").reverse().join("/")}
-              tabIndex={-1}
-            />
-          </label>
+          <div className="finance-reference-field">
+            <label>
+              Mês de referência
+              <input
+                type="month"
+                min="2000-01"
+                max="2099-12"
+                required
+                value={state.referenceMonth}
+                aria-describedby={referenceHelpId}
+                onChange={(e) => change({ referenceMonth: e.target.value })}
+              />
+            </label>
+            <p id={referenceHelpId} className="muted">
+              Mês ao qual este pagamento se refere. Não altera o período do caixa.
+            </p>
+          </div>
         </div>
         <div className="grid">
           <label>
@@ -856,6 +871,10 @@ export function FinanceEntryForm({
             <div>
               <dt>Data</dt>
               <dd>{state.date.split("-").reverse().join("/")}</dd>
+            </div>
+            <div>
+              <dt>Mês de referência</dt>
+              <dd>{state.referenceMonth.split("-").reverse().join("/") || "—"}</dd>
             </div>
             <div>
               <dt>Caixa ou conta</dt>

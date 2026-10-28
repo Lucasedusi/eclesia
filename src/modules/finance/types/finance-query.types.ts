@@ -42,6 +42,7 @@ export type FinanceTransactionPage = {
   pageCount: number;
 };
 export type FinanceTransactionDetail = FinanceTransactionRow & {
+  referenceMonth: string;
   memberId: string | null;
   contributorKind: string | null;
   categoryId: string;

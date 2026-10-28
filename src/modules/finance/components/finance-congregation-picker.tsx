@@ -1,6 +1,6 @@
 "use client";
 import { useLayoutEffect, useRef, useState } from "react";
-import { Church, Search, Trash2 } from "lucide-react";
+import { Church, Loader2, Search, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { searchFinanceCongregationsAction } from "../actions/finance-contributor.actions";
 import type { FinanceCongregationOption } from "../types/finance-contributor.types";
@@ -100,7 +100,7 @@ export function FinanceCongregationPicker({
                 aria-busy={busy}
                 onClick={() => void search()}
               >
-                <Search size={18} aria-hidden="true" />
+                {busy ? <Loader2 size={18} className="finance-spin" aria-hidden="true" /> : <Search size={18} aria-hidden="true" />}
               </button>
             </span>
           </label>

@@ -1,5 +1,19 @@
 import { it, expect } from "vitest";
-import { newEntryState, nextEntryDefaults } from "./finance-entry-session";
+import { newEntryState, nextEntryDefaults, updateEntryState } from "./finance-entry-session";
+it("follows the movement date until the reference is explicitly selected", () => {
+  let state = newEntryState("2026-11-05");
+  expect(state.referenceMonth).toBe("2026-11");
+  state = updateEntryState(state, { date: "2026-12-01" });
+  expect(state.referenceMonth).toBe("2026-12");
+  state = updateEntryState(state, { referenceMonth: "2026-10" });
+  state = updateEntryState(state, { date: "2027-01-01" });
+  expect(state.referenceMonth).toBe("2026-10");
+  expect(nextEntryDefaults(state, "next").referenceMonth).toBe("2027-01");
+});
+it("preserves an explicit reference even when it equals the current date's month", () => {
+  const state = updateEntryState(newEntryState("2026-11-05"), { referenceMonth: "2026-11" });
+  expect(updateEntryState(state, { date: "2026-12-01" }).referenceMonth).toBe("2026-11");
+});
 it("starts the next expense with an explicit empty identity after clearing the previous organization", () => {
   const state = { ...newEntryState("2026-10-27"), contributor: { kind: "ORGANIZATION" as const, name: "Empresa" }, personLabel: "Empresa", beneficiaryName: "Empresa" };
   expect(nextEntryDefaults(state, "next", "EXPENSE")).toMatchObject({ contributor: { kind: "COLLECTIVE" }, personLabel: "", beneficiaryName: "" });

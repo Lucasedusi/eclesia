@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { centsSchema, localDateSchema } from "./finance-catalog.schemas";
+import { centsSchema, localDateSchema, monthSchema } from "./finance-catalog.schemas";
 import { MAX_AMOUNT_CENTS } from "../utils/finance-money";
 const text = z.string().trim().max(1000).optional();
 export const contributorSchema = z.discriminatedUnion("kind", [
@@ -35,6 +35,7 @@ export const contributionSchema = z
 const base = { operationKey: z.uuid(), congregationId: z.uuid() };
 const payment = {
   date: localDateSchema,
+  referenceMonth: monthSchema.optional(),
   cashboxId: z.uuid(),
   paymentMethodId: z.uuid(),
   contributor: contributorSchema,

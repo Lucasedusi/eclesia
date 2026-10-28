@@ -70,16 +70,19 @@ export function FinanceTransactionDetails({
                 ?.name || "Forma indisponível"}
             </span>
           </div>
-          <div>
+          <div className="finance-detail-identity">
             <p className="muted">{t.direction === "INCOME" ? "Recebido de" : "Pago a"}</p>
-            {t.personName || t.beneficiaryName || (t.direction === "INCOME" ? "Contribuição coletiva" : "Não informado")}
+            <span>{t.personName || t.beneficiaryName || (t.direction === "INCOME" ? "Contribuição coletiva" : "Não informado")}</span>
             {t.contributorKind === "CONGREGATION" && <small className="muted">Congregação</small>}
             {t.contributorKind === "ORGANIZATION" && <small className="muted">Empresa, instituição ou outros</small>}
           </div>
           <div>
-            <p className="muted">Data · referência</p>
-            {t.date.split("-").reverse().join("/")} ·{" "}
-            {t.date.slice(0, 7).split("-").reverse().join("/")}
+            <p className="muted">Data da movimentação</p>
+            {t.date.split("-").reverse().join("/")}
+          </div>
+          <div>
+            <p className="muted">Mês de referência</p>
+            {t.referenceMonth.split("-").reverse().join("/")}
           </div>
           <div>
             <p className="muted">Departamento</p>

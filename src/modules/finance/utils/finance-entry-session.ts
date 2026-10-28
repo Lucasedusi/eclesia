@@ -2,6 +2,8 @@ import type { ContributorRef } from "../types/finance-command.types";
 export type EntryFormState = {
   operationKey: string;
   date: string;
+  referenceMonth: string;
+  referenceMonthManual: boolean;
   cashboxId: string;
   paymentMethodId: string;
   categoryId: string;
@@ -22,6 +24,8 @@ export function newEntryState(date: string, operationKey = ""): EntryFormState {
   return {
     operationKey,
     date,
+    referenceMonth: date.slice(0, 7),
+    referenceMonthManual: false,
     cashboxId: "",
     paymentMethodId: "",
     categoryId: "",
@@ -38,6 +42,16 @@ export function newEntryState(date: string, operationKey = ""): EntryFormState {
     notes: "",
     detailsOpen: false,
   };
+}
+export function updateEntryState(
+  current: EntryFormState,
+  patch: Partial<EntryFormState>,
+): EntryFormState {
+  const next = { ...current, ...patch };
+  if (patch.referenceMonth !== undefined) next.referenceMonthManual = true;
+  else if (patch.date !== undefined && !current.referenceMonthManual)
+    next.referenceMonth = patch.date.slice(0, 7);
+  return next;
 }
 export function nextEntryDefaults(
   current: EntryFormState,

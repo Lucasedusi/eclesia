@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { financeCommandSchema } from "../validations/finance-command.schemas";
+import { monthSchema } from "../validations/finance-catalog.schemas";
 const selection = z.union([z.uuid(), z.literal("")]);
 const line = z
   .object({
@@ -18,6 +19,8 @@ export const bankImportDraftSchema = z
       .extend({
         operationKey: z.string().max(36),
         date: z.string().max(10),
+        referenceMonth: z.union([monthSchema, z.literal("")]).optional(),
+        referenceMonthManual: z.boolean().optional(),
         cashboxId: selection,
         paymentMethodId: selection,
         contributor: z
@@ -52,7 +55,13 @@ export const bankImportDraftSchema = z
         documentIds: z.array(z.uuid()).max(10),
         detailsOpen: z.boolean(),
       })
-      .strict(),
+      .strict()
+      .transform((state) => ({
+        ...state,
+        referenceMonth: state.referenceMonth ?? state.date.slice(0, 7),
+        referenceMonthManual: state.referenceMonthManual ??
+          (state.referenceMonth !== undefined && state.referenceMonth !== state.date.slice(0, 7)),
+      })),
     extra: z.array(line).max(49),
   })
   .strict();

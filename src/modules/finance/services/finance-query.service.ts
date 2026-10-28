@@ -60,7 +60,7 @@ export async function getFinanceTransaction(
   const { data: t, error } = await c
     .from("financial_transactions")
     .select(
-      "id,transaction_date,transaction_type,amount,status,revision,person_name,beneficiary_name,category_name,department_name,classification_name,description,document_number,attendance_id,cashbox_id,payment_method_id,member_id,contributor_kind,contributor_congregation_id,category_id,department_id,tithe_classification_id,notes,payment_reference",
+      "id,transaction_date,reference_month,reference_year,transaction_type,amount,status,revision,person_name,beneficiary_name,category_name,department_name,classification_name,description,document_number,attendance_id,cashbox_id,payment_method_id,member_id,contributor_kind,contributor_congregation_id,category_id,department_id,tithe_classification_id,notes,payment_reference",
     )
     .eq("church_id", context.churchId)
     .eq("congregation_id", context.congregationId)
@@ -122,6 +122,9 @@ export async function getFinanceTransaction(
   return {
     id: t.id,
     date: t.transaction_date,
+    referenceMonth: t.reference_year !== null && t.reference_month !== null
+      ? `${t.reference_year}-${String(t.reference_month).padStart(2, "0")}`
+      : t.transaction_date.slice(0, 7),
     direction: t.transaction_type as "INCOME" | "EXPENSE",
     amountCents: decimalToCents(t.amount),
     status: t.status,

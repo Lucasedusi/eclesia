@@ -54,7 +54,7 @@ export function FinanceTransactionPeriod({ month, dateFrom, dateTo, onApply }: {
                 ["MONTH", "Mês"], ["3", "Últimos 3 dias"], ["7", "Últimos 7 dias"], ["CUSTOM", "Personalizado"],
               ] as const).map(([value, text]) => <button type="button" key={value} aria-pressed={mode === value} onClick={() => selectMode(value)}>{text}</button>)}
             </div>
-            {mode === "MONTH" ? <label>Mês de referência<input type="month" min="2000-01" max="2099-12" value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} /></label> : (
+            {mode === "MONTH" ? <label>Mês da movimentação<input type="month" min="2000-01" max="2099-12" value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} /></label> : (
               <>
                 {mode === "CUSTOM" && <div className="finance-period-dates">
                   <label>Data inicial<input type="date" min="2000-01-01" max="2099-12-31" value={range.dateFrom} onChange={e => setRange({ ...range, dateFrom: e.target.value })} /></label>
