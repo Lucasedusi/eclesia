@@ -46,3 +46,37 @@ describe("financial catalog input", () => {
       }).success,
     ).toBe(false));
 });
+
+it.each([
+  ["TRANSFER", "INCOME", true],
+  ["TRANSFER", "EXPENSE", false],
+  ["TRANSFER", "BOTH", true],
+  ["PREBEND", "EXPENSE", true],
+  ["PREBEND", "INCOME", false],
+  ["PREBEND", "BOTH", true],
+])(
+  "validates informative role %s with direction %s",
+  (informativeRole, direction, valid) => {
+    expect(
+      financeCatalogSchema.safeParse({
+        entity: "CATEGORY",
+        name: "Categoria",
+        congregationId: unit,
+        direction,
+        informativeRole,
+      }).success,
+    ).toBe(valid);
+  },
+);
+it("does not classify tithes as remittances", () => {
+  expect(
+    financeCatalogSchema.safeParse({
+      entity: "CATEGORY",
+      name: "Dízimo",
+      congregationId: unit,
+      direction: "INCOME",
+      isTithe: true,
+      informativeRole: "TRANSFER",
+    }).success,
+  ).toBe(false);
+});

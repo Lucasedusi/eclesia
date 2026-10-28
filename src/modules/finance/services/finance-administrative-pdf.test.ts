@@ -25,13 +25,12 @@ const amounts = {
   closingCents: 8000000,
   grossPrebendCents: 300000,
   transferCents: 700000,
-  missingMonths: 0,
 };
 it.each([
   [true, true],
   [false, false],
 ])(
-  "renders ranking totals, optional columns and partial values (%s,%s)",
+  "renders ranking totals, optional columns and receipts needing review (%s,%s)",
   async (includePrebend, includeTransfer) => {
     const data: RankingDocument = {
       ...identity,
@@ -41,6 +40,13 @@ it.each([
       includeInactive: false,
       includePrebend,
       includeTransfer,
+      transferReview: includeTransfer
+        ? {
+            receivedCents: 730000,
+            unidentifiedCents: 10000,
+            outsideReportCents: 20000,
+          }
+        : null,
       rows: [
         {
           ...amounts,
@@ -48,8 +54,6 @@ it.each([
           name: "Congregação Jardim Esperança",
           status: "ACTIVE",
           isHeadquarters: false,
-          staleMonths: [],
-          missingMonths: 1,
         },
         {
           ...amounts,
@@ -57,7 +61,7 @@ it.each([
           name: "Catedral",
           status: "ACTIVE",
           isHeadquarters: true,
-          staleMonths: ["2026-09"],
+          transferCents: 0,
         },
       ],
       totals: {
@@ -65,8 +69,7 @@ it.each([
         expenseCents: 1000000,
         closingCents: 16000000,
         grossPrebendCents: 600000,
-        transferCents: 1400000,
-        missingMonths: 1,
+        transferCents: 700000,
       },
     };
     const draw = vi.spyOn(PDFPage.prototype, "drawText");
@@ -77,7 +80,13 @@ it.each([
       expect(text).toContain("160.000,00");
       expect(text.includes("Prebenda bruta")).toBe(includePrebend);
       expect(text.includes("Repasse")).toBe(includeTransfer);
-      if (includePrebend) expect(text).toContain("parcial");
+      expect(text).not.toContain("parcial");
+      expect(text).not.toContain("demonstrativo");
+      if (includeTransfer) {
+        expect(text).toContain("Sem congregação identificada");
+        expect(text).toContain("Congregações fora da seleção");
+        expect(text).toContain("7.300,00");
+      }
       expect((await PDFDocument.load(bytes)).getPageCount()).toBe(1);
       if (process.env.REPORT_PDF_QA) {
         await mkdir("tmp/reports", { recursive: true });

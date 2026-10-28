@@ -120,6 +120,11 @@ export async function POST(request: Request) {
           "Este relatório excede o limite de geração. Reduza o período, selecione um caixa ou use uma apresentação resumida.",
           422,
         );
+      if (error.code === "REPORT_CONFIGURATION_REQUIRED")
+        return failure(
+          "Configure o uso das categorias de Repasse e Prebenda selecionadas nos informativos e confira o cadastro da Catedral antes de emitir o relatório.",
+          422,
+        );
       if (error.code === "REPORT_RECONCILIATION_REQUIRED")
         return failure(
           "Há divergência entre lançamentos e movimentos de saldo. Solicite a conferência ao administrador antes de emitir o relatório.",

@@ -98,6 +98,7 @@ export function FinanceCatalogForm({
           isTithe: checked("tithe"),
           isOffering: checked("offering"),
           requiresPerson: checked("person"),
+          informativeRole: value("informativeRole"),
         };
       if (entity === "CLASSIFICATION")
         input = { ...base, roleId: value("role") || null };
@@ -241,6 +242,22 @@ export function FinanceCatalogForm({
                 <option value="BOTH">Entrada e saída</option>
               </select>
             </label>
+            <label>
+              Uso nos informativos
+              <select
+                name="informativeRole"
+                defaultValue={category?.informativeRole ?? "NONE"}
+              >
+                <option value="NONE">Nenhum</option>
+                <option value="TRANSFER">Repasse recebido pela Catedral</option>
+                <option value="PREBEND">Prebenda bruta paga pela congregação</option>
+              </select>
+            </label>
+            <p className="muted">
+              Esta indicação também classifica lançamentos anteriores desta
+              categoria nos informativos. Renomear ou inativar a categoria
+              preserva essa classificação.
+            </p>
             <label>
               Departamento sugerido
               <select

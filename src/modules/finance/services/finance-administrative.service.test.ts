@@ -42,6 +42,12 @@ const summary = {
 function projection() {
   return {
     ...options,
+    source: "TRANSACTIONS",
+    transferReview: {
+      receivedCents: 4000,
+      unidentifiedCents: 300,
+      outsideReportCents: 200,
+    },
     generatedAt: "2026-10-22T12:00:00Z",
     units: [
       {
@@ -52,14 +58,13 @@ function projection() {
         report: {
           ...options,
           type: "INFORMATIVE",
+          source: "TRANSACTIONS",
           generatedAt: "2026-10-22T12:00:00Z",
           months: [
             {
               month: "2026-08",
               summary,
-              statement: {
-                revision: 1,
-                stale: true,
+              recorded: {
                 grossPrebendCents: 1000,
                 transferCents: 3500,
               },
@@ -67,7 +72,7 @@ function projection() {
             {
               month: "2026-09",
               summary: { ...summary, openingCents: 18000, closingCents: 26000 },
-              statement: null,
+              recorded: { grossPrebendCents: 0, transferCents: 0 },
             },
           ],
         },
@@ -83,7 +88,7 @@ beforeEach(() => {
     congregationAddress: "Endereço da unidade",
   });
 });
-it("uses final accumulated balance and labels missing optional months with partial sums", async () => {
+it("uses recorded values and keeps unidentified receipts separate from congregation totals", async () => {
   m.rpc.mockResolvedValue({ data: projection(), error: null });
   const report = await getFinanceRankingReport(context, options);
   expect(report.rows[0]).toMatchObject({
@@ -92,8 +97,6 @@ it("uses final accumulated balance and labels missing optional months with parti
     closingCents: 26000,
     grossPrebendCents: 1000,
     transferCents: 3500,
-    missingMonths: 1,
-    staleMonths: ["2026-08"],
   });
   expect(report.congregationAddress).toBeNull();
   expect(report.congregationName).toBe("Todas as congregações");
@@ -164,4 +167,13 @@ it("exports exactly the delivery status and name filter", async () => {
     search: "centro",
   });
   expect(report.rows.map((r) => r.name)).toEqual(["Centro"]);
+});
+
+it("rejects duplicated or missing receipts in the general reconciliation", async () => {
+  const p = projection();
+  p.transferReview.receivedCents++;
+  m.rpc.mockResolvedValue({ data: p, error: null });
+  await expect(getFinanceRankingReport(context, options)).rejects.toThrow(
+    "REPORT_RECONCILIATION_REQUIRED",
+  );
 });

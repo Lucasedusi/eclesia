@@ -52,13 +52,16 @@ export async function getFinanceRankingReport(
   });
   if (error)
     throw new FinanceReportError(
+      error.message === "REPORT_CONFIGURATION_REQUIRED" ||
       error.message === "REPORT_TOO_LARGE" ||
       error.message === "REPORT_RECONCILIATION_REQUIRED" ||
       error.message === "FORBIDDEN"
         ? error.message
         : "UNAVAILABLE",
     );
-  const projection = rankingProjectionSchema.parse(data);
+  const parsed = rankingProjectionSchema.safeParse(data);
+  if (!parsed.success) throw new FinanceReportError("UNAVAILABLE");
+  const projection = parsed.data;
   for (const key of Object.keys(options) as (keyof RankingOptions)[])
     if (projection[key] !== options[key])
       throw new FinanceReportError("UNAVAILABLE");
@@ -77,7 +80,6 @@ export async function getFinanceRankingReport(
     )
       throw new FinanceReportError("UNAVAILABLE");
     const summary = summarizeInformativeProjection(r);
-    const optional = options.includePrebend || options.includeTransfer;
     return {
       id: u.id,
       name: u.name,
@@ -87,21 +89,30 @@ export async function getFinanceRankingReport(
       expenseCents: summary.expenseCents,
       closingCents: summary.closingCents,
       grossPrebendCents: sumCents(
-        r.months.map((m) => m.statement?.grossPrebendCents ?? 0),
+        r.months.map((m) => m.recorded.grossPrebendCents ?? 0),
       ),
       transferCents: sumCents(
-        r.months.map((m) => m.statement?.transferCents ?? 0),
+        r.months.map((m) => m.recorded.transferCents ?? 0),
       ),
-      missingMonths: optional ? r.months.filter((m) => !m.statement).length : 0,
-      staleMonths: optional
-        ? r.months.filter((m) => m.statement?.stale).map((m) => m.month)
-        : [],
     };
   });
+  const ranking = summarizeRanking(rows);
+  const review = projection.transferReview;
+  if (
+    options.includeTransfer !== (review !== null) ||
+    (review &&
+      sumCents([
+        ranking.totals.transferCents,
+        review.unidentifiedCents,
+        review.outsideReportCents,
+      ]) !== review.receivedCents)
+  )
+    throw new FinanceReportError("REPORT_RECONCILIATION_REQUIRED");
   return {
     ...options,
+    transferReview: review,
     generatedAt: projection.generatedAt,
-    ...summarizeRanking(rows),
+    ...ranking,
     ...(await identity(context)),
   };
 }

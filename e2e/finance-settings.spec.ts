@@ -57,3 +57,26 @@ test("admin assigns an operational congregation within regional scope", async ({
     await expect(unit).toHaveValue(originalOperation);
   }
 });
+
+test("category mapping for informative reports persists independently of its name", async ({ page }) => {
+  test.skip(!process.env.E2E_FINANCE_FIXTURE, "Local financial fixture required");
+  const name = `Repasse configurado ${Date.now()}`;
+  await page.goto("/financeiro/configuracoes");
+  await page.getByRole("button", { name: "Categorias", exact: true }).click();
+  await page.getByRole("button", { name: "Novo cadastro" }).click();
+  await page.getByLabel("Nome", { exact: true }).fill(name);
+  await page.getByRole("combobox", { name: "Natureza", exact: true }).selectOption("BOTH");
+  await page.getByRole("combobox", { name: "Uso nos informativos", exact: true }).selectOption("TRANSFER");
+  await page.getByRole("button", { name: "Salvar cadastro" }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await page.getByRole("button", { name: `Editar ${name}`, exact: true }).click();
+  await expect(page.getByRole("combobox", { name: "Uso nos informativos", exact: true })).toHaveValue("TRANSFER");
+  await page.getByLabel("Nome", { exact: true }).fill(`${name} renomeado`);
+  await page.getByRole("button", { name: "Salvar cadastro" }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await page.reload();
+  await page.getByRole("button", { name: "Categorias", exact: true }).click();
+  await page.getByRole("button", { name: `Editar ${name} renomeado`, exact: true }).click();
+  await expect(page.getByRole("combobox", { name: "Uso nos informativos", exact: true })).toHaveValue("TRANSFER");
+  await page.screenshot({ path: "tmp/reports/category-informative-role.png", fullPage: true, animations: "disabled" });
+});

@@ -26,6 +26,7 @@ export class FinanceReportError extends Error {
       | "UNAVAILABLE"
       | "FORBIDDEN"
       | "INVALID_INPUT"
+      | "REPORT_CONFIGURATION_REQUIRED"
       | "REPORT_TOO_LARGE"
       | "REPORT_RECONCILIATION_REQUIRED",
   ) {

@@ -1,6 +1,7 @@
 import type { z } from "zod";
 import type {
   rankingOptionsSchema,
+  transferReviewSchema,
   deliveryOptionsSchema,
   deliveryProjectionSchema,
   deliveryRowSchema,
@@ -26,11 +27,11 @@ export type RankingRow = RankingAmounts & {
   name: string;
   status: string;
   isHeadquarters: boolean;
-  staleMonths: string[];
 };
 export type RankingDocument = RankingOptions &
   Identity & {
     generatedAt: string;
+    transferReview: z.infer<typeof transferReviewSchema> | null;
     rows: RankingRow[];
     totals: RankingAmounts;
   };

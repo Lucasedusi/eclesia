@@ -4639,6 +4639,7 @@ export type Database = {
           description: string | null
           generate_receipt: boolean
           id: string
+          informative_role: string
           is_default: boolean
           is_offering: boolean
           is_report_delivery_item: boolean
@@ -4662,6 +4663,7 @@ export type Database = {
           description?: string | null
           generate_receipt?: boolean
           id?: string
+          informative_role?: string
           is_default?: boolean
           is_offering?: boolean
           is_report_delivery_item?: boolean
@@ -4685,6 +4687,7 @@ export type Database = {
           description?: string | null
           generate_receipt?: boolean
           id?: string
+          informative_role?: string
           is_default?: boolean
           is_offering?: boolean
           is_report_delivery_item?: boolean

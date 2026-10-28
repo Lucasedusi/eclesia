@@ -27,7 +27,6 @@ export type RankingAmounts = {
   closingCents: number;
   grossPrebendCents: number;
   transferCents: number;
-  missingMonths: number;
 };
 export function summarizeRanking<
   T extends RankingAmounts & { id: string; name: string },
@@ -44,7 +43,6 @@ export function summarizeRanking<
     closingCents: 0,
     grossPrebendCents: 0,
     transferCents: 0,
-    missingMonths: 0,
   };
   for (const key of Object.keys(totals) as (keyof RankingAmounts)[])
     totals[key] = sumCents(rows.map((r) => r[key]));

@@ -19,6 +19,9 @@ export function summarizeInformativeProjection(
     months.some((row, index) => {
       const s = row.summary;
       return (
+        (row.recorded.grossPrebendCents !== null) !== projection.includePrebend ||
+        (row.recorded.transferCents !== null) !== projection.includeTransfer ||
+        (row.recorded.grossPrebendCents ?? 0) > s.expenseCents ||
         financeMonthIndex(row.month) !==
           financeMonthIndex(projection.startMonth) + index ||
         (index > 0 &&

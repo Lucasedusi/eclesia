@@ -303,9 +303,10 @@ function FinanceReportsContent({
               </label>
             </fieldset>
             <p className="muted finance-informative-help">
-              Prebenda e repasse usam a última versão do demonstrativo de cada
-              mês. Meses sem demonstrativo e versões desatualizadas serão
-              identificados no PDF.
+              A prebenda bruta soma as saídas registradas na congregação. O repasse
+              soma as entradas da Catedral identificadas com a congregação pagadora,
+              pela data do recebimento. Configure o uso das categorias nos informativos
+              em Configurações. Apenas lançamentos confirmados são contabilizados.
             </p>
           </div>
         )}

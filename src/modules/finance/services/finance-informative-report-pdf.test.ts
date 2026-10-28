@@ -17,6 +17,7 @@ function fixture(n = 3): FinanceInformativeReportDocument {
   };
   return {
     type: "INFORMATIVE",
+    source: "TRANSACTIONS",
     startMonth: "2026-01",
     endMonth: n === 3 ? "2026-03" : "2030-12",
     includePrebend: true,
@@ -35,15 +36,10 @@ function fixture(n = 3): FinanceInformativeReportDocument {
     months: Array.from({ length: n }, (_, i) => ({
       month: `${2026 + Math.floor(i / 12)}-${String((i % 12) + 1).padStart(2, "0")}`,
       summary,
-      statement:
-        i === 2
-          ? null
-          : {
-              revision: 1,
-              stale: i === 1,
-              grossPrebendCents: 400000,
-              transferCents: 525000,
-            },
+      recorded: {
+        grossPrebendCents: i === 2 ? 0 : 40000,
+        transferCents: i === 2 ? 0 : 525000,
+      },
     })),
   };
 }
@@ -53,7 +49,7 @@ it.each([
   [false, true],
   [false, false],
 ])(
-  "renders selected columns (prebend %s, transfer %s) and missing/stale values",
+  "renders selected columns (prebend %s, transfer %s) and recorded values",
   async (includePrebend, includeTransfer) => {
     const input = { ...fixture(), includePrebend, includeTransfer };
     const draw = vi.spyOn(PDFPage.prototype, "drawText");
@@ -66,10 +62,10 @@ it.each([
       expect(text).toContain("Saldo final");
       expect(text).toContain("jan/2026");
       expect(text).toContain("mar/2026");
-      if (includePrebend || includeTransfer) {
-        expect(text).toContain("Não disponível");
-        expect(text).toContain("desatualizado");
-      } else expect(text).not.toContain("Não disponível");
+      expect(text).not.toContain("Não disponível");
+      expect(text).not.toContain("desatualizado");
+      expect(text).not.toContain("demonstrativo");
+      expect(text).toContain("0,00");
       expect((await PDFDocument.load(bytes)).getPageCount()).toBe(1);
       if (process.env.REPORT_PDF_QA) {
         await mkdir("tmp/reports", { recursive: true });

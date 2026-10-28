@@ -7,19 +7,10 @@ test.beforeEach(() =>
 const fixture = () =>
   JSON.parse(readFileSync(process.env.E2E_FINANCE_FIXTURE!, "utf8"));
 
-test("administrator generates a period report, selects optional columns and validates the period", async ({
+test("administrator generates a period report without requiring a statement, selects optional columns and validates the period", async ({
   page,
 }) => {
   const f = fixture();
-  await page.goto(
-    `/financeiro/demonstrativos?unidade=${f.headquartersId}&mes=2026-10`,
-  );
-  await page
-    .getByRole("button", { name: /Gerar (demonstrativo|nova versão)/ })
-    .click();
-  await expect(page.getByTestId("statement-pastor-net")).toHaveText(
-    "R$ 4.725,00",
-  );
   await page.goto(
     `/financeiro/relatorios?unidade=${f.headquartersId}&mes=2026-10`,
   );

@@ -31,11 +31,13 @@ export async function getFinanceInformativeReport(
   if (error)
     throw new FinanceReportError(
       [
+        "REPORT_CONFIGURATION_REQUIRED",
         "REPORT_TOO_LARGE",
         "REPORT_RECONCILIATION_REQUIRED",
         "FORBIDDEN",
       ].includes(error.message)
         ? (error.message as
+            | "REPORT_CONFIGURATION_REQUIRED"
             | "REPORT_TOO_LARGE"
             | "REPORT_RECONCILIATION_REQUIRED"
             | "FORBIDDEN")

@@ -30,7 +30,14 @@ export const rankingOptionsSchema = z
           message: issue.message,
         });
   });
+export const transferReviewSchema = z.object({
+  receivedCents: cents.nonnegative(),
+  unidentifiedCents: cents.nonnegative(),
+  outsideReportCents: cents.nonnegative(),
+});
 export const rankingProjectionSchema = z.object({
+  source: z.literal("TRANSACTIONS"),
+  transferReview: transferReviewSchema.nullable(),
   type: z.literal("RANKING"),
   startMonth: monthSchema,
   endMonth: monthSchema,
@@ -139,5 +146,4 @@ export const rankingAmountsSchema = z.object({
   closingCents: cents,
   grossPrebendCents: cents,
   transferCents: cents,
-  missingMonths: z.number().int().nonnegative(),
 });

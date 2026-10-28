@@ -141,15 +141,16 @@ it("rejects cross origin and oversized bodies", async () => {
   ).toBe(403);
   expect((await request({ data: "x".repeat(5000) })).status).toBe(413);
 });
-it.each(["REPORT_TOO_LARGE", "REPORT_RECONCILIATION_REQUIRED"] as const)(
-  "returns actionable %s",
-  async (code) => {
-    m.report.mockRejectedValue(new FinanceReportError(code));
-    const res = await request();
-    expect(res.status).toBe(422);
-    expect(await res.json()).toHaveProperty("message");
-  },
-);
+it.each([
+  "REPORT_TOO_LARGE",
+  "REPORT_RECONCILIATION_REQUIRED",
+  "REPORT_CONFIGURATION_REQUIRED",
+] as const)("returns actionable %s", async (code) => {
+  m.report.mockRejectedValue(new FinanceReportError(code));
+  const res = await request();
+  expect(res.status).toBe(422);
+  expect(await res.json()).toHaveProperty("message");
+});
 it("hides internal failures", async () => {
   m.report.mockRejectedValue(new Error("database secret"));
   const res = await request();

@@ -32,6 +32,8 @@ insert into public.congregations(id,church_id,name,status,region_id) values
 set local role authenticated;
 select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000001',true);
 do $$ declare c uuid:='20000000-0000-4000-8000-000000000001'; u uuid:='30000000-0000-4000-8000-000000000001'; r jsonb; opts jsonb; op uuid:=gen_random_uuid(); m text:=to_char(current_date-interval '2 months','YYYY-MM'); d text:=to_char(date_trunc('month',current_date)-interval '1 month'+interval '7 days','YYYY-MM-DD'); begin
+ perform public.save_finance_catalog(c,jsonb_build_object('entity','CATEGORY','congregationId',u,'name','Repasse','direction','INCOME','informativeRole','TRANSFER'));
+ perform public.save_finance_catalog(c,jsonb_build_object('entity','CATEGORY','congregationId',u,'name','Prebenda','direction','EXPENSE','informativeRole','PREBEND'));
  opts:=jsonb_build_object('type','RANKING','startMonth',m,'endMonth',m,'includePrebend',true,'includeTransfer',true,'includeInactive',false);
  r:=public.get_finance_ranking_report(c,opts);
  perform pg_temp.assert_true(jsonb_array_length(r->'units')=2,'Ranking includes headquarters, excludes inactive and other church');

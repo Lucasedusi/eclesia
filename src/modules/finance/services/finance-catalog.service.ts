@@ -25,7 +25,7 @@ export async function listFinanceCatalogs(
     c
       .from("financial_categories")
       .select(
-        "id,name,status,category_type,department_id,is_tithe,is_offering,requires_member",
+        "id,name,status,category_type,department_id,is_tithe,is_offering,requires_member,informative_role",
       )
       .eq("church_id", church)
       .is("deleted_at", null)
@@ -96,6 +96,7 @@ export async function listFinanceCatalogs(
       isTithe: v.is_tithe,
       isOffering: v.is_offering,
       requiresPerson: v.requires_member,
+      informativeRole: v.informative_role as "NONE" | "TRANSFER" | "PREBEND",
     })),
     classifications: classifications.map((v) => ({
       id: v.id,

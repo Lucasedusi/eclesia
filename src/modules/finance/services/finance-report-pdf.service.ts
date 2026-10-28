@@ -5,7 +5,6 @@ import type {
   DeliveryDocument,
 } from "../types/finance-administrative.types";
 import { deliveryTimeliness } from "../utils/finance-administrative";
-import { financeMonthIndex } from "../validations/finance-informative-report.schemas";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import fontkit from "@pdf-lib/fontkit";
@@ -686,12 +685,6 @@ export async function createFinanceReportPdf(
   }
   if (data.type === "RANKING") {
     const money = (value: number) => formatMoney(value).replace(/R\$\s*/, "");
-    const months =
-      financeMonthIndex(data.endMonth) - financeMonthIndex(data.startMonth) + 1;
-    const optional = (value: number, missing: number, stale = false) =>
-      missing === months
-        ? "Não disponível"
-        : `${money(value)}${missing ? " (parcial)" : ""}${stale ? "*" : ""}`;
     const headers = [
       "Congregação",
       "Entradas",
@@ -719,39 +712,17 @@ export async function createFinanceReportPdf(
           money(row.incomeCents),
           money(row.expenseCents),
           money(row.closingCents),
-          ...(data.includeTransfer
-            ? [
-                optional(
-                  row.transferCents,
-                  row.missingMonths,
-                  row.staleMonths.length > 0,
-                ),
-              ]
-            : []),
-          ...(data.includePrebend
-            ? [
-                optional(
-                  row.grossPrebendCents,
-                  row.missingMonths,
-                  row.staleMonths.length > 0,
-                ),
-              ]
-            : []),
+          ...(data.includeTransfer ? [money(row.transferCents)] : []),
+          ...(data.includePrebend ? [money(row.grossPrebendCents)] : []),
         ]),
         [
           "Total geral",
           money(data.totals.incomeCents),
           money(data.totals.expenseCents),
           money(data.totals.closingCents),
-          ...(data.includeTransfer
-            ? [
-                `${money(data.totals.transferCents)}${data.totals.missingMonths ? " (parcial)" : ""}`,
-              ]
-            : []),
+          ...(data.includeTransfer ? [money(data.totals.transferCents)] : []),
           ...(data.includePrebend
-            ? [
-                `${money(data.totals.grossPrebendCents)}${data.totals.missingMonths ? " (parcial)" : ""}`,
-              ]
+            ? [money(data.totals.grossPrebendCents)]
             : []),
         ].map((text) => [{ text, bold: true }]),
       ],
@@ -761,14 +732,30 @@ export async function createFinanceReportPdf(
         "Nenhuma congregação encontrada para os filtros selecionados.",
         8,
       );
-    if (data.includePrebend || data.includeTransfer) {
-      if (data.totals.missingMonths)
+    if (data.includePrebend)
+      paragraph(
+        "Prebenda bruta: saídas confirmadas na própria congregação, sem dedução do dízimo do pastor.",
+        8,
+      );
+    if (data.includeTransfer && data.transferReview) {
+      paragraph(
+        "Repasse: entradas confirmadas na Catedral, atribuídas à congregação pagadora pela data do recebimento. Valores informativos já considerados nos saldos de origem.",
+        8,
+      );
+      paragraph(
+        `Total recebido pela Catedral em repasses: ${formatMoney(data.transferReview.receivedCents)}.`,
+        8,
+      );
+      if (data.transferReview.unidentifiedCents)
         paragraph(
-          "Valores e totais parciais: há meses sem demonstrativo. Não disponível indica ausência em todo o período.",
+          `Sem congregação identificada: ${formatMoney(data.transferReview.unidentifiedCents)}. Confira a identificação dos recebimentos na Catedral.`,
           8,
         );
-      if (data.rows.some((r) => r.staleMonths.length))
-        paragraph("* Inclui valores de demonstrativos desatualizados.", 8);
+      if (data.transferReview.outsideReportCents)
+        paragraph(
+          `Congregações fora da seleção: ${formatMoney(data.transferReview.outsideReportCents)}. Valor não incluído nas linhas acima.`,
+          8,
+        );
     }
     return finish();
   }
@@ -850,10 +837,6 @@ export async function createFinanceReportPdf(
       "Saldo final",
     ];
     const money = (value: number) => formatMoney(value).replace(/R\$\s*/, "");
-    const calculated = (value: number | null | undefined, stale: boolean) =>
-      value === null || value === undefined
-        ? "Não disponível"
-        : `${money(value)}${stale ? "*" : ""}`;
     band("Evolução Mensal", green);
     table(
       {
@@ -873,46 +856,35 @@ export async function createFinanceReportPdf(
         money(row.summary.incomeCents),
         money(row.summary.expenseCents),
         ...(data.includePrebend
-          ? [
-              calculated(
-                row.statement?.grossPrebendCents,
-                row.statement?.stale ?? false,
-              ),
-            ]
+          ? [money(row.recorded.grossPrebendCents ?? 0)]
           : []),
         ...(data.includeTransfer
-          ? [
-              calculated(
-                row.statement?.transferCents,
-                row.statement?.stale ?? false,
-              ),
-            ]
+          ? [money(row.recorded.transferCents ?? 0)]
           : []),
         money(row.summary.closingCents),
       ]),
     );
-    if (data.includePrebend || data.includeTransfer) {
-      if (data.months.some((row) => !row.statement))
-        paragraph(
-          "Não disponível: demonstrativo ainda não gerado para o mês.",
-          8,
-          muted,
-          5,
-        );
-      const stale = data.months
-        .filter((row) => row.statement?.stale)
-        .map(
-          (row) =>
-            `${formatFinanceMonth(row.month)} (versão ${row.statement!.revision})`,
-        );
-      if (stale.length)
-        paragraph(
-          `* Demonstrativo desatualizado: ${stale.join(", ")}. Os valores calculados preservam essa versão; entradas, saídas e saldos refletem os registros atuais.`,
-          8,
-          muted,
-          5,
-        );
-    }
+    if (data.includePrebend)
+      paragraph(
+        "Prebenda bruta: saídas confirmadas na congregação, sem dedução do dízimo do pastor.",
+        8,
+        muted,
+        5,
+      );
+    if (data.includeTransfer)
+      paragraph(
+        "Repasse: entradas confirmadas na Catedral e vinculadas a esta congregação, pela data do recebimento. Recebimentos sem identificação aparecem no informativo geral. A Catedral não recebe atribuição nesta coluna.",
+        8,
+        muted,
+        5,
+      );
+    if (data.includePrebend || data.includeTransfer)
+      paragraph(
+        "As colunas informativas detalham lançamentos já registrados e não alteram os saldos.",
+        8,
+        muted,
+        5,
+      );
     return finish();
   }
   indicators();

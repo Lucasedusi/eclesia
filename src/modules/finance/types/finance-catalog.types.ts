@@ -14,6 +14,7 @@ export type Category = CatalogItem & {
   isTithe: boolean;
   isOffering: boolean;
   requiresPerson: boolean;
+  informativeRole: "NONE" | "TRANSFER" | "PREBEND";
 };
 export type Classification = CatalogItem & { roleId: string | null };
 export type PaymentMethod = CatalogItem & { kind: string };

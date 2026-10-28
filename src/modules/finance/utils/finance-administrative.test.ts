@@ -34,8 +34,6 @@ describe("administrative report calculations", () => {
         closingCents: 50000,
         grossPrebendCents: 100,
         transferCents: 200,
-        missingMonths: 1,
-        staleMonths: [],
       },
       {
         id: "a",
@@ -45,8 +43,6 @@ describe("administrative report calculations", () => {
         closingCents: -2000,
         grossPrebendCents: 0,
         transferCents: 0,
-        missingMonths: 0,
-        staleMonths: [],
       },
       {
         id: "c",
@@ -56,8 +52,6 @@ describe("administrative report calculations", () => {
         closingCents: 90000,
         grossPrebendCents: 200,
         transferCents: 500,
-        missingMonths: 0,
-        staleMonths: [],
       },
     ]);
     expect(result.rows.map((r) => r.name)).toEqual(["Gama", "Alfa", "Beta"]);
@@ -67,7 +61,6 @@ describe("administrative report calculations", () => {
       closingCents: 138000,
       grossPrebendCents: 300,
       transferCents: 700,
-      missingMonths: 1,
     });
   });
 });

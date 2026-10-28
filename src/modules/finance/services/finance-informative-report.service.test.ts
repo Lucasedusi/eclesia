@@ -35,15 +35,14 @@ const base = {
 };
 const projection = () => ({
   ...options,
+  source: "TRANSACTIONS",
   generatedAt: "2026-11-30T12:00:00Z",
   months: [
     {
       month: "2026-09",
       summary: base,
-      statement: {
-        revision: 2,
-        stale: false,
-        grossPrebendCents: 400000,
+      recorded: {
+        grossPrebendCents: 40000,
         transferCents: 525000,
       },
     },
@@ -59,9 +58,7 @@ const projection = () => ({
         closingCents: 1735000,
         count: 1,
       },
-      statement: {
-        revision: 1,
-        stale: true,
+      recorded: {
         grossPrebendCents: 0,
         transferCents: 0,
       },
@@ -78,7 +75,7 @@ const projection = () => ({
         closingCents: 1735000,
         count: 0,
       },
-      statement: null,
+      recorded: { grossPrebendCents: 0, transferCents: 0 },
     },
   ],
 });
@@ -90,7 +87,7 @@ beforeEach(() => {
     congregationAddress: null,
   });
 });
-it("keeps first/last balances, sums flows, and retains missing/stale statement distinctions", async () => {
+it("keeps balances unchanged and uses recorded values including empty months", async () => {
   const report = await getFinanceInformativeReport(context, options);
   expect(report.summary).toEqual({
     ...base,
@@ -98,13 +95,15 @@ it("keeps first/last balances, sums flows, and retains missing/stale statement d
     closingCents: 1735000,
     count: 4,
   });
-  expect(report.months[0].statement?.grossPrebendCents).toBe(400000);
-  expect(report.months[0].statement?.transferCents).toBe(525000);
-  expect(report.months[1].statement).toMatchObject({
-    stale: true,
+  expect(report.months[0].recorded?.grossPrebendCents).toBe(40000);
+  expect(report.months[0].recorded?.transferCents).toBe(525000);
+  expect(report.months[1].recorded).toMatchObject({
     grossPrebendCents: 0,
   });
-  expect(report.months[2].statement).toBeNull();
+  expect(report.months[2].recorded).toEqual({
+    grossPrebendCents: 0,
+    transferCents: 0,
+  });
   expect(m.rpc).toHaveBeenCalledWith("get_finance_informative_report", {
     p_church_id: context.churchId,
     p_unit: context.congregationId,
@@ -175,7 +174,7 @@ it("rejects a mismatched range and unsafe monetary values", async () => {
         {
           month: "2026-09",
           summary: { ...base, incomeCents: Number.MAX_SAFE_INTEGER + 1 },
-          statement: null,
+          recorded: { grossPrebendCents: 0, transferCents: 0 },
         },
       ],
     },
@@ -185,4 +184,31 @@ it("rejects a mismatched range and unsafe monetary values", async () => {
       getFinanceInformativeReport(context, options),
     ).rejects.toThrow();
   }
+});
+
+it("rejects the old statement projection instead of showing calculated amounts", async () => {
+  const p = projection();
+  m.rpc.mockResolvedValue({
+    data: {
+      ...p,
+      source: undefined,
+      months: p.months.map(({ recorded, ...m }) => ({
+        ...m,
+        statement: { ...recorded, revision: 1, stale: false },
+      })),
+    },
+    error: null,
+  });
+  await expect(getFinanceInformativeReport(context, options)).rejects.toThrow(
+    "UNAVAILABLE",
+  );
+});
+it("returns a safe configuration error instead of zero", async () => {
+  m.rpc.mockResolvedValue({
+    data: null,
+    error: { message: "REPORT_CONFIGURATION_REQUIRED" },
+  });
+  await expect(getFinanceInformativeReport(context, options)).rejects.toThrow(
+    "REPORT_CONFIGURATION_REQUIRED",
+  );
 });

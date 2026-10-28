@@ -165,6 +165,14 @@ if (command === "setup") {
     direction: "EXPENSE",
     departmentId: fixture.departmentId,
   });
+  fixture.repasseId = await catalog("CATEGORY", {
+    name: "Repasse", direction: "BOTH", departmentId: fixture.departmentId,
+    informativeRole: "TRANSFER",
+  });
+  fixture.prebendId = await catalog("CATEGORY", {
+    name: "Prebenda", direction: "EXPENSE", departmentId: fixture.departmentId,
+    informativeRole: "PREBEND",
+  });
   fixture.classificationId = await catalog("CLASSIFICATION", {
     name: "Diácono",
   });

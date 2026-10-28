@@ -33,6 +33,7 @@ export const financeInformativeReportOptionsSchema = z
     },
   );
 export const financeInformativeReportProjectionSchema = z.object({
+  source: z.literal("TRANSACTIONS"),
   type: z.literal("INFORMATIVE"),
   startMonth: monthSchema,
   endMonth: monthSchema,
@@ -44,14 +45,10 @@ export const financeInformativeReportProjectionSchema = z.object({
       z.object({
         month: monthSchema,
         summary: financeReportSummarySchema,
-        statement: z
-          .object({
-            revision: z.number().int().positive(),
-            stale: z.boolean(),
-            grossPrebendCents: z.number().int().nonnegative().safe().nullable(),
-            transferCents: z.number().int().nonnegative().safe().nullable(),
-          })
-          .nullable(),
+        recorded: z.object({
+          grossPrebendCents: z.number().int().nonnegative().safe().nullable(),
+          transferCents: z.number().int().nonnegative().safe().nullable(),
+        }),
       }),
     )
     .min(1)

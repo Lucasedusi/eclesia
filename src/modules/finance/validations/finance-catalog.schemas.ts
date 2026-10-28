@@ -30,11 +30,25 @@ const category = z
     isTithe: z.boolean().default(false),
     isOffering: z.boolean().default(false),
     requiresPerson: z.boolean().default(false),
+    informativeRole: z.enum(["NONE", "TRANSFER", "PREBEND"]).default("NONE"),
   })
   .strict()
   .refine(
     (v) => !v.isTithe || v.direction === "INCOME",
     "Dízimo deve ser uma entrada.",
+  )
+  .refine(
+    (v) =>
+      v.informativeRole === "NONE" ||
+      (!v.isTithe &&
+        (v.informativeRole === "TRANSFER"
+          ? v.direction !== "EXPENSE"
+          : v.direction !== "INCOME")),
+    {
+      path: ["informativeRole"],
+      message:
+        "Repasse exige entrada; prebenda exige saída. Dízimo não pode ter essas finalidades.",
+    },
   );
 const classification = z
   .object({
