@@ -1,6 +1,6 @@
 # Mês de referência informativo
 
-Implementação na branch `codex/finance-bank-statement-import`, sem publicação na main e sem execução no banco online.
+Implementação na branch `codex/finance-bank-statement-import`, sem publicação na main. Migração aplicada no banco online em 28/10/2026 após autorização específica do usuário.
 
 ## Comportamento
 
@@ -23,7 +23,7 @@ Apenas substitui o escritor privado auditado para preencher as colunas já exist
 
 Sem atualização em massa nem modificação de lançamentos históricos. Tipos regenerados localmente, sem alteração estrutural.
 
-**A migração foi aplicada somente no banco local. É necessária autorização específica antes de aplicá-la online. Aplicar a migração antes de usar o novo campo contra o banco online: a função antiga ainda deriva a referência da data.**
+**Migração aplicada localmente e, após autorização, no banco online. A versão `20261028192325` consta no histórico remoto. Não há migração pendente para este ajuste.**
 
 ## Validação
 
@@ -36,6 +36,20 @@ Sem atualização em massa nem modificação de lançamentos históricos. Tipos 
 - Teste de carga com 9.995 registros: primeira tentativa excedeu o limite de 8s (8,199s) durante atividade concorrente; repetição isolada passou em 7,987s. Nenhuma consulta de relatórios foi alterada.
 - Advisors locais: zero avisos de segurança e os mesmos 16 avisos de desempenho preexistentes (11 de inicialização RLS e 5 de políticas permissivas múltiplas).
 - Tipos regenerados a partir do banco local; sem mudança estrutural.
-- Revisão própria do diff, sem subagentes. Nenhuma alteração em migrações anteriores, dados reais, banco online ou main.
+- Revisão própria do diff, sem subagentes. Na etapa de implementação local, nenhuma alteração em migrações anteriores, dados reais, banco online ou main.
 
 Testes usam exclusivamente dados fictícios no Supabase local. A execução inicial do teste de importação precisou expandir o arquivo de fixture referenciado antes de enviar o SQL ao contêiner; após esse ajuste no comando de teste, passou. Os testes de alinhamento reproduziram a diferença de 23,5px antes da correção e passaram depois. Não restam falhas nos checks exigidos para esta alteração.
+
+
+## Conferência online — 28/10/2026
+
+- Autorização: aplicar somente a migração deste ajuste, na branch atual, sem subagentes e sem publicação na main.
+- Simulação listou apenas `20261028192325_finance_editable_reference_month.sql`. Aplicação pelo CLI preservou o número da versão; sem seeds, roles ou mudanças de Vault.
+- Consulta posterior confirmou a versão aplicada. A definição da função online é idêntica à validada localmente (hash `74b5971dd6805e5a2151dd73aa58697c`).
+- Rotina privada continua sem execução direta para `anon` e `authenticated`, com `search_path` vazio; razão financeiro continua usando a data da movimentação. RLS da tabela permanece habilitada.
+- Navegador autenticado, aplicação da branch ligada ao banco online: página de lançamentos abriu com HTTP 200, sem `UNAVAILABLE`.
+- Nova entrada: data 05/11/2026 preencheu referência 11/2026; ao escolher 10/2026 e mudar a data para 06/11/2026, a referência permaneceu 10/2026. Prévia confirmou os dois campos separados.
+- Nova saída: mês de referência presente, editável e preenchido pela data, com a orientação sobre o período do caixa.
+- Valores temporários descartados. Nenhum lançamento financeiro de teste foi salvo online; persistência e cenários completos foram validados no banco local com a mesma definição aplicada online.
+- Advisors antes/depois: nenhum aviso novo. Permanecem 62 avisos de [funções definer acessíveis por usuários autenticados](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable), 1 de [proteção contra senhas vazadas](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection), 11 de [inicialização RLS](https://supabase.com/docs/guides/database/database-linter?lint=0003_auth_rls_initplan) e 5 de [políticas permissivas múltiplas](https://supabase.com/docs/guides/database/database-linter?lint=0006_multiple_permissive_policies).
+- Servidor encerrado após a conferência; portas 3000 e 3217 livres. Aba de conferência fechada.
