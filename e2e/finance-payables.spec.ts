@@ -28,13 +28,13 @@ for (const width of [1280, 390, 320]) {
     const f = fixture(), name = `Energia ${randomUUID()}`;
     await page.setViewportSize({ width, height: 900 });
     await page.goto(`/financeiro/contas-a-pagar?unidade=${f.unitId}&mes=2026-10`);
-    await expect(page.getByRole("heading", { name: "Contas a pagar — Catedral" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Contas a pagar" })).toBeVisible();
     await expect(page.getByRole("combobox", { name: "Congregação", exact: true })).toHaveCount(0);
     expect(await page.locator(".finance-payables-context .finance-single-unit").evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
     await create(page, name, f.expenseId, "2026-10-10");
     await search(page, name);
     await expect(page.getByText("Não informado", { exact: true }).filter({ visible: true })).toBeVisible();
-    await page.getByRole("button", { name: `Marcar como paga: ${name}`, exact: true }).filter({ visible: true }).click();
+    await page.getByRole("button", { name: `Pagar: ${name}`, exact: true }).filter({ visible: true }).click();
     const pay = page.getByRole("dialog", { name: "Confirmar pagamento" });
     await pay.getByLabel("Data do pagamento").fill("2026-10-11");
     page.once("dialog", (dialog) => dialog.dismiss());
@@ -46,7 +46,8 @@ for (const width of [1280, 390, 320]) {
     await page.getByRole("button", { name: `Detalhes: ${name}`, exact: true }).filter({ visible: true }).click();
     const detail = page.getByRole("dialog", { name: "Detalhes da conta" });
     await expect(detail).toContainText("11/10/2026");
-    await expect(detail).toContainText("Pagamento confirmado");
+    await detail.getByText("Histórico de alterações", { exact: false }).click();
+    await expect(detail.getByText("Pagamento confirmado", { exact: true })).toBeVisible();
     await detail.getByRole("button", { name: "Desfazer confirmação", exact: true }).click();
     const reopen = page.getByRole("dialog", { name: "Desfazer confirmação" });
     await reopen.getByLabel("Justificativa").fill("Confirmação informada por engano");
@@ -102,7 +103,7 @@ test("category creation retains form; monthly copies clamp dates and skip duplic
   await expect(page.getByRole("button", { name: `Detalhes: ${name}`, exact: true }).filter({ visible: true })).toBeVisible();
 });
 
-test("old pending bills remain visible outside search; summary is Cathedral-only and links to due dates", async ({ page }) => {
+test("old pending bills remain visible outside search and overview stays focused on finances", async ({ page }) => {
   const f = fixture(), name = `Antiga ${randomUUID()}`;
   await page.goto(`/financeiro/contas-a-pagar?unidade=${f.unitId}&mes=2025-01`);
   await create(page, name, f.expenseId, "2025-01-02");
@@ -112,9 +113,7 @@ test("old pending bills remain visible outside search; summary is Cathedral-only
   await page.getByRole("button", { name: "Ver pendências anteriores", exact: true }).click();
   await expect(page.getByRole("button", { name: `Detalhes: ${name}`, exact: true }).filter({ visible: true })).toBeVisible();
   await page.goto(`/financeiro?unidade=${f.unitId}&mes=2028-12`);
-  await expect(page.getByRole("heading", { name: "Contas da Catedral", exact: true })).toBeVisible();
-  await page.getByRole("link", { name: /contas em atraso/ }).click();
-  await expect(page.getByRole("heading", { name: "Contas a pagar — Catedral" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Contas da Catedral", exact: true })).toHaveCount(0);
 });
 
 test("treasurer cannot access payables or administrative summary", async ({ browser }) => {
@@ -181,7 +180,8 @@ test("concurrent edits preserve the winning revision and require review", async 
     await second.getByRole("button", { name: "Cancelar", exact: true }).click();
     await expect(other.getByText(/^R\$\s10,00$/)).toBeVisible();
     await other.getByRole("button", { name: `Detalhes: ${name}`, exact: true }).click();
-    await expect(other.getByRole("dialog", { name: "Detalhes da conta" }).getByText("Conta editada", { exact: true })).toHaveCount(1);
+    await other.getByRole("dialog", { name: "Detalhes da conta" }).getByText("Histórico de alterações", { exact: false }).click();
+    await expect(other.getByRole("dialog", { name: "Detalhes da conta" }).getByText("Conta editada", { exact: true })).toBeVisible();
   } finally { await other.close(); }
 });
 

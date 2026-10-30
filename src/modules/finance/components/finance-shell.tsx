@@ -18,6 +18,7 @@ import {
   ChartNoAxesCombined,
   Wallet,
   ReceiptText,
+  ListChecks,
   HandCoins,
   SlidersHorizontal,
   Landmark,
@@ -157,7 +158,6 @@ export function FinanceShell({
   }, []);
   const isPayables = path === "/financeiro/contas-a-pagar";
   const links = [
-    { label: "Contas a pagar", path: "/financeiro/contas-a-pagar", icon: ReceiptText, show: context.canManagePayables },
     {
       label: "Visão geral",
       path: "/financeiro",
@@ -182,6 +182,7 @@ export function FinanceShell({
       icon: Wallet,
       show: true,
     },
+    { label: "Contas a pagar", path: "/financeiro/contas-a-pagar", icon: ListChecks, show: context.canManagePayables },
     {
       label: "Demonstrativos",
       path: "/financeiro/demonstrativos",

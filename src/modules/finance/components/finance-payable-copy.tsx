@@ -15,7 +15,7 @@ import { payableDate } from "./finance-payable-details";
 
 type CopyDraft = { item: PayableRow; dueDate: string; categoryId: string; amount: string };
 export function FinancePayableCopy({ initial, month, categories, onClose, onSaved }: {
-  initial: PayablePage; month: string; categories: Category[]; onClose: () => void; onSaved: (result: PayableResult) => void;
+  initial: PayablePage; month: string; categories: Category[]; onClose: (reconcile?: boolean) => void; onSaved: (result: PayableResult) => void;
 }) {
   const [data, setData] = useState(initial), [selected, setSelected] = useState<Record<string, CopyDraft>>({}),
     [review, setReview] = useState(false), [loading, setLoading] = useState(false), [error, setError] = useState("");
@@ -36,9 +36,9 @@ export function FinancePayableCopy({ initial, month, categories, onClose, onSave
       categoryId: d.categoryId, dueDate: d.dueDate, amountCents: d.amount ? parseMoneyInput(d.amount) : null })) });
   }
   function close() {
-    if (!drafts.length || window.confirm("Fechar a conferência das cópias? Se houve falha de conexão, confira a lista antes de repetir.")) onClose();
+    if (!drafts.length || window.confirm("Fechar a conferência das cópias? Se houve falha de conexão, confira a lista antes de repetir.")) onClose(mutation.needsRefresh);
   }
-  useFinanceDirtyGuard(drafts.length > 0, save, onClose);
+  useFinanceDirtyGuard(drafts.length > 0, save, () => onClose(mutation.needsRefresh));
   function update(id: string, values: Partial<CopyDraft>) { setSelected((all) => ({ ...all, [id]: { ...all[id], ...values } })); }
   return <Modal title="Copiar para o próximo mês" className="finance-secondary-drawer" size="lg" busy={loading || mutation.busy} onClose={close}
     footer={<><Button variant="outline" onClick={close} disabled={mutation.busy}>Fechar</Button>{review && !mutation.uncertain && <Button variant="outline" disabled={mutation.busy} onClick={() => setReview(false)}>Voltar à seleção</Button>}

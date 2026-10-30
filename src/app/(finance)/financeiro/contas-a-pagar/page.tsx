@@ -11,7 +11,7 @@ async function load(searchParams: FinanceSearchParams) {
   const params = await searchParams;
   const context = await requirePayableContext();
   const query = payableQuerySchema.parse({ month: params.mes ?? todayLocal().slice(0, 7), status: params.status ?? "PENDING", search: params.search,
-    categoryId: params.categoryId, dateFrom: params.dateFrom, dateTo: params.dateTo, page: params.page });
+    dueStatus: params.dueStatus, categoryId: params.categoryId, dateFrom: params.dateFrom, dateTo: params.dateTo, page: params.page });
   if (query.status === "ALL") query.status = "PENDING";
   const [result, catalogs] = await Promise.all([queryFinancePayables(query), listFinanceCatalogs(context)]);
   return { result, query, catalogs, canCreateCategory: context.capabilities.manageSettings };
@@ -21,7 +21,7 @@ async function Content({ searchParams }: { searchParams: FinanceSearchParams }) 
   try { data = await load(searchParams); } catch (error) {
     unstable_rethrow(error);
     if (error instanceof Error && error.message === "FORBIDDEN") redirect("/acesso-negado");
-    return <section className="card stack"><h1>Contas a pagar — Catedral</h1><p role="alert">{error instanceof Error && error.message === "CONFIGURATION_REQUIRED" ? "Confira o cadastro da Catedral para utilizar as contas a pagar." : "Não foi possível carregar as contas. Confira o período e tente novamente."}</p></section>;
+    return <section className="card stack"><h1>Contas a pagar</h1><p role="alert">{error instanceof Error && error.message === "CONFIGURATION_REQUIRED" ? "Confira o cadastro da Catedral para utilizar as contas a pagar." : "Não foi possível carregar as contas. Confira o período e tente novamente."}</p></section>;
   }
   return <FinancePayables {...data} />;
 }

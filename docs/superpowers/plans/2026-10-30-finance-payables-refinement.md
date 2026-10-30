@@ -20,18 +20,18 @@ Fechamento após resposta perdida/conflito; categoria criada em modal filho; int
 **Files:** schemas/types/service de finance-payable; nova migração de query_finance_payables; supabase/tests/finance_payables_filters.sql; teste do schema.
 **Interfaces:** Consome PENDING/PAID/ALL e consulta paginada existente. Produz dueStatus ALL/OVERDUE/TODAY/UPCOMING com default ALL; itens/total filtrados, contadores das abas no período sem dueStatus; PAID ignora recorte.
 
-- [ ] Acrescentar teste de entrada válida/inválida e SQL com mais de 20 contas, todas situações, combinações categoria/busca, página vazia, PAID e isolamento.
-- [ ] Executar testes e verificar falha por parâmetro ainda não suportado.
-- [ ] Adicionar validação e migração preservando autorização/grants e contratos.
-- [ ] Executar testes focados, SQL local, Advisors e comparar tipos regenerados. Expected: PASS, sem nova exposição ou alteração de assinatura.
+- [x] Acrescentar teste de entrada válida/inválida e SQL com mais de 20 contas, todas situações, combinações categoria/busca, página vazia, PAID e isolamento.
+- [x] Executar testes e verificar falha por parâmetro ainda não suportado.
+- [x] Adicionar validação e migração preservando autorização/grants e contratos.
+- [x] Executar testes focados, SQL local, Advisors e comparar tipos regenerados. Expected: PASS, sem nova exposição ou alteração de assinatura.
 
 ### Task 2: Interface e modais
 
 **Files:** finance-shell.tsx/styles.ts, finance-payables.tsx, finance-payable-details.tsx/form.tsx/copy.tsx, use-payable-mutation.ts, financeiro/page.tsx e contas-a-pagar/page.tsx; e2e/finance-payables.spec.ts e e2e/finance-payables-refinement.spec.ts.
 **Interfaces:** Consome dueStatus da tarefa 1; onClose(refresh?: boolean) indica reconciliação de tentativa de gravação, não fechamento simples.
 
-- [ ] Criar regressão de navegador que abre/fecha Nova conta sem requisição/indicador de atualização; verificar RED.
-- [ ] Implementar filtros, busca, abas/badge, largura estável, sidebar, remoção do resumo, título e detalhes/sanfona.
-- [ ] Separar fechamento de atualização; reconciliar falhas de gravação e conflitos. Preservar cópia e categoria filha.
-- [ ] Atualizar cenários existentes e acrescentar situações, fechamento de editar/detalhes/excluir/pagar/cópia, dimensões e cores. Expected: navegação, cópia, concorrência, resposta perdida e novos fluxos PASS.
-- [ ] Executar lint, typecheck, testes, build e E2E locais; revisar visualmente screenshots desktop/mobile; fazer revisão própria do diff e registrar evidências; commit local.
+- [x] Criar regressão de navegador que abre/fecha Nova conta sem requisição/indicador de atualização; verificar RED.
+- [x] Implementar filtros, busca, abas/badge, largura estável, sidebar, remoção do resumo, título e detalhes/sanfona.
+- [x] Separar fechamento de atualização; reconciliar falhas de gravação e conflitos. Preservar cópia e categoria filha.
+- [x] Atualizar cenários existentes e acrescentar situações, fechamento de editar/detalhes/excluir/pagar/cópia, dimensões e cores. Expected: navegação, cópia, concorrência, resposta perdida e novos fluxos PASS.
+- [x] Executar lint, typecheck, testes, build e E2E locais; revisar visualmente screenshots desktop/mobile; fazer revisão própria do diff e registrar evidências; commit local.

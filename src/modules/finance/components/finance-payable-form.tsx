@@ -11,7 +11,7 @@ import type { FinanceCatalogs } from "../types/finance-catalog.types";
 import type { PayableRow } from "../types/finance-payable.types";
 
 export function FinancePayableForm({ item, catalogs, unit, month, canCreateCategory, onClose, onSaved }: {
-  item?: PayableRow; catalogs: FinanceCatalogs; unit: string; month: string; canCreateCategory: boolean; onClose: () => void; onSaved: () => void;
+  item?: PayableRow; catalogs: FinanceCatalogs; unit: string; month: string; canCreateCategory: boolean; onClose: (reconcile?: boolean) => void; onSaved: () => void;
 }) {
   const form = useRef<HTMLFormElement>(null);
   const [name, setName] = useState(item?.name ?? ""), [categoryId, setCategoryId] = useState(item?.categoryId ?? ""),
@@ -26,9 +26,9 @@ export function FinancePayableForm({ item, catalogs, unit, month, canCreateCateg
   }
   function close() {
     if (mutation.busy) return;
-    if ((!dirty && !mutation.uncertain) || window.confirm(mutation.uncertain ? "A confirmação ainda está pendente. Ao fechar, confira a lista antes de cadastrar novamente." : "Descartar as alterações desta conta?")) onClose();
+    if ((!dirty && !mutation.uncertain) || window.confirm(mutation.uncertain ? "A confirmação ainda está pendente. Ao fechar, confira a lista antes de cadastrar novamente." : "Descartar as alterações desta conta?")) onClose(mutation.needsRefresh);
   }
-  useFinanceDirtyGuard((dirty || mutation.uncertain) && !categoryOpen, save, onClose);
+  useFinanceDirtyGuard((dirty || mutation.uncertain) && !categoryOpen, save, () => onClose(mutation.needsRefresh));
   const categories = catalogs.categories.filter((c) => c.status === "ACTIVE" && c.direction !== "INCOME");
   return <>
     <Modal open={!categoryOpen} title={item ? "Editar conta" : "Nova conta"} className="finance-secondary-drawer" busy={mutation.busy} onClose={close}
