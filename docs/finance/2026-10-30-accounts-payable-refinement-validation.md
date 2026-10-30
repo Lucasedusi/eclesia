@@ -35,3 +35,12 @@ Advisors locais: nenhum WARN/ERROR de segurança e os mesmos 13 avisos anteriore
 Ocorrências resolvidas durante a validação: a primeira execução SQL via stdin não encontrou o include da fixture; o runner passou a expandi-lo antes de enviar ao container. O teste da consulta antiga falhou por INVALID_INPUT e passou após a migração. A inspeção visual encontrou quebra dos botões de ações; uma regressão geométrica detectou 52 px de diferença antes da correção de largura/especificidade. A primeira rodada compilada aprovou 24/25 cenários: o teste antigo da visão geral dependia de lançamentos criados por outros testes; foi ajustado para a sede que já possui lançamentos fictícios na fixture. Rodada final: 25/25. Um lint executado em paralelo com Playwright encontrou a pasta temporária test-results durante sua recriação; repetido sequencialmente, passou. A geração local de tipos emitiu MaxListenersExceededWarning do CLI, mas terminou com sucesso.
 
 `analyze:routes` não executado: remoção incidental da consulta do resumo, sem objetivo de otimização de bundles/carregamento. Escritas e navegação de teste não foram realizadas online. Servidores locais encerrados ao finalizar; sem push ou merge na main.
+
+## Complemento — avisos, ícones e carregamento
+
+- Avisos de sucesso desaparecem em 5 segundos. Cada nova confirmação reinicia o prazo, mesmo quando repete a mensagem; o temporizador é cancelado ao remover o aviso ou sair da tela.
+- Ícones nos itens do menu, em Pagar e em Copiar para o próximo mês. Espaço reservado nas ações mantém o alinhamento; menus de contas pendentes e pagas permanecem dentro da tela mobile.
+- A consulta dos detalhes substitui os três pontos pelo indicador de carregamento, mantendo as dimensões do botão e bloqueando novos cliques nele durante a consulta. O nome da conta não recebe mais o indicador.
+- Novos cenários de navegador reproduziram os problemas antes da correção: aviso persistente e ausência de carregamento no botão. Depois, passaram, incluindo o reinício do prazo para mensagens idênticas, acesso aos detalhes pelo nome/menu e geometria dos menus em 1280 e 320 px.
+- Validação final deste complemento: lint sem warnings, typecheck, build, 633 testes Vitest e 17 cenários Playwright aprovados na versão compilada. Capturas de desktop/mobile inspecionadas.
+- Somente dados fictícios e Supabase local nos testes. Sem migração, alteração de permissões, banco online, push ou merge. SQL/advisors e análise de rotas não se aplicam a este complemento de interface. Ambiente local de testes encerrado ao finalizar.

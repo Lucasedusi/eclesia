@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Ellipsis, Loader2, Plus } from "lucide-react";
+import { Check, Copy, Ellipsis, Eye, Loader2, Pencil, Plus, Trash2, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useFinanceNavigation } from "./finance-shell";
 import { getFinancePayableAction, queryFinancePayablesAction } from "../actions/finance-payable.actions";
@@ -21,7 +21,12 @@ export function FinancePayables({ result, query, catalogs, canCreateCategory }: 
 }) {
   const navigation = useFinanceNavigation(), searchParams = useSearchParams(), sequence = useRef(0);
   const [dialog, setDialog] = useState<Dialog | null>(null), [loading, setLoading] = useState<string | null>(null),
-    [error, setError] = useState(""), [notice, setNotice] = useState(""), [menu, setMenu] = useState<string | null>(null);
+    [error, setError] = useState(""), [notice, setNotice] = useState<{ message: string } | null>(null), [menu, setMenu] = useState<string | null>(null);
+  useEffect(() => {
+    if (!notice) return;
+    const timeout = window.setTimeout(() => setNotice(null), 5_000);
+    return () => window.clearTimeout(timeout);
+  }, [notice]);
   useEffect(() => {
     let last = result.today;
     const check = () => { const current = todayLocal(); if (current !== last) { last = current; navigation.refresh(); } };
@@ -37,7 +42,7 @@ export function FinancePayables({ result, query, catalogs, canCreateCategory }: 
     setMenu(null); setError(""); navigation.navigate(`/financeiro/contas-a-pagar?${params}`);
   }
   function closeDialog(reconcile = false) { setDialog(null); if (reconcile) navigation.refresh(); }
-  function saved(message = "Conta atualizada.") { setDialog(null); setNotice(message); setError(""); navigation.refresh(); }
+  function saved(message = "Conta atualizada.") { setDialog(null); setNotice({ message }); setError(""); navigation.refresh(); }
   async function details(item: PayableRow) {
     const ticket = ++sequence.current; setLoading(item.id); setError("");
     try { const response = await getFinancePayableAction(item.id);
@@ -54,9 +59,9 @@ export function FinancePayables({ result, query, catalogs, canCreateCategory }: 
   }
   return <div className="stack finance-payables">
     <div className="row spread finance-payables-heading"><div><h1>Contas a pagar</h1><p className="muted">Organize os vencimentos e acompanhe as confirmações de pagamento.</p></div>
-      <div className="row finance-payable-heading-actions">{!query.dateFrom && query.month !== "2099-12" && <Button variant="outline" disabled={navigation.isPending} loading={loading === "copy"} onClick={() => void copy()}>Copiar para o próximo mês</Button>}
-      <Button disabled={navigation.isPending} onClick={() => { setNotice(""); setDialog({ kind: "CREATE" }); }}><Plus size={18} />Nova conta</Button></div></div>
-    {notice && <p className="notice" role="status">{notice}</p>}{error && <p role="alert">{error}</p>}
+      <div className="row finance-payable-heading-actions">{!query.dateFrom && query.month !== "2099-12" && <Button variant="outline" disabled={navigation.isPending} loading={loading === "copy"} onClick={() => void copy()}>{loading !== "copy" && <Copy size={17} aria-hidden="true" />}Copiar para o próximo mês</Button>}
+      <Button disabled={navigation.isPending} onClick={() => { setNotice(null); setDialog({ kind: "CREATE" }); }}><Plus size={18} />Nova conta</Button></div></div>
+    {notice && <p className="notice" role="status">{notice.message}</p>}{error && <p role="alert">{error}</p>}
     {result.previousOverdue.count > 0 && <aside className="notice row spread"><span><strong>{result.previousOverdue.count} conta(s) vencida(s) de períodos anteriores</strong><br /><small>Fora da lista atual, independentemente da busca e da categoria.</small></span>
       <Button variant="outline" onClick={() => go({ status: "PENDING", search: undefined, categoryId: undefined, dueStatus: "OVERDUE", dateFrom: result.previousOverdue.firstDate!, dateTo: result.previousOverdue.lastDate! })}>Ver pendências anteriores</Button></aside>}
     <section className="card stack" aria-busy={navigation.isPending}>
@@ -73,15 +78,15 @@ export function FinancePayables({ result, query, catalogs, canCreateCategory }: 
         <thead><tr><th>Conta</th><th>Vencimento</th><th>Valor</th><th>Situação</th><th>Ações</th></tr></thead>
         <tbody>{result.items.map((item) => {
           const status = payableStatus(item.status, item.dueDate, result.today);
-          return <tr key={item.id}><td data-label="Conta"><button className="finance-payable-name" aria-label={`Detalhes: ${item.name}`} onClick={() => void details(item)} disabled={loading === item.id || navigation.isPending}>{item.name}{loading === item.id && <Loader2 size={14} className="finance-spin" />}</button><small className="muted">{item.categoryName}</small></td>
+          return <tr key={item.id}><td data-label="Conta"><button className="finance-payable-name" aria-label={`Detalhes: ${item.name}`} onClick={() => void details(item)} disabled={loading === item.id || navigation.isPending}>{item.name}</button><small className="muted">{item.categoryName}</small></td>
             <td data-label="Vencimento">{payableDate(item.dueDate)}{item.paidDate && <small className="muted">Pago em {payableDate(item.paidDate)}</small>}</td>
             <td data-label="Valor">{item.amountCents === null ? "Não informado" : formatMoney(item.amountCents)}</td>
             <td data-label="Situação"><span className={`badge payable-${status.toLowerCase()}`}>{payableStatusLabels[status]}</span></td>
-            <td data-label="Ações"><div className="row finance-payable-row-actions">{item.status === "PENDING" && <Button size="sm" disabled={navigation.isPending} aria-label={`Pagar: ${item.name}`} onClick={() => setDialog({ kind: "PAY", item })}>Pagar</Button>}
-              <div className="finance-payable-menu"><Button size="sm" variant="outline" disabled={navigation.isPending} aria-label={`Ações: ${item.name}`} aria-expanded={menu === item.id} onClick={() => setMenu(menu === item.id ? null : item.id)}><Ellipsis size={18} /></Button>
+            <td data-label="Ações"><div className="row finance-payable-row-actions">{item.status === "PENDING" && <Button size="sm" disabled={navigation.isPending} aria-label={`Pagar: ${item.name}`} onClick={() => setDialog({ kind: "PAY", item })}><Check size={16} aria-hidden="true" />Pagar</Button>}
+              <div className="finance-payable-menu"><Button size="sm" variant="outline" disabled={loading === item.id || navigation.isPending} aria-busy={loading === item.id} aria-label={`Ações: ${item.name}`} aria-expanded={menu === item.id} onClick={() => setMenu(menu === item.id ? null : item.id)}>{loading === item.id ? <Loader2 size={18} className="finance-spin" aria-hidden="true" /> : <Ellipsis size={18} aria-hidden="true" />}</Button>
                 {menu === item.id && <div className="finance-payable-menu-items" onKeyDown={(e) => { if (e.key === "Escape") setMenu(null); }}>
-                  <button disabled={navigation.isPending} onClick={() => { setMenu(null); void details(item); }}>Detalhes</button>
-                  {item.status === "PENDING" ? <><button disabled={navigation.isPending} onClick={() => { setMenu(null); setDialog({ kind: "EDIT", item }); }}>Editar</button><button disabled={navigation.isPending} onClick={() => { setMenu(null); setDialog({ kind: "DELETE", item }); }}>Excluir</button></> : <button disabled={navigation.isPending} onClick={() => { setMenu(null); setDialog({ kind: "REOPEN", item }); }}>Desfazer confirmação</button>}
+                  <button disabled={navigation.isPending} onClick={() => { setMenu(null); void details(item); }}><Eye size={16} aria-hidden="true" />Detalhes</button>
+                  {item.status === "PENDING" ? <><button disabled={navigation.isPending} onClick={() => { setMenu(null); setDialog({ kind: "EDIT", item }); }}><Pencil size={16} aria-hidden="true" />Editar</button><button disabled={navigation.isPending} onClick={() => { setMenu(null); setDialog({ kind: "DELETE", item }); }}><Trash2 size={16} aria-hidden="true" />Excluir</button></> : <button disabled={navigation.isPending} onClick={() => { setMenu(null); setDialog({ kind: "REOPEN", item }); }}><Undo2 size={16} aria-hidden="true" />Desfazer confirmação</button>}
                 </div>}
               </div></div></td></tr>;
         })}</tbody>

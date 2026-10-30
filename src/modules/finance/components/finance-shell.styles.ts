@@ -35,12 +35,12 @@ export const FinanceStyles = createGlobalStyle`
  .finance .finance-payable-date-column{width:19%}
  .finance .finance-payable-amount-column{width:17%}
  .finance .finance-payable-status-column{width:14%}
- .finance .finance-payable-actions-column{width:154px}
+ .finance .finance-payable-actions-column{width:182px}
  .finance .finance-payable-table td{vertical-align:middle;overflow-wrap:anywhere}
  .finance .finance-payable-table th:last-child{text-align:right}
  .finance .finance-payable-table small{display:block;margin-top:5px}
  .finance .finance-payable-name{border:0;background:none;color:inherit;padding:0;text-align:left;font:inherit;font-weight:600;cursor:pointer;overflow-wrap:anywhere}
- .finance .finance-payable-table .finance-payable-row-actions{justify-content:flex-end;flex-wrap:nowrap;gap:8px}
+ .finance .finance-payable-table .finance-payable-row-actions{position:relative;justify-content:flex-end;flex-wrap:nowrap;gap:8px}
  .finance .finance-payable-row-actions>button{white-space:nowrap}
  .finance .finance-payable-table .finance-payable-menu>button{width:44px;min-width:44px;padding-left:0;padding-right:0}
  :is(.finance,#finance-modal-root) .badge.payable-overdue{color:#9C3238;background:#FCEDEE}
@@ -48,8 +48,9 @@ export const FinanceStyles = createGlobalStyle`
  :is(.finance,#finance-modal-root) .badge.payable-pending{color:#526775;background:#EEF2F5}
  :is(.finance,#finance-modal-root) .badge.payable-paid{color:#176348;background:#EDF5EF}
  .finance .finance-payable-menu{position:relative}
- .finance .finance-payable-menu-items{position:absolute;right:0;top:100%;z-index:10;display:grid;min-width:170px;background:white;border:1px solid #CFDCD3;border-radius:10px;box-shadow:0 6px 24px #18352C20;padding:6px}
- .finance .finance-payable-menu-items button{border:0;background:transparent;text-align:left;padding:12px;font:inherit;cursor:pointer;border-radius:6px}
+ .finance .finance-payable-menu-items{position:absolute;right:0;top:100%;z-index:10;display:grid;min-width:190px;background:white;border:1px solid #CFDCD3;border-radius:10px;box-shadow:0 6px 24px #18352C20;padding:6px}
+ .finance .finance-payable-menu-items button{display:flex;align-items:center;gap:10px;border:0;background:transparent;text-align:left;padding:12px;font:inherit;cursor:pointer;border-radius:6px}
+ .finance .finance-payable-menu-items svg{flex-shrink:0}
  .finance .finance-payable-menu-items button:hover{background:#EDF5EF}
  #finance-modal-root .finance-payable-copy-choice{display:flex;align-items:center;gap:12px;border:1px solid #E3EAE6;border-radius:10px;padding:14px;min-width:0}
  #finance-modal-root .finance-payable-copy-choice small{display:block;margin-top:6px;font-weight:400}
@@ -70,6 +71,7 @@ export const FinanceStyles = createGlobalStyle`
   .finance .finance-payable-filters>button{justify-self:end}
   .finance .finance-payable-table colgroup{display:none}
   .finance .finance-payable-table .finance-payable-row-actions{justify-content:flex-start}
+  .finance .finance-payable-table .finance-payable-menu{position:static}
   .finance .finance-payables-heading,.finance .finance-payable-heading-actions{width:100%}
   .finance .finance-payable-heading-actions{display:grid;grid-template-columns:minmax(0,1fr)}
   .finance .finance-payable-heading-actions>button{width:100%;min-height:44px}
