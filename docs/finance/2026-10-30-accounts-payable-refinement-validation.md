@@ -44,3 +44,9 @@ Ocorrências resolvidas durante a validação: a primeira execução SQL via std
 - Novos cenários de navegador reproduziram os problemas antes da correção: aviso persistente e ausência de carregamento no botão. Depois, passaram, incluindo o reinício do prazo para mensagens idênticas, acesso aos detalhes pelo nome/menu e geometria dos menus em 1280 e 320 px.
 - Validação final deste complemento: lint sem warnings, typecheck, build, 633 testes Vitest e 17 cenários Playwright aprovados na versão compilada. Capturas de desktop/mobile inspecionadas.
 - Somente dados fictícios e Supabase local nos testes. Sem migração, alteração de permissões, banco online, push ou merge. SQL/advisors e análise de rotas não se aplicam a este complemento de interface. Ambiente local de testes encerrado ao finalizar.
+
+## Complemento — modal de cópia
+
+Paginação centralizada com botões de 36 px, espaçamento compacto e fonte de 12 px nos botões e no indicador de página. Título do modal e nomes das contas com peso 700 na seleção e na conferência. Estilos limitados ao modal de cópia.
+
+Lint sem warnings, typecheck, build e 633 testes Vitest aprovados. Os dois cenários existentes de cópia no navegador passaram, incluindo seleção entre páginas, ajuste de vencimento e prevenção de duplicidade. Conferência visual e de dimensões na versão compilada em 1280 e 320 px, sem transbordamento horizontal. Apenas dados fictícios locais; sem alterações no banco online, novas migrações ou publicação. Ambiente de testes encerrado ao finalizar.

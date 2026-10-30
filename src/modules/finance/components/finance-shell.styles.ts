@@ -52,6 +52,10 @@ export const FinanceStyles = createGlobalStyle`
  .finance .finance-payable-menu-items button{display:flex;align-items:center;gap:10px;border:0;background:transparent;text-align:left;padding:12px;font:inherit;cursor:pointer;border-radius:6px}
  .finance .finance-payable-menu-items svg{flex-shrink:0}
  .finance .finance-payable-menu-items button:hover{background:#EDF5EF}
+ #finance-modal-root .finance-payable-copy h2,#finance-modal-root .finance-payable-copy strong{font-weight:700}
+ #finance-modal-root .finance-payable-copy-pagination{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px;font-size:12px;color:#6D7F76}
+ #finance-modal-root .finance-payable-copy-pagination button{min-height:36px;padding:6px 10px;font-size:12px}
+ #finance-modal-root .finance-payable-copy-pagination span{white-space:nowrap}
  #finance-modal-root .finance-payable-copy-choice{display:flex;align-items:center;gap:12px;border:1px solid #E3EAE6;border-radius:10px;padding:14px;min-width:0}
  #finance-modal-root .finance-payable-copy-choice small{display:block;margin-top:6px;font-weight:400}
  #finance-modal-root .finance-payable-copy-choice span,#finance-modal-root .finance-payable-detail{overflow-wrap:anywhere;min-width:0}

@@ -40,7 +40,7 @@ export function FinancePayableCopy({ initial, month, categories, onClose, onSave
   }
   useFinanceDirtyGuard(drafts.length > 0, save, () => onClose(mutation.needsRefresh));
   function update(id: string, values: Partial<CopyDraft>) { setSelected((all) => ({ ...all, [id]: { ...all[id], ...values } })); }
-  return <Modal title="Copiar para o próximo mês" className="finance-secondary-drawer" size="lg" busy={loading || mutation.busy} onClose={close}
+  return <Modal title="Copiar para o próximo mês" className="finance-secondary-drawer finance-payable-copy" size="lg" busy={loading || mutation.busy} onClose={close}
     footer={<><Button variant="outline" onClick={close} disabled={mutation.busy}>Fechar</Button>{review && !mutation.uncertain && <Button variant="outline" disabled={mutation.busy} onClick={() => setReview(false)}>Voltar à seleção</Button>}
       <Button loading={mutation.busy} disabled={!drafts.length || loading} onClick={() => review ? void save() : setReview(true)}>{mutation.uncertain ? "Conferir gravação" : review ? "Salvar cópias" : "Conferir cópias"}</Button></>}>
     <div className="stack"><p>De {formatFinanceMonth(month, true)} para <strong>{formatFinanceMonth(target, true)}</strong>. As novas contas começarão pendentes.</p>
@@ -57,7 +57,7 @@ export function FinancePayableCopy({ initial, month, categories, onClose, onSave
             });
           }} /><span><strong>{item.name}</strong><small>{payableDate(item.dueDate)} · {item.categoryName}{item.copiedNextMonth ? " · Já copiada" : ""}</small></span></label>)}
         {!data.items.length && <p className="muted">Nenhuma conta neste mês.</p>}
-      </div><div className="row"><Button variant="outline" disabled={loading || data.page <= 1} onClick={() => void page(data.page - 1)}>Anterior</Button><span>Página {data.page} de {Math.max(1, Math.ceil(data.count / 20))}</span><Button variant="outline" disabled={loading || data.page * 20 >= data.count} onClick={() => void page(data.page + 1)}>Próxima</Button></div></> :
+      </div><nav className="finance-payable-copy-pagination" aria-label="Páginas das contas para copiar"><Button size="sm" variant="outline" disabled={loading || data.page <= 1} onClick={() => void page(data.page - 1)}>Anterior</Button><span>Página {data.page} de {Math.max(1, Math.ceil(data.count / 20))}</span><Button size="sm" variant="outline" disabled={loading || data.page * 20 >= data.count} onClick={() => void page(data.page + 1)}>Próxima</Button></nav></> :
       <form ref={form} className="stack" onSubmit={(e) => { e.preventDefault(); void save(); }}><fieldset className="finance-payable-fields stack" disabled={mutation.busy || mutation.uncertain}>
         {drafts.map((draft) => <article className="card stack" key={draft.item.id}><strong>{draft.item.name}</strong>
           <div className="grid"><label>Vencimento<input aria-label={`Vencimento: ${draft.item.name}`} type="date" min={`${target}-01`} max={shiftPayableDate(monthRange(target).end, -1)} value={draft.dueDate} required onChange={(e) => update(draft.item.id, { dueDate: e.target.value })} /></label>
