@@ -1,5 +1,7 @@
 # Contas a pagar da Catedral — implementação e validação local
 
+Este documento registra a etapa local. A aplicação online autorizada posteriormente está em [registro de implantação](2026-10-30-accounts-payable-online-migration.md).
+
 Data: 30/10/2026. Branch: `codex/finance-accounts-payable`, criada da main sincronizada em `2fd1da3`. Planejamento, implementação e revisão diretos, sem subagentes. Nenhuma operação no banco online, push ou merge.
 
 ## Comportamento entregue
