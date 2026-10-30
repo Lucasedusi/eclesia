@@ -1,6 +1,7 @@
 const scopedTag = (scope: string, churchId: string) => `${scope}:${churchId}`;
 
 export const cacheTags = {
+  financePayables: (churchId: string) => scopedTag("finance-payables", churchId),
   financeCatalogs: (churchId: string) => `finance-catalogs:${churchId}`,
   financeUnit: (churchId: string, congregationId: string) => `finance-unit:${churchId}:${congregationId}`,
   financePeriod: (churchId: string, congregationId: string, month: string) => `finance-period:${churchId}:${congregationId}:${month}`,

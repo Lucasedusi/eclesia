@@ -36,7 +36,7 @@ export type Database = {
     Tables: {
       accounts_payable: {
         Row: {
-          amount: number
+          amount: number | null
           cancel_reason: string | null
           cancelled_at: string | null
           cancelled_by: string | null
@@ -44,6 +44,8 @@ export type Database = {
           category_id: string | null
           church_id: string
           congregation_id: string | null
+          copied_for_month: string | null
+          copied_from_id: string | null
           created_at: string
           created_by: string | null
           deleted_at: string | null
@@ -54,19 +56,22 @@ export type Database = {
           financial_transaction_id: string | null
           has_attachment: boolean
           id: string
+          is_checklist: boolean
           metadata: Json
           notes: string | null
           paid_at: string | null
           paid_by: string | null
+          paid_date: string | null
           payable_number: string | null
           payment_method_id: string | null
           payment_reference: string | null
+          revision: number
           status: string
           supplier_name: string | null
           updated_at: string
         }
         Insert: {
-          amount?: number
+          amount?: number | null
           cancel_reason?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
@@ -74,6 +79,8 @@ export type Database = {
           category_id?: string | null
           church_id: string
           congregation_id?: string | null
+          copied_for_month?: string | null
+          copied_from_id?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -84,19 +91,22 @@ export type Database = {
           financial_transaction_id?: string | null
           has_attachment?: boolean
           id?: string
+          is_checklist?: boolean
           metadata?: Json
           notes?: string | null
           paid_at?: string | null
           paid_by?: string | null
+          paid_date?: string | null
           payable_number?: string | null
           payment_method_id?: string | null
           payment_reference?: string | null
+          revision?: number
           status?: string
           supplier_name?: string | null
           updated_at?: string
         }
         Update: {
-          amount?: number
+          amount?: number | null
           cancel_reason?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
@@ -104,6 +114,8 @@ export type Database = {
           category_id?: string | null
           church_id?: string
           congregation_id?: string | null
+          copied_for_month?: string | null
+          copied_from_id?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -114,13 +126,16 @@ export type Database = {
           financial_transaction_id?: string | null
           has_attachment?: boolean
           id?: string
+          is_checklist?: boolean
           metadata?: Json
           notes?: string | null
           paid_at?: string | null
           paid_by?: string | null
+          paid_date?: string | null
           payable_number?: string | null
           payment_method_id?: string | null
           payment_reference?: string | null
+          revision?: number
           status?: string
           supplier_name?: string | null
           updated_at?: string
@@ -195,6 +210,27 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "financial_payment_methods"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payable_category_tenant"
+            columns: ["church_id", "category_id"]
+            isOneToOne: false
+            referencedRelation: "financial_categories"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "payable_copy_tenant"
+            columns: ["church_id", "copied_from_id"]
+            isOneToOne: false
+            referencedRelation: "accounts_payable"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "payable_unit_tenant"
+            columns: ["church_id", "congregation_id"]
+            isOneToOne: false
+            referencedRelation: "congregations"
+            referencedColumns: ["church_id", "id"]
           },
         ]
       }
@@ -9004,6 +9040,10 @@ export type Database = {
         Args: { p_church_id: string; p_payload: Json }
         Returns: Json
       }
+      execute_finance_payable: {
+        Args: { p_church_id: string; p_command: Json }
+        Returns: Json
+      }
       execute_member_import: { Args: { p_batch_id: string }; Returns: Json }
       expire_event_reservations: {
         Args: { p_event_id: string }
@@ -9073,6 +9113,10 @@ export type Database = {
       }
       get_finance_overview: {
         Args: { p_church_id: string; p_month: string; p_unit: string }
+        Returns: Json
+      }
+      get_finance_payable: {
+        Args: { p_church_id: string; p_id: string }
         Returns: Json
       }
       get_finance_ranking_report: {
@@ -9294,6 +9338,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      query_finance_payables: {
+        Args: { p_church_id: string; p_options: Json }
+        Returns: Json
       }
       reconcile_event_aggregates: {
         Args: { p_event_id: string }

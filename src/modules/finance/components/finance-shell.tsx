@@ -87,6 +87,7 @@ export type FinanceShellDTO = {
   units: FinanceUnit[];
   defaultUnitId: string;
   defaultMonth: string;
+  canManagePayables?: boolean;
 };
 export function FinanceShell({
   context,
@@ -154,7 +155,9 @@ export function FinanceShell({
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
   }, []);
+  const isPayables = path === "/financeiro/contas-a-pagar";
   const links = [
+    { label: "Contas a pagar", path: "/financeiro/contas-a-pagar", icon: ReceiptText, show: context.canManagePayables },
     {
       label: "Visão geral",
       path: "/financeiro",
@@ -285,7 +288,7 @@ export function FinanceShell({
                 <ChevronLeft size={16} />
               )}
             </button>
-            <FinanceContextBar
+            {isPayables ? <div className="finance-context finance-payables-context"><span className="finance-single-unit">Administração · Catedral</span></div> : <FinanceContextBar
               units={context.units}
               selectedUnitId={unit.id}
               month={month}
@@ -306,7 +309,7 @@ export function FinanceShell({
                 }}
               /> : undefined}
               onChange={(u, m) => navigate(financeLocation(path, u, m))}
-            />
+            />}
             <div className="row">
               <div className="identity" style={{ textAlign: "right" }}>
                 <div style={{ fontSize: 12 }}>{context.name}</div>
