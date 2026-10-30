@@ -22,6 +22,7 @@ export const payableCommandSchema = z.discriminatedUnion("kind", [
     v.items.every((i) => i.dueDate.slice(0, 7) === nextPayableDate(`${v.sourceMonth}-01`).slice(0, 7)), "Confira as contas e os vencimentos do próximo mês."),
 ]);
 export const payableQuerySchema = z.object({
+  dueStatus: z.enum(["ALL", "OVERDUE", "TODAY", "UPCOMING"]).default("ALL"),
   month: monthSchema, status: z.enum(["PENDING", "PAID", "ALL"]).default("PENDING"),
   search: z.string().trim().max(120).default(""), categoryId: z.uuid().optional(),
   dateFrom: localDateSchema.optional(), dateTo: localDateSchema.optional(),

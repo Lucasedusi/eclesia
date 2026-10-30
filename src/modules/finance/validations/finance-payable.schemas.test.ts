@@ -32,3 +32,11 @@ describe("payable inputs", () => {
     expect(payableCommandSchema.safeParse({ ...command, items: [{ ...item, dueDate: "2026-12-01" }] }).success).toBe(false);
   });
 });
+
+it("validates due-date situations independently of the paid tab", () => {
+  for (const dueStatus of ["ALL", "OVERDUE", "TODAY", "UPCOMING"])
+    expect(payableQuerySchema.safeParse({ month: "2026-10", dueStatus }).success).toBe(true);
+  expect(payableQuerySchema.safeParse({ month: "2026-10", dueStatus: "PAID" }).success).toBe(false);
+  expect(payableQuerySchema.parse({ month: "2026-10" }).dueStatus).toBe("ALL");
+  expect(payableQuerySchema.safeParse({ month: "2026-10", status: "PAID", dueStatus: "OVERDUE" }).success).toBe(true);
+});
