@@ -84,13 +84,54 @@ Os artefatos estão nas pastas ignoradas `tmp/finance-digital-*`,
 
 ## Publicação
 
-Não houve push, merge, publicação nem migração remota. A alteração permanece
-local, pronta para revisão. Para disponibilizar após autorização:
+### Migração online aplicada
 
-1. Preservar a base de contas a pagar e aplicar a nova migração
-   `20261102194716_finance_digital_receipt_links.sql`, sem alterar o histórico.
-   A migração é aditiva; cria uma chave única nos recibos existentes e pode
-   bloquear escritas brevemente durante essa etapa.
+Após autorização expressa do usuário, a migração
+`20261102194716_finance_digital_receipt_links.sql` foi aplicada em 02/11/2026 ao
+projeto `eclesias_bd_sp` (`dhgrfvakdbtedqfgecys`). A origem foi confirmada contra a
+configuração local da aplicação e o projeto ativo no Supabase.
+
+O dry-run identificou somente esse arquivo pendente. A aplicação pelo CLI preservou
+a versão original no histórico, com `--skip-vault`, sem seeds ou alterações de
+roles. O dry-run posterior confirmou `upToDate: true` e nenhuma migração pendente.
+
+As consultas de verificação online foram somente de metadados: migração registrada,
+RLS habilitada, acesso direto negado a `anon`/`authenticated`, emissão autorizada
+somente ao papel autenticado entre os papéis públicos, consumo reservado ao
+servidor, `search_path` vazio, chaves compostas/checks validados e quatro índices
+presentes. Não foram executadas fixtures, criados comprovantes ou enviados contatos
+reais no ambiente online. Os tipos já tinham sido regenerados contra essa mesma
+migração no banco local; não houve nova alteração de esquema nesta etapa.
+
+Os Advisors online não retornaram erros. A análise remota tem regras adicionais
+em relação ao CLI local e apontou os seguintes itens relacionados à funcionalidade:
+
+- [RLS sem política](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy),
+  informativo: intencional; a tabela não concede acesso direto aos papéis públicos
+  e é acessada pelas funções/servidor autorizados.
+- [Função SECURITY DEFINER executável por autenticados](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable),
+  aviso: intencional na emissão; exige `auth.uid()`, permissão `finance.view`,
+  igreja/congregação autorizadas e recibo válido, com `search_path` vazio. Essas
+  verificações foram testadas localmente e os privilégios conferidos online.
+- [Índices ainda não utilizados](https://supabase.com/docs/guides/database/database-linter?lint=0005_unused_index),
+  informativo nos dois índices auxiliares recém-criados; mantidos por sustentarem
+  a busca/limitação por recibo e a chave estrangeira do autor.
+
+No conjunto do projeto, segurança retornou 67 avisos e 6 informativos; desempenho,
+13 avisos e 481 informativos. Os demais itens são externos ao escopo desta migração,
+incluindo [proteção de senha vazada desabilitada](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection).
+Nenhuma configuração de autenticação ou objeto fora do escopo foi alterado.
+
+Logs locais ignorados: `tmp/finance-digital-online-push.log` e
+`tmp/finance-digital-online-postcheck.log`.
+
+### Publicação da aplicação pendente
+
+Não houve push, merge ou publicação da aplicação. Para disponibilizar a interface
+após autorização:
+
+1. Preservar a base de contas a pagar ao integrar a branch; a migração do
+   comprovante digital já está aplicada no banco online.
 2. Configurar `NEXT_PUBLIC_SITE_URL` com a origem HTTPS correta do ambiente
    antes do build. Somente loopback local aceita HTTP. As credenciais de servidor
    do Supabase já usadas pela aplicação continuam necessárias.
