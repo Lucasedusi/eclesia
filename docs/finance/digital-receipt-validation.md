@@ -125,10 +125,19 @@ Nenhuma configuração de autenticação ou objeto fora do escopo foi alterado.
 Logs locais ignorados: `tmp/finance-digital-online-push.log` e
 `tmp/finance-digital-online-postcheck.log`.
 
-### Publicação da aplicação pendente
+### Código enviado ao GitHub; aplicação mantida local
 
-Não houve push, merge ou publicação da aplicação. Para disponibilizar a interface
-após autorização:
+Em 02/11/2026, o usuário esclareceu que o Eclesias roda somente no computador e
+optou por manter esse funcionamento e enviar o código ao GitHub. A branch
+`codex/finance-digital-receipt` foi enviada; a revisão usa
+`codex/finance-accounts-payable` como base para preservar a dependência de contas
+a pagar, cuja revisão ainda está aberta. Não houve merge na main ou configuração
+de hospedagem. A conferência anterior ao envio aprovou novamente 666 testes,
+lint sem warnings e typecheck; o código é o mesmo do build e dos dez E2E já validados.
+
+O comprovante pode ser testado localmente. Um link com `localhost` não pode ser
+aberto por um destinatário em outro dispositivo pela internet. Para disponibilizar
+esse acesso em uma futura hospedagem, após autorização:
 
 1. Preservar a base de contas a pagar ao integrar a branch; a migração do
    comprovante digital já está aplicada no banco online.
