@@ -19,6 +19,8 @@ export const FinanceStyles = createGlobalStyle`
 
 
  :is(.finance,#finance-modal-root) .finance-payable-fields{border:0;padding:0;margin:0;min-width:0}
+ .finance .finance-payables-desktop-notice{justify-items:start}
+ .finance .finance-payables-desktop-notice>svg{color:#087F5B}
  .finance .finance-payable-filters{display:grid;grid-template-columns:minmax(140px,1.8fr) minmax(140px,1.1fr) minmax(135px,1.4fr) minmax(115px,1fr) 42px;gap:14px;align-items:end}
  .finance .finance-payables-context .finance-single-unit{grid-column:1/-1}
  .finance .finance-payable-filters>label{min-width:0}

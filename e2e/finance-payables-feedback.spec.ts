@@ -37,7 +37,7 @@ test("success feedback expires five seconds after the latest identical message",
   await expect(notice).toHaveCount(0);
 });
 
-for (const width of [1280, 320]) {
+for (const width of [1280, 1024]) {
   test(`details feedback stays inside the actions button at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     const name = await create(page);
@@ -63,7 +63,7 @@ for (const width of [1280, 320]) {
         const during = await action.boundingBox();
         expect(during!.width).toBe(before!.width);
         expect(during!.height).toBe(before!.height);
-        if (fromMenu) await page.screenshot({ path: `tmp/payables-feedback-loading-${width}.png`, fullPage: true });
+        if (fromMenu) await page.screenshot({ path: `tmp/payables-feedback-loading-${width}.png` });
       } finally { release(); }
       const modal = page.getByRole("dialog", { name: "Detalhes da conta" });
       await expect(modal).toBeVisible();
@@ -87,7 +87,7 @@ for (const width of [1280, 320]) {
       expect(box!.x).toBeGreaterThanOrEqual(0);
       expect(box!.x + box!.width).toBeLessThanOrEqual(width);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-      await page.screenshot({ path: `tmp/payables-feedback-${paid ? "paid" : "pending"}-${width}.png`, fullPage: true });
+      await page.screenshot({ path: `tmp/payables-feedback-${paid ? "paid" : "pending"}-${width}.png` });
       await action.click();
     }
   });

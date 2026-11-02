@@ -182,7 +182,7 @@ export function FinanceShell({
       icon: Wallet,
       show: true,
     },
-    { label: "Contas a pagar", path: "/financeiro/contas-a-pagar", icon: ListChecks, show: context.canManagePayables },
+    { label: "Contas a pagar", path: "/financeiro/contas-a-pagar", icon: ListChecks, show: context.canManagePayables, desktopOnly: true },
     {
       label: "Demonstrativos",
       path: "/financeiro/demonstrativos",
@@ -340,7 +340,7 @@ export function FinanceShell({
             {children}
           </main>
           <FinanceMobileNavigation
-            items={links.filter((link) => link.show)}
+            items={links.filter((link) => link.show && !link.desktopOnly)}
             pathname={path}
             unitId={unit.id}
             month={month}

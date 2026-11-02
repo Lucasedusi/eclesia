@@ -17,7 +17,7 @@ test("closing an untouched payable modal makes no route refresh", async ({ page 
   await expect(page.getByRole("main")).toHaveAttribute("aria-busy", "false");
 });
 
-for (const width of [1280, 390, 320]) {
+for (const width of [1280, 1024]) {
   test(`payable filters, details and stable tabs at ${width}px`, async ({ page }) => {
     test.setTimeout(90_000);
     test.skip(!process.env.E2E_FINANCE_FIXTURE, "Local fixture required");
@@ -63,7 +63,8 @@ for (const width of [1280, 390, 320]) {
         await expect(modal.getByText("Conta cadastrada", { exact: true })).toBeHidden();
         await modal.getByText("Histórico de alterações", { exact: false }).click();
         await expect(modal.getByText("Conta cadastrada", { exact: true })).toBeVisible();
-        await page.screenshot({ path: `tmp/payables-refinement-details-${width}.png`, fullPage: true });
+        // Full-page capture can transiently resize Chromium to 1x1 and trigger the mobile access boundary.
+        await page.screenshot({ path: `tmp/payables-refinement-details-${width}.png` });
       }
       const requests: string[] = [];
       const listener = (request: import("@playwright/test").Request) => { if (request.url().includes("/financeiro/contas-a-pagar") && request.resourceType() === "fetch") requests.push(request.url()); };
@@ -88,7 +89,7 @@ for (const width of [1280, 390, 320]) {
     await expect(active).toHaveCSS("color", "rgb(23, 99, 72)");
     await expect(active).toHaveCSS("font-weight", "500");
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-    await page.screenshot({ path: `tmp/payables-refinement-list-${width}.png`, fullPage: true });
+    await page.screenshot({ path: `tmp/payables-refinement-list-${width}.png` });
     await page.getByRole("button", { name: `Pagar: ${name}`, exact: true }).click();
     await page.getByRole("dialog", { name: "Confirmar pagamento" }).getByRole("button", { name: "Confirmar pagamento", exact: true }).click();
     await expect(page.getByRole("dialog")).toHaveCount(0);

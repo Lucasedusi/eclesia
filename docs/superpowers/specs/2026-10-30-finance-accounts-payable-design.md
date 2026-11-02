@@ -133,12 +133,13 @@ Esta entrega usa contagens; não promete um total financeiro completo quando exi
 - Evitar duplicar uma mesma conta de origem no mesmo mês de destino em uma repetição da operação; informar quais cópias já existem. O mesmo nome, por si só, não torna duas contas distintas uma duplicidade.
 - Confirmar a operação de forma consistente, sem deixar uma cópia parcial silenciosa em caso de falha.
 
-## Computador e celular
+## Disponibilidade — atualização aprovada em 02/11/2026
 
 - Computador: item no menu financeiro, listagem em tabela, filtros e modal seguindo os componentes e o tema atuais.
-- Celular: acesso pelo menu Mais do Financeiro, listagem em cartões, ação Marcar como paga visível e demais ações no menu de três pontos.
-- Formulários no padrão de tela cheia já usado no celular, com ações acessíveis e proteção de preenchimento ao sair.
-- Mesmos dados, permissões e operações nos dois formatos. A proposta abrange a versão mobile/PWA existente, sem aplicativo nativo novo.
+- Contas a pagar fica disponível apenas no computador. O menu Mais do Financeiro/mobile não oferece esse atalho.
+- Ao abrir diretamente pelo celular ou tablet identificado, exibir mensagem de disponibilidade exclusiva no computador e retorno à visão geral, preservando congregação/período. O servidor verifica autorização antes do dispositivo e não consulta as contas para essa resposta.
+- Seguir também o limite de tela mobile existente no Financeiro (até 760 px), retirando a listagem e seus modais desse modo. Celulares identificados continuam restritos na horizontal.
+- A autorização administrativa, o escopo da Catedral e as operações no desktop permanecem iguais. Esta decisão substitui a disponibilidade mobile/PWA da proposta original.
 - Operações exigem conexão. Não marcar uma conta como paga somente no aparelho nem armazenar dados financeiros no cache offline da PWA.
 
 ## Encaixe técnico e limites

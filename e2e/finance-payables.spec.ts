@@ -23,7 +23,7 @@ async function search(page: Page, name: string) {
   await page.getByRole("button", { name: "Filtrar", exact: true }).click();
   await expect(page).toHaveURL((url) => url.searchParams.get("search") === name);
 }
-for (const width of [1280, 390, 320]) {
+for (const width of [1280, 1024]) {
   test(`checklist lifecycle at ${width}px preserves Cathedral scope and history`, async ({ page }) => {
     const f = fixture(), name = `Energia ${randomUUID()}`;
     await page.setViewportSize({ width, height: 900 });
@@ -62,7 +62,7 @@ for (const width of [1280, 390, 320]) {
     await expect(edit).toHaveCount(0);
     await expect(page.getByText(/^R\$\s235,90$/)).toBeVisible();
     await expect(page.getByRole("main")).toHaveAttribute("aria-busy", "false");
-    await page.screenshot({ path: `tmp/payables-${width}.png`, fullPage: true });
+    await page.screenshot({ path: `tmp/payables-${width}.png` });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.getByRole("button", { name: `Ações: ${name}`, exact: true }).filter({ visible: true }).click();
     await page.getByRole("button", { name: "Excluir", exact: true }).filter({ visible: true }).click();
