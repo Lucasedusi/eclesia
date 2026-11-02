@@ -50,12 +50,14 @@ function finalizeResponse(
   pathname: string,
   startedAt: number,
 ) {
+  const isDigitalReceipt = pathname === "/comprovante" || pathname.startsWith("/comprovante/");
   response.headers.set("X-Content-Type-Options", "nosniff");
   if (
     pathname === "/financeiro" ||
     pathname.startsWith("/financeiro/") ||
     pathname === "/api/finance" ||
     pathname.startsWith("/api/finance/") ||
+    isDigitalReceipt ||
     pathname === "/login"
   ) {
     response.headers.set("Cache-Control", "private, no-store, max-age=0");
@@ -65,7 +67,8 @@ function finalizeResponse(
     response.headers.set("Cache-Control", "no-store");
     response.headers.set("Pragma", "no-cache");
   }
-  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  response.headers.set("Referrer-Policy", isDigitalReceipt ? "no-referrer" : "strict-origin-when-cross-origin");
+  if (isDigitalReceipt) response.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive, nosnippet");
   response.headers.set(
     "Permissions-Policy",
     /^\/eventos\/[^/]+\/check-in(?:\/|$)/.test(pathname)
@@ -75,7 +78,7 @@ function finalizeResponse(
   const duration = performance.now() - startedAt;
   response.headers.set("Server-Timing", `proxy;dur=${duration.toFixed(1)}`);
   if (process.env.NODE_ENV === "development") {
-    console.info(`[performance] proxy ${pathname}: ${duration.toFixed(1)}ms`);
+    console.info(`[performance] proxy ${isDigitalReceipt ? "/comprovante/[token]" : pathname}: ${duration.toFixed(1)}ms`);
   }
   return response;
 }
@@ -83,6 +86,10 @@ function finalizeResponse(
 export async function proxy(request: NextRequest) {
   const startedAt = performance.now();
   const pathname = request.nextUrl.pathname;
+  // Bearer links have their own scoped validation and must not depend on a login session.
+  if (pathname === "/comprovante" || pathname.startsWith("/comprovante/")) {
+    return finalizeResponse(NextResponse.next(), pathname, startedAt);
+  }
   if (PWA_PUBLIC_ASSETS.has(pathname)) {
     return finalizeResponse(NextResponse.next(), pathname, startedAt);
   }

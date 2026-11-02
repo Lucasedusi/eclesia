@@ -7,11 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.15"
-  }
   graphql_public: {
     Tables: {
       [_ in never]: never
@@ -5621,6 +5616,66 @@ export type Database = {
           },
         ]
       }
+      financial_receipt_links: {
+        Row: {
+          church_id: string
+          congregation_id: string
+          created_at: string
+          created_by: string
+          deleted_at: string | null
+          expires_at: string
+          id: string
+          receipt_id: string
+          revoked_at: string | null
+          token_hash: string
+          window_reads: number
+          window_started_at: string
+        }
+        Insert: {
+          church_id: string
+          congregation_id: string
+          created_at?: string
+          created_by: string
+          deleted_at?: string | null
+          expires_at?: string
+          id?: string
+          receipt_id: string
+          revoked_at?: string | null
+          token_hash: string
+          window_reads?: number
+          window_started_at?: string
+        }
+        Update: {
+          church_id?: string
+          congregation_id?: string
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          expires_at?: string
+          id?: string
+          receipt_id?: string
+          revoked_at?: string | null
+          token_hash?: string
+          window_reads?: number
+          window_started_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_receipt_links_church_id_congregation_id_receipt__fkey"
+            columns: ["church_id", "congregation_id", "receipt_id"]
+            isOneToOne: false
+            referencedRelation: "financial_receipts"
+            referencedColumns: ["church_id", "congregation_id", "id"]
+          },
+          {
+            foreignKeyName: "financial_receipt_links_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       financial_receipts: {
         Row: {
           amount: number
@@ -8959,6 +9014,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      consume_finance_receipt_link: {
+        Args: { p_token_hash: string }
+        Returns: {
+          church_id: string
+          congregation_id: string
+          receipt_id: string
+        }[]
+      }
       copy_finance_statement_rules: {
         Args: {
           p_church_id: string
@@ -9167,6 +9230,14 @@ export type Database = {
         Returns: boolean
       }
       is_valid_cpf: { Args: { p_value: string }; Returns: boolean }
+      issue_finance_receipt_link: {
+        Args: {
+          p_church_id: string
+          p_receipt_id: string
+          p_token_hash: string
+        }
+        Returns: string
+      }
       list_finance_bank_imports: {
         Args: {
           p_cashbox?: string
