@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { readFileSync, writeFileSync } from "node:fs";
+import { PDFDocument } from "pdf-lib";
 
 test.beforeEach(() => {
   test.skip(!process.env.E2E_STORAGE_STATE || !process.env.E2E_FINANCE_FIXTURE, "Requires local financial fixture");
@@ -42,7 +43,14 @@ for (const mobile of [false, true]) {
     await dialog.getByLabel("Telefone do destinatário").fill("123");
     await dialog.getByRole("button", { name: "Abrir WhatsApp", exact: true }).click();
     await expect(dialog.getByRole("alert")).toContainText("telefone válido");
-    await dialog.getByLabel("Telefone do destinatário").fill("(62) 99999-1234");
+    const phone = dialog.getByLabel("Telefone do destinatário");
+    await phone.fill("");
+    await phone.pressSequentially("62999991234");
+    await expect(phone).toHaveValue("(62) 99999-1234");
+    await phone.press("Backspace");
+    await expect(phone).toHaveValue("(62) 9999-9123");
+    await phone.pressSequentially("4");
+    await expect(phone).toHaveValue("(62) 99999-1234");
     const url = (await dialog.getByRole("link", { name: "Visualizar comprovante" }).getAttribute("href"))!;
     await page.screenshot({ path: test.info().outputPath("dialog.png") });
     await context.route("https://wa.me/**", (route) => route.fulfill({ body: "WhatsApp simulado: nenhum envio real." }));
@@ -69,6 +77,7 @@ for (const mobile of [false, true]) {
     expect(pdf.status()).toBe(200);
     expect(pdf.headers()["content-type"]).toBe("application/pdf");
     expect((await pdf.body()).subarray(0, 4).toString()).toBe("%PDF");
+    expect((await PDFDocument.load(await pdf.body())).getPageCount()).toBe(1);
     writeFileSync(test.info().outputPath("receipt.pdf"), await pdf.body());
     await anon.close();
     await dialog.getByRole("button", { name: "Voltar aos detalhes" }).click();

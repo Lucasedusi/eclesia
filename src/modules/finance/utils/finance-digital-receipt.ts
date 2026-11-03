@@ -1,5 +1,19 @@
+import { formatBrazilPhone } from "@/utils/input-masks";
+
 export const DIGITAL_RECEIPT_TOKEN = /^[A-Za-z0-9_-]{43}$/;
 export const SHAREABLE_RECEIPT_STATUSES = ["ISSUED", "PRINTED", "REPRINTED"];
+
+export function formatReceiptPhone(value: string): string {
+  const text = value.trimStart();
+  if (!text.startsWith("+")) return formatBrazilPhone(text);
+  const digits = text.replace(/\D/g, "");
+  if (digits.startsWith("55")) {
+    const national = formatBrazilPhone(digits.slice(2, 13));
+    return national ? `+55 ${national}` : "+55";
+  }
+  // Keep explicit foreign country codes; Brazilian grouping does not apply to them.
+  return `+${text.slice(1).replace(/[^\d\s().-]/g, "")}`.slice(0, 30);
+}
 
 export function normalizeReceiptPhone(value: string): string {
   const text = value.trim();

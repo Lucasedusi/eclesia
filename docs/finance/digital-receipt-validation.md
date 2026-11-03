@@ -12,11 +12,14 @@ de contas a pagar; a publicação precisa preservar essa dependência.
 - A janela oferece prévia, PDF, telefone e **Abrir WhatsApp**. A conversa recebe
   uma mensagem genérica e o link; o operador confirma o envio. O navegador usa a
   conta já conectada ao WhatsApp, portanto a interface orienta usar a conta da igreja.
+- O telefone recebe máscara brasileira durante a digitação e ao colar um número;
+  códigos internacionais explícitos com `+` continuam aceitos.
 - O telefone fica apenas na janela e na URL aberta do WhatsApp. Não é enviado
   ao servidor do Eclesias, persistido nem incluído no comprovante.
 - Página pública responsiva, sem login, com identidade da igreja, pessoa,
   data, forma de pagamento, contribuições, total e número do recibo. O PDF
-  compacto permite selecionar texto e continua em novas páginas quando necessário.
+  compacto permite selecionar texto e usa uma única página, cuja altura acompanha
+  o conteúdo, mantendo os itens e os tamanhos das letras.
 - Cada link vale por 30 dias. Quem possui o link pode acessá-lo; o aviso inclui
   a data de validade. Cancelamento, substituição, exclusão, revogação ou expiração
   impedem novas leituras do HTML e do PDF. Uma cópia já baixada é um arquivo do destinatário.
@@ -40,7 +43,7 @@ sociais. Os logs próprios e de desenvolvimento do Next ocultam o token desta ro
 Logs de acesso da hospedagem devem seguir a mesma política de proteção de URLs
 com tokens já utilizada nas demais rotas públicas da aplicação.
 
-## Evidências locais
+## Evidências locais da implementação inicial
 
 Todos os dados e contatos dos testes são fictícios. O WhatsApp foi interceptado
 no navegador; nenhum envio real foi realizado.
@@ -81,6 +84,38 @@ A revisão final não encontrou bloqueios: foram conferidos escopo, estados do
 recibo, projeção pública, paginação, erros, links e preservação do fluxo existente.
 Os artefatos estão nas pastas ignoradas `tmp/finance-digital-*`,
 `tmp/finance-digital-review/` e `test-results/finance-digital-receipt-*`.
+
+## Ajustes de telefone e página única — 02/11/2026
+
+Atendendo à solicitação posterior do usuário, o telefone agora utiliza a máscara
+compartilhada da aplicação: `(62) 99999-1234` ou `(11) 3333-4444`, com suporte à
+colagem do código 55 e preservação de números internacionais iniciados por `+`.
+O número enviado ao WhatsApp continua normalizado, sem pontuação.
+
+O PDF mede o conteúdo completo antes de desenhar. Mantém a largura de 420 pontos
+e a altura mínima de 595,28 pontos, aumentando somente a altura quando necessário.
+O resultado tem sempre uma página contínua, com as fontes preservadas; não força
+o conteúdo a caber em uma folha A4 fixa. Não há cabeçalho de continuação ou contador
+de páginas. O exemplo com 75 itens, antes com sete páginas, agora tem uma página
+de 420 × 3424 pontos. Nenhum item, total ou dado do rodapé foi removido.
+
+Validação após os ajustes:
+
+- 669 testes Vitest em 122 arquivos, lint sem warnings, typecheck e build passaram.
+- Os cinco cenários Playwright digitais passaram na versão de produção local.
+  Em desktop/celular, incluem digitação com máscara, apagar/reinserir um dígito,
+  destinatário correto no WhatsApp simulado e PDF com exatamente uma página.
+- Amostras com logo, cinco contribuições/endereço/CNPJ e 75 itens foram renderizadas
+  e inspecionadas. A extração confirmou os 75 itens uma única vez. Todos os caracteres
+  ficaram dentro dos limites da página e os tamanhos de fonte permaneceram a partir
+  de 7 pontos.
+- Os testes reproduziram o problema antes da correção: cinco contribuições geravam
+  duas páginas, e o documento longo também era dividido.
+- Sem mudanças no banco, nas permissões, no novo lançamento ou no comprovante térmico.
+  Testes apenas com dados locais fictícios; nenhum envio real realizado.
+
+Evidências ignoradas: `tmp/finance-digital-adjust-*` e
+`tmp/finance-digital-review/{logo,five-items,long}.pdf`.
 
 ## Publicação
 

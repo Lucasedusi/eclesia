@@ -4,7 +4,7 @@ import { Download, ExternalLink, FileCheck2, Info, MessageCircle } from "lucide-
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import type { DigitalReceiptLink } from "../types/finance-digital-receipt.types";
-import { buildReceiptWhatsAppUrl } from "../utils/finance-digital-receipt";
+import { buildReceiptWhatsAppUrl, formatReceiptPhone } from "../utils/finance-digital-receipt";
 import { DigitalReceiptContent, DigitalReceiptFooter } from "./finance-digital-receipt.styles";
 
 export function FinanceDigitalReceiptDialog({ link, number, attendance, onClose }: {
@@ -29,7 +29,7 @@ export function FinanceDigitalReceiptDialog({ link, number, attendance, onClose 
           setError(cause instanceof Error ? cause.message : "Informe um telefone válido com DDD.");
         }
       }}>
-        <label className="digital-phone">Telefone do destinatário<input type="tel" inputMode="tel" autoComplete="off" placeholder="(62) 99999-9999" maxLength={30} value={phone} onChange={(event) => { setPhone(event.target.value); setError(""); }} aria-invalid={Boolean(error)} aria-describedby={`${formId}-hint${error ? ` ${formId}-error` : ""}`} /></label>
+        <label className="digital-phone">Telefone do destinatário<input type="tel" inputMode="tel" autoComplete="off" placeholder="(62) 99999-9999" maxLength={30} value={phone} onChange={(event) => { setPhone(formatReceiptPhone(event.target.value)); setError(""); }} aria-invalid={Boolean(error)} aria-describedby={`${formId}-hint${error ? ` ${formId}-error` : ""}`} /></label>
         <p className="digital-hint" id={`${formId}-hint`}>Informe o DDD. Para outro país, comece com + e o código do país.</p>
         {error && <p className="digital-error" id={`${formId}-error`} role="alert">{error}</p>}
       </form>

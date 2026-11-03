@@ -1,5 +1,6 @@
 import { expect, it, vi } from "vitest";
 import { PDFDocument } from "pdf-lib";
+import sharp from "sharp";
 vi.mock("server-only", () => ({}));
 import { createFinanceDigitalReceiptPdf } from "./finance-digital-receipt-pdf.service";
 import type { DigitalReceipt } from "../types/finance-digital-receipt.types";
@@ -15,9 +16,24 @@ it("creates a compact PDF with no bearer token in metadata", async () => {
   expect(pdf.getPage(0).getWidth()).toBeCloseTo(420);
   expect(pdf.getTitle()).toBe("Comprovante digital");
 });
-it("paginates large receipts and wraps long names instead of dropping items", async () => {
+it("keeps long names and all items on a single page by extending its height", async () => {
   const bytes = await createFinanceDigitalReceiptPdf({ ...receipt, personName: "Nome completo muito longo ".repeat(15), items: Array.from({ length: 75 }, (_, i) => ({ ...receipt.items[0], categoryName: `Item ${i + 1} - contribuição para o departamento de missões`, amountCents: 100 })), totalCents: 7500 });
   const pdf = await PDFDocument.load(bytes);
-  expect(pdf.getPageCount()).toBeGreaterThan(2);
-  for (const page of pdf.getPages()) expect(page.getHeight()).toBe(595.28);
+  expect(pdf.getPageCount()).toBe(1);
+  expect(pdf.getPage(0).getWidth()).toBe(420);
+  expect(pdf.getPage(0).getHeight()).toBeGreaterThan(595.28);
+});
+
+it("keeps the logo, church address, document and multiple contributions on one page", async () => {
+  const logo = await sharp({ create: { width: 60, height: 60, channels: 4, background: "#176348" } }).png().toBuffer();
+  const pdf = await PDFDocument.load(await createFinanceDigitalReceiptPdf({
+    ...receipt,
+    logoDataUri: `data:image/png;base64,${logo.toString("base64")}`,
+    churchName: "Igreja de Exemplo para Conferência do Comprovante Digital",
+    congregationAddress: "Rua de Exemplo, 100 · Centro · Goiânia / GO · CEP 74000-000",
+    churchDocument: "00.000.000/0001-00",
+    personName: "Pessoa fictícia com nome completo para conferência do documento",
+    items: Array.from({ length: 5 }, (_, i) => ({ ...receipt.items[0], categoryName: `Contribuição ${i + 1}`, amountCents: 2000 })),
+  }));
+  expect(pdf.getPageCount()).toBe(1);
 });

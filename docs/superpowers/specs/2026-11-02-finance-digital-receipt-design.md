@@ -6,7 +6,7 @@ Implementação autorizada pelo usuário em 02/11/2026, diretamente e sem subage
 
 Somente nos detalhes do lançamento, ao lado da impressão existente, oferecer Comprovante digital. Abrir uma pequena janela com telefone, acesso à prévia e download do PDF. Abrir WhatsApp prepara a conversa com uma mensagem e o link; o operador confere a conta conectada e conclui o envio. Não afirmar entrega nem integrar disparos automáticos. Preservar integralmente o cadastro, atendimento, confirmação e impressão térmica.
 
-O destinatário acessa uma página responsiva sem login, com marca da igreja, congregação, pessoa/beneficiário, data da movimentação, itens, forma de pagamento, total e número do documento. Página branca, espaços generosos, detalhes verdes e tipografia Rubik. PDF compacto, legível, com continuação para muitos itens. Não expor observações, CPF, caixa/conta bancária ou identificadores internos de transações.
+O destinatário acessa uma página responsiva sem login, com marca da igreja, congregação, pessoa/beneficiário, data da movimentação, itens, forma de pagamento, total e número do documento. Página branca, espaços generosos, detalhes verdes e tipografia Rubik. Conforme ajuste solicitado em 02/11/2026, o telefone recebe máscara e o PDF usa uma única página com altura adaptável ao conteúdo, preservando legibilidade e todos os itens. Não expor observações, CPF, caixa/conta bancária ou identificadores internos de transações.
 
 ## Abordagens
 

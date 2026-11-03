@@ -54,3 +54,4 @@
 - Concluído: emissão/consumo, página e PDF, janela nos detalhes, testes e revisão direta.
 - Validação final: 666 testes Vitest, 10 E2E na versão de produção local, lint, typecheck, build e SQL passaram. Advisors: 13 avisos existentes, nenhum nos novos objetos.
 - Evidências e publicação: `docs/finance/digital-receipt-validation.md`. Banco local encerrado com backup; nenhuma operação remota realizada.
+- Ajuste posterior em 02/11/2026: máscara no telefone e PDF em página única com altura adaptável, conforme nova solicitação. Testes reproduziram a divisão anterior; após a correção passaram 669 Vitest, 5 E2E digitais, lint, tipos e build. Inspeção visual e extração confirmaram todos os 75 itens em uma página.
