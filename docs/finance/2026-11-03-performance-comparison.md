@@ -93,3 +93,5 @@ A suíte completa de navegador do produto não foi executada; foram executados o
 [Amostras após a mudança](2026-11-03-performance-after-measurements.json) e [amostras anteriores](2026-11-03-performance-measurements.json). Roteiros e logs da rodada permanecem na pasta ignorada `tmp/finance-performance-after-20261103/`: `local.mjs`, `measure.mjs`, `diagnostic.mjs`, logs SQL, build e navegador. Sessões ficam somente nessa pasta e não integram os relatórios versionados.
 
 Para reproduzir, iniciar o Supabase local, aplicar as duas migrações locais, executar `local.mjs setup`, `build` e `start`, depois `measure.mjs all` e `history` sequencialmente. O setup cria nova massa fictícia e recusa um Supabase fora de `127.0.0.1`. O banco e as permissões reais de produção exigem uma validação posterior autorizada antes de publicar.
+
+Revisão independente da branch: nenhum problema crítico ou importante encontrado. A descrição de amostragem do histórico nos metadados foi corrigida para uma observação inicial e três repetições; as amostras e os valores comparados não mudaram.

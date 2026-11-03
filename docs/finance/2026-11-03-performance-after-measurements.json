@@ -2706,7 +2706,7 @@
         "baseURL": "http://127.0.0.1:3221",
         "serviceWorkers": "blocked",
         "network": "loopback, unthrottled",
-        "samples": "RPC: 1 first + 7 repeats; browser: 1 first + 5 repeats; PDF: 1 first + 2 repeats"
+        "samples": "RPC: 1 first + 3 repeats; concurrency: 20 requests at 1, 5 and 10 simultaneous requests"
       },
       "measurements": [
         {

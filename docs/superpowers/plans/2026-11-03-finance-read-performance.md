@@ -1,6 +1,6 @@
 # Finance read performance implementation plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Remove per-row authorization overhead from financial reads, preserving every access boundary, then compare local measurements.
 
@@ -32,11 +32,11 @@
 
 **Interfaces:** Consumes canonical authorization predicate and existing finance fixture. Produces a rollback-only test exercising real RLS, output totals and bounded scope evaluations.
 
-- [ ] Run baseline `npm test` and reproduce original SQL fixture failures.
-- [ ] Add explicit historical-configuration reasons and rerun affected fixtures.
-- [ ] Write scope/isolation and permission-change checks; seed 1,000 ledger/transaction rows and assert at most 50 canonical scope checks per table read (real function counters).
-- [ ] Run the new SQL test before the migration. Expected: correct access results, failure on per-row evaluation budget.
-- [ ] Commit fixtures and regression coverage with recorded red evidence.
+- [x] Run baseline `npm test` and reproduce original SQL fixture failures.
+- [x] Add explicit historical-configuration reasons and rerun affected fixtures.
+- [x] Write scope/isolation and permission-change checks; seed 1,000 ledger/transaction rows and assert at most 50 canonical scope checks per table read (real function counters).
+- [x] Run the new SQL test before the migration. Expected: correct access results, failure on per-row evaluation budget.
+- [x] Commit fixtures and regression coverage with recorded red evidence.
 
 ### Task 2: Implement the policy optimization
 
@@ -44,11 +44,11 @@
 
 **Interfaces:** Produces `private.readable_finance_units() returns table(church_id uuid, congregation_id uuid)` for the two SELECT policies. Reuses `private.can_access_finance_unit(uuid,uuid,text)` without changing it.
 
-- [ ] Create the migration through the installed CLI.
-- [ ] Add the restricted helper and replace only the two SELECT policy expressions with tuple membership in its uncorrelated result.
-- [ ] Apply locally. Expected: new scope/performance test passes, identical allowed rows and aggregate values.
-- [ ] Run relevant finance SQL checks, concurrency checks and local Advisors; inspect grants and query plans.
-- [ ] Regenerate types and commit the minimal change.
+- [x] Create the migration through the installed CLI.
+- [x] Add the restricted helper and replace only the two SELECT policy expressions with tuple membership in its uncorrelated result.
+- [x] Apply locally. Expected: new scope/performance test passes, identical allowed rows and aggregate values.
+- [x] Run relevant finance SQL checks, concurrency checks and local Advisors; inspect grants and query plans.
+- [x] Regenerate types and commit the minimal change.
 
 ### Task 3: Validate and repeat measurements
 
@@ -56,9 +56,9 @@
 
 **Interfaces:** Consumes migrated database and the same production application/harness from the baseline.
 
-- [ ] Run lint with zero warnings, typecheck, full Vitest and production build. Expected: no failures.
-- [ ] Run authenticated Playwright query, overview and report scenarios. Expected: correct content and access-denied cases.
-- [ ] Repeat the 100/1.000/9.900, annual-history, PDF and concurrent-read measurements sequentially on the same VM resources.
-- [ ] Compare counts/totals as well as timings; determine whether history needs further intervention based on results.
-- [ ] Commit report and request one independent whole-branch review, including the five review focus cases.
-- [ ] Resolve important findings with tests, record final evidence, preserve local branch for review and stop local services.
+- [x] Run lint with zero warnings, typecheck, full Vitest and production build. Expected: no failures.
+- [x] Run authenticated Playwright query, overview and report scenarios. Expected: correct content and access-denied cases.
+- [x] Repeat the 100/1.000/9.900, annual-history, PDF and concurrent-read measurements sequentially on the same VM resources.
+- [x] Compare counts/totals as well as timings; determine whether history needs further intervention based on results.
+- [x] Commit report and request one independent whole-branch review, including the five review focus cases.
+- [x] Resolve important findings with tests, record final evidence, preserve local branch for review and stop local services.
