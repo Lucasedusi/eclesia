@@ -183,3 +183,16 @@ esse acesso em uma futura hospedagem, após autorização:
    o acesso sem sessão, o download e a abertura manual do WhatsApp.
 
 Não é necessário contratar Brevo, uma API de WhatsApp ou outro serviço.
+
+### Integração à main concluída — 02/11/2026
+
+Após aprovação do usuário, [contas a pagar (#2)](https://github.com/Lucasedusi/eclesia/pull/2)
+foi integrada primeiro, preservando os commits da dependência. A revisão do
+[comprovante digital (#3)](https://github.com/Lucasedusi/eclesia/pull/3) foi então
+direcionada à `main` e integrada no commit `fe1633f`.
+
+Antes da integração, passaram 669 testes, lint sem warnings e typecheck. O conteúdo
+da main após os merges foi comparado com a branch validada e estava idêntico, sem
+conflitos ou ajustes de código. A main local foi sincronizada com o GitHub e as
+branches de origem foram preservadas. A aplicação continua local; esta integração
+não configura hospedagem nem executa novas migrações.
