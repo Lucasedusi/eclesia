@@ -18,6 +18,9 @@ vi.mock("../actions/finance-contributor.actions", () => ({
 vi.mock("../actions/finance-document.actions", () => ({
   getFinanceDocumentUrlAction: () => Promise.resolve({ ok: false }),
 }));
+vi.mock("../actions/finance-digital-receipt.actions", () => ({
+  createFinanceDigitalReceiptLinkAction: () => Promise.resolve({ ok: false }),
+}));
 
 function renderTransactions(activeFilter = false, unnamedExpense = false) {
   const items = [

@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
-import { FileDown, Printer } from "lucide-react";
+import { FileDown, FileText, Printer } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import type { FinanceCatalogs } from "../types/finance-catalog.types";
@@ -9,6 +9,11 @@ import type { FinanceTransactionDetail } from "../types/finance-query.types";
 import { formatMoney } from "../utils/finance-money";
 import { financeLocation } from "../utils/finance-navigation";
 import { getFinanceDocumentUrlAction } from "../actions/finance-document.actions";
+import { createFinanceDigitalReceiptLinkAction } from "../actions/finance-digital-receipt.actions";
+import { SHAREABLE_RECEIPT_STATUSES } from "../utils/finance-digital-receipt";
+import type { DigitalReceiptLink } from "../types/finance-digital-receipt.types";
+import { FinanceDigitalReceiptDialog } from "./finance-digital-receipt-dialog";
+import { ReceiptActions } from "./finance-digital-receipt.styles";
 export function FinanceTransactionDetails({
   transaction: t,
   catalogs,
@@ -26,6 +31,9 @@ export function FinanceTransactionDetails({
 }) {
   const [error, setError] = useState("");
   const [openingDocument, setOpeningDocument] = useState<string | null>(null);
+  const [preparingReceipt, setPreparingReceipt] = useState<string | null>(null);
+  const [digital, setDigital] = useState<{ link: DigitalReceiptLink; number: string } | null>(null);
+  if (digital) return <FinanceDigitalReceiptDialog link={digital.link} number={digital.number} attendance={Boolean(t.attendanceId)} onClose={() => setDigital(null)} />;
   return (
     <Modal
       title="Detalhes do lançamento"
@@ -115,8 +123,8 @@ export function FinanceTransactionDetails({
             <p className="muted">Sem comprovante emitido.</p>
           ) : (
             t.receipts.map((r) => (
+              <ReceiptActions key={r.id}>
               <Link
-                key={r.id}
                 className="finance-secondary-link"
                 target="_blank"
                 rel="noopener"
@@ -135,6 +143,18 @@ export function FinanceTransactionDetails({
                   </span>
                 )}
               </Link>
+              {t.status === "CONFIRMED" && SHAREABLE_RECEIPT_STATUSES.includes(r.status) && <Button variant="outline" size="sm" loading={preparingReceipt === r.id} disabled={preparingReceipt !== null} onClick={async () => {
+                setPreparingReceipt(r.id);
+                setError("");
+                try {
+                  const result = await createFinanceDigitalReceiptLinkAction(unit, r.id);
+                  if (result.ok) setDigital({ link: result.data, number: r.number });
+                  else setError(result.message);
+                } catch {
+                  setError("Não foi possível preparar o comprovante digital. Tente novamente.");
+                } finally { setPreparingReceipt(null); }
+              }}><FileText size={16} aria-hidden="true" />Comprovante digital</Button>}
+              </ReceiptActions>
             ))
           )}
         </section>

@@ -66,6 +66,13 @@ comprovantes térmicos, caixas, transferências, demonstrativos mensais e cadast
 administrativos. Os demonstrativos calculam a distribuição por congregação sem
 criar despesas ou confirmar pagamentos automaticamente.
 
+Nos detalhes de um lançamento confirmado, **Comprovante digital** permite
+visualizar e baixar o PDF ou abrir o WhatsApp com o link e a mensagem preparados.
+O operador informa o telefone e confirma o envio na conta da igreja. O link vale
+por 30 dias e deixa de funcionar após cancelamento ou substituição do recibo.
+O cadastro de lançamentos e a impressão térmica mantêm o fluxo existente.
+Configuração e validação: [comprovante digital](docs/finance/digital-receipt-validation.md).
+
 As evidências de validação, decisões e orientações para configuração inicial
 estão em [docs/finance/validation-and-rollout.md](docs/finance/validation-and-rollout.md).
 
