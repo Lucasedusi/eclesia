@@ -1,0 +1,194 @@
+{
+  "project": "eclesias_bd_sp",
+  "projectRef": "dhgrfvakdbtedqfgecys",
+  "before": {
+    "samples": "4 per operation: first separate, median of next 3",
+    "timingsMs": {
+      "list": [
+        16.289,
+        13.259,
+        13.292,
+        13.209
+      ],
+      "analytic": [
+        51.726,
+        69.842,
+        65.933,
+        65.901
+      ],
+      "overview": [
+        38.637,
+        34.175,
+        33.935,
+        33.799
+      ],
+      "synthetic": [
+        61.224,
+        52.463,
+        51.533,
+        51.755
+      ]
+    },
+    "timingScope": "database server only; same read-only transaction; existing data, no synthetic inserts",
+    "totalsMatch": true,
+    "anonymousDenied": true,
+    "crossChurchChecked": false,
+    "listReportCountsMatch": true,
+    "missingIdentityDenied": true
+  },
+  "after": {
+    "samples": "4 per operation: first separate, median of next 3",
+    "timingsMs": {
+      "list": [
+        17.07,
+        13.372,
+        12.917,
+        13.055
+      ],
+      "analytic": [
+        43.199,
+        60.453,
+        57.794,
+        58.021
+      ],
+      "overview": [
+        30.552,
+        25.81,
+        25.529,
+        25.512
+      ],
+      "synthetic": [
+        49.763,
+        43.999,
+        43.274,
+        43.771
+      ]
+    },
+    "timingScope": "database server only; same read-only transaction; existing data, no synthetic inserts",
+    "totalsMatch": true,
+    "anonymousDenied": true,
+    "crossChurchChecked": false,
+    "listReportCountsMatch": true,
+    "missingIdentityDenied": true
+  },
+  "security": {
+    "rlsAndGrantsPreserved": true,
+    "unknownIdentityDenied": true,
+    "canonicalScopeEquality": true,
+    "helperConfigurationValid": true,
+    "existingIdentitiesChecked": 4,
+    "mismatchedChurchUnitDenied": true,
+    "publicReadRpcsSecurityInvoker": true
+  },
+  "advisors": {
+    "security": {
+      "before": [
+        {
+          "name": "rls_enabled_no_policy",
+          "level": "INFO",
+          "count": 6
+        },
+        {
+          "name": "authenticated_security_definer_function_executable",
+          "level": "WARN",
+          "count": 66
+        },
+        {
+          "name": "auth_leaked_password_protection",
+          "level": "WARN",
+          "count": 1
+        }
+      ],
+      "after": [
+        {
+          "name": "rls_enabled_no_policy",
+          "level": "INFO",
+          "count": 6
+        },
+        {
+          "name": "authenticated_security_definer_function_executable",
+          "level": "WARN",
+          "count": 66
+        },
+        {
+          "name": "auth_leaked_password_protection",
+          "level": "WARN",
+          "count": 1
+        }
+      ]
+    },
+    "performance": {
+      "before": [
+        {
+          "name": "unindexed_foreign_keys",
+          "level": "INFO",
+          "count": 141
+        },
+        {
+          "name": "auth_rls_initplan",
+          "level": "WARN",
+          "count": 9
+        },
+        {
+          "name": "unused_index",
+          "level": "INFO",
+          "count": 339
+        },
+        {
+          "name": "multiple_permissive_policies",
+          "level": "WARN",
+          "count": 4
+        }
+      ],
+      "after": [
+        {
+          "name": "unindexed_foreign_keys",
+          "level": "INFO",
+          "count": 141
+        },
+        {
+          "name": "auth_rls_initplan",
+          "level": "WARN",
+          "count": 9
+        },
+        {
+          "name": "unused_index",
+          "level": "INFO",
+          "count": 339
+        },
+        {
+          "name": "multiple_permissive_policies",
+          "level": "WARN",
+          "count": 4
+        }
+      ]
+    }
+  },
+  "date": "2026-11-03",
+  "appliedMigrations": [
+    "20261103190909_finance_read_scope_set.sql",
+    "20261103191356_finance_read_scope_candidates.sql"
+  ],
+  "migrationHistoryAligned": true,
+  "pendingMigrationsAfter": [],
+  "browserSmoke": {
+    "frontend": "local production build at http://localhost:3000",
+    "database": "online eclesias_bd_sp",
+    "session": "existing authenticated browser session; no credentials copied",
+    "overviewLoaded": true,
+    "transactionsLoaded": true,
+    "syntheticPdfReady": true,
+    "analyticPdfReady": true,
+    "financialWrites": false
+  },
+  "validation": {
+    "lint": "passed, zero warnings",
+    "typecheck": "passed",
+    "vitest": {
+      "files": 122,
+      "tests": 669
+    },
+    "productionBuild": "passed",
+    "generatedTypes": "online public and graphql_public; only PostgrestVersion metadata added"
+  }
+}
