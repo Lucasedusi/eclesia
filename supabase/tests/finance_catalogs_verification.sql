@@ -33,7 +33,7 @@ do $$ declare
  method uuid;dep uuid;cat uuid;box uuid;other_method uuid;tx uuid;attendance uuid;payload jsonb;
 begin
  method:=(public.save_finance_catalog(c,jsonb_build_object('entity','PAYMENT_METHOD','congregationId',u,'name','Dinheiro','kind','CASH'))->>'id')::uuid;
- dep:=(public.save_finance_catalog(c,jsonb_build_object('entity','DEPARTMENT','congregationId',u,'name','Tesouraria','effectiveMonth','2026-10','participatesInBase',true))->>'id')::uuid;
+ dep:=(public.save_finance_catalog(c,jsonb_build_object('entity','DEPARTMENT','congregationId',u,'name','Tesouraria','effectiveMonth','2026-10','reason','Configuração histórica de teste','participatesInBase',true))->>'id')::uuid;
  cat:=(public.save_finance_catalog(c,jsonb_build_object('entity','CATEGORY','congregationId',u,'name','Oferta','direction','INCOME','departmentId',dep))->>'id')::uuid;
  payload:=jsonb_build_object('entity','CASHBOX','congregationId',u,'name','Caixa','kind','CASH','openingDate','2026-10-01','openingCents',10000,'paymentMethodIds',jsonb_build_array(method));
  box:=(public.save_finance_catalog(c,payload)->>'id')::uuid;

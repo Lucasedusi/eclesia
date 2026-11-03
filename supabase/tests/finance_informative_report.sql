@@ -39,7 +39,7 @@ begin
  report:=public.get_finance_informative_report(c,u,options||'{"includePrebend":false,"includeTransfer":false}');
  perform pg_temp.assert_true(report#>'{months,0,recorded,grossPrebendCents}'='null'::jsonb,'Unchecked columns need no category mapping');
  method:=(public.save_finance_catalog(c,jsonb_build_object('entity','PAYMENT_METHOD','congregationId',u,'name','Dinheiro','kind','CASH'))->>'id')::uuid;
- dep:=(public.save_finance_catalog(c,jsonb_build_object('entity','DEPARTMENT','congregationId',u,'name','Tesouraria','effectiveMonth','2026-10','participatesInBase',true))->>'id')::uuid;
+ dep:=(public.save_finance_catalog(c,jsonb_build_object('entity','DEPARTMENT','congregationId',u,'name','Tesouraria','effectiveMonth','2026-10','reason','Configuração histórica de teste','participatesInBase',true))->>'id')::uuid;
  cat:=(public.save_finance_catalog(c,jsonb_build_object('entity','CATEGORY','congregationId',u,'name','Repasse (nome não classifica)','direction','INCOME','departmentId',dep))->>'id')::uuid;
  prebend:=(public.save_finance_catalog(c,jsonb_build_object('entity','CATEGORY','congregationId',u,'name','Prebenda','direction','EXPENSE','departmentId',dep,'informativeRole','PREBEND'))->>'id')::uuid;
  repasse:=(public.save_finance_catalog(c,jsonb_build_object('entity','CATEGORY','congregationId',u,'name','Repasse','direction','BOTH','departmentId',dep,'informativeRole','TRANSFER'))->>'id')::uuid;
@@ -75,7 +75,7 @@ begin
  report:=public.get_finance_ranking_report(c,(options||'{"type":"RANKING","includeInactive":false}'));
  perform pg_temp.assert_true((report#>>'{transferReview,receivedCents}')::numeric=170000 and (report#>>'{transferReview,unidentifiedCents}')::numeric=70000,'All valid receipts reconciled, canceled/name match excluded');
  -- Generate an advisory statement with deliberately different amounts, then verify independence.
- perform public.save_finance_statement_rules(c,jsonb_build_object('congregationId',u,'effectiveMonth','2026-10','items','[{"name":"Repasse","destination":"CATHEDRAL","role":"DISTRIBUTION","calculation":"ELIGIBLE_INCOME_PERCENT","percentage":"35"},{"name":"Prebenda","destination":"LOCAL_PASTOR","role":"GROSS_PREBEND","calculation":"ELIGIBLE_INCOME_PERCENT","percentage":"20","capCents":300000}]'::jsonb));
+ perform public.save_finance_statement_rules(c,jsonb_build_object('congregationId',u,'effectiveMonth','2026-10','retroactiveReason','Configuração histórica de teste','items','[{"name":"Repasse","destination":"CATHEDRAL","role":"DISTRIBUTION","calculation":"ELIGIBLE_INCOME_PERCENT","percentage":"35"},{"name":"Prebenda","destination":"LOCAL_PASTOR","role":"GROSS_PREBEND","calculation":"ELIGIBLE_INCOME_PERCENT","percentage":"20","capCents":300000}]'::jsonb));
  perform public.generate_finance_statement(c,u,'2026-10',gen_random_uuid());
  report:=public.get_finance_informative_report(c,u,options);
  perform pg_temp.assert_true((report#>>'{months,1,recorded,grossPrebendCents}')::numeric=400000 and (report#>>'{months,1,recorded,transferCents}')::numeric=70000,'Statement generation cannot change actual values');

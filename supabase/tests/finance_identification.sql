@@ -40,7 +40,7 @@ begin
  perform pg_temp.assert_true(jsonb_array_length(public.lookup_finance_congregations(c,u,'other'))=0,'foreign church hidden');
  perform pg_temp.assert_true(jsonb_array_length(public.lookup_finance_congregations(c,u,'Arquivada'))=0,'inactive hidden');
  method:=(public.save_finance_catalog(c,jsonb_build_object('entity','PAYMENT_METHOD','congregationId',u,'name','Dinheiro','kind','CASH'))->>'id')::uuid;
- dep:=(public.save_finance_catalog(c,jsonb_build_object('entity','DEPARTMENT','congregationId',u,'name','Tesouraria','effectiveMonth','2026-10','participatesInBase',true))->>'id')::uuid;
+ dep:=(public.save_finance_catalog(c,jsonb_build_object('entity','DEPARTMENT','congregationId',u,'name','Tesouraria','effectiveMonth','2026-10','reason','Configuração histórica de teste','participatesInBase',true))->>'id')::uuid;
  cat:=(public.save_finance_catalog(c,jsonb_build_object('entity','CATEGORY','congregationId',u,'name','Inscrição','direction','BOTH','departmentId',dep))->>'id')::uuid;
  tithe:=(public.save_finance_catalog(c,jsonb_build_object('entity','CATEGORY','congregationId',u,'name','Dízimo','direction','INCOME','isTithe',true,'departmentId',dep))->>'id')::uuid;
  class:=(public.save_finance_catalog(c,jsonb_build_object('entity','CLASSIFICATION','congregationId',u,'name','Membro'))->>'id')::uuid;

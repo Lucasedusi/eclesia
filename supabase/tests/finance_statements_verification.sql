@@ -33,8 +33,8 @@ do $$ declare
  method uuid;dep uuid;missions uuid;cat uuid;expense_cat uuid;box uuid; rules jsonb;statement jsonb;november jsonb;retry jsonb;key uuid:=gen_random_uuid();ledger_count integer;tx_count integer;command jsonb;entry_result jsonb;
 begin
  method:=(public.save_finance_catalog(c,jsonb_build_object('entity','PAYMENT_METHOD','congregationId',u,'name','Dinheiro','kind','CASH'))->>'id')::uuid;
- dep:=(public.save_finance_catalog(c,jsonb_build_object('entity','DEPARTMENT','congregationId',u,'name','Tesouraria','effectiveMonth','2026-10','participatesInBase',true))->>'id')::uuid;
- missions:=(public.save_finance_catalog(c,jsonb_build_object('entity','DEPARTMENT','congregationId',u,'name','Missões','effectiveMonth','2026-10','participatesInBase',false))->>'id')::uuid;
+ dep:=(public.save_finance_catalog(c,jsonb_build_object('entity','DEPARTMENT','congregationId',u,'name','Tesouraria','effectiveMonth','2026-10','reason','Configuração histórica de teste','participatesInBase',true))->>'id')::uuid;
+ missions:=(public.save_finance_catalog(c,jsonb_build_object('entity','DEPARTMENT','congregationId',u,'name','Missões','effectiveMonth','2026-10','reason','Configuração histórica de teste','participatesInBase',false))->>'id')::uuid;
  cat:=(public.save_finance_catalog(c,jsonb_build_object('entity','CATEGORY','congregationId',u,'name','Oferta','direction','INCOME','departmentId',dep))->>'id')::uuid;
  expense_cat:=(public.save_finance_catalog(c,jsonb_build_object('entity','CATEGORY','congregationId',u,'name','Despesa','direction','EXPENSE','departmentId',dep))->>'id')::uuid;
  box:=(public.save_finance_catalog(c,jsonb_build_object('entity','CASHBOX','congregationId',u,'name','Caixa','kind','CASH','openingDate','2026-09-01','openingCents',10000,'paymentMethodIds',jsonb_build_array(method)))->>'id')::uuid;
@@ -50,7 +50,7 @@ begin
  {"name":"Seguro","destination":"CATHEDRAL","role":"DISTRIBUTION","calculation":"FIXED","amountCents":8600},
  {"name":"Contador","destination":"CATHEDRAL","role":"DISTRIBUTION","calculation":"FIXED","amountCents":15000}]'::jsonb;
  begin perform public.generate_finance_statement(c,u,'2026-10',key);raise exception 'expected missing configuration';exception when raise_exception then if sqlerrm<>'CONFIGURATION_REQUIRED' then raise;end if;end;
- perform public.save_finance_statement_rules(c,jsonb_build_object('congregationId',u,'effectiveMonth','2026-10','items',rules));
+ perform public.save_finance_statement_rules(c,jsonb_build_object('congregationId',u,'effectiveMonth','2026-10','retroactiveReason','Configuração histórica de teste','items',rules));
  select count(*) into ledger_count from public.financial_ledger_entries where church_id=c;select count(*) into tx_count from public.financial_transactions where church_id=c;
  statement:=public.generate_finance_statement(c,u,'2026-10',key);
  perform pg_temp.assert_true((statement->>'totalIncomeCents')::numeric=1800000 and (statement->>'eligibleIncomeCents')::numeric=1500000,'all income visible, eligible departments only');

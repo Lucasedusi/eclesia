@@ -6,6 +6,17 @@ set local statement_timeout = '60s';
 set local track_functions = 'all';
 \ir finance_fixture.sql
 
+-- Unrelated tenants must not increase the number of permission evaluations.
+insert into public.regions(id,church_id,name) values
+ ('25000000-0000-4000-8000-000000000002','20000000-0000-4000-8000-000000000002','Unrelated region');
+insert into public.congregations(church_id,region_id,name)
+select '20000000-0000-4000-8000-000000000002','25000000-0000-4000-8000-000000000002','Unrelated unit '||n from generate_series(1,80) n;
+-- Seed historical deleted scope directly: normal deletion correctly refuses
+-- congregations that still have financial dependencies.
+insert into public.congregations(id,church_id,region_id,name,deleted_at) values
+ ('30000000-0000-4000-8000-000000000004','20000000-0000-4000-8000-000000000001',
+  '25000000-0000-4000-8000-000000000001','Deleted unit',now());
+
 create function pg_temp.assert_true(ok boolean, label text) returns void
 language plpgsql as $$ begin if ok is distinct from true then raise exception '%', label; end if; end $$;
 
@@ -16,7 +27,7 @@ insert into public.financial_cashboxes(id,church_id,congregation_id,name,cashbox
 select ('70000000-0000-4000-8000-'||lpad(n::text,12,'0'))::uuid,
  ('20000000-0000-4000-8000-'||lpad((case when n=3 then 2 else 1 end)::text,12,'0'))::uuid,
  ('30000000-0000-4000-8000-'||lpad(n::text,12,'0'))::uuid,'Scope fixture','CASH','2026-01-01'
-from generate_series(1,3) n;
+from generate_series(1,4) n;
 with added as (
  insert into public.financial_transactions(church_id,congregation_id,category_id,cashbox_id,transaction_type,amount,transaction_date)
  select '20000000-0000-4000-8000-000000000001','30000000-0000-4000-8000-000000000001',
@@ -28,7 +39,7 @@ with added as (
  insert into public.financial_transactions(church_id,congregation_id,category_id,cashbox_id,transaction_type,amount,transaction_date)
  select b.church_id,b.congregation_id,c.id,b.id,'INCOME',20,'2026-10-01'
  from public.financial_cashboxes b join public.financial_categories c on c.church_id=b.church_id
- where b.id in ('70000000-0000-4000-8000-000000000002','70000000-0000-4000-8000-000000000003')
+ where b.id in ('70000000-0000-4000-8000-000000000002','70000000-0000-4000-8000-000000000003','70000000-0000-4000-8000-000000000004')
  and c.id in ('60000000-0000-4000-8000-000000000001','60000000-0000-4000-8000-000000000002')
  returning id,church_id,congregation_id,cashbox_id
 ) insert into public.financial_ledger_entries(church_id,congregation_id,cashbox_id,transaction_id,entry_kind,amount,financial_date)
@@ -59,11 +70,13 @@ do $$ declare before_calls bigint; used bigint; total numeric; begin
  select coalesce(sum(calls),0)-before_calls into used from pg_stat_xact_user_functions where schemaname='private' and funcname='can_access_finance_unit';
  perform pg_temp.assert_true(total=1000,'transaction sum preserves soft delete');
  perform pg_temp.assert_true(used<=50,format('transaction scope evaluations scale with rows: %s (budget 50)',used));
+ raise notice 'Transaction authorization evaluations for 1000 rows: %', used;
  select coalesce(sum(calls),0) into before_calls from pg_stat_xact_user_functions where schemaname='private' and funcname='can_access_finance_unit';
  select sum(amount) into total from public.financial_ledger_entries where church_id='20000000-0000-4000-8000-000000000001' and congregation_id='30000000-0000-4000-8000-000000000001';
  select coalesce(sum(calls),0)-before_calls into used from pg_stat_xact_user_functions where schemaname='private' and funcname='can_access_finance_unit';
  perform pg_temp.assert_true(total=1000,'ledger sum preserves soft delete');
  perform pg_temp.assert_true(used<=50,format('ledger scope evaluations scale with rows: %s (budget 50)',used));
+ raise notice 'Ledger authorization evaluations for 1000 rows: %', used;
 end $$;
 reset role;
 
@@ -133,9 +146,9 @@ set local role authenticated;
 execute scope_counts(0,0,'blocked profile denied');
 reset role;
 update public.profiles set status='ACTIVE' where id='10000000-0000-4000-8000-000000000001';
-update public.congregations set deleted_at=now() where id='30000000-0000-4000-8000-000000000001';
+update public.congregations set status='INACTIVE' where id='30000000-0000-4000-8000-000000000001';
 set local role authenticated;
-execute scope_counts(1,0,'deleted congregation denied');
+execute scope_counts(1001,0,'inactive congregation retains canonical historical read access; deleted unit is excluded');
 reset role;
 update public.churches set status='INACTIVE' where id='20000000-0000-4000-8000-000000000001';
 set local role authenticated;
@@ -149,5 +162,9 @@ select pg_temp.assert_true(not has_table_privilege('anon','public.financial_tran
 select pg_temp.assert_true(not has_table_privilege('anon','public.financial_ledger_entries','SELECT'),'anonymous ledger denied');
 select pg_temp.assert_true(not has_table_privilege('authenticated','public.financial_transactions','UPDATE'),'direct transaction mutations remain denied');
 select pg_temp.assert_true(not has_table_privilege('authenticated','public.financial_ledger_entries','INSERT'),'direct ledger insert remains denied');
+select pg_temp.assert_true(not has_function_privilege('anon','private.readable_finance_units()','EXECUTE'),'anonymous scope helper denied');
+select pg_temp.assert_true(has_function_privilege('authenticated','private.readable_finance_units()','EXECUTE'),'authenticated scope helper available');
+select pg_temp.assert_true((select prosecdef and provolatile='s' and proconfig @> array['search_path=""']
+ from pg_proc where oid='private.readable_finance_units()'::regprocedure),'helper has fixed empty path and statement stability');
 deallocate scope_counts;
 rollback;
