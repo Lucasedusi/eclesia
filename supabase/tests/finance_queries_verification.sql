@@ -31,7 +31,7 @@ select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000001'
 do $$ declare c uuid:='20000000-0000-4000-8000-000000000001';u uuid:='30000000-0000-4000-8000-000000000001';hq uuid:='30000000-0000-4000-8000-000000000002';m uuid;d uuid;cat uuid;outcat uuid;b uuid;command jsonb;result jsonb;classification uuid;
 begin
  m:=(public.save_finance_catalog(c,jsonb_build_object('entity','PAYMENT_METHOD','congregationId',u,'name','Dinheiro','kind','CASH'))->>'id')::uuid;
- d:=(public.save_finance_catalog(c,jsonb_build_object('entity','DEPARTMENT','congregationId',u,'name','Tesouraria','effectiveMonth','2026-10','participatesInBase',true))->>'id')::uuid;
+ d:=(public.save_finance_catalog(c,jsonb_build_object('entity','DEPARTMENT','congregationId',u,'name','Tesouraria','effectiveMonth','2026-10','reason','Configuração histórica de teste','participatesInBase',true))->>'id')::uuid;
  cat:=(public.save_finance_catalog(c,jsonb_build_object('entity','CATEGORY','congregationId',u,'name','Oferta','direction','INCOME'))->>'id')::uuid;
  outcat:=(public.save_finance_catalog(c,jsonb_build_object('entity','CATEGORY','congregationId',u,'name','Despesa','direction','EXPENSE'))->>'id')::uuid;
  b:=(public.save_finance_catalog(c,jsonb_build_object('entity','CASHBOX','congregationId',u,'name','Caixa','kind','CASH','openingDate','2026-09-01','openingCents',845000,'paymentMethodIds',jsonb_build_array(m)))->>'id')::uuid;

@@ -1,0 +1,2720 @@
+{
+  "scope": "Local production benchmark with fictional data; expected <=1000 transactions per congregation/month",
+  "runs": {
+    "all": {
+      "metadata": {
+        "date": "2026-11-03",
+        "commit": "637c737b27abde7e648aafe1d715f1a9ed36a55d",
+        "node": "v24.21.0",
+        "cpu": "Apple M1 Pro",
+        "hostMemoryGiB": 16,
+        "databaseVM": "2 vCPU / 2 GiB",
+        "baseURL": "http://127.0.0.1:3221",
+        "serviceWorkers": "blocked",
+        "network": "loopback, unthrottled",
+        "samples": "RPC: 1 first + 7 repeats; browser: 1 first + 5 repeats; PDF: 1 first + 2 repeats"
+      },
+      "measurements": [
+        {
+          "kind": "rpc",
+          "label": "Visão geral",
+          "volume": 100,
+          "firstMs": 125.2,
+          "n": 7,
+          "minMs": 93.4,
+          "medianMs": 94.6,
+          "p95Ms": 99.9,
+          "maxMs": 99.9,
+          "responseBytes": 2060,
+          "samplesMs": [
+            125.2,
+            99.9,
+            94.6,
+            94,
+            95.9,
+            94.2,
+            96.1,
+            93.4
+          ]
+        },
+        {
+          "kind": "rpc",
+          "label": "Lançamentos — primeira página",
+          "volume": 100,
+          "firstMs": 51,
+          "n": 7,
+          "minMs": 48.4,
+          "medianMs": 48.7,
+          "p95Ms": 49.7,
+          "maxMs": 49.7,
+          "responseBytes": 10644,
+          "samplesMs": [
+            51,
+            49.7,
+            48.5,
+            49.4,
+            48.7,
+            49.1,
+            48.4,
+            48.4
+          ]
+        },
+        {
+          "kind": "rpc",
+          "label": "Lançamentos — última página",
+          "volume": 100,
+          "firstMs": 48.6,
+          "n": 7,
+          "minMs": 48.1,
+          "medianMs": 48.4,
+          "p95Ms": 49.7,
+          "maxMs": 49.7,
+          "responseBytes": 10640,
+          "samplesMs": [
+            48.6,
+            48.4,
+            48.1,
+            48.3,
+            48.4,
+            49.7,
+            49.2,
+            48.4
+          ]
+        },
+        {
+          "kind": "rpc",
+          "label": "Lançamentos — busca textual",
+          "volume": 100,
+          "firstMs": 49.5,
+          "n": 7,
+          "minMs": 48.2,
+          "medianMs": 48.7,
+          "p95Ms": 49.8,
+          "maxMs": 49.8,
+          "responseBytes": 6458,
+          "samplesMs": [
+            49.5,
+            49.8,
+            49,
+            48.2,
+            48.7,
+            48.2,
+            48.4,
+            49.3
+          ]
+        },
+        {
+          "kind": "rpc",
+          "label": "Contas a pagar",
+          "volume": 100,
+          "firstMs": 6.8,
+          "n": 7,
+          "minMs": 3.4,
+          "medianMs": 3.9,
+          "p95Ms": 4,
+          "maxMs": 4,
+          "responseBytes": 6054,
+          "samplesMs": [
+            6.8,
+            3.9,
+            4,
+            4,
+            4,
+            3.8,
+            3.4,
+            3.8
+          ]
+        },
+        {
+          "kind": "rpc",
+          "label": "Relatório sintético — dados",
+          "volume": 100,
+          "firstMs": 103.6,
+          "n": 7,
+          "minMs": 98,
+          "medianMs": 99.3,
+          "p95Ms": 105.5,
+          "maxMs": 105.5,
+          "responseBytes": 1435,
+          "samplesMs": [
+            103.6,
+            100.3,
+            98.8,
+            98,
+            99.3,
+            99.3,
+            99.8,
+            105.5
+          ]
+        },
+        {
+          "kind": "rpc",
+          "label": "Relatório analítico — dados",
+          "volume": 100,
+          "firstMs": 109.5,
+          "n": 7,
+          "minMs": 108.2,
+          "medianMs": 110.3,
+          "p95Ms": 111.3,
+          "maxMs": 111.3,
+          "responseBytes": 47365,
+          "samplesMs": [
+            109.5,
+            109.7,
+            110.3,
+            108.2,
+            111,
+            111.3,
+            111.3,
+            108.9
+          ]
+        },
+        {
+          "kind": "browser",
+          "label": "Visão geral",
+          "viewport": "desktop1440",
+          "volume": 100,
+          "firstMs": 694.6,
+          "n": 5,
+          "minMs": 320.8,
+          "medianMs": 368.1,
+          "p95Ms": 373.1,
+          "maxMs": 373.1,
+          "errors": [],
+          "samples": [
+            {
+              "visibleMs": 694.6,
+              "ttfbMs": 96.8,
+              "domContentLoadedMs": 381.9,
+              "lcpMs": 316,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 306342,
+              "staticDecodedBytes": 1005177
+            },
+            {
+              "visibleMs": 320.8,
+              "ttfbMs": 6.8,
+              "domContentLoadedMs": 201.4,
+              "lcpMs": 312,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1005177
+            },
+            {
+              "visibleMs": 371.5,
+              "ttfbMs": 7.4,
+              "domContentLoadedMs": 167.3,
+              "lcpMs": 320,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1005177
+            },
+            {
+              "visibleMs": 364.3,
+              "ttfbMs": 3.7,
+              "domContentLoadedMs": 162.2,
+              "lcpMs": 312,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1005177
+            },
+            {
+              "visibleMs": 368.1,
+              "ttfbMs": 4.2,
+              "domContentLoadedMs": 156,
+              "lcpMs": 312,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1005177
+            },
+            {
+              "visibleMs": 373.1,
+              "ttfbMs": 8.4,
+              "domContentLoadedMs": 167.2,
+              "lcpMs": 316,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1005177
+            }
+          ]
+        },
+        {
+          "kind": "browser",
+          "label": "Lançamentos",
+          "viewport": "desktop1440",
+          "volume": 100,
+          "firstMs": 370.8,
+          "n": 5,
+          "minMs": 319.6,
+          "medianMs": 337.6,
+          "p95Ms": 355.2,
+          "maxMs": 355.2,
+          "errors": [],
+          "samples": [
+            {
+              "visibleMs": 370.8,
+              "ttfbMs": 3.7,
+              "domContentLoadedMs": 155.9,
+              "lcpMs": 316,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 391380,
+              "staticDecodedBytes": 1315552
+            },
+            {
+              "visibleMs": 355.2,
+              "ttfbMs": 9.2,
+              "domContentLoadedMs": 152.9,
+              "lcpMs": 316,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1315552
+            },
+            {
+              "visibleMs": 340,
+              "ttfbMs": 3.4,
+              "domContentLoadedMs": 127.7,
+              "lcpMs": 316,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1315552
+            },
+            {
+              "visibleMs": 337.6,
+              "ttfbMs": 6.8,
+              "domContentLoadedMs": 125.1,
+              "lcpMs": 312,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1315552
+            },
+            {
+              "visibleMs": 332,
+              "ttfbMs": 5.7,
+              "domContentLoadedMs": 126.2,
+              "lcpMs": 316,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1315552
+            },
+            {
+              "visibleMs": 319.6,
+              "ttfbMs": 5,
+              "domContentLoadedMs": 123.1,
+              "lcpMs": 312,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1315552
+            }
+          ]
+        },
+        {
+          "kind": "interaction",
+          "label": "Abrir formulário de entrada",
+          "volume": 100,
+          "durationMs": 82.8
+        },
+        {
+          "kind": "browser",
+          "label": "Caixas",
+          "viewport": "desktop1440",
+          "volume": 100,
+          "firstMs": 383.3,
+          "n": 5,
+          "minMs": 371.7,
+          "medianMs": 375.4,
+          "p95Ms": 380,
+          "maxMs": 380,
+          "errors": [],
+          "samples": [
+            {
+              "visibleMs": 383.3,
+              "ttfbMs": 3.3,
+              "domContentLoadedMs": 75.5,
+              "lcpMs": 316,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 308872,
+              "staticDecodedBytes": 1012033
+            },
+            {
+              "visibleMs": 371.7,
+              "ttfbMs": 6.6,
+              "domContentLoadedMs": 75,
+              "lcpMs": 308,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1012033
+            },
+            {
+              "visibleMs": 379.3,
+              "ttfbMs": 8.4,
+              "domContentLoadedMs": 75.3,
+              "lcpMs": 308,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1012033
+            },
+            {
+              "visibleMs": 375.4,
+              "ttfbMs": 7.1,
+              "domContentLoadedMs": 77.9,
+              "lcpMs": 312,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1012033
+            },
+            {
+              "visibleMs": 372.2,
+              "ttfbMs": 7.5,
+              "domContentLoadedMs": 72.8,
+              "lcpMs": 316,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1012033
+            },
+            {
+              "visibleMs": 380,
+              "ttfbMs": 8.5,
+              "domContentLoadedMs": 78.3,
+              "lcpMs": 308,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1012033
+            }
+          ]
+        },
+        {
+          "kind": "browser",
+          "label": "Relatórios",
+          "viewport": "desktop1440",
+          "volume": 100,
+          "firstMs": 396.6,
+          "n": 5,
+          "minMs": 370.8,
+          "medianMs": 374.7,
+          "p95Ms": 379.6,
+          "maxMs": 379.6,
+          "errors": [],
+          "samples": [
+            {
+              "visibleMs": 396.6,
+              "ttfbMs": 3.4,
+              "domContentLoadedMs": 85.3,
+              "lcpMs": 316,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 311092,
+              "staticDecodedBytes": 1017328
+            },
+            {
+              "visibleMs": 374.7,
+              "ttfbMs": 13.4,
+              "domContentLoadedMs": 71.5,
+              "lcpMs": 312,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1017328
+            },
+            {
+              "visibleMs": 371.4,
+              "ttfbMs": 5.5,
+              "domContentLoadedMs": 62.5,
+              "lcpMs": 308,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1017328
+            },
+            {
+              "visibleMs": 370.8,
+              "ttfbMs": 8.4,
+              "domContentLoadedMs": 67.4,
+              "lcpMs": 316,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1017328
+            },
+            {
+              "visibleMs": 379.6,
+              "ttfbMs": 8.7,
+              "domContentLoadedMs": 73.7,
+              "lcpMs": 308,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1017328
+            },
+            {
+              "visibleMs": 379.1,
+              "ttfbMs": 8.8,
+              "domContentLoadedMs": 78,
+              "lcpMs": 308,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1017328
+            }
+          ]
+        },
+        {
+          "kind": "browser",
+          "label": "Contas a pagar",
+          "viewport": "desktop1440",
+          "volume": 100,
+          "firstMs": 328,
+          "n": 5,
+          "minMs": 372.7,
+          "medianMs": 389,
+          "p95Ms": 396.5,
+          "maxMs": 396.5,
+          "errors": [],
+          "samples": [
+            {
+              "visibleMs": 328,
+              "ttfbMs": 9.4,
+              "domContentLoadedMs": 91.3,
+              "lcpMs": 320,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 319694,
+              "staticDecodedBytes": 1042342
+            },
+            {
+              "visibleMs": 389,
+              "ttfbMs": 3.7,
+              "domContentLoadedMs": 77.7,
+              "lcpMs": 312,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1042342
+            },
+            {
+              "visibleMs": 391.7,
+              "ttfbMs": 8.4,
+              "domContentLoadedMs": 81.8,
+              "lcpMs": 316,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1042342
+            },
+            {
+              "visibleMs": 372.7,
+              "ttfbMs": 3.6,
+              "domContentLoadedMs": 69.5,
+              "lcpMs": 312,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1042342
+            },
+            {
+              "visibleMs": 387.7,
+              "ttfbMs": 8.4,
+              "domContentLoadedMs": 81.4,
+              "lcpMs": 312,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1042342
+            },
+            {
+              "visibleMs": 396.5,
+              "ttfbMs": 6.7,
+              "domContentLoadedMs": 85.6,
+              "lcpMs": 324,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1042342
+            }
+          ]
+        },
+        {
+          "kind": "browser",
+          "label": "Visão geral",
+          "viewport": "mobile393",
+          "volume": 100,
+          "firstMs": 371.8,
+          "n": 5,
+          "minMs": 363.9,
+          "medianMs": 379,
+          "p95Ms": 384.5,
+          "maxMs": 384.5,
+          "errors": [],
+          "samples": [
+            {
+              "visibleMs": 371.8,
+              "ttfbMs": 3.2,
+              "domContentLoadedMs": 158.2,
+              "lcpMs": 320,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 306342,
+              "staticDecodedBytes": 1005177
+            },
+            {
+              "visibleMs": 363.9,
+              "ttfbMs": 6.5,
+              "domContentLoadedMs": 163,
+              "lcpMs": 308,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1005177
+            },
+            {
+              "visibleMs": 380,
+              "ttfbMs": 5.6,
+              "domContentLoadedMs": 171.6,
+              "lcpMs": 308,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1005177
+            },
+            {
+              "visibleMs": 384.5,
+              "ttfbMs": 9.3,
+              "domContentLoadedMs": 175.2,
+              "lcpMs": 308,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1005177
+            },
+            {
+              "visibleMs": 379,
+              "ttfbMs": 8.8,
+              "domContentLoadedMs": 171.3,
+              "lcpMs": 304,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1005177
+            },
+            {
+              "visibleMs": 377.7,
+              "ttfbMs": 9.5,
+              "domContentLoadedMs": 174.7,
+              "lcpMs": 320,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1005177
+            }
+          ]
+        },
+        {
+          "kind": "browser",
+          "label": "Lançamentos",
+          "viewport": "mobile393",
+          "volume": 100,
+          "firstMs": 328.1,
+          "n": 5,
+          "minMs": 327.5,
+          "medianMs": 339,
+          "p95Ms": 341.3,
+          "maxMs": 341.3,
+          "errors": [],
+          "samples": [
+            {
+              "visibleMs": 328.1,
+              "ttfbMs": 3.3,
+              "domContentLoadedMs": 113.5,
+              "lcpMs": 320,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 391380,
+              "staticDecodedBytes": 1315552
+            },
+            {
+              "visibleMs": 339.5,
+              "ttfbMs": 3.3,
+              "domContentLoadedMs": 124.5,
+              "lcpMs": 308,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1315552
+            },
+            {
+              "visibleMs": 339,
+              "ttfbMs": 3.3,
+              "domContentLoadedMs": 128,
+              "lcpMs": 308,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1315552
+            },
+            {
+              "visibleMs": 330.7,
+              "ttfbMs": 7.5,
+              "domContentLoadedMs": 123.3,
+              "lcpMs": 316,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1315552
+            },
+            {
+              "visibleMs": 341.3,
+              "ttfbMs": 8.5,
+              "domContentLoadedMs": 127.8,
+              "lcpMs": 308,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1315552
+            },
+            {
+              "visibleMs": 327.5,
+              "ttfbMs": 7.3,
+              "domContentLoadedMs": 118.9,
+              "lcpMs": 312,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1315552
+            }
+          ]
+        },
+        {
+          "kind": "browser",
+          "label": "Caixas",
+          "viewport": "mobile393",
+          "volume": 100,
+          "firstMs": 386.1,
+          "n": 5,
+          "minMs": 355.9,
+          "medianMs": 364.1,
+          "p95Ms": 379.8,
+          "maxMs": 379.8,
+          "errors": [],
+          "samples": [
+            {
+              "visibleMs": 386.1,
+              "ttfbMs": 3.1,
+              "domContentLoadedMs": 73.6,
+              "lcpMs": 312,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 308872,
+              "staticDecodedBytes": 1012033
+            },
+            {
+              "visibleMs": 379.8,
+              "ttfbMs": 9,
+              "domContentLoadedMs": 78.5,
+              "lcpMs": 304,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1012033
+            },
+            {
+              "visibleMs": 355.9,
+              "ttfbMs": 3.9,
+              "domContentLoadedMs": 63.1,
+              "lcpMs": 316,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1012033
+            },
+            {
+              "visibleMs": 364.1,
+              "ttfbMs": 4.6,
+              "domContentLoadedMs": 67.6,
+              "lcpMs": 304,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1012033
+            },
+            {
+              "visibleMs": 371.9,
+              "ttfbMs": 3.8,
+              "domContentLoadedMs": 73.2,
+              "lcpMs": 308,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1012033
+            },
+            {
+              "visibleMs": 364,
+              "ttfbMs": 4.5,
+              "domContentLoadedMs": 67.8,
+              "lcpMs": 308,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1012033
+            }
+          ]
+        },
+        {
+          "kind": "browser",
+          "label": "Relatórios",
+          "viewport": "mobile393",
+          "volume": 100,
+          "firstMs": 387.7,
+          "n": 5,
+          "minMs": 371.1,
+          "medianMs": 377.9,
+          "p95Ms": 379.7,
+          "maxMs": 379.7,
+          "errors": [],
+          "samples": [
+            {
+              "visibleMs": 387.7,
+              "ttfbMs": 3.1,
+              "domContentLoadedMs": 80,
+              "lcpMs": 312,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 311092,
+              "staticDecodedBytes": 1017328
+            },
+            {
+              "visibleMs": 377.9,
+              "ttfbMs": 9.3,
+              "domContentLoadedMs": 73,
+              "lcpMs": 312,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1017328
+            },
+            {
+              "visibleMs": 378.5,
+              "ttfbMs": 8.3,
+              "domContentLoadedMs": 71.8,
+              "lcpMs": 304,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1017328
+            },
+            {
+              "visibleMs": 379.7,
+              "ttfbMs": 7.8,
+              "domContentLoadedMs": 74.6,
+              "lcpMs": 312,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1017328
+            },
+            {
+              "visibleMs": 371.8,
+              "ttfbMs": 3.8,
+              "domContentLoadedMs": 62.9,
+              "lcpMs": 308,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1017328
+            },
+            {
+              "visibleMs": 371.1,
+              "ttfbMs": 7.4,
+              "domContentLoadedMs": 66,
+              "lcpMs": 304,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1017328
+            }
+          ]
+        },
+        {
+          "kind": "pdf",
+          "type": "SYNTHETIC",
+          "volume": 100,
+          "firstMs": 333.9,
+          "n": 2,
+          "minMs": 183.6,
+          "medianMs": 184.6,
+          "p95Ms": 185.7,
+          "maxMs": 185.7,
+          "pages": 2,
+          "bytes": 14362,
+          "samplesMs": [
+            333.9,
+            185.7,
+            183.6
+          ]
+        },
+        {
+          "kind": "pdf",
+          "type": "ANALYTIC",
+          "volume": 100,
+          "firstMs": 292.9,
+          "n": 2,
+          "minMs": 280.1,
+          "medianMs": 286.6,
+          "p95Ms": 293.2,
+          "maxMs": 293.2,
+          "pages": 6,
+          "bytes": 33110,
+          "samplesMs": [
+            292.9,
+            280.1,
+            293.2
+          ]
+        },
+        {
+          "kind": "rpc",
+          "label": "Visão geral",
+          "volume": 1000,
+          "firstMs": 890.4,
+          "n": 7,
+          "minMs": 873.3,
+          "medianMs": 881.5,
+          "p95Ms": 917.3,
+          "maxMs": 917.3,
+          "responseBytes": 2091,
+          "samplesMs": [
+            890.4,
+            917.3,
+            881.5,
+            873.7,
+            873.8,
+            908.8,
+            885.6,
+            873.3
+          ]
+        },
+        {
+          "kind": "rpc",
+          "label": "Lançamentos — primeira página",
+          "volume": 1000,
+          "firstMs": 440,
+          "n": 7,
+          "minMs": 438.6,
+          "medianMs": 446.9,
+          "p95Ms": 462.7,
+          "maxMs": 462.7,
+          "responseBytes": 10664,
+          "samplesMs": [
+            440,
+            438.6,
+            443.4,
+            451.6,
+            462.7,
+            453.9,
+            446.9,
+            442.3
+          ]
+        },
+        {
+          "kind": "rpc",
+          "label": "Lançamentos — última página",
+          "volume": 1000,
+          "firstMs": 456.5,
+          "n": 7,
+          "minMs": 440.9,
+          "medianMs": 444.7,
+          "p95Ms": 463.6,
+          "maxMs": 463.6,
+          "responseBytes": 10666,
+          "samplesMs": [
+            456.5,
+            453.5,
+            462.1,
+            463.6,
+            441.1,
+            441.1,
+            444.7,
+            440.9
+          ]
+        },
+        {
+          "kind": "rpc",
+          "label": "Lançamentos — busca textual",
+          "volume": 1000,
+          "firstMs": 441,
+          "n": 7,
+          "minMs": 439.3,
+          "medianMs": 440,
+          "p95Ms": 459.8,
+          "maxMs": 459.8,
+          "responseBytes": 10664,
+          "samplesMs": [
+            441,
+            439.8,
+            449.1,
+            458.1,
+            459.8,
+            440,
+            439.3,
+            439.4
+          ]
+        },
+        {
+          "kind": "rpc",
+          "label": "Contas a pagar",
+          "volume": 1000,
+          "firstMs": 5.6,
+          "n": 7,
+          "minMs": 4.9,
+          "medianMs": 5.4,
+          "p95Ms": 6,
+          "maxMs": 6,
+          "responseBytes": 6079,
+          "samplesMs": [
+            5.6,
+            5,
+            6,
+            5.9,
+            5.8,
+            5,
+            5.4,
+            4.9
+          ]
+        },
+        {
+          "kind": "rpc",
+          "label": "Relatório sintético — dados",
+          "volume": 1000,
+          "firstMs": 928,
+          "n": 7,
+          "minMs": 888.1,
+          "medianMs": 896.4,
+          "p95Ms": 919.5,
+          "maxMs": 919.5,
+          "responseBytes": 1446,
+          "samplesMs": [
+            928,
+            896.1,
+            917.9,
+            896.4,
+            898,
+            888.1,
+            919.5,
+            891
+          ]
+        },
+        {
+          "kind": "rpc",
+          "label": "Relatório analítico — dados",
+          "volume": 1000,
+          "firstMs": 900.9,
+          "n": 7,
+          "minMs": 897.3,
+          "medianMs": 910.2,
+          "p95Ms": 939.4,
+          "maxMs": 939.4,
+          "responseBytes": 465872,
+          "samplesMs": [
+            900.9,
+            916.9,
+            918.3,
+            897.3,
+            898.8,
+            910.2,
+            939.4,
+            908.5
+          ]
+        },
+        {
+          "kind": "browser",
+          "label": "Visão geral",
+          "viewport": "desktop1440",
+          "volume": 1000,
+          "firstMs": 1132.3,
+          "n": 5,
+          "minMs": 1020.9,
+          "medianMs": 1041.9,
+          "p95Ms": 1061.9,
+          "maxMs": 1061.9,
+          "errors": [],
+          "samples": [
+            {
+              "visibleMs": 1132.3,
+              "ttfbMs": 10.8,
+              "domContentLoadedMs": 1093.9,
+              "lcpMs": 312,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 306342,
+              "staticDecodedBytes": 1005177
+            },
+            {
+              "visibleMs": 1027.5,
+              "ttfbMs": 3.9,
+              "domContentLoadedMs": 997.6,
+              "lcpMs": 304,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1005177
+            },
+            {
+              "visibleMs": 1020.9,
+              "ttfbMs": 8.5,
+              "domContentLoadedMs": 992.4,
+              "lcpMs": 304,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1005177
+            },
+            {
+              "visibleMs": 1054.8,
+              "ttfbMs": 9.2,
+              "domContentLoadedMs": 1026.1,
+              "lcpMs": 304,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1005177
+            },
+            {
+              "visibleMs": 1041.9,
+              "ttfbMs": 4,
+              "domContentLoadedMs": 1014.1,
+              "lcpMs": 312,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1005177
+            },
+            {
+              "visibleMs": 1061.9,
+              "ttfbMs": 9.7,
+              "domContentLoadedMs": 1031,
+              "lcpMs": 304,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1005177
+            }
+          ]
+        },
+        {
+          "kind": "browser",
+          "label": "Lançamentos",
+          "viewport": "desktop1440",
+          "volume": 1000,
+          "firstMs": 625.3,
+          "n": 5,
+          "minMs": 612,
+          "medianMs": 613,
+          "p95Ms": 614.9,
+          "maxMs": 614.9,
+          "errors": [],
+          "samples": [
+            {
+              "visibleMs": 625.3,
+              "ttfbMs": 3.5,
+              "domContentLoadedMs": 556.1,
+              "lcpMs": 312,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 391380,
+              "staticDecodedBytes": 1315552
+            },
+            {
+              "visibleMs": 612,
+              "ttfbMs": 8.2,
+              "domContentLoadedMs": 571.6,
+              "lcpMs": 312,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1315552
+            },
+            {
+              "visibleMs": 613,
+              "ttfbMs": 8.9,
+              "domContentLoadedMs": 566.5,
+              "lcpMs": 304,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1315552
+            },
+            {
+              "visibleMs": 614.9,
+              "ttfbMs": 8.3,
+              "domContentLoadedMs": 560.6,
+              "lcpMs": 308,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1315552
+            },
+            {
+              "visibleMs": 614,
+              "ttfbMs": 6.9,
+              "domContentLoadedMs": 576.6,
+              "lcpMs": 308,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1315552
+            },
+            {
+              "visibleMs": 612.7,
+              "ttfbMs": 8.6,
+              "domContentLoadedMs": 570.6,
+              "lcpMs": 304,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1315552
+            }
+          ]
+        },
+        {
+          "kind": "interaction",
+          "label": "Abrir formulário de entrada",
+          "volume": 1000,
+          "durationMs": 68.9
+        },
+        {
+          "kind": "browser",
+          "label": "Caixas",
+          "viewport": "desktop1440",
+          "volume": 1000,
+          "firstMs": 390.4,
+          "n": 5,
+          "minMs": 363.2,
+          "medianMs": 385.5,
+          "p95Ms": 387.8,
+          "maxMs": 387.8,
+          "errors": [],
+          "samples": [
+            {
+              "visibleMs": 390.4,
+              "ttfbMs": 3.1,
+              "domContentLoadedMs": 75.4,
+              "lcpMs": 316,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 308872,
+              "staticDecodedBytes": 1012033
+            },
+            {
+              "visibleMs": 385.5,
+              "ttfbMs": 8.7,
+              "domContentLoadedMs": 76.6,
+              "lcpMs": 304,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1012033
+            },
+            {
+              "visibleMs": 387.8,
+              "ttfbMs": 10.4,
+              "domContentLoadedMs": 80.8,
+              "lcpMs": 304,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1012033
+            },
+            {
+              "visibleMs": 386.8,
+              "ttfbMs": 9.3,
+              "domContentLoadedMs": 80.1,
+              "lcpMs": 312,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1012033
+            },
+            {
+              "visibleMs": 363.2,
+              "ttfbMs": 3.3,
+              "domContentLoadedMs": 65.6,
+              "lcpMs": 308,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1012033
+            },
+            {
+              "visibleMs": 372.2,
+              "ttfbMs": 4.2,
+              "domContentLoadedMs": 71.9,
+              "lcpMs": 316,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1012033
+            }
+          ]
+        },
+        {
+          "kind": "browser",
+          "label": "Relatórios",
+          "viewport": "desktop1440",
+          "volume": 1000,
+          "firstMs": 390.9,
+          "n": 5,
+          "minMs": 363.1,
+          "medianMs": 364.4,
+          "p95Ms": 373,
+          "maxMs": 373,
+          "errors": [],
+          "samples": [
+            {
+              "visibleMs": 390.9,
+              "ttfbMs": 3.4,
+              "domContentLoadedMs": 84.5,
+              "lcpMs": 328,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 311092,
+              "staticDecodedBytes": 1017328
+            },
+            {
+              "visibleMs": 373,
+              "ttfbMs": 8.2,
+              "domContentLoadedMs": 70.6,
+              "lcpMs": 316,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1017328
+            },
+            {
+              "visibleMs": 371.1,
+              "ttfbMs": 8.1,
+              "domContentLoadedMs": 66.4,
+              "lcpMs": 308,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1017328
+            },
+            {
+              "visibleMs": 363.4,
+              "ttfbMs": 15.2,
+              "domContentLoadedMs": 65.4,
+              "lcpMs": 308,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1017328
+            },
+            {
+              "visibleMs": 363.1,
+              "ttfbMs": 8,
+              "domContentLoadedMs": 65.2,
+              "lcpMs": 308,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1017328
+            },
+            {
+              "visibleMs": 364.4,
+              "ttfbMs": 3.7,
+              "domContentLoadedMs": 55.3,
+              "lcpMs": 312,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1017328
+            }
+          ]
+        },
+        {
+          "kind": "browser",
+          "label": "Contas a pagar",
+          "viewport": "desktop1440",
+          "volume": 1000,
+          "firstMs": 326.6,
+          "n": 5,
+          "minMs": 371.6,
+          "medianMs": 381.2,
+          "p95Ms": 392.7,
+          "maxMs": 392.7,
+          "errors": [],
+          "samples": [
+            {
+              "visibleMs": 326.6,
+              "ttfbMs": 3.3,
+              "domContentLoadedMs": 83.6,
+              "lcpMs": 320,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 319694,
+              "staticDecodedBytes": 1042342
+            },
+            {
+              "visibleMs": 371.6,
+              "ttfbMs": 3.4,
+              "domContentLoadedMs": 68.9,
+              "lcpMs": 312,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1042342
+            },
+            {
+              "visibleMs": 380.5,
+              "ttfbMs": 8.5,
+              "domContentLoadedMs": 72.3,
+              "lcpMs": 312,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1042342
+            },
+            {
+              "visibleMs": 381.2,
+              "ttfbMs": 4.2,
+              "domContentLoadedMs": 76,
+              "lcpMs": 316,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1042342
+            },
+            {
+              "visibleMs": 387.3,
+              "ttfbMs": 8.1,
+              "domContentLoadedMs": 83.6,
+              "lcpMs": 312,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1042342
+            },
+            {
+              "visibleMs": 392.7,
+              "ttfbMs": 9,
+              "domContentLoadedMs": 88.8,
+              "lcpMs": 316,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1042342
+            }
+          ]
+        },
+        {
+          "kind": "browser",
+          "label": "Visão geral",
+          "viewport": "mobile393",
+          "volume": 1000,
+          "firstMs": 1003.9,
+          "n": 5,
+          "minMs": 1023.3,
+          "medianMs": 1035.2,
+          "p95Ms": 1119.6,
+          "maxMs": 1119.6,
+          "errors": [],
+          "samples": [
+            {
+              "visibleMs": 1003.9,
+              "ttfbMs": 3.5,
+              "domContentLoadedMs": 973.5,
+              "lcpMs": 992,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 306342,
+              "staticDecodedBytes": 1005177
+            },
+            {
+              "visibleMs": 1035.2,
+              "ttfbMs": 4.4,
+              "domContentLoadedMs": 1004.8,
+              "lcpMs": 1008,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1005177
+            },
+            {
+              "visibleMs": 1023.3,
+              "ttfbMs": 10.1,
+              "domContentLoadedMs": 993.6,
+              "lcpMs": 1004,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1005177
+            },
+            {
+              "visibleMs": 1119.6,
+              "ttfbMs": 8.2,
+              "domContentLoadedMs": 1090.1,
+              "lcpMs": 1092,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1005177
+            },
+            {
+              "visibleMs": 1046.5,
+              "ttfbMs": 5.5,
+              "domContentLoadedMs": 1017.7,
+              "lcpMs": 1028,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1005177
+            },
+            {
+              "visibleMs": 1030.9,
+              "ttfbMs": 3.9,
+              "domContentLoadedMs": 1000.9,
+              "lcpMs": 1016,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1005177
+            }
+          ]
+        },
+        {
+          "kind": "browser",
+          "label": "Lançamentos",
+          "viewport": "mobile393",
+          "volume": 1000,
+          "firstMs": 645.5,
+          "n": 5,
+          "minMs": 611.5,
+          "medianMs": 647,
+          "p95Ms": 653.4,
+          "maxMs": 653.4,
+          "errors": [],
+          "samples": [
+            {
+              "visibleMs": 645.5,
+              "ttfbMs": 3.4,
+              "domContentLoadedMs": 541.5,
+              "lcpMs": 604,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 391380,
+              "staticDecodedBytes": 1315552
+            },
+            {
+              "visibleMs": 615.1,
+              "ttfbMs": 9.3,
+              "domContentLoadedMs": 570.1,
+              "lcpMs": 604,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1315552
+            },
+            {
+              "visibleMs": 647.7,
+              "ttfbMs": 3.4,
+              "domContentLoadedMs": 554.4,
+              "lcpMs": 604,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1315552
+            },
+            {
+              "visibleMs": 611.5,
+              "ttfbMs": 9.8,
+              "domContentLoadedMs": 561,
+              "lcpMs": 600,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1315552
+            },
+            {
+              "visibleMs": 647,
+              "ttfbMs": 9.5,
+              "domContentLoadedMs": 552.5,
+              "lcpMs": 604,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1315552
+            },
+            {
+              "visibleMs": 653.4,
+              "ttfbMs": 9.7,
+              "domContentLoadedMs": 556.2,
+              "lcpMs": 608,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1315552
+            }
+          ]
+        },
+        {
+          "kind": "browser",
+          "label": "Caixas",
+          "viewport": "mobile393",
+          "volume": 1000,
+          "firstMs": 399,
+          "n": 5,
+          "minMs": 364.1,
+          "medianMs": 368.1,
+          "p95Ms": 385.9,
+          "maxMs": 385.9,
+          "errors": [],
+          "samples": [
+            {
+              "visibleMs": 399,
+              "ttfbMs": 3.2,
+              "domContentLoadedMs": 82,
+              "lcpMs": 312,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 308872,
+              "staticDecodedBytes": 1012033
+            },
+            {
+              "visibleMs": 368.1,
+              "ttfbMs": 3.7,
+              "domContentLoadedMs": 73.7,
+              "lcpMs": 304,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1012033
+            },
+            {
+              "visibleMs": 385.9,
+              "ttfbMs": 8.8,
+              "domContentLoadedMs": 84.6,
+              "lcpMs": 304,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1012033
+            },
+            {
+              "visibleMs": 372.5,
+              "ttfbMs": 7.2,
+              "domContentLoadedMs": 75.7,
+              "lcpMs": 308,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1012033
+            },
+            {
+              "visibleMs": 365.6,
+              "ttfbMs": 4.2,
+              "domContentLoadedMs": 63.6,
+              "lcpMs": 308,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1012033
+            },
+            {
+              "visibleMs": 364.1,
+              "ttfbMs": 4.7,
+              "domContentLoadedMs": 66.4,
+              "lcpMs": 304,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1012033
+            }
+          ]
+        },
+        {
+          "kind": "browser",
+          "label": "Relatórios",
+          "viewport": "mobile393",
+          "volume": 1000,
+          "firstMs": 387.1,
+          "n": 5,
+          "minMs": 363.2,
+          "medianMs": 364.8,
+          "p95Ms": 378.9,
+          "maxMs": 378.9,
+          "errors": [],
+          "samples": [
+            {
+              "visibleMs": 387.1,
+              "ttfbMs": 3.3,
+              "domContentLoadedMs": 79.4,
+              "lcpMs": 312,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 311092,
+              "staticDecodedBytes": 1017328
+            },
+            {
+              "visibleMs": 378.9,
+              "ttfbMs": 3.8,
+              "domContentLoadedMs": 67,
+              "lcpMs": 304,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1017328
+            },
+            {
+              "visibleMs": 364.9,
+              "ttfbMs": 4.1,
+              "domContentLoadedMs": 61.8,
+              "lcpMs": 308,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1017328
+            },
+            {
+              "visibleMs": 363.2,
+              "ttfbMs": 6.9,
+              "domContentLoadedMs": 62.1,
+              "lcpMs": 304,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1017328
+            },
+            {
+              "visibleMs": 363.3,
+              "ttfbMs": 7.7,
+              "domContentLoadedMs": 62.1,
+              "lcpMs": 304,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1017328
+            },
+            {
+              "visibleMs": 364.8,
+              "ttfbMs": 3.7,
+              "domContentLoadedMs": 62.5,
+              "lcpMs": 308,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1017328
+            }
+          ]
+        },
+        {
+          "kind": "pdf",
+          "type": "SYNTHETIC",
+          "volume": 1000,
+          "firstMs": 1008.3,
+          "n": 2,
+          "minMs": 958.3,
+          "medianMs": 976.6,
+          "p95Ms": 995,
+          "maxMs": 995,
+          "pages": 2,
+          "bytes": 14315,
+          "samplesMs": [
+            1008.3,
+            995,
+            958.3
+          ]
+        },
+        {
+          "kind": "pdf",
+          "type": "ANALYTIC",
+          "volume": 1000,
+          "firstMs": 2120.6,
+          "n": 2,
+          "minMs": 1980.6,
+          "medianMs": 1983.6,
+          "p95Ms": 1986.6,
+          "maxMs": 1986.6,
+          "pages": 45,
+          "bytes": 195307,
+          "samplesMs": [
+            2120.6,
+            1980.6,
+            1986.6
+          ]
+        },
+        {
+          "kind": "fatal",
+          "message": "get_finance_overview: 57014 canceling statement due to statement timeout"
+        }
+      ]
+    },
+    "stress": {
+      "metadata": {
+        "date": "2026-11-03",
+        "commit": "637c737b27abde7e648aafe1d715f1a9ed36a55d",
+        "node": "v24.21.0",
+        "cpu": "Apple M1 Pro",
+        "hostMemoryGiB": 16,
+        "databaseVM": "2 vCPU / 2 GiB",
+        "baseURL": "http://127.0.0.1:3221",
+        "serviceWorkers": "blocked",
+        "network": "loopback, unthrottled",
+        "samples": "RPC: 1 first + 7 repeats; browser: 1 first + 5 repeats; PDF: 1 first + 2 repeats"
+      },
+      "measurements": [
+        {
+          "kind": "rpc-error",
+          "label": "Visão geral",
+          "volume": 9900,
+          "durationMs": 8024.9,
+          "message": "get_finance_overview: 57014 canceling statement due to statement timeout"
+        },
+        {
+          "kind": "rpc",
+          "label": "Lançamentos — primeira página",
+          "volume": 9900,
+          "firstMs": 4418.9,
+          "n": 7,
+          "minMs": 4356.5,
+          "medianMs": 4397,
+          "p95Ms": 5075.8,
+          "maxMs": 5075.8,
+          "responseBytes": 10686,
+          "samplesMs": [
+            4418.9,
+            4397,
+            4383.8,
+            4390.6,
+            4418.5,
+            4356.5,
+            5075.8,
+            4791.7
+          ]
+        },
+        {
+          "kind": "rpc",
+          "label": "Lançamentos — última página",
+          "volume": 9900,
+          "firstMs": 4460.2,
+          "n": 7,
+          "minMs": 4354.4,
+          "medianMs": 4418,
+          "p95Ms": 4728.9,
+          "maxMs": 4728.9,
+          "responseBytes": 10689,
+          "samplesMs": [
+            4460.2,
+            4354.4,
+            4584.9,
+            4357.4,
+            4365.7,
+            4459.1,
+            4418,
+            4728.9
+          ]
+        },
+        {
+          "kind": "rpc",
+          "label": "Lançamentos — busca textual",
+          "volume": 9900,
+          "firstMs": 4765,
+          "n": 7,
+          "minMs": 4351.5,
+          "medianMs": 4398.5,
+          "p95Ms": 4614.3,
+          "maxMs": 4614.3,
+          "responseBytes": 10686,
+          "samplesMs": [
+            4765,
+            4614.3,
+            4366.5,
+            4413.6,
+            4351.5,
+            4398.5,
+            4369.6,
+            4509
+          ]
+        },
+        {
+          "kind": "rpc",
+          "label": "Contas a pagar",
+          "volume": 9900,
+          "firstMs": 26.6,
+          "n": 7,
+          "minMs": 11.6,
+          "medianMs": 11.9,
+          "p95Ms": 31.5,
+          "maxMs": 31.5,
+          "responseBytes": 6098,
+          "samplesMs": [
+            26.6,
+            26.4,
+            31.5,
+            12.8,
+            11.7,
+            11.9,
+            11.6,
+            11.9
+          ]
+        },
+        {
+          "kind": "rpc-error",
+          "label": "Relatório sintético — dados",
+          "volume": 9900,
+          "durationMs": 8003.8,
+          "message": "get_finance_report: 57014 canceling statement due to statement timeout"
+        },
+        {
+          "kind": "rpc-error",
+          "label": "Relatório analítico — dados",
+          "volume": 9900,
+          "durationMs": 8005.3,
+          "message": "get_finance_report: 57014 canceling statement due to statement timeout"
+        },
+        {
+          "kind": "browser-error",
+          "label": "Visão geral",
+          "viewport": "desktop1440",
+          "volume": 9900,
+          "message": "locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n  - waiting for getByText('Saldo ao final do período', { exact: true }).filter({ visible: true }) to be visible\n",
+          "errors": []
+        },
+        {
+          "kind": "browser",
+          "label": "Lançamentos",
+          "viewport": "desktop1440",
+          "volume": 9900,
+          "firstMs": 4642.6,
+          "n": 5,
+          "minMs": 4562.9,
+          "medianMs": 4586.9,
+          "p95Ms": 4605,
+          "maxMs": 4605,
+          "errors": [],
+          "samples": [
+            {
+              "visibleMs": 4642.6,
+              "ttfbMs": 3.5,
+              "domContentLoadedMs": 4597.4,
+              "lcpMs": 312,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 391380,
+              "staticDecodedBytes": 1315552
+            },
+            {
+              "visibleMs": 4594.8,
+              "ttfbMs": 10,
+              "domContentLoadedMs": 4561.2,
+              "lcpMs": 304,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1315552
+            },
+            {
+              "visibleMs": 4580.8,
+              "ttfbMs": 6.1,
+              "domContentLoadedMs": 4550.1,
+              "lcpMs": 308,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1315552
+            },
+            {
+              "visibleMs": 4562.9,
+              "ttfbMs": 9,
+              "domContentLoadedMs": 4533.4,
+              "lcpMs": 304,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1315552
+            },
+            {
+              "visibleMs": 4605,
+              "ttfbMs": 7.2,
+              "domContentLoadedMs": 4577.1,
+              "lcpMs": 308,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1315552
+            },
+            {
+              "visibleMs": 4586.9,
+              "ttfbMs": 9,
+              "domContentLoadedMs": 4556.4,
+              "lcpMs": 304,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1315552
+            }
+          ]
+        },
+        {
+          "kind": "interaction",
+          "label": "Abrir formulário de entrada",
+          "volume": 9900,
+          "durationMs": 94.4
+        },
+        {
+          "kind": "browser",
+          "label": "Caixas",
+          "viewport": "desktop1440",
+          "volume": 9900,
+          "firstMs": 397.4,
+          "n": 5,
+          "minMs": 322.2,
+          "medianMs": 372.4,
+          "p95Ms": 385.8,
+          "maxMs": 385.8,
+          "errors": [],
+          "samples": [
+            {
+              "visibleMs": 397.4,
+              "ttfbMs": 3.3,
+              "domContentLoadedMs": 80.4,
+              "lcpMs": 316,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 308872,
+              "staticDecodedBytes": 1012033
+            },
+            {
+              "visibleMs": 372.4,
+              "ttfbMs": 6.3,
+              "domContentLoadedMs": 68.4,
+              "lcpMs": 308,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1012033
+            },
+            {
+              "visibleMs": 322.2,
+              "ttfbMs": 13.3,
+              "domContentLoadedMs": 118.4,
+              "lcpMs": 312,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1012033
+            },
+            {
+              "visibleMs": 364.8,
+              "ttfbMs": 4.4,
+              "domContentLoadedMs": 66.6,
+              "lcpMs": 308,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1012033
+            },
+            {
+              "visibleMs": 379.4,
+              "ttfbMs": 7.7,
+              "domContentLoadedMs": 70.3,
+              "lcpMs": 308,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1012033
+            },
+            {
+              "visibleMs": 385.8,
+              "ttfbMs": 10.3,
+              "domContentLoadedMs": 85,
+              "lcpMs": 308,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1012033
+            }
+          ]
+        },
+        {
+          "kind": "browser",
+          "label": "Relatórios",
+          "viewport": "desktop1440",
+          "volume": 9900,
+          "firstMs": 394.6,
+          "n": 5,
+          "minMs": 364,
+          "medianMs": 364.9,
+          "p95Ms": 372.2,
+          "maxMs": 372.2,
+          "errors": [],
+          "samples": [
+            {
+              "visibleMs": 394.6,
+              "ttfbMs": 3.4,
+              "domContentLoadedMs": 80.5,
+              "lcpMs": 316,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 311092,
+              "staticDecodedBytes": 1017328
+            },
+            {
+              "visibleMs": 364,
+              "ttfbMs": 6.3,
+              "domContentLoadedMs": 55.2,
+              "lcpMs": 308,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1017328
+            },
+            {
+              "visibleMs": 370.8,
+              "ttfbMs": 8.6,
+              "domContentLoadedMs": 70.9,
+              "lcpMs": 308,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1017328
+            },
+            {
+              "visibleMs": 364.2,
+              "ttfbMs": 6.9,
+              "domContentLoadedMs": 59.7,
+              "lcpMs": 312,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1017328
+            },
+            {
+              "visibleMs": 372.2,
+              "ttfbMs": 5.9,
+              "domContentLoadedMs": 60.3,
+              "lcpMs": 312,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1017328
+            },
+            {
+              "visibleMs": 364.9,
+              "ttfbMs": 3.7,
+              "domContentLoadedMs": 64.2,
+              "lcpMs": 312,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1017328
+            }
+          ]
+        },
+        {
+          "kind": "browser",
+          "label": "Contas a pagar",
+          "viewport": "desktop1440",
+          "volume": 9900,
+          "firstMs": 398.9,
+          "n": 5,
+          "minMs": 382.3,
+          "medianMs": 396,
+          "p95Ms": 396.3,
+          "maxMs": 396.3,
+          "errors": [],
+          "samples": [
+            {
+              "visibleMs": 398.9,
+              "ttfbMs": 3.2,
+              "domContentLoadedMs": 83.3,
+              "lcpMs": 320,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 319694,
+              "staticDecodedBytes": 1042342
+            },
+            {
+              "visibleMs": 396.1,
+              "ttfbMs": 7.3,
+              "domContentLoadedMs": 90.6,
+              "lcpMs": 324,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1042342
+            },
+            {
+              "visibleMs": 396,
+              "ttfbMs": 8.7,
+              "domContentLoadedMs": 89.6,
+              "lcpMs": 316,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1042342
+            },
+            {
+              "visibleMs": 396.3,
+              "ttfbMs": 9.3,
+              "domContentLoadedMs": 90.1,
+              "lcpMs": 312,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1042342
+            },
+            {
+              "visibleMs": 389.4,
+              "ttfbMs": 3.6,
+              "domContentLoadedMs": 86.1,
+              "lcpMs": 316,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1042342
+            },
+            {
+              "visibleMs": 382.3,
+              "ttfbMs": 3.5,
+              "domContentLoadedMs": 80.7,
+              "lcpMs": 316,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1042342
+            }
+          ]
+        },
+        {
+          "kind": "browser-error",
+          "label": "Visão geral",
+          "viewport": "mobile393",
+          "volume": 9900,
+          "message": "locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n  - waiting for getByText('SALDO FINAL', { exact: true }).filter({ visible: true }) to be visible\n",
+          "errors": []
+        },
+        {
+          "kind": "browser",
+          "label": "Lançamentos",
+          "viewport": "mobile393",
+          "volume": 9900,
+          "firstMs": 4568.5,
+          "n": 5,
+          "minMs": 4556,
+          "medianMs": 4571.2,
+          "p95Ms": 4638.3,
+          "maxMs": 4638.3,
+          "errors": [],
+          "samples": [
+            {
+              "visibleMs": 4568.5,
+              "ttfbMs": 3.5,
+              "domContentLoadedMs": 4526.8,
+              "lcpMs": 4556,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 391380,
+              "staticDecodedBytes": 1315552
+            },
+            {
+              "visibleMs": 4571.7,
+              "ttfbMs": 5.8,
+              "domContentLoadedMs": 4539.2,
+              "lcpMs": 4548,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1315552
+            },
+            {
+              "visibleMs": 4563.3,
+              "ttfbMs": 9.5,
+              "domContentLoadedMs": 4534.6,
+              "lcpMs": 4544,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1315552
+            },
+            {
+              "visibleMs": 4638.3,
+              "ttfbMs": 6.9,
+              "domContentLoadedMs": 4604.2,
+              "lcpMs": 4616,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1315552
+            },
+            {
+              "visibleMs": 4556,
+              "ttfbMs": 4.2,
+              "domContentLoadedMs": 4525,
+              "lcpMs": 4536,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1315552
+            },
+            {
+              "visibleMs": 4571.2,
+              "ttfbMs": 9,
+              "domContentLoadedMs": 4536.3,
+              "lcpMs": 4548,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1315552
+            }
+          ]
+        },
+        {
+          "kind": "browser",
+          "label": "Caixas",
+          "viewport": "mobile393",
+          "volume": 9900,
+          "firstMs": 390.3,
+          "n": 5,
+          "minMs": 372.2,
+          "medianMs": 380,
+          "p95Ms": 386,
+          "maxMs": 386,
+          "errors": [],
+          "samples": [
+            {
+              "visibleMs": 390.3,
+              "ttfbMs": 3.2,
+              "domContentLoadedMs": 76.6,
+              "lcpMs": 312,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 308872,
+              "staticDecodedBytes": 1012033
+            },
+            {
+              "visibleMs": 380,
+              "ttfbMs": 5,
+              "domContentLoadedMs": 75.6,
+              "lcpMs": 304,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1012033
+            },
+            {
+              "visibleMs": 372.2,
+              "ttfbMs": 6.5,
+              "domContentLoadedMs": 68.1,
+              "lcpMs": 308,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1012033
+            },
+            {
+              "visibleMs": 385.1,
+              "ttfbMs": 9.6,
+              "domContentLoadedMs": 83.6,
+              "lcpMs": 308,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1012033
+            },
+            {
+              "visibleMs": 373,
+              "ttfbMs": 4,
+              "domContentLoadedMs": 70.7,
+              "lcpMs": 308,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1012033
+            },
+            {
+              "visibleMs": 386,
+              "ttfbMs": 9.1,
+              "domContentLoadedMs": 78.1,
+              "lcpMs": 304,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1012033
+            }
+          ]
+        },
+        {
+          "kind": "browser",
+          "label": "Relatórios",
+          "viewport": "mobile393",
+          "volume": 9900,
+          "firstMs": 388.6,
+          "n": 5,
+          "minMs": 362.3,
+          "medianMs": 371,
+          "p95Ms": 379.2,
+          "maxMs": 379.2,
+          "errors": [],
+          "samples": [
+            {
+              "visibleMs": 388.6,
+              "ttfbMs": 3.4,
+              "domContentLoadedMs": 82.4,
+              "lcpMs": 312,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 311092,
+              "staticDecodedBytes": 1017328
+            },
+            {
+              "visibleMs": 377.6,
+              "ttfbMs": 9.1,
+              "domContentLoadedMs": 71.9,
+              "lcpMs": 312,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1017328
+            },
+            {
+              "visibleMs": 362.3,
+              "ttfbMs": 3.9,
+              "domContentLoadedMs": 61.8,
+              "lcpMs": 304,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1017328
+            },
+            {
+              "visibleMs": 366.8,
+              "ttfbMs": 7.8,
+              "domContentLoadedMs": 63.2,
+              "lcpMs": 308,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1017328
+            },
+            {
+              "visibleMs": 379.2,
+              "ttfbMs": 9.4,
+              "domContentLoadedMs": 71.2,
+              "lcpMs": 304,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1017328
+            },
+            {
+              "visibleMs": 371,
+              "ttfbMs": 8.5,
+              "domContentLoadedMs": 69.3,
+              "lcpMs": 304,
+              "cls": 0,
+              "longTaskMs": 0,
+              "staticTransferBytes": 0,
+              "staticDecodedBytes": 1017328
+            }
+          ]
+        },
+        {
+          "kind": "pdf-error",
+          "type": "SYNTHETIC",
+          "volume": 9900,
+          "status": 500,
+          "durationMs": 8044.5,
+          "message": "{\"message\":\"Não foi possível gerar o relatório agora. Tente novamente.\"}"
+        },
+        {
+          "kind": "pdf-error",
+          "type": "ANALYTIC",
+          "volume": 9900,
+          "status": 500,
+          "durationMs": 8043.9,
+          "message": "{\"message\":\"Não foi possível gerar o relatório agora. Tente novamente.\"}"
+        },
+        {
+          "kind": "mutation",
+          "label": "Gravar lançamento — RPC",
+          "n": 7,
+          "minMs": 10.4,
+          "medianMs": 11,
+          "p95Ms": 15.5,
+          "maxMs": 15.5,
+          "samplesMs": [
+            14.4,
+            15.5,
+            11,
+            10.7,
+            10.4,
+            11.1,
+            10.6
+          ],
+          "idempotency": "replay did not create a duplicate"
+        }
+      ]
+    },
+    "history": {
+      "metadata": {
+        "date": "2026-11-03",
+        "commit": "637c737b27abde7e648aafe1d715f1a9ed36a55d",
+        "node": "v24.21.0",
+        "cpu": "Apple M1 Pro",
+        "hostMemoryGiB": 16,
+        "databaseVM": "2 vCPU / 2 GiB",
+        "baseURL": "http://127.0.0.1:3221",
+        "serviceWorkers": "blocked",
+        "network": "loopback, unthrottled",
+        "samples": "RPC: 1 first + 3 repeats; concurrency: 20 requests at each of 1, 5 and 10 concurrent requests"
+      },
+      "measurements": [
+        {
+          "kind": "rpc",
+          "label": "Visão geral — 1 mês de histórico",
+          "volume": 1000,
+          "firstMs": 880.9,
+          "n": 3,
+          "minMs": 874.9,
+          "medianMs": 880.7,
+          "p95Ms": 915.6,
+          "maxMs": 915.6,
+          "responseBytes": 2091,
+          "samplesMs": [
+            880.9,
+            880.7,
+            874.9,
+            915.6
+          ]
+        },
+        {
+          "kind": "concurrency",
+          "label": "Visão geral — RPC",
+          "volume": 1000,
+          "concurrency": 1,
+          "requests": 20,
+          "successes": 20,
+          "errors": [],
+          "n": 20,
+          "minMs": 856,
+          "medianMs": 870.7,
+          "p95Ms": 889.6,
+          "maxMs": 891.4,
+          "wallMs": 17451.1
+        },
+        {
+          "kind": "concurrency",
+          "label": "Visão geral — RPC",
+          "volume": 1000,
+          "concurrency": 5,
+          "requests": 20,
+          "successes": 20,
+          "errors": [],
+          "n": 20,
+          "minMs": 2122,
+          "medianMs": 2292.5,
+          "p95Ms": 2375.5,
+          "maxMs": 2455.4,
+          "wallMs": 9203.5
+        },
+        {
+          "kind": "concurrency",
+          "label": "Visão geral — RPC",
+          "volume": 1000,
+          "concurrency": 10,
+          "requests": 20,
+          "successes": 20,
+          "errors": [],
+          "n": 20,
+          "minMs": 4292.9,
+          "medianMs": 4608.7,
+          "p95Ms": 4828.3,
+          "maxMs": 4874.5,
+          "wallMs": 9340
+        },
+        {
+          "kind": "rpc",
+          "label": "Visão geral — 12 meses de histórico",
+          "volume": 12000,
+          "firstMs": 5731.1,
+          "n": 3,
+          "minMs": 5608.9,
+          "medianMs": 5616.9,
+          "p95Ms": 5639.3,
+          "maxMs": 5639.3,
+          "responseBytes": 2099,
+          "samplesMs": [
+            5731.1,
+            5639.3,
+            5616.9,
+            5608.9
+          ]
+        },
+        {
+          "kind": "rpc",
+          "label": "Lançamentos — 12 meses de histórico",
+          "volume": 12000,
+          "firstMs": 455.1,
+          "n": 3,
+          "minMs": 444.3,
+          "medianMs": 445.5,
+          "p95Ms": 448.3,
+          "maxMs": 448.3,
+          "responseBytes": 10247,
+          "samplesMs": [
+            455.1,
+            444.3,
+            445.5,
+            448.3
+          ]
+        },
+        {
+          "kind": "rpc",
+          "label": "Relatório sintético — 12 meses de histórico",
+          "volume": 12000,
+          "firstMs": 5632.6,
+          "n": 3,
+          "minMs": 5639.7,
+          "medianMs": 5642.4,
+          "p95Ms": 5677.6,
+          "maxMs": 5677.6,
+          "responseBytes": 1192,
+          "samplesMs": [
+            5632.6,
+            5642.4,
+            5639.7,
+            5677.6
+          ]
+        }
+      ]
+    }
+  },
+  "checks": [
+    {
+      "label": "history",
+      "code": 1,
+      "durationMs": 1163
+    },
+    {
+      "label": "explain",
+      "code": 0,
+      "durationMs": 8472
+    },
+    {
+      "label": "finance_access_verification",
+      "code": 0,
+      "durationMs": 80
+    },
+    {
+      "label": "finance_queries_verification",
+      "code": 3,
+      "durationMs": 52
+    },
+    {
+      "label": "finance_bank_import_read_performance",
+      "code": 0,
+      "durationMs": 1746
+    },
+    {
+      "label": "finance_reports",
+      "code": 3,
+      "durationMs": 63
+    },
+    {
+      "label": "concurrency-integrity",
+      "code": 1,
+      "durationMs": 109
+    },
+    {
+      "label": "bank-concurrency-integrity",
+      "code": 0,
+      "durationMs": 968
+    },
+    {
+      "label": "advisors",
+      "code": 0,
+      "durationMs": 843
+    },
+    {
+      "label": "e2e-query",
+      "code": 0,
+      "durationMs": 2755
+    },
+    {
+      "label": "finance_queries_verification-dated",
+      "code": 0,
+      "durationMs": 140
+    },
+    {
+      "label": "finance_reports-dated",
+      "code": 3,
+      "durationMs": 15458
+    },
+    {
+      "label": "finance_bank_import_read_performance",
+      "code": 0,
+      "durationMs": 1825
+    },
+    {
+      "label": "concurrency-dated",
+      "code": 0,
+      "durationMs": 526
+    },
+    {
+      "label": "history rerun with valid regional assignment",
+      "code": 0
+    }
+  ],
+  "database": {
+    "version": "PostgreSQL 17.6 aarch64",
+    "authenticatedStatementTimeout": "8s",
+    "lastMigration": "20261102194716",
+    "rlsEnabled": [
+      "financial_transactions",
+      "financial_ledger_entries",
+      "accounts_payable"
+    ]
+  },
+  "diagnostics": {
+    "transactionReadMs": 4212.212,
+    "ledgerReadMs": 4206.652,
+    "scopeChecks": 19802,
+    "scopeTotalMs": 8397.22,
+    "permissionTotalMs": 7270.76,
+    "privilegedDiagnosticReadMs": [
+      2.19,
+      1.046
+    ],
+    "report9995RowsMs": 8541.369,
+    "bankImport50PendingMs": 589,
+    "bankImport50CompletedMs": 820,
+    "bankImportScopeEvaluations": [
+      5,
+      7
+    ]
+  },
+  "advisors": {
+    "level": "WARN and ERROR only",
+    "warnings": 13,
+    "errors": 0,
+    "names": {
+      "auth_rls_initplan": 9,
+      "multiple_permissive_policies": 4
+    }
+  }
+}

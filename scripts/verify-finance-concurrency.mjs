@@ -69,7 +69,7 @@ const setup = await sql(`begin;${fixture}${auth}
 create temporary table test_ids(value jsonb);
 do $$ declare m uuid;d uuid;c uuid;b uuid;begin
  m:=(public.save_finance_catalog('${church}','{"entity":"PAYMENT_METHOD","congregationId":"${unit}","name":"Cash ${tag}","kind":"CASH"}')->>'id')::uuid;
- d:=(public.save_finance_catalog('${church}','{"entity":"DEPARTMENT","congregationId":"${unit}","name":"Treasury ${tag}","effectiveMonth":"2026-10","participatesInBase":true}')->>'id')::uuid;
+ d:=(public.save_finance_catalog('${church}','{"entity":"DEPARTMENT","congregationId":"${unit}","name":"Treasury ${tag}","effectiveMonth":"2026-10","reason":"Configuração histórica de teste","participatesInBase":true}')->>'id')::uuid;
  c:=(public.save_finance_catalog('${church}',jsonb_build_object('entity','CATEGORY','congregationId','${unit}','name','Offering ${tag}','direction','INCOME','departmentId',d))->>'id')::uuid;
  b:=(public.save_finance_catalog('${church}',jsonb_build_object('entity','CASHBOX','congregationId','${unit}','name','Cashbox ${tag}','kind','CASH','openingDate','2026-10-01','openingCents',0,'paymentMethodIds',jsonb_build_array(m)))->>'id')::uuid;
  insert into test_ids values(jsonb_build_object('cashboxId',b,'paymentMethodId',m,'categoryId',c,'departmentId',d));end $$;
@@ -141,7 +141,7 @@ const balance = await sql(
 );
 assert.equal(Number(balance), 400);
 await sql(
-  `begin;${auth}set local role authenticated;select public.save_finance_statement_rules('${church}',${quote(JSON.stringify({ congregationId: unit, effectiveMonth: "2026-10", items: [{ name: "Repasse", destination: "CATHEDRAL", role: "DISTRIBUTION", calculation: "ELIGIBLE_INCOME_PERCENT", percentage: "30" }] }))}::jsonb);commit;`,
+  `begin;${auth}set local role authenticated;select public.save_finance_statement_rules('${church}',${quote(JSON.stringify({ congregationId: unit, effectiveMonth: "2026-10", retroactiveReason: "Configuração histórica de teste", items: [{ name: "Repasse", destination: "CATHEDRAL", role: "DISTRIBUTION", calculation: "ELIGIBLE_INCOME_PERCENT", percentage: "30" }] }))}::jsonb);commit;`,
 );
 const [generation] = await Promise.all([
   sql(
