@@ -17,6 +17,80 @@ export const FinanceStyles = createGlobalStyle`
  #finance-modal-root .finance-cancellation-scope input[type=radio]{width:18px;min-height:18px;height:18px;padding:0;flex-shrink:0;accent-color:#087F5B}
  #finance-modal-root .finance-cancellation-scope p{margin:0;padding:12px;border-radius:10px;background:#F5F8F6;line-height:1.5}
 
+
+ :is(.finance,#finance-modal-root) .finance-payable-fields{border:0;padding:0;margin:0;min-width:0}
+ .finance .finance-payables-desktop-notice{justify-items:start}
+ .finance .finance-payables-desktop-notice>svg{color:#087F5B}
+ .finance .finance-payable-filters{display:grid;grid-template-columns:minmax(140px,1.8fr) minmax(140px,1.1fr) minmax(135px,1.4fr) minmax(115px,1fr) 42px;gap:14px;align-items:end}
+ .finance .finance-payables-context .finance-single-unit{grid-column:1/-1}
+ .finance .finance-payable-filters>label{min-width:0}
+ .finance .finance-payable-filters input,.finance .finance-payable-filters select{min-width:0;max-width:100%}
+ .finance .finance-payable-filters .finance-search-input{display:block}
+ .finance .finance-payable-filter-reset{margin-top:12px}
+ .finance .finance-payable-filter-reset button{font-size:12px;min-height:36px;padding:6px 10px}
+ .finance .finance-payable-tabs-bar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding-top:4px}
+ .finance .finance-payable-tabs-bar .tabs button[aria-selected=true]{background:#EDF5EF;color:#176348;font-weight:500;border-color:#D9E7DD}
+ .finance .finance-payable-period.badge{background:#EDF5EF;color:#176348;font-weight:500;font-size:12px;padding:7px 12px;max-width:100%}
+ .finance .finance-payables-heading{gap:18px}
+ .finance .finance-payable-heading-actions{gap:8px}
+ .finance .finance-payable-table{width:100%;table-layout:fixed}
+ .finance .finance-payable-date-column{width:19%}
+ .finance .finance-payable-amount-column{width:17%}
+ .finance .finance-payable-status-column{width:14%}
+ .finance .finance-payable-actions-column{width:182px}
+ .finance .finance-payable-table td{vertical-align:middle;overflow-wrap:anywhere}
+ .finance .finance-payable-table th:last-child{text-align:right}
+ .finance .finance-payable-table small{display:block;margin-top:5px}
+ .finance .finance-payable-name{border:0;background:none;color:inherit;padding:0;text-align:left;font:inherit;font-weight:600;cursor:pointer;overflow-wrap:anywhere}
+ .finance .finance-payable-table .finance-payable-row-actions{position:relative;justify-content:flex-end;flex-wrap:nowrap;gap:8px}
+ .finance .finance-payable-row-actions>button{white-space:nowrap}
+ .finance .finance-payable-table .finance-payable-menu>button{width:44px;min-width:44px;padding-left:0;padding-right:0}
+ :is(.finance,#finance-modal-root) .badge.payable-overdue{color:#9C3238;background:#FCEDEE}
+ :is(.finance,#finance-modal-root) .badge.payable-today{color:#885719;background:#FFF3D9}
+ :is(.finance,#finance-modal-root) .badge.payable-pending{color:#526775;background:#EEF2F5}
+ :is(.finance,#finance-modal-root) .badge.payable-paid{color:#176348;background:#EDF5EF}
+ .finance .finance-payable-menu{position:relative}
+ .finance .finance-payable-menu-items{position:absolute;right:0;top:100%;z-index:10;display:grid;min-width:190px;background:white;border:1px solid #CFDCD3;border-radius:10px;box-shadow:0 6px 24px #18352C20;padding:6px}
+ .finance .finance-payable-menu-items button{display:flex;align-items:center;gap:10px;border:0;background:transparent;text-align:left;padding:12px;font:inherit;cursor:pointer;border-radius:6px}
+ .finance .finance-payable-menu-items svg{flex-shrink:0}
+ .finance .finance-payable-menu-items button:hover{background:#EDF5EF}
+ #finance-modal-root .finance-payable-copy h2,#finance-modal-root .finance-payable-copy strong{font-weight:700}
+ #finance-modal-root .finance-payable-copy-pagination{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px;font-size:12px;color:#6D7F76}
+ #finance-modal-root .finance-payable-copy-pagination button{min-height:36px;padding:6px 10px;font-size:12px}
+ #finance-modal-root .finance-payable-copy-pagination span{white-space:nowrap}
+ #finance-modal-root .finance-payable-copy-choice{display:flex;align-items:center;gap:12px;border:1px solid #E3EAE6;border-radius:10px;padding:14px;min-width:0}
+ #finance-modal-root .finance-payable-copy-choice small{display:block;margin-top:6px;font-weight:400}
+ #finance-modal-root .finance-payable-copy-choice span,#finance-modal-root .finance-payable-detail{overflow-wrap:anywhere;min-width:0}
+ #finance-modal-root .finance-payable-detail-heading{display:grid;justify-items:start;gap:12px;padding-bottom:22px;border-bottom:1px solid #E3EAE6}
+ #finance-modal-root .finance-payable-detail-heading h2{font-size:23px;font-weight:600;line-height:1.35;letter-spacing:-.4px;margin:0}
+ #finance-modal-root .finance-payable-detail-amount{font-size:21px;font-weight:500;font-variant-numeric:tabular-nums;color:#176348}
+ #finance-modal-root .finance-payable-detail-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px 18px;margin:0;padding:2px 0 6px}
+ #finance-modal-root .finance-payable-detail-fields dt{font-size:12px;color:#6D7F76;font-weight:400;line-height:1.4}
+ #finance-modal-root .finance-payable-detail-fields dd{font-size:14px;font-weight:500;color:#18352C;margin:6px 0 0;line-height:1.6}
+ #finance-modal-root .finance-payable-detail-notes{grid-column:1/-1;white-space:pre-wrap}
+ @media(max-width:1100px){
+  .finance .finance-payable-filters{grid-template-columns:repeat(3,minmax(0,1fr)) 42px}
+  .finance .finance-payable-filters>label:first-child{grid-column:1/-1}
+ }
+ @media(max-width:767px){
+  .finance .finance-payable-filters{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 12px}
+  .finance .finance-payable-filters>button{justify-self:end}
+  .finance .finance-payable-table colgroup{display:none}
+  .finance .finance-payable-table .finance-payable-row-actions{justify-content:flex-start}
+  .finance .finance-payable-table .finance-payable-menu{position:static}
+  .finance .finance-payables-heading,.finance .finance-payable-heading-actions{width:100%}
+  .finance .finance-payable-heading-actions{display:grid;grid-template-columns:minmax(0,1fr)}
+  .finance .finance-payable-heading-actions>button{width:100%;min-height:44px}
+  .finance .finance-payable-tabs-bar{align-items:flex-start}
+  .finance .finance-payable-period.badge{font-size:11px}
+ }
+ @media(max-width:360px){
+  .finance .finance-payable-filters{grid-template-columns:minmax(0,1fr) 42px}
+  .finance .finance-payable-filters>label{grid-column:1/-1}
+  .finance .finance-payable-filters>label:nth-child(4){grid-column:1}
+  .finance .finance-payable-filters>button{grid-column:2}
+  #finance-modal-root .finance-payable-detail-fields{grid-template-columns:minmax(0,1fr)}
+ }
  .finance,#finance-modal-root{color:#18352C;font-family:var(--font-app),sans-serif}
  .finance h1{font-size:28px;font-weight:600;letter-spacing:-.8px;margin:0}.finance h2{font-size:18px;font-weight:500;margin:0}.finance h3{font-size:15px;font-weight:500;margin:0}.finance p{line-height:1.6}
  .finance .muted,#finance-modal-root .muted{color:#6D7F76;font-size:13px}.finance .eyebrow{font-size:11px;letter-spacing:1.6px;text-transform:uppercase;font-weight:600;color:#6D7F76}

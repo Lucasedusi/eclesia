@@ -49,7 +49,9 @@ for (const width of [320, 393, 430]) {
 
 test("desktop keeps its full overview and original card labels", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto(`/financeiro?unidade=${unitId()}&mes=2026-10`);
+  // The headquarters has seeded entries; this must not depend on other tests creating transactions.
+  const { headquartersId } = JSON.parse(readFileSync(process.env.E2E_FINANCE_FIXTURE!, "utf8"));
+  await page.goto(`/financeiro?unidade=${headquartersId}&mes=2026-10`);
   await expect(page.getByRole("heading", { name: "Visão geral", exact: true })).toBeVisible();
   for (const label of ["Saldo ao final do período", "Entradas no mês", "Saídas no mês"])
     await expect(page.getByText(label, { exact: true })).toBeVisible();

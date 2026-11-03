@@ -266,6 +266,7 @@ if (command === "setup") {
       p_payload: {
         congregationId: unit,
         effectiveMonth: "2026-10",
+        retroactiveReason: "Preparação de dados fictícios para testes locais.",
         items: rules,
       },
     });

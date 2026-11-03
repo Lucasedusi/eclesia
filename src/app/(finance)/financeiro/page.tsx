@@ -19,14 +19,14 @@ async function Content({
     getFinanceOverview(context, { month }),
     listFinanceTransactions(context, { month }),
   ]);
-  return (
+  return (<div className="stack">
     <FinanceOverview
       overview={overview}
       recent={recent}
       unit={context.congregationId}
       month={month}
     />
-  );
+  </div>);
 }
 export default function Page(props: { searchParams: FinanceSearchParams }) {
   return (

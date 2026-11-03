@@ -39,6 +39,7 @@ export function FinanceCatalogForm({
   catalogs,
   roles,
   onClose,
+  defaultDirection,
 }: {
   entity: CatalogEntity;
   id?: string;
@@ -47,6 +48,7 @@ export function FinanceCatalogForm({
   catalogs: FinanceCatalogs;
   roles: { id: string; name: string }[];
   onClose: () => void;
+  defaultDirection?: "INCOME" | "EXPENSE";
 }) {
   const financeNavigation = useFinanceNavigation(),
     form = useRef<HTMLFormElement>(null),
@@ -235,7 +237,7 @@ export function FinanceCatalogForm({
               Natureza
               <select
                 name="direction"
-                defaultValue={category?.direction ?? "INCOME"}
+                defaultValue={category?.direction ?? defaultDirection ?? "INCOME"}
               >
                 <option value="INCOME">Entrada</option>
                 <option value="EXPENSE">Saída</option>
