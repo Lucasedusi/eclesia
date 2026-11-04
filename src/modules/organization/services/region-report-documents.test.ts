@@ -30,7 +30,16 @@ describe("regional report documents", () => {
     expect(text).toContain("04/11/2026");
     if (kind === "individual") {
       expect(text).toContain("Congregação Central");
-      expect(text).toContain(`CONGREGAÇÕES VINCULADAS · ${regionReportFixture(kind).congregations.length}`);
+      expect(text).not.toContain("FICHA DA REGIONAL");
+      expect(text).not.toContain("CONGREGAÇÕES VINCULADAS");
+      const name = drawn.mock.calls.find(([value]) => value === "REGIONAL SÃO JOSÉ")!;
+      const count = drawn.mock.calls.find(([value]) => value === "2 congregações")!;
+      expect(name).toBeDefined();
+      expect(count).toBeDefined();
+      expect(name[1]!.font).not.toBe(count[1]!.font);
+      const phone = drawn.mock.calls.find(([value]) => value.startsWith("Telefone do coordenador:"))!;
+      const description = drawn.mock.calls.find(([value]) => value === "DESCRIÇÃO")!;
+      expect(phone[1]!.y! - description[1]!.y!).toBeGreaterThanOrEqual(38);
       expect(text).not.toContain("Situação:");
       expect(text).not.toContain("Congregações: ativas e inativas");
     } else {
@@ -42,17 +51,20 @@ describe("regional report documents", () => {
     expect(Buffer.from(bytes).toString("latin1")).toContain("/FontFile2");
     await saveQa(`${kind}.pdf`, bytes);
   });
-  it("paginates and repeats table headers without losing final records", async () => {
+  it.each(["simplified", "individual"] as const)("numbers %s rows across pages without losing final records", async (kind) => {
     const drawn = vi.spyOn(PDFPage.prototype, "drawText");
-    const input = regionReportFixture();
-    input.regions = Array.from({ length: 90 }, (_, i) => ({ ...input.regions[0], name: `Regional de exemplo ${i + 1}` }));
+    const input = regionReportFixture(kind);
+    if (kind === "simplified") input.regions = Array.from({ length: 90 }, (_, i) => ({ ...input.regions[0], name: `Regional de exemplo ${i + 1}` }));
+    else input.congregations = Array.from({ length: 90 }, (_, i) => ({ ...input.congregations[0], name: `Congregação de exemplo ${i + 1}` }));
     const bytes = await createRegionReportPdf(input);
     const pdf = await PDFDocument.load(bytes);
     expect(pdf.getPageCount()).toBeGreaterThan(2);
     const text = drawn.mock.calls.map(([value]) => value).join(" ");
-    expect(text).toContain("Regional de exemplo 90");
-    expect(text.match(/NOME DA REGIONAL/g)?.length).toBe(pdf.getPageCount());
-    await saveQa("lista-longa.pdf", bytes);
+    expect(text).toContain(`${kind === "simplified" ? "Regional" : "Congregação"} de exemplo 90`);
+    expect(drawn.mock.calls.filter(([value]) => value === "Nº")).toHaveLength(pdf.getPageCount());
+    const indices = drawn.mock.calls.filter(([value, options]) => /^\d+$/.test(value) && options?.x === 42).map(([value]) => Number(value));
+    expect(indices).toEqual(Array.from({ length: 90 }, (_, i) => i + 1));
+    await saveQa(`${kind}-numerada.pdf`, bytes);
   });
   it("keeps long descriptions and table cells within page boundaries", async () => {
     const drawn = vi.spyOn(PDFPage.prototype, "drawText");
