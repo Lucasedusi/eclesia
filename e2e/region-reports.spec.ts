@@ -22,8 +22,15 @@ test.describe("relatórios de regionais", () => {
     await expect(modal.getByRole("button", { name: "Fechar", exact: true })).toHaveCount(0);
     await expect(modal.getByText(/O contato das congregações prioriza/)).toHaveCount(0);
     await modal.getByRole("radio", { name: /Lista simplificada/ }).check();
-    await expect(modal.getByRole("combobox").first()).toHaveCSS("border-top-color", "rgb(65, 91, 165)");
-    await expect(modal.getByRole("combobox").first()).toHaveCSS("box-shadow", "none");
+    const firstSelect = modal.getByRole("combobox").first();
+    await expect(firstSelect).toHaveCSS("border-top-color", "rgb(217, 222, 234)");
+    await firstSelect.focus();
+    await expect(firstSelect).toHaveCSS("border-top-color", "rgb(65, 91, 165)");
+    await expect(firstSelect).toHaveCSS("border-top-width", "1px");
+    await expect(firstSelect).toHaveCSS("box-shadow", "none");
+    await expect(firstSelect).toHaveCSS("outline-style", "none");
+    await modal.getByRole("radio", { name: /Lista simplificada/ }).focus();
+    await expect(firstSelect).toHaveCSS("border-top-color", "rgb(217, 222, 234)");
     await modal.screenshot({ path: testInfo.outputPath("modal-relatorios.png"), animations: "disabled" });
     let download = page.waitForEvent("download");
     await modal.getByRole("button", { name: "Baixar PDF", exact: true }).click();

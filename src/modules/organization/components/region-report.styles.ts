@@ -15,12 +15,7 @@ export const ReportModal = styled(Modal)<{ $stableHeight: boolean }>`
   `}
 `;
 export const SelectControl = styled(SharedSelectControl)`
-  border-color: ${({ theme }) => theme.colors.brand.primary};
-  box-shadow: none;
-  &:focus-visible {
-    outline: 1px solid ${({ theme }) => theme.colors.brand.primary};
-    outline-offset: 2px;
-  }
+  border-color: #d9deea;
 `;
 
 export const Content = styled.div`

@@ -57,7 +57,7 @@ As verificações de banco estão em `supabase/tests/region_reports_verification
 
 ## Refinamento visual
 
-O modal geral mantém altura estável ao alternar os tipos de relatório, respeitando a tela e com rolagem interna quando necessário. Os selects reutilizam os controles compartilhados, com borda azul de 1px e sem sombra. O rodapé mantém apenas o download; X/Esc fecham o modal. No fluxo dos detalhes permanece o retorno aos detalhes. Os textos explicativos sobre WhatsApp, A4 e acesso foram retirados da interface; as regras continuam aplicadas.
+O modal geral mantém altura estável ao alternar os tipos de relatório, respeitando a tela e com rolagem interna quando necessário. Os selects reutilizam os controles compartilhados, com a borda cinza anterior (#D9DEEA) de 1px; somente no foco a borda muda para azul (#415BA5), sem sombra nem contorno adicional. O rodapé mantém apenas o download; X/Esc fecham o modal. No fluxo dos detalhes permanece o retorno aos detalhes. Os textos explicativos sobre WhatsApp, A4 e acesso foram retirados da interface; as regras continuam aplicadas.
 
 O PDF simplificado usa “Lista de Regionais”, contagem e coluna “Telefone”. A ficha omite a situação da regional e apresenta “CONGREGAÇÕES VINCULADAS · quantidade”. O filtro padrão de ativas e inativas não é impresso; filtros específicos continuam identificados discretamente. O Excel mantém sua apresentação anterior.
 
