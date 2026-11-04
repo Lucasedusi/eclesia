@@ -13,6 +13,17 @@ test.describe("relatórios de regionais", () => {
     await page.getByRole("button", { name: "Relatórios de regionais", exact: true }).click();
     const modal = page.getByRole("dialog", { name: "Relatórios de regionais", exact: true });
     await expect(modal).toBeVisible();
+    await expect(modal).toHaveCSS("opacity", "1");
+    const before = await modal.boundingBox();
+    await modal.getByRole("radio", { name: /Ficha da regional/ }).check();
+    const after = await modal.boundingBox();
+    expect(after?.height).toBe(before?.height);
+    expect(after?.y).toBe(before?.y);
+    await expect(modal.getByRole("button", { name: "Fechar", exact: true })).toHaveCount(0);
+    await expect(modal.getByText(/O contato das congregações prioriza/)).toHaveCount(0);
+    await modal.getByRole("radio", { name: /Lista simplificada/ }).check();
+    await expect(modal.getByRole("combobox").first()).toHaveCSS("border-top-color", "rgb(65, 91, 165)");
+    await expect(modal.getByRole("combobox").first()).toHaveCSS("box-shadow", "none");
     await modal.screenshot({ path: testInfo.outputPath("modal-relatorios.png"), animations: "disabled" });
     let download = page.waitForEvent("download");
     await modal.getByRole("button", { name: "Baixar PDF", exact: true }).click();
@@ -27,7 +38,7 @@ test.describe("relatórios de regionais", () => {
       expect(workbook.getWorksheet("Regionais")!.rowCount).toBe(31);
       expect(workbook.getWorksheet("Regionais")!.getColumn(1).values).toContain("Regional de Teste 24");
     }
-    await modal.getByRole("button", { name: "Fechar", exact: true }).click();
+    await modal.getByRole("button", { name: "Fechar modal", exact: true }).click();
 
     await page.getByRole("textbox", { name: "Buscar em Regionais" }).fill(regionName!);
     await page.getByRole("button", { name: "Relatórios de regionais", exact: true }).click();
@@ -48,7 +59,7 @@ test.describe("relatórios de regionais", () => {
     let download = page.waitForEvent("download");
     await page.getByRole("button", { name: "Baixar PDF", exact: true }).click();
     expect((await download).suggestedFilename()).toMatch(/^ficha-regional-.*\.pdf$/);
-    await page.getByRole("button", { name: "Fechar", exact: true }).click();
+    await page.getByRole("button", { name: "Fechar modal", exact: true }).click();
     await page.getByRole("textbox", { name: "Buscar em Regionais" }).fill(regionName!);
     await page.getByRole("button", { name: `Ver detalhes de ${regionName}`, exact: true }).first().click();
     await page.getByRole("button", { name: "Imprimir / PDF", exact: true }).click();

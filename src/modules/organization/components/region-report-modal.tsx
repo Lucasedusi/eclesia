@@ -3,7 +3,6 @@
 import { useId, useRef, useState } from "react";
 import { Download, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Modal } from "@/components/ui/modal";
 import type { RegionReportOptions } from "../types/region-report.types";
 import * as S from "./region-report.styles";
 
@@ -57,8 +56,8 @@ export function RegionReportModal({ regions, initialRegion, filters, onClose }: 
 
   const selectedFormat = kind === "individual" ? "pdf" : format;
   return (
-    <Modal open title={initialRegion ? "Ficha da regional em PDF" : "Relatórios de regionais"} description={initialRegion?.name ?? "Escolha o relatório e o formato do arquivo."} icon={<FileText />} size="md" onClose={onClose} busy={busy}
-      footer={<S.Footer><Button variant="outline" onClick={onClose} disabled={busy}>{initialRegion ? "Voltar aos detalhes" : "Fechar"}</Button><Button onClick={() => void download()} loading={busy} disabled={busy || (kind === "individual" && !regionId)}><Download size={16} />{busy ? "Gerando relatório…" : selectedFormat === "pdf" ? "Baixar PDF" : "Baixar Excel"}</Button></S.Footer>}
+    <S.ReportModal $stableHeight={!initialRegion} open title={initialRegion ? "Ficha da regional em PDF" : "Relatórios de regionais"} description={initialRegion?.name ?? "Escolha o relatório e o formato do arquivo."} icon={<FileText />} size="md" onClose={onClose} busy={busy}
+      footer={<S.Footer>{initialRegion && <Button variant="outline" onClick={onClose} disabled={busy}>Voltar aos detalhes</Button>}<Button onClick={() => void download()} loading={busy} disabled={busy || (kind === "individual" && !regionId)}><Download size={16} />{busy ? "Gerando relatório…" : selectedFormat === "pdf" ? "Baixar PDF" : "Baixar Excel"}</Button></S.Footer>}
     >
       <S.Content aria-busy={busy}>
         {!initialRegion && <S.Options disabled={busy}><legend>Tipo de relatório</legend>
@@ -67,19 +66,17 @@ export function RegionReportModal({ regions, initialRegion, filters, onClose }: 
         </S.Options>}
         <S.Options disabled={busy}>
           {kind === "simplified" ? <>
-            <S.Field>Abrangência<select value={useFilters ? "FILTERED" : "ALL"} onChange={(e) => { const filtered = e.target.value === "FILTERED"; setUseFilters(filtered); setStatus(filtered ? validStatus(filters.status) : "ALL"); }}><option value="ALL">Todas as regionais</option><option value="FILTERED">Resultados filtrados na tela</option></select></S.Field>
+            <S.Field>Abrangência<S.SelectBox><S.SelectControl value={useFilters ? "FILTERED" : "ALL"} onChange={(e) => { const filtered = e.target.value === "FILTERED"; setUseFilters(filtered); setStatus(filtered ? validStatus(filters.status) : "ALL"); }}><option value="ALL">Todas as regionais</option><option value="FILTERED">Resultados filtrados na tela</option></S.SelectControl></S.SelectBox></S.Field>
             {useFilters && <S.Hint>{filters.search ? `Busca: ${filters.search}. ` : ""}Inclui todas as páginas dos resultados.</S.Hint>}
-            <S.Field>Situação das regionais<select value={status} onChange={(e) => setStatus(validStatus(e.target.value))}><option value="ALL">Ativas e inativas</option><option value="ACTIVE">Somente ativas</option><option value="INACTIVE">Somente inativas</option></select></S.Field>
-            <S.Field>Formato<select value={format} onChange={(e) => setFormat(e.target.value === "xlsx" ? "xlsx" : "pdf")}><option value="pdf">PDF · pronto para impressão</option><option value="xlsx">Excel · planilha .xlsx</option></select></S.Field>
+            <S.Field>Situação das regionais<S.SelectBox><S.SelectControl value={status} onChange={(e) => setStatus(validStatus(e.target.value))}><option value="ALL">Ativas e inativas</option><option value="ACTIVE">Somente ativas</option><option value="INACTIVE">Somente inativas</option></S.SelectControl></S.SelectBox></S.Field>
+            <S.Field>Formato<S.SelectBox><S.SelectControl value={format} onChange={(e) => setFormat(e.target.value === "xlsx" ? "xlsx" : "pdf")}><option value="pdf">PDF · pronto para impressão</option><option value="xlsx">Excel · planilha .xlsx</option></S.SelectControl></S.SelectBox></S.Field>
           </> : <>
-            {!initialRegion && <S.Field>Regional<select value={regionId} onChange={(e) => setRegionId(e.target.value)}><option value="">Selecione uma regional</option>{options.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}</select></S.Field>}
-            <S.Field>Situação das congregações<select value={congregationStatus} onChange={(e) => setCongregationStatus(validStatus(e.target.value))}><option value="ALL">Ativas e inativas</option><option value="ACTIVE">Somente ativas</option><option value="INACTIVE">Somente inativas</option></select></S.Field>
-            <S.Hint>O contato das congregações prioriza o WhatsApp. Quando não houver, será usado o telefone cadastrado.</S.Hint>
+            {!initialRegion && <S.Field>Regional<S.SelectBox><S.SelectControl value={regionId} onChange={(e) => setRegionId(e.target.value)}><option value="">Selecione uma regional</option>{options.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}</S.SelectControl></S.SelectBox></S.Field>}
+            <S.Field>Situação das congregações<S.SelectBox><S.SelectControl value={congregationStatus} onChange={(e) => setCongregationStatus(validStatus(e.target.value))}><option value="ALL">Ativas e inativas</option><option value="ACTIVE">Somente ativas</option><option value="INACTIVE">Somente inativas</option></S.SelectControl></S.SelectBox></S.Field>
           </>}
         </S.Options>
-        <S.Hint>{selectedFormat === "pdf" ? "Formato A4, com identidade da igreja. Abra o PDF baixado para imprimir. " : "Planilha com filtros e cabeçalhos fixos. "}Serão incluídos somente registros permitidos pelo seu acesso.</S.Hint>
         {feedback && <S.Feedback $error={feedback.error} role={feedback.error ? "alert" : "status"}>{feedback.message}</S.Feedback>}
       </S.Content>
-    </Modal>
+    </S.ReportModal>
   );
 }

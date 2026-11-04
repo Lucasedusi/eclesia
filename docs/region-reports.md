@@ -5,7 +5,7 @@
 Em **Estrutura Eclesiástica → Regionais**, o ícone de relatório ao lado de **Novo cadastro** abre as opções de exportação. O ícone também aparece para quem pode exportar, mesmo sem permissão para cadastrar.
 
 - **Lista simplificada:** nome da regional, coordenador e telefone do coordenador; download em PDF ou Excel (`.xlsx`). É possível incluir todas as regionais autorizadas ou os resultados filtrados na tela, incluindo todas as páginas, e selecionar ativas/inativas.
-- **Ficha da regional:** selecione uma regional para baixar seu PDF. Inclui coordenador, telefone, situação, descrição quando preenchida e as congregações vinculadas, com dirigente e contato. Também está disponível em **Detalhes da Regional → Imprimir / PDF**. Ao fechar a exportação, retorna aos detalhes.
+- **Ficha da regional:** selecione uma regional para baixar seu PDF. Inclui coordenador, telefone, descrição quando preenchida e as congregações vinculadas, com dirigente e contato. Também está disponível em **Detalhes da Regional → Imprimir / PDF**. Ao fechar a exportação, retorna aos detalhes.
 - Para imprimir, abra o PDF baixado e use a impressão do leitor de PDF.
 
 O contato de cada congregação segue **WhatsApp → Telefone → Não informado**. É o contato cadastrado da congregação, não um telefone pessoal do dirigente. O telefone do coordenador usa o campo próprio da regional.
@@ -54,3 +54,11 @@ node scripts/region-reports-local.mjs cleanup
 O servidor usa a porta 3219. O script aceita apenas Supabase local e mantém sessões e identificadores fictícios em `tmp/region-reports`, ignorado pelo Git. Execute `setup` uma vez por ciclo e `cleanup` ao terminar; não use esse fluxo para criar dados no projeto online.
 
 As verificações de banco estão em `supabase/tests/region_reports_verification.sql` (catálogo, somente leitura) e `supabase/tests/region_reports_scope.sql` (cenários fictícios locais em transação revertida).
+
+## Refinamento visual
+
+O modal geral mantém altura estável ao alternar os tipos de relatório, respeitando a tela e com rolagem interna quando necessário. Os selects reutilizam os controles compartilhados, com borda azul de 1px e sem sombra. O rodapé mantém apenas o download; X/Esc fecham o modal. No fluxo dos detalhes permanece o retorno aos detalhes. Os textos explicativos sobre WhatsApp, A4 e acesso foram retirados da interface; as regras continuam aplicadas.
+
+O PDF simplificado usa “Lista de Regionais”, contagem e coluna “Telefone”. A ficha omite a situação da regional e apresenta “CONGREGAÇÕES VINCULADAS · quantidade”. O filtro padrão de ativas e inativas não é impresso; filtros específicos continuam identificados discretamente. O Excel mantém sua apresentação anterior.
+
+Validação do refinamento: 722 testes, 5 cenários de navegador, lint, tipagem e build passaram. PDFs e telas desktop/móvel inspecionados; o teste de navegador confirma altura e posição invariáveis durante a alternância. Nenhuma mudança no banco.

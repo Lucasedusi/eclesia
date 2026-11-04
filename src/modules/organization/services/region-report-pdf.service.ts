@@ -8,7 +8,7 @@ export async function createRegionReportPdf(data: RegionReportDocument): Promise
   const document = await PDFDocument.create();
   const assets = await createChurchPdfAssets(document, data.church.logoDataUri);
   const { regular, bold } = assets;
-  const title = data.kind === "simplified" ? "Lista simplificada de regionais" : "Ficha da regional";
+  const title = data.kind === "simplified" ? "Lista de Regionais" : "Ficha da regional";
   const identity = data.region?.name ?? title;
   let page: PDFPage;
   let cursor = 0;
@@ -75,17 +75,19 @@ export async function createRegionReportPdf(data: RegionReportDocument): Promise
   paragraph(title.toLocaleUpperCase("pt-BR"), 18, bold);
   if (data.scopeLabel) paragraph(data.scopeLabel, 9, regular, PDF_COLORS.muted);
   if (data.kind === "simplified") {
-    paragraph(`${data.filters.join(" · ")} · ${data.regions.length} ${data.regions.length === 1 ? "regional" : "regionais"}`, 9, regular, PDF_COLORS.muted);
-    table(["Nome da regional", "Coordenador", "Telefone do coordenador"], data.regions.map((r) => [r.name, r.coordinatorName, r.coordinatorPhone]), "Nenhuma regional encontrada para este relatório.");
+    paragraph(`${data.regions.length} ${data.regions.length === 1 ? "regional" : "regionais"}`, 9, regular, PDF_COLORS.muted);
+    const activeFilters = data.filters.filter((filter) => filter !== "Ativas e inativas");
+    if (activeFilters.length) paragraph(activeFilters.join(" · "), 9, regular, PDF_COLORS.muted);
+    table(["Nome da regional", "Coordenador", "Telefone"], data.regions.map((r) => [r.name, r.coordinatorName, r.coordinatorPhone]), "Nenhuma regional encontrada para este relatório.");
   } else if (data.region) {
     const region = data.region;
     paragraph(region.name, 15, bold);
     paragraph(`Coordenador: ${region.coordinatorName}`);
     paragraph(`Telefone do coordenador: ${region.coordinatorPhone}`);
-    paragraph(`Situação: ${region.status === "ACTIVE" ? "Ativa" : "Inativa"}`, 9, regular, PDF_COLORS.muted);
     if (region.description) { heading("Descrição"); paragraph(region.description); }
-    heading("Congregações vinculadas");
-    paragraph(`${data.filters.join(" · ")} · ${data.congregations.length} ${data.congregations.length === 1 ? "congregação" : "congregações"}`, 9, regular, PDF_COLORS.muted);
+    heading(`Congregações vinculadas · ${data.congregations.length}`);
+    const activeFilters = data.filters.filter((filter) => !/^(Congregações: )?ativas e inativas$/i.test(filter));
+    if (activeFilters.length) paragraph(activeFilters.join(" · "), 9, regular, PDF_COLORS.muted);
     table(["Congregação", "Dirigente", "Telefone de contato"], data.congregations.map((c) => [`${c.name}${c.status === "INACTIVE" ? " (Inativa)" : ""}`, c.pastorName, c.contactPhone]), "Nenhuma congregação encontrada para este relatório.");
   }
   return finishChurchPdf(document, regular, data.issuedAt, title);

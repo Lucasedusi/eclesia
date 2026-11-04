@@ -28,7 +28,17 @@ describe("regional report documents", () => {
     expect(text).toContain("Maria de Oliveira");
     expect(text).toContain("Página 1 de 1");
     expect(text).toContain("04/11/2026");
-    if (kind === "individual") { expect(text).toContain("Congregação Central"); expect(text).toContain("Inativa"); }
+    if (kind === "individual") {
+      expect(text).toContain("Congregação Central");
+      expect(text).toContain(`CONGREGAÇÕES VINCULADAS · ${regionReportFixture(kind).congregations.length}`);
+      expect(text).not.toContain("Situação:");
+      expect(text).not.toContain("Congregações: ativas e inativas");
+    } else {
+      expect(pdf.getTitle()).toBe("Lista de Regionais");
+      expect(text).toContain("TELEFONE");
+      expect(text).not.toContain("TELEFONE DO COORDENADOR");
+      expect(text).not.toContain("Ativas e inativas");
+    }
     expect(Buffer.from(bytes).toString("latin1")).toContain("/FontFile2");
     await saveQa(`${kind}.pdf`, bytes);
   });

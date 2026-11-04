@@ -1,6 +1,27 @@
 "use client";
 
 import styled from "styled-components";
+import { Modal } from "@/components/ui/modal";
+import { SelectControl as SharedSelectControl, SelectBox } from "@/components/ui/select.styles";
+
+export { SelectBox };
+export const ReportModal = styled(Modal)<{ $stableHeight: boolean }>`
+  ${({ $stableHeight }) => $stableHeight && `
+    height: min(700px, calc(100dvh - 40px));
+    > div:nth-of-type(2) { flex: 1; }
+    @media (max-width: 640px) {
+      height: min(740px, calc(100dvh - 24px));
+    }
+  `}
+`;
+export const SelectControl = styled(SharedSelectControl)`
+  border-color: ${({ theme }) => theme.colors.brand.primary};
+  box-shadow: none;
+  &:focus-visible {
+    outline: 1px solid ${({ theme }) => theme.colors.brand.primary};
+    outline-offset: 2px;
+  }
+`;
 
 export const Content = styled.div`
   display: grid;
@@ -36,8 +57,6 @@ export const Field = styled.label`
   font-size: 12px;
   font-weight: 600;
   color: ${({ theme }) => theme.colors.text.body};
-  select { width: 100%; min-width: 0; min-height: 44px; border: 1px solid #d9deea; border-radius: 6px; background: #fff; padding: 8px 10px; color: inherit; font: inherit; }
-  select:focus-visible { outline: 2px solid ${({ theme }) => theme.colors.brand.primary}; outline-offset: 2px; }
 `;
 export const Hint = styled.p`
   margin: 0;
