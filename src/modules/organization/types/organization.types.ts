@@ -108,6 +108,7 @@ export type OrganizationStats = {
 
 export type OrganizationManagement = {
   regions: boolean;
+  regionReports: boolean;
   congregations: boolean;
   congregationDocumentsView: boolean;
   congregationDocumentsManage: boolean;

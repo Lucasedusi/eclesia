@@ -13,6 +13,7 @@ import {
   Paperclip,
   Pencil,
   Power,
+  Printer,
   Search,
   UserRound,
 } from "lucide-react";
@@ -42,6 +43,8 @@ type LoadState<T> =
 type RegionDetailsModalProps = {
   target: OrganizationDetailsTarget;
   canManage: boolean;
+  canExport: boolean;
+  onPrint: () => void;
   onClose: () => void;
   onEdit: (region: RegionItem) => void;
   onOpenCongregation: (target: OrganizationDetailsTarget) => void;
@@ -167,6 +170,8 @@ function Info({
 export function RegionDetailsModal({
   target,
   canManage,
+  canExport,
+  onPrint,
   onClose,
   onEdit,
   onOpenCongregation,
@@ -235,9 +240,7 @@ export function RegionDetailsModal({
       size="xl"
       footer={
         <S.FooterActions>
-          <Button variant="outline" onClick={onClose}>
-            Fechar
-          </Button>
+          {canExport ? <Button variant="outline" onClick={onPrint} disabled={!details}><Printer size={15} /> Imprimir / PDF</Button> : <Button variant="outline" onClick={onClose}>Fechar</Button>}
           {canManage && details ? (
             <Button onClick={() => onEdit(details)}>
               <Pencil size={15} /> Editar Regional

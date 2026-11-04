@@ -1,74 +1,15 @@
 import "server-only";
 
-import { readFile } from "node:fs/promises";
-import path from "node:path";
-import fontkit from "@pdf-lib/fontkit";
-import { PDFDocument, type PDFFont, type PDFImage, type PDFPage, rgb } from "pdf-lib";
-import sharp from "sharp";
+import { PDFDocument, type PDFPage } from "pdf-lib";
+import { CONTENT_BOTTOM as BOTTOM, CONTENT_WIDTH, createChurchPdfAssets, drawChurchHeader, finishChurchPdf, PAGE_HEIGHT as HEIGHT, PAGE_MARGIN as MARGIN, PAGE_WIDTH as WIDTH, PDF_COLORS, wrapPdfText as wrap } from "@/lib/pdf/church-document";
 import type { MemberSheetDocument } from "../types/member-sheet.types";
 
-const WIDTH = 595.28;
-const HEIGHT = 841.89;
-const MARGIN = 36;
-const CONTENT_WIDTH = WIDTH - MARGIN * 2;
-const BOTTOM = HEIGHT - 57;
-const NAVY = rgb(0.04, 0.16, 0.31);
-const GOLD = rgb(0.86, 0.69, 0.23);
-const MUTED = rgb(0.36, 0.42, 0.51);
-const BORDER = rgb(0.80, 0.83, 0.87);
-const PAPER = rgb(0.973, 0.974, 0.977);
-const WHITE = rgb(1, 1, 1);
-
-let fontBytes: Promise<Buffer[]> | undefined;
-function loadFonts() {
-  fontBytes ??= Promise.all([
-    readFile(path.join(process.cwd(), "public/fonts/credential/Rubik-400.ttf")),
-    readFile(path.join(process.cwd(), "public/fonts/credential/Rubik-600.ttf")),
-  ]);
-  return fontBytes;
-}
-
-function wrap(text: string, font: PDFFont, size: number, width: number): string[] {
-  const lines: string[] = [];
-  for (const paragraph of text.replace(/→/g, "para").replace(/\r\n?/g, "\n").replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, "").split("\n")) {
-    let line = "";
-    for (const word of paragraph.trim().split(/\s+/).filter(Boolean)) {
-      const candidate = line ? `${line} ${word}` : word;
-      if (font.widthOfTextAtSize(candidate, size) <= width) { line = candidate; continue; }
-      if (line) lines.push(line);
-      line = "";
-      // Long e-mail addresses and unbroken values must wrap too.
-      for (const character of word) {
-        if (line && font.widthOfTextAtSize(line + character, size) > width) {
-          lines.push(line);
-          line = "";
-        }
-        line += character;
-      }
-    }
-    lines.push(line);
-  }
-  return lines.length ? lines : [""];
-}
-
-async function embedLogo(document: PDFDocument, dataUri: string | null): Promise<PDFImage | null> {
-  if (!dataUri) return null;
-  const match = /^data:image\/(?:png|jpeg|webp);base64,([A-Za-z0-9+/=]+)$/.exec(dataUri);
-  if (!match) return null;
-  try {
-    const png = await sharp(Buffer.from(match[1], "base64"), { limitInputPixels: 20_000_000 })
-      .resize(600, 600, { fit: "inside", withoutEnlargement: true }).png().toBuffer();
-    return await document.embedPng(png);
-  } catch { return null; }
-}
+const { navy: NAVY, gold: GOLD, muted: MUTED, border: BORDER, paper: PAPER, white: WHITE } = PDF_COLORS;
 
 export async function createMemberSheetPdf(data: MemberSheetDocument): Promise<Uint8Array> {
   const document = await PDFDocument.create();
-  document.registerFontkit(fontkit);
-  const [regularBytes, boldBytes] = await loadFonts();
-  const regular = await document.embedFont(regularBytes, { subset: true });
-  const bold = await document.embedFont(boldBytes, { subset: true });
-  const logo = await embedLogo(document, data.church.logoDataUri);
+  const assets = await createChurchPdfAssets(document, data.church.logoDataUri);
+  const { regular, bold } = assets;
   let page!: PDFPage;
   let cursor = 0;
 
@@ -79,25 +20,7 @@ export async function createMemberSheetPdf(data: MemberSheetDocument): Promise<U
   function newPage(first = false) {
     page = document.addPage([WIDTH, HEIGHT]);
     if (first) {
-      const left = logo ? 115 : MARGIN;
-      const width = WIDTH - MARGIN - left;
-      const name = wrap(data.church.name.toLocaleUpperCase("pt-BR"), bold, 14, width);
-      const address = wrap(data.church.address, regular, 9, width);
-      const contacts = wrap([data.church.phone && `Fone: ${data.church.phone}`, data.church.document && `CNPJ: ${data.church.document}`].filter(Boolean).join(" · "), regular, 9, width);
-      const headerHeight = Math.max(94, 22 + name.length * 17 + 8 + address.length * 12 + 5 + contacts.length * 12 + 15);
-      page.drawRectangle({ x: 0, y: HEIGHT - headerHeight, width: WIDTH, height: headerHeight, color: NAVY });
-      page.drawRectangle({ x: 0, y: HEIGHT - headerHeight - 6, width: WIDTH, height: 6, color: GOLD });
-      if (logo) {
-        page.drawCircle({ x: 68, y: HEIGHT - headerHeight / 2, size: 32, color: WHITE });
-        const dimensions = logo.scaleToFit(55, 55);
-        page.drawImage(logo, { x: 68 - dimensions.width / 2, y: HEIGHT - headerHeight / 2 - dimensions.height / 2, ...dimensions });
-      }
-      let y = 22;
-      for (const line of name) { draw(line, left, y, 14, bold, WHITE); y += 17; }
-      y += 8;
-      for (const line of address) { draw(line, left, y, 9, regular, WHITE); y += 12; }
-      y += 5;
-      for (const line of contacts) { draw(line, left, y, 9, regular, WHITE); y += 12; }
+      const headerHeight = drawChurchHeader(page, data.church, assets);
       cursor = headerHeight + 32;
       for (const line of wrap(data.member.fullName.toLocaleUpperCase("pt-BR"), bold, 20, CONTENT_WIDTH)) {
         draw(line, MARGIN, cursor, 20, bold); cursor += 25;
@@ -221,20 +144,5 @@ export async function createMemberSheetPdf(data: MemberSheetDocument): Promise<U
     });
   }
 
-  const issued = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short", timeZone: "America/Sao_Paulo" }).format(new Date(data.issuedAt));
-  const pages = document.getPages();
-  pages.forEach((current, i) => {
-    page = current;
-    page.drawRectangle({ x: 0, y: 0, width: WIDTH, height: 13, color: NAVY });
-    draw(`Emitido em ${issued}`, MARGIN, HEIGHT - 36, 8, regular, MUTED);
-    const label = `Página ${i + 1} de ${pages.length}`;
-    draw(label, WIDTH - MARGIN - regular.widthOfTextAtSize(label, 8), HEIGHT - 36, 8, regular, MUTED);
-  });
-  document.setTitle("Ficha do membro");
-  document.setAuthor("Eclésias");
-  document.setCreator("Eclésias");
-  document.setProducer("Eclésias");
-  document.setCreationDate(new Date(data.issuedAt));
-  document.setModificationDate(new Date(data.issuedAt));
-  return document.save({ useObjectStreams: false });
+  return finishChurchPdf(document, regular, data.issuedAt, "Ficha do membro");
 }

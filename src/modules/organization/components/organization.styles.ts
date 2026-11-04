@@ -25,6 +25,13 @@ export const Module = styled.div`
   animation: ${enter} 240ms ease both;
 `;
 
+export const HeaderActions = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+`;
+
 export const Tabs = styled.nav`
   display: flex;
   width: fit-content;

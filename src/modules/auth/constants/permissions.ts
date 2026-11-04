@@ -4,6 +4,7 @@ export const PERMISSIONS = {
   churchUpdate: "church.update",
   organizationView: "organization.view",
   regionsManage: "regions.manage",
+  regionsReportsExport: "regions.reports.export",
   congregationsManage: "congregations.manage",
   congregationDocumentsView: "congregation_documents.view",
   congregationDocumentsManage: "congregation_documents.manage",
