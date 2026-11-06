@@ -81,7 +81,7 @@ export async function loadRegionReportDocument(context: AuthContext, options: Re
       });
     }
     const [churchResult, settingsResult, congregations] = await Promise.all([
-      client.from("churches").select("name, logo_url, address, number, district, city, state, phone, document").eq("id", churchId).is("deleted_at", null).maybeSingle(),
+      client.from("churches").select("name, logo_url, address, number, district, city, state, phone, document, senior_pastor_name, senior_pastor_spouse_name").eq("id", churchId).is("deleted_at", null).maybeSingle(),
       client.from("app_settings").select("display_church_name, logo_url").eq("church_id", churchId).is("deleted_at", null).maybeSingle(),
       options.kind === "individual" ? allRows((start, end) => {
         let query = client.from("congregations").select(CONGREGATION_SELECT, { count: "exact" })
@@ -98,6 +98,7 @@ export async function loadRegionReportDocument(context: AuthContext, options: Re
       kind: options.kind, issuedAt: new Date().toISOString(),
       church: {
         name: settings?.display_church_name?.trim() || church.name || context.church.name,
+        pastorNames: [church.senior_pastor_name, church.senior_pastor_spouse_name].map((name) => name?.trim() || "").filter(Boolean),
         logoDataUri: await loadChurchLogoDataUri(settings?.logo_url || church.logo_url || context.church.logoUrl, churchId, client),
         address: [church.address, church.number, church.district, church.city, church.state].filter(Boolean).join(", "),
         phone: formatBrazilPhone(church.phone ?? ""), document: formatCnpj(church.document ?? ""),

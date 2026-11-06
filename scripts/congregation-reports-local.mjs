@@ -42,6 +42,7 @@ if (command === "setup") {
   writeFileSync(`${root}/fixture.json`, JSON.stringify({ ...ids, users }), { mode: 0o600 });
   sql(`begin;
     insert into public.churches(id, name, phone, city, state) values ('${ids.church}', 'Igreja Fictícia - Relatórios', '1133334444', 'São Paulo', 'SP'), ('${ids.otherChurch}', 'Outra Igreja Fictícia', null, null, null);
+    update public.churches set senior_pastor_name = 'Paulo de Teste', senior_pastor_spouse_name = 'Ana de Teste' where id = '${ids.church}';
     insert into public.regions(id, church_id, name, coordinator_name, coordinator_phone, description) values
       ('${ids.region}', '${ids.church}', '${env.E2E_REPORT_REGION_NAME}', 'Coordenadora de Teste', '11922223333', 'Descrição de teste da regional central.'),
       ('${ids.otherRegion}', '${ids.otherChurch}', 'Regional de outra igreja', 'Não exportar', '11911112222', null);

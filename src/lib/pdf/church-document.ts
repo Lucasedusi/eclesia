@@ -15,7 +15,7 @@ export const PDF_COLORS = {
   navy: rgb(0.04, 0.16, 0.31), gold: rgb(0.86, 0.69, 0.23), muted: rgb(0.36, 0.42, 0.51),
   border: rgb(0.80, 0.83, 0.87), paper: rgb(0.973, 0.974, 0.977), white: rgb(1, 1, 1),
 };
-export type ChurchDocumentIdentity = { name: string; logoDataUri: string | null; address: string; phone: string; document: string };
+export type ChurchDocumentIdentity = { name: string; logoDataUri: string | null; address: string; phone: string; document: string; pastorNames?: string[] };
 export type ChurchPdfAssets = { regular: PDFFont; bold: PDFFont; logo: PDFImage | null };
 
 let fontBytes: Promise<Buffer[]> | undefined;
@@ -65,14 +65,33 @@ export async function createChurchPdfAssets(document: PDFDocument, logoDataUri: 
   return { regular, bold, logo };
 }
 
+export function churchPastorsLabel(church: ChurchDocumentIdentity): string {
+  const names = (church.pastorNames ?? []).map((name) => name.trim()).filter(Boolean);
+  return names.length ? `${names.length === 1 ? "Pastor" : "Pastores"}: ${names.join(" e ")}` : "";
+}
+
+export function drawChurchWatermark(page: PDFPage, { logo }: ChurchPdfAssets) {
+  if (!logo) return;
+  const dimensions = logo.scaleToFit(page.getWidth() * 0.62, page.getHeight() * 0.48);
+  page.drawImage(logo, {
+    x: (page.getWidth() - dimensions.width) / 2,
+    y: (page.getHeight() - dimensions.height) / 2,
+    ...dimensions,
+    opacity: 0.05,
+  });
+}
+
 export function drawChurchHeader(page: PDFPage, church: ChurchDocumentIdentity, { regular, bold, logo }: ChurchPdfAssets) {
   const pageWidth = page.getWidth(), pageHeight = page.getHeight();
   const left = logo ? 115 : PAGE_MARGIN;
   const width = pageWidth - PAGE_MARGIN - left;
   const name = wrapPdfText(church.name.toLocaleUpperCase("pt-BR"), bold, 14, width);
+  const pastorsLabel = churchPastorsLabel(church);
+  const pastors = pastorsLabel ? wrapPdfText(pastorsLabel, regular, 10, width) : [];
   const address = wrapPdfText(church.address, regular, 9, width);
   const contacts = wrapPdfText([church.phone && `Fone: ${church.phone}`, church.document && `CNPJ: ${church.document}`].filter(Boolean).join(" · "), regular, 9, width);
-  const height = Math.max(94, 22 + name.length * 17 + 8 + address.length * 12 + 5 + contacts.length * 12 + 15);
+  const pastoralHeight = pastors.length ? 5 + pastors.length * 13 : 0;
+  const height = Math.max(94, 22 + name.length * 17 + pastoralHeight + 8 + address.length * 12 + 5 + contacts.length * 12 + 15);
   page.drawRectangle({ x: 0, y: pageHeight - height, width: pageWidth, height, color: PDF_COLORS.navy });
   page.drawRectangle({ x: 0, y: pageHeight - height - 6, width: pageWidth, height: 6, color: PDF_COLORS.gold });
   if (logo) {
@@ -82,6 +101,8 @@ export function drawChurchHeader(page: PDFPage, church: ChurchDocumentIdentity, 
   }
   let top = 22;
   for (const line of name) { page.drawText(line, { x: left, y: pageHeight - top - 14, size: 14, font: bold, color: PDF_COLORS.white }); top += 17; }
+  if (pastors.length) top += 5;
+  for (const line of pastors) { page.drawText(line, { x: left, y: pageHeight - top - 10, size: 10, font: regular, color: PDF_COLORS.white }); top += 13; }
   top += 8;
   for (const line of address) { page.drawText(line, { x: left, y: pageHeight - top - 9, size: 9, font: regular, color: PDF_COLORS.white }); top += 12; }
   top += 5;

@@ -1,7 +1,7 @@
 import "server-only";
 
 import { PDFDocument, rgb, type PDFFont, type PDFPage } from "pdf-lib";
-import { createChurchPdfAssets, drawChurchHeader, finishChurchPdf, PAGE_HEIGHT, PAGE_MARGIN, PAGE_WIDTH, PDF_COLORS, wrapPdfText } from "@/lib/pdf/church-document";
+import { createChurchPdfAssets, churchPastorsLabel, drawChurchHeader, drawChurchWatermark, finishChurchPdf, PAGE_HEIGHT, PAGE_MARGIN, PAGE_WIDTH, PDF_COLORS, wrapPdfText } from "@/lib/pdf/church-document";
 import type { CongregationReportDocument, ReportCongregation } from "../types/congregation-report.types";
 
 export async function createCongregationReportPdf(data: CongregationReportDocument): Promise<Uint8Array> {
@@ -18,10 +18,13 @@ export async function createCongregationReportPdf(data: CongregationReportDocume
   }
   function newPage(first = false) {
     page = document.addPage([width, height]);
+    drawChurchWatermark(page, assets);
     if (first) cursor = drawChurchHeader(page, data.church, assets) + 28;
     else {
       cursor = 28;
       for (const line of wrapPdfText(data.church.name, bold, 10, contentWidth)) { draw(line, PAGE_MARGIN, cursor, 10, bold); cursor += 13; }
+      const pastors = churchPastorsLabel(data.church);
+      if (pastors) for (const line of wrapPdfText(pastors, regular, 9, contentWidth)) { draw(line, PAGE_MARGIN, cursor, 9); cursor += 12; }
       for (const line of wrapPdfText(title, regular, 10, contentWidth)) { draw(line, PAGE_MARGIN, cursor + 5); cursor += 13; }
       cursor += 17;
       page.drawRectangle({ x: PAGE_MARGIN, y: height - cursor, width: contentWidth, height: 2, color: PDF_COLORS.gold });
@@ -78,7 +81,7 @@ export async function createCongregationReportPdf(data: CongregationReportDocume
         const capacity = Math.max(1, Math.floor((bottom - cursor - 18) / 13));
         const portions = cells.map((c) => c.splice(0, capacity));
         const h = Math.max(36, Math.max(...portions.map((c) => c.length)) * 13 + 18);
-        page.drawRectangle({ x: PAGE_MARGIN, y: height - cursor - h, width: contentWidth, height: h, color: index % 2 === 0 ? PDF_COLORS.paper : PDF_COLORS.white });
+        page.drawRectangle({ x: PAGE_MARGIN, y: height - cursor - h, width: contentWidth, height: h, color: index % 2 === 0 ? PDF_COLORS.paper : PDF_COLORS.white, opacity: assets.logo ? 0.3 : 1 });
         let x = PAGE_MARGIN;
         portions.forEach((lines, i) => { lines.forEach((line, n) => draw(line.text, x + padding(i), cursor + 9 + n * 13, line.size, line.font, line.muted ? PDF_COLORS.muted : PDF_COLORS.navy)); x += widths[i]; });
         cursor += h;

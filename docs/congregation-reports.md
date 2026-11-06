@@ -67,3 +67,11 @@ node scripts/congregation-reports-local.mjs cleanup
 Porta 3220. O script aceita somente Supabase local. Sessões e identificadores fictícios ficam em `tmp/congregation-reports`, ignorado pelo Git. Execute `setup` uma vez por ciclo e `cleanup` ao finalizar. Os testes de banco estão em `supabase/tests/congregation_reports_verification.sql` (somente leitura) e `supabase/tests/congregation_reports_scope.sql` (dados sintéticos locais em transação revertida).
 
 Revisão da ficha: cobertura de três colunas, diferença entre cores de rótulos/valores, presença de cônjuge e WhatsApp e ausência de título Identificação/e-mail. Build não repetido nesta revisão de conteúdo e diagramação, sem alterações de rotas, dependências ou limites entre servidor e cliente.
+
+## Marca d’água e cabeçalho pastoral
+
+Os PDFs de listagem e ficha usam a logo cadastrada como marca d’água centralizada em todas as páginas, com proporção preservada e opacidade de 5%. As linhas das tabelas deixam o fundo aparecer discretamente, mantendo texto e cabeçalhos em contraste integral. Sem logo válida, a exportação continua normalmente, sem marca d’água.
+
+O cabeçalho mostra os nomes cadastrados em Pastor Presidente e Cônjuge do Pastor Presidente logo abaixo da igreja, inclusive nas páginas de continuação. Campos vazios são omitidos; nomes extensos quebram linha. A leitura usa a igreja do contexto autenticado e mantém os filtros de exclusão lógica. Nenhuma migração é necessária.
+
+Validação: 793 testes, lint e tipagem aprovados; 9 cenários de navegador de congregações e regionais aprovados. PDFs em retrato, paisagem e múltiplas páginas renderizados e inspecionados. O PDF baixado no fluxo local contém os nomes pastorais cadastrados. Build não repetido: mudança restrita à consulta de campos existentes e à renderização, sem mudanças em rotas, configuração, dependências ou limites entre servidor e cliente. Não houve alterações no banco online.

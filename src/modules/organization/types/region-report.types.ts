@@ -6,6 +6,7 @@ export type ReportChurchIdentity = {
   address: string;
   phone: string;
   document: string;
+  pastorNames?: string[];
 };
 
 export type ReportRegion = {

@@ -64,3 +64,11 @@ O PDF simplificado usa “Lista de Regionais”, contagem e coluna “Telefone�
 Validação do refinamento: 722 testes, 5 cenários de navegador, lint, tipagem e build passaram. PDFs e telas desktop/móvel inspecionados; o teste de navegador confirma altura e posição invariáveis durante a alternância. Nenhuma mudança no banco.
 
 Validação da revisão de título e numeração: 723 testes passaram, incluindo sequência de 1 a 90 nos dois PDFs com múltiplas páginas, fontes distintas para título/quantidade, espaçamento e limites de página. Lint, tipagem e os 5 cenários de navegador passaram; PDFs renderizados e inspecionados. Build não repetido nesta revisão restrita ao conteúdo dos PDFs, sem mudanças de rotas, configuração, dependências ou limites entre servidor e cliente.
+
+## Marca d’água e cabeçalho pastoral
+
+Os PDFs de listagem e ficha usam a logo cadastrada como marca d’água centralizada em todas as páginas, com proporção preservada e opacidade de 5%. As linhas das tabelas deixam o fundo aparecer discretamente, mantendo texto e cabeçalhos em contraste integral. Sem logo válida, a exportação continua normalmente, sem marca d’água.
+
+O cabeçalho mostra os nomes cadastrados em Pastor Presidente e Cônjuge do Pastor Presidente logo abaixo da igreja, inclusive nas páginas de continuação. Campos vazios são omitidos; nomes extensos quebram linha. A leitura usa a igreja do contexto autenticado e mantém os filtros de exclusão lógica. Nenhuma migração é necessária.
+
+Validação: 793 testes, lint e tipagem aprovados; 9 cenários de navegador de congregações e regionais aprovados. PDFs em retrato, paisagem e múltiplas páginas renderizados e inspecionados. O PDF baixado no fluxo local contém os nomes pastorais cadastrados. Build não repetido: mudança restrita à consulta de campos existentes e à renderização, sem mudanças em rotas, configuração, dependências ou limites entre servidor e cliente. Não houve alterações no banco online.

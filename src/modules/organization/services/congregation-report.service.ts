@@ -73,7 +73,7 @@ export async function loadCongregationReportDocument(context: AuthContext, optio
       });
     }
     const [churchResult, settingsResult] = await Promise.all([
-      client.from("churches").select("name, logo_url, address, number, district, city, state, phone, document").eq("id", churchId).is("deleted_at", null).maybeSingle(),
+      client.from("churches").select("name, logo_url, address, number, district, city, state, phone, document, senior_pastor_name, senior_pastor_spouse_name").eq("id", churchId).is("deleted_at", null).maybeSingle(),
       client.from("app_settings").select("display_church_name, logo_url").eq("church_id", churchId).is("deleted_at", null).maybeSingle(),
     ]);
     if (churchResult.error || !churchResult.data || settingsResult.error) throw new CongregationReportError("CONGREGATION_REPORT_LOAD_FAILED");
@@ -102,6 +102,7 @@ export async function loadCongregationReportDocument(context: AuthContext, optio
     return { kind: options.kind, issuedAt: new Date().toISOString(), fields, filters, congregations,
       scopeLabel: scope === "CHURCH" ? "" : "Visão restrita: somente registros autorizados para o seu acesso.",
       church: { name: settings?.display_church_name?.trim() || church.name || context.church.name,
+        pastorNames: [church.senior_pastor_name, church.senior_pastor_spouse_name].map((name) => name?.trim() || "").filter(Boolean),
         logoDataUri: await loadChurchLogoDataUri(settings?.logo_url || church.logo_url || context.church.logoUrl, churchId, client),
         address: [church.address, church.number, church.district, church.city, church.state].filter(Boolean).join(", "), phone: formatBrazilPhone(church.phone ?? ""), document: formatCnpj(church.document ?? "") },
     };

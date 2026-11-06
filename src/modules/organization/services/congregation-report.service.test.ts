@@ -50,6 +50,15 @@ function database(overrides: Record<string, Row[] > = {}, options: { errorTable?
 beforeEach(() => { vi.clearAllMocks(); mocks.logo.mockResolvedValue(null); mocks.pdf.mockResolvedValue(new Uint8Array([37, 80, 68, 70])); mocks.workbook.mockResolvedValue(Buffer.from("xlsx")); });
 
 describe("congregation report data", () => {
+  it("loads only the active church's registered pastoral names", async () => {
+    const db = database({ churches: [
+      { id: "other", name: "Other church", senior_pastor_name: "Other pastor", deleted_at: null },
+      { id: churchId, name: "Igreja teste", senior_pastor_name: "  Paulo Silva  ", senior_pastor_spouse_name: "Ana Silva", deleted_at: null },
+    ] });
+    const doc = await loadCongregationReportDocument(context, simple);
+    expect(doc.church.pastorNames).toEqual(["Paulo Silva", "Ana Silva"]);
+    expect(db.calls.find((call) => call.table === "churches")!.select).toContain("senior_pastor_name, senior_pastor_spouse_name");
+  });
   it.each(["organization.view", "congregations.reports.export"])("requires %s before data reads", async (permission) => {
     database();
     await expect(loadCongregationReportDocument({ ...context, permissions: context.permissions.filter((p) => p !== permission) }, simple)).rejects.toThrow("CONGREGATION_REPORT_PERMISSION_DENIED");
