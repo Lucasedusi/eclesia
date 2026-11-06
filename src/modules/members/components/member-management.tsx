@@ -22,6 +22,7 @@ import {
   CircleUserRound,
   Eye,
   FileSpreadsheet,
+  FileChartColumn,
   Loader2,
   MoreHorizontal,
   Pencil,
@@ -63,6 +64,11 @@ import {
   memberTypeLabels,
 } from "../utils/member-formatters";
 import * as S from "./members.styles";
+
+const MemberReportModal = dynamic(
+  () => import("./member-report-modal").then((module) => module.MemberReportModal),
+  { loading: () => <ModalLoading title="Preparando listagem de membros" description="Carregando as opções do relatório." /> },
+);
 
 const MemberDetailsModal = dynamic(
   () =>
@@ -172,6 +178,7 @@ export function MemberManagement({
   );
   const [pending, startTransition] = useTransition();
   const [detailsId, setDetailsId] = useState<string | null>(null);
+  const [reportOpen, setReportOpen] = useState(false);
   const [menuMember, setMenuMember] = useState<MemberListItem | null>(null);
   const [lifecycle, setLifecycle] = useState<MemberLifecycleInput | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
@@ -427,14 +434,19 @@ export function MemberManagement({
               </p>
             </div>
             <S.HeaderActions>
+              {capabilities.exportSheet && (
+                <S.HeaderActionButton type="button" title="Relatório" onClick={() => setReportOpen(true)}>
+                  <FileChartColumn aria-hidden="true" />
+                  <span>Relatório</span>
+                </S.HeaderActionButton>
+              )}
               {capabilities.import && (
                 <S.HeaderActionLink
                   href="/membros/importar"
-                  $iconOnly
-                  title="Importar planilha"
-                  aria-label="Importar planilha"
+                  title="Cadastro em Lote"
                 >
                   <FileSpreadsheet aria-hidden="true" />
+                  <span>Cadastro em Lote</span>
                   <LinkPendingIndicator />
                 </S.HeaderActionLink>
               )}
@@ -762,6 +774,8 @@ export function MemberManagement({
           </S.Pagination>
         </S.Panel>
       </S.Module>
+
+      {reportOpen && <MemberReportModal params={params} capabilities={capabilities} onClose={() => setReportOpen(false)} />}
 
       {detailsId && (
         <MemberDetailsModal

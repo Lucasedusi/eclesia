@@ -11,10 +11,16 @@ export function memberSheetFixture(): MemberSheetDocument {
       { title: "Identificação e vínculo", fields: fields([
         ["Situação", "Ativo"], ["Nascimento", "10/02/1990"], ["Sexo", "Feminino"],
         ["Estado civil", "Casada"], ["CPF", "Não informado"], ["RG / órgão", "Não informado"],
+        ["Nacionalidade", "Brasileira"], ["Naturalidade / UF", "Goiânia / GO"],
+        ["Profissão", "Professora"], ["Escolaridade", "Ensino superior completo"],
       ]) },
-      { title: "Contato, endereço e família", fields: fields([
-        ["WhatsApp", "(62) 99999-0000"], ["E-mail", "ana@example.invalid"], ["Endereço", "Rua de Exemplo, 50, Setor Central, Goiânia, GO, 74000-000"],
+      { title: "Contato e família", fields: fields([
+        ["WhatsApp", "(62) 99999-0000"], ["E-mail", "ana@example.invalid"],
         ["Pai", "Antônio de Oliveira"], ["Mãe", "Maria de Oliveira"], ["Cônjuge", "João de Exemplo"],
+      ]) },
+      { title: "Endereço", fields: fields([
+        ["Logradouro e número", "Rua de Exemplo, 50"], ["Complemento", "Casa 2"], ["Bairro", "Setor Central"],
+        ["Cidade", "Goiânia"], ["Estado", "GO"], ["CEP", "74000-000"],
       ]) },
       { title: "Histórico de fé", fields: fields([
         ["Conversão", "10/01/2010"], ["Batismo nas águas", "20/02/2011"], ["Igreja do batismo", "Assembleia de Deus"],

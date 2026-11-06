@@ -107,9 +107,30 @@ export const PanelHeader = styled.header`
 `;
 export const HeaderActions = styled.div`
   display: flex;
-  flex: 0 0 auto;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
+`;
+export const HeaderActionButton = styled.button`
+  display: inline-flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 0 22px;
+  border: 1px solid #d9deea;
+  border-radius: ${({ theme }) => theme.radius.sm};
+  background: #fff;
+  color: #475467;
+  font-size: calc(13px + var(--eclesia-font-size-adjustment, 0px));
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  transition: 150ms ease;
+  svg { width: 17px; height: 17px; }
+  &:hover { border-color: ${({ theme }) => theme.colors.brand.primary}; background: #f6f8ff; color: ${({ theme }) => theme.colors.brand.primary}; }
+  &:focus-visible { outline: 2px solid ${({ theme }) => theme.colors.brand.primary}; outline-offset: 2px; }
 `;
 export const HeaderActionLink = styled(Link)<{
   $primary?: boolean;

@@ -73,7 +73,7 @@ describe("loadMemberSheetDocument", () => {
     expect(result.history).toBeNull();
     expect(result.events).toBeNull();
     expect(result.groups[0].fields).toContainEqual({ label: "Estado civil", value: "Casada" });
-    expect(result.groups[2].fields).toContainEqual({ label: "Batismo com Espírito Santo", value: "Sim · Data não informada" });
+    expect(result.groups.find((group) => group.title === "Histórico de fé")?.fields).toContainEqual({ label: "Batismo com Espírito Santo", value: "Sim · Data não informada" });
     expect(JSON.stringify(result)).not.toContain("NAO_EXPORTAR");
     expect(mocks.history).not.toHaveBeenCalled();
     expect(mocks.events).not.toHaveBeenCalled();
@@ -99,6 +99,60 @@ describe("loadMemberSheetDocument", () => {
       expect(mocks.createClient).not.toHaveBeenCalled();
     },
   );
+
+  it("inclui somente os novos dados pessoais aprovados na consulta e na ficha", async () => {
+    const db = database({ members: { ...member, nationality: "Brasileira", natural_city: "Goiânia", natural_state: "GO", profession: "Professora", education_level: "Ensino superior completo", country: "PAIS_NAO_EXPORTAR", previous_church: "IGREJA_NAO_EXPORTAR", member_type: "VISITOR" } });
+    const result = await loadMemberSheetDocument(context, memberId, basic);
+    const fields = result.groups.flatMap((group) => group.fields);
+    expect(fields).toEqual(expect.arrayContaining([
+      { label: "Nacionalidade", value: "Brasileira" },
+      { label: "Naturalidade / UF", value: "Goiânia / GO" },
+      { label: "Profissão", value: "Professora" },
+      { label: "Escolaridade", value: "Ensino superior completo" },
+    ]));
+    const selected = db.queries.get("members")!.select.mock.calls[0][0].split(", ");
+    for (const key of ["nationality", "natural_city", "natural_state", "profession", "education_level"]) expect(selected).toContain(key);
+    for (const key of ["notes", "pastoral_notes", "country", "member_type", "previous_church", "letter_origin_church"]) expect(selected).not.toContain(key);
+    expect(JSON.stringify(result)).not.toMatch(/NAO_EXPORTAR|Visitante/);
+  });
+
+  it.each([
+    [null, null, "Não informado"],
+    ["Goiânia", null, "Goiânia"],
+    [null, "GO", "GO"],
+    ["  Goiânia  ", "  GO  ", "Goiânia / GO"],
+  ])("formata naturalidade parcial sem inventar dados: %s / %s", async (city, state, expected) => {
+    database({ members: { ...member, natural_city: city, natural_state: state, nationality: null, profession: "  ", education_level: null } });
+    const fields = (await loadMemberSheetDocument(context, memberId, basic)).groups.flatMap((group) => group.fields);
+    expect(fields.find((field) => field.label === "Naturalidade / UF")?.value).toBe(expected);
+    for (const label of ["Nacionalidade", "Profissão", "Escolaridade"]) expect(fields.find((field) => field.label === label)?.value).toBe("Não informado");
+  });
+
+  it("organiza os campos existentes do endereço e omite complemento vazio", async () => {
+    database();
+    const address = (await loadMemberSheetDocument(context, memberId, basic)).groups.find((group) => group.title === "Endereço");
+    expect(address?.fields).toEqual([
+      { label: "Logradouro e número", value: "Rua de Teste, 10" },
+      { label: "Bairro", value: "Centro" },
+      { label: "Cidade", value: "Goiânia" },
+      { label: "Estado", value: "GO" },
+      { label: "CEP", value: "74000-000" },
+    ]);
+    database({ members: { ...member, complement: "Sala 2" } });
+    expect((await loadMemberSheetDocument(context, memberId, basic)).groups.find((group) => group.title === "Endereço")?.fields)
+      .toContainEqual({ label: "Complemento", value: "Sala 2" });
+  });
+
+  it("carrega os nomes pastorais da igreja autenticada e omite nomes vazios", async () => {
+    const db = database({ churches: { name: "Igreja de Teste", senior_pastor_name: "  Paulo de Teste  ", senior_pastor_spouse_name: "Ana de Teste" } });
+    const result = await loadMemberSheetDocument(context, memberId, basic);
+    expect(result.church.pastorNames).toEqual(["Paulo de Teste", "Ana de Teste"]);
+    expect(db.queries.get("churches")!.eq).toHaveBeenCalledWith("id", context.church.id);
+    expect(db.queries.get("churches")!.is).toHaveBeenCalledWith("deleted_at", null);
+    expect(db.queries.get("churches")!.select.mock.calls[0][0]).toContain("senior_pastor_name, senior_pastor_spouse_name");
+    database({ churches: { name: "Igreja de Teste", senior_pastor_name: "  ", senior_pastor_spouse_name: null } });
+    expect((await loadMemberSheetDocument(context, memberId, basic)).church.pastorNames).toEqual([]);
+  });
 
   it.each([
     [PERMISSIONS.memberHistoryView, { ...basic, includeHistory: true }],

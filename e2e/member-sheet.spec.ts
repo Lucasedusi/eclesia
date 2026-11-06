@@ -15,7 +15,7 @@ test.describe("ficha do membro em PDF", () => {
     await expect(page.getByRole("dialog")).toHaveCount(1);
   });
 
-  test("baixa cadastro por padrão e acrescenta apenas as seções selecionadas", async ({ page }) => {
+  test("baixa cadastro por padrão e acrescenta apenas as seções selecionadas", async ({ page }, testInfo) => {
     const history = page.getByRole("checkbox", { name: "Linha do tempo", exact: true });
     const events = page.getByRole("checkbox", { name: "Eventos", exact: true });
     await expect(history).not.toBeChecked();
@@ -28,7 +28,8 @@ test.describe("ficha do membro em PDF", () => {
     expect(basic.suggestedFilename()).toMatch(/^ficha-membro-[A-Za-z0-9_-]+\.pdf$/);
     const basicPdf = await PDFDocument.load(await readFile((await basic.path())!));
     expect(basicPdf.getPages()[0].getSize()).toEqual({ width: 595.28, height: 841.89 });
-    await expect(page.getByRole("status")).toHaveText("Ficha pronta. O download foi iniciado.");
+    await basic.saveAs(testInfo.outputPath("ficha-basica.pdf"));
+    await expect(page.getByRole("dialog", { name: "Ficha do membro em PDF" }).getByRole("status")).toHaveText("Ficha pronta. O download foi iniciado.");
 
     await history.check();
     await events.check();
@@ -39,13 +40,14 @@ test.describe("ficha do membro em PDF", () => {
     expect((await fullRequest).postDataJSON()).toEqual({ includeHistory: true, includeEvents: true });
     const fullPdf = await PDFDocument.load(await readFile((await full.path())!));
     expect(fullPdf.getPageCount()).toBeGreaterThanOrEqual(basicPdf.getPageCount() + 2);
+    await full.saveAs(testInfo.outputPath("ficha-completa.pdf"));
   });
 
   test("permite tentar novamente após erro e volta à consulta ao fechar em tela estreita", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.route("**/api/members/*/sheet/pdf", (route) => route.fulfill({ status: 500, contentType: "application/json", body: JSON.stringify({ message: "Não foi possível gerar a ficha agora. Tente novamente." }) }));
     await page.getByRole("button", { name: "Baixar PDF", exact: true }).click();
-    await expect(page.getByRole("alert")).toHaveText("Não foi possível gerar a ficha agora. Tente novamente.");
+    await expect(page.getByRole("dialog", { name: "Ficha do membro em PDF" }).getByRole("alert")).toHaveText("Não foi possível gerar a ficha agora. Tente novamente.");
     await expect(page.getByRole("button", { name: "Baixar PDF", exact: true })).toBeEnabled();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await page.keyboard.press("Escape");

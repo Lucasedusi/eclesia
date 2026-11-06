@@ -10,7 +10,7 @@ test.describe("relatórios de regionais", () => {
   test.beforeEach(async ({ page }) => { await page.goto("/estrutura-eclesiastica/regionais"); });
 
   test("exporta lista PDF e Excel com filtros, sem limitar à página atual", async ({ page }, testInfo) => {
-    await page.getByRole("button", { name: "Relatórios de regionais", exact: true }).click();
+    await page.getByRole("button", { name: "Relatório", exact: true }).click();
     const modal = page.getByRole("dialog", { name: "Relatórios de regionais", exact: true });
     await expect(modal).toBeVisible();
     await expect(modal).toHaveCSS("opacity", "1");
@@ -48,7 +48,7 @@ test.describe("relatórios de regionais", () => {
     await modal.getByRole("button", { name: "Fechar modal", exact: true }).click();
 
     await page.getByRole("textbox", { name: "Buscar em Regionais" }).fill(regionName!);
-    await page.getByRole("button", { name: "Relatórios de regionais", exact: true }).click();
+    await page.getByRole("button", { name: "Relatório", exact: true }).click();
     await modal.getByRole("combobox", { name: "Abrangência", exact: true }).selectOption("FILTERED");
     await modal.getByRole("combobox", { name: "Formato", exact: true }).selectOption("xlsx");
     const request = page.waitForRequest((r) => r.url().endsWith("/regions/reports"));
@@ -60,7 +60,7 @@ test.describe("relatórios de regionais", () => {
   });
 
   test("gera ficha pelo modal geral e pelos detalhes e preserva retorno", async ({ page }, testInfo) => {
-    await page.getByRole("button", { name: "Relatórios de regionais", exact: true }).click();
+    await page.getByRole("button", { name: "Relatório", exact: true }).click();
     await page.getByRole("radio", { name: /Ficha da regional/ }).check();
     await page.getByRole("combobox", { name: "Regional", exact: true }).selectOption({ label: regionName! });
     let download = page.waitForEvent("download");
@@ -84,7 +84,7 @@ test.describe("relatórios de regionais", () => {
 
   test("recupera de erro em tela estreita", async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.getByRole("button", { name: "Relatórios de regionais", exact: true }).click();
+    await page.getByRole("button", { name: "Relatório", exact: true }).click();
     await expect(page.getByRole("radio", { name: /Lista simplificada/ })).toBeVisible();
     await expect(page.getByRole("dialog")).toHaveCSS("opacity", "1");
     await expect(page.getByRole("dialog").locator("..")).toHaveCSS("opacity", "1");
@@ -96,18 +96,19 @@ test.describe("relatórios de regionais", () => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.keyboard.press("Escape");
     await expect(page.getByRole("dialog")).toHaveCount(0);
+    await page.screenshot({ path: testInfo.outputPath("botao-relatorio-mobile.png"), animations: "disabled" });
   });
 
   test("secretaria exporta sem editar; acesso de consulta não exporta", async ({ page, browser }) => {
     test.skip(!process.env.E2E_REPORT_FIXTURE, "Requer as contas fictícias locais do harness");
     await expect(page.getByRole("button", { name: "Novo cadastro", exact: true })).toHaveCount(0);
-    await expect(page.getByRole("button", { name: "Relatórios de regionais", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Relatório", exact: true })).toBeVisible();
     const denied = await browser.newContext({ storageState: path.join(path.dirname(process.env.E2E_REPORT_FIXTURE!), "viewer-session.json") });
     try {
       const viewer = await denied.newPage();
       await viewer.goto("/estrutura-eclesiastica/regionais");
       await expect(viewer.getByRole("heading", { name: "Regionais", exact: true })).toBeVisible();
-      await expect(viewer.getByRole("button", { name: "Relatórios de regionais", exact: true })).toHaveCount(0);
+      await expect(viewer.getByRole("button", { name: "Relatório", exact: true })).toHaveCount(0);
       const response = await denied.request.post("/api/organization/regions/reports", { data: { kind: "simplified", format: "pdf" } });
       expect(response.status()).toBe(403);
     } finally { await denied.close(); }

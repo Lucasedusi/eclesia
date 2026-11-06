@@ -9,6 +9,12 @@
 
 A ficha segue o modelo fornecido: cabeçalho da igreja, identificação do membro, vínculo, contato, família e histórico de fé. As seções adicionais começam em novas páginas. Conteúdos longos continuam em outras páginas, com identificação e numeração.
 
+A identificação inclui nacionalidade, naturalidade com UF de nascimento, profissão e escolaridade. Esses são os únicos novos dados pessoais incluídos na revisão de novembro de 2026. Naturalidade exibe `Cidade / UF`; quando apenas uma parte existe, exibe somente essa parte. Dados pessoais não preenchidos mostram “Não informado”.
+
+Contato e família ficam juntos; endereço tem seção própria, com logradouro/número, complemento quando preenchido, bairro, cidade, estado e CEP formatado. Os campos são distribuídos em três colunas, com rótulos cinza e valores escuros, sem os antigos cartões. A ficha pode ocupar mais de uma página conforme os textos, sem reduzir a fonte para forçar uma única folha. O título da seção acompanha o primeiro campo na quebra de página.
+
+A logo cadastrada aparece como marca d'água centralizada, proporcional e com 5% de opacidade em todas as páginas. O cabeçalho mostra os nomes existentes de Pastor Presidente e Cônjuge do Pastor Presidente abaixo do nome da igreja, inclusive nas páginas seguintes. Nomes vazios são omitidos; logo ausente ou inválida não impede o download. Os fundos das linhas de eventos permitem visualizar discretamente a marca d'água.
+
 Eventos usam a mesma consulta da aba do membro: inscrições individuais pagas ou que não exigem pagamento, sem exigir check-in. Todas as páginas são incluídas. Uma seção sem registros exibe essa informação.
 
 Contribuições permanece para uma próxima entrega. Notas pastorais, histórico marcado como sensível, documentos anexados e observações internas não são exportados.
@@ -49,3 +55,14 @@ npm run test:e2e -- e2e/member-sheet.spec.ts
 ```
 
 Não inclua o arquivo de sessão no repositório ou no ZIP. Os testes de emissão geram registros de auditoria no ambiente escolhido.
+
+## Revisão de dados pessoais — 06/11/2026
+
+- Novas colunas consultadas em `members`: `nationality`, `natural_city`, `natural_state`, `profession` e `education_level`. Nenhum campo adicional de membro foi acrescentado. Não houve migração nem alteração de tipos gerados.
+- Consultas continuam autenticadas e restritas à igreja, ao membro e à exclusão lógica. Identidade sensível, cargo, histórico e eventos preservam suas permissões. Observações gerais/pastorais, país, tipo de cadastro e igrejas de origem continuam fora do PDF.
+- Execução e revisão pelo próprio agente, sem subagentes, por solicitação do usuário. Nenhum acesso ao banco online foi necessário.
+- 804 testes automatizados passaram, incluindo novos campos, naturalidade parcial/vazia, dados ausentes, nomes pastorais, logo inválida, marca d'água, paginação e título acompanhado do primeiro campo. Lint sem avisos, tipagem e build de produção passaram.
+- PDFs fictícios sem logo, com logo PNG/WebP, múltiplas páginas e textos extensos foram renderizados e inspecionados.
+- Os 2 cenários Playwright passaram em ambiente local: download básico/com histórico e eventos, erro recuperável e retorno em tela móvel. Os PDFs baixados foram reabertos para confirmar os novos valores, os nomes pastorais, o CEP formatado e a ausência das observações internas. O teste de erro passou a localizar a mensagem dentro do modal, sem confundi-la com o anunciador de rotas do Next.js.
+- Testes de navegador devem usar `localhost` neste endpoint: o Next.js normaliza endereços de loopback em `request.url`, e a proteção de origem existente compara essa URL com `Origin`. A revisão não modifica essa proteção.
+- Análise de desempenho de rotas e checks de alteração de banco não se aplicam: não houve mudança de rotas, cache, schema ou políticas.

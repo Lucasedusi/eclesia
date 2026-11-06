@@ -10,7 +10,7 @@ import {
   Church,
   EllipsisVertical,
   Eye,
-  FileText,
+  FileChartColumn,
   Network,
   Paperclip,
   Pencil,
@@ -272,8 +272,8 @@ export function OrganizationManagement({ data, activeTab }: { data: Organization
         <S.PanelHeader>
           <div><h2>{descriptions[activeTab].title}</h2><p>{descriptions[activeTab].text}</p></div>
           <S.HeaderActions>
-            {activeTab === "regions" && data.management.regionReports ? <Button variant="outline" aria-label="Relatórios de regionais" title="Relatórios de regionais" onClick={() => setRegionReport({})}><FileText size={17} aria-hidden="true" /></Button> : null}
-            {activeTab === "congregations" && data.management.congregationReports ? <Button variant="outline" aria-label="Relatórios de congregações" title="Relatórios de congregações" onClick={() => setCongregationReport(true)}><FileText size={17} aria-hidden="true" /></Button> : null}
+            {activeTab === "regions" && data.management.regionReports ? <Button variant="outline" title="Relatório" onClick={() => setRegionReport({})}><FileChartColumn size={17} aria-hidden="true" />Relatório</Button> : null}
+            {activeTab === "congregations" && data.management.congregationReports ? <Button variant="outline" title="Relatório" onClick={() => setCongregationReport(true)}><FileChartColumn size={17} aria-hidden="true" />Relatório</Button> : null}
             {canManage ? <Button onClick={openCreate}><Plus size={15} /> Novo cadastro</Button> : null}
           </S.HeaderActions>
         </S.PanelHeader>

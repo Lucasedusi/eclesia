@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { PERMISSIONS, hasPermission } from "@/modules/auth/constants/permissions";
 import { loadChurchLogoDataUri } from "@/modules/auth/services/church-logo.service";
 import type { AuthContext } from "@/modules/auth/types/auth.types";
-import { formatBrazilPhone, formatCpf, formatCnpj } from "@/utils/input-masks";
+import { formatBrazilPhone, formatBrazilZipCode, formatCpf, formatCnpj } from "@/utils/input-masks";
 import { MemberSheetError, type MemberSheetDocument, type MemberSheetOptions } from "../types/member-sheet.types";
 import type { MemberStatus, PaginatedTab } from "../types/member.types";
 import { formatDateOnly, formatGender, formatMaritalStatus, formatMemberHistoryValue, memberStatusLabels, receivedByLabels } from "../utils/member-formatters";
@@ -14,6 +14,7 @@ import { createMemberSheetPdf } from "./member-sheet-pdf.service";
 // Explicit projection: internal notes, document metadata and finance are never loaded.
 const MEMBER_SELECT = [
   "id", "congregation_id", "full_name", "member_code", "gender", "member_status",
+  "nationality", "natural_city", "natural_state", "profession", "education_level",
   "birth_date", "marital_status", "whatsapp", "email", "address", "number", "complement", "district", "city", "state", "zip_code",
   "father_name", "mother_name", "spouse_name", "conversion_date", "baptism_date", "baptism_church",
   "has_holy_spirit_baptism", "holy_spirit_baptism_date", "received_by", "received_date", "congregations!inner(name)",
@@ -103,7 +104,7 @@ export async function loadMemberSheetDocument(
     const canIdentity = hasPermission(context.permissions, PERMISSIONS.membersViewSensitiveIdentity);
     const canRoles = hasPermission(context.permissions, PERMISSIONS.memberRolesView);
     const [churchResult, settingsResult, identityResult, rolesResult, history, events] = await Promise.all([
-      supabase.from("churches").select("name, logo_url, address, number, district, city, state, phone, document")
+      supabase.from("churches").select("name, logo_url, address, number, district, city, state, phone, document, senior_pastor_name, senior_pastor_spouse_name")
         .eq("id", context.church.id).is("deleted_at", null).maybeSingle(),
       supabase.from("app_settings").select("display_church_name, logo_url")
         .eq("church_id", context.church.id).is("deleted_at", null).maybeSingle(),
@@ -138,6 +139,7 @@ export async function loadMemberSheetDocument(
         address: ["address", "number", "district", "city", "state"].map((key) => value(church, key)).filter(Boolean).join(", "),
         phone: formatBrazilPhone(value(church, "phone")),
         document: formatCnpj(value(church, "document")),
+        pastorNames: [value(church, "senior_pastor_name"), value(church, "senior_pastor_spouse_name")].map((name) => name.trim()).filter(Boolean),
       },
       member: {
         fullName: value(member, "full_name"), memberCode,
@@ -152,11 +154,20 @@ export async function loadMemberSheetDocument(
           field("Estado civil", formatMaritalStatus(value(member, "marital_status"), value(member, "gender"))),
           field("CPF", canIdentity ? formatCpf(value(identity, "cpf")) : "Informação restrita"),
           field("RG / órgão", canIdentity ? [value(identity, "rg"), value(identity, "issuing_agency")].filter(Boolean).join(" / ") : "Informação restrita"),
+          field("Nacionalidade", value(member, "nationality")),
+          field("Naturalidade / UF", [value(member, "natural_city"), value(member, "natural_state")].map((part) => part.trim()).filter(Boolean).join(" / ")),
+          field("Profissão", value(member, "profession")),
+          field("Escolaridade", value(member, "education_level")),
         ] },
-        { title: "Contato, endereço e família", fields: [
+        { title: "Contato e família", fields: [
           field("WhatsApp", formatBrazilPhone(value(member, "whatsapp"))), field("E-mail", value(member, "email")),
-          field("Endereço", ["address", "number", "complement", "district", "city", "state", "zip_code"].map((key) => value(member, key)).filter(Boolean).join(", ")),
           field("Pai", value(member, "father_name")), field("Mãe", value(member, "mother_name")), field("Cônjuge", value(member, "spouse_name")),
+        ] },
+        { title: "Endereço", fields: [
+          field("Logradouro e número", [value(member, "address"), value(member, "number")].map((part) => part.trim()).filter(Boolean).join(", ")),
+          ...(value(member, "complement").trim() ? [field("Complemento", value(member, "complement"))] : []),
+          field("Bairro", value(member, "district")), field("Cidade", value(member, "city")),
+          field("Estado", value(member, "state")), field("CEP", formatBrazilZipCode(value(member, "zip_code"))),
         ] },
         { title: "Histórico de fé", fields: [
           field("Conversão", date(value(member, "conversion_date"))), field("Batismo nas águas", date(value(member, "baptism_date"))),

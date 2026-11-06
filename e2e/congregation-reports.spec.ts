@@ -9,7 +9,7 @@ test.describe("relatórios de congregações", () => {
   test.skip(!process.env.E2E_REPORT_FIXTURE || !process.env.E2E_STORAGE_STATE, "Requer dados fictícios e sessões locais do harness");
   test.beforeEach(async ({ page }) => { await page.goto("/estrutura-eclesiastica/congregacoes"); });
   test("exporta PDF/Excel, campos opcionais e todas as páginas", async ({ page }, testInfo) => {
-    await page.getByRole("button", { name: "Relatórios de congregações", exact: true }).click();
+    await page.getByRole("button", { name: "Relatório", exact: true }).click();
     const modal = page.getByRole("dialog", { name: "Relatórios de congregações", exact: true });
     await expect(modal).toHaveCSS("opacity", "1");
     await expect(modal.getByRole("checkbox", { name: "Telefone", exact: true })).toBeChecked();
@@ -38,7 +38,7 @@ test.describe("relatórios de congregações", () => {
   });
   test("exporta resultados filtrados e ficha diretamente dos detalhes", async ({ page }, testInfo) => {
     await page.getByRole("textbox", { name: "Buscar em Congregações" }).fill(name);
-    await page.getByRole("button", { name: "Relatórios de congregações", exact: true }).click();
+    await page.getByRole("button", { name: "Relatório", exact: true }).click();
     const modal = page.getByRole("dialog");
     await modal.getByRole("combobox", { name: "Abrangência", exact: true }).selectOption("FILTERED");
     await modal.getByRole("combobox", { name: "Formato", exact: true }).selectOption("xlsx");
@@ -62,7 +62,7 @@ test.describe("relatórios de congregações", () => {
   });
   test("recupera de erro em tela móvel", async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.getByRole("button", { name: "Relatórios de congregações", exact: true }).click();
+    await page.getByRole("button", { name: "Relatório", exact: true }).click();
     const modal = page.getByRole("dialog");
     await expect(modal).toHaveCSS("opacity", "1"); await expect(modal.locator("..")).toHaveCSS("opacity", "1");
     await page.screenshot({ path: testInfo.outputPath("mobile.png"), animations: "disabled" });
@@ -72,6 +72,7 @@ test.describe("relatórios de congregações", () => {
     await expect(modal.getByRole("button", { name: "Baixar PDF", exact: true })).toBeEnabled();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.keyboard.press("Escape"); await expect(modal).toHaveCount(0);
+    await page.screenshot({ path: testInfo.outputPath("botao-relatorio-mobile.png"), animations: "disabled" });
   });
   test("respeita permissões e escopos e bloqueia dados de outra igreja", async ({ page, browser }) => {
     await expect(page.getByRole("button", { name: "Novo cadastro", exact: true })).toHaveCount(0);
@@ -84,7 +85,7 @@ test.describe("relatórios de congregações", () => {
           expect(response.status()).toBe(403);
           const viewer = await ctx.newPage(); await viewer.goto("/estrutura-eclesiastica/congregacoes");
           await expect(viewer.getByRole("heading", { name: "Congregações", exact: true })).toBeVisible();
-          await expect(viewer.getByRole("button", { name: "Relatórios de congregações", exact: true })).toHaveCount(0);
+          await expect(viewer.getByRole("button", { name: "Relatório", exact: true })).toHaveCount(0);
         } else {
           expect(response.status()).toBe(200);
           const wb = new ExcelJS.Workbook(); await wb.xlsx.load(await response.body() as never);

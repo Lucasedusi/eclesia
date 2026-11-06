@@ -12,6 +12,7 @@ export type MemberSheetDocument = {
     address: string;
     phone: string;
     document: string;
+    pastorNames?: string[];
   };
   member: {
     fullName: string;

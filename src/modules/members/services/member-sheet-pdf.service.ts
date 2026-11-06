@@ -1,10 +1,12 @@
 import "server-only";
 
-import { PDFDocument, type PDFPage } from "pdf-lib";
-import { CONTENT_BOTTOM as BOTTOM, CONTENT_WIDTH, createChurchPdfAssets, drawChurchHeader, finishChurchPdf, PAGE_HEIGHT as HEIGHT, PAGE_MARGIN as MARGIN, PAGE_WIDTH as WIDTH, PDF_COLORS, wrapPdfText as wrap } from "@/lib/pdf/church-document";
+import { PDFDocument, type PDFPage, rgb } from "pdf-lib";
+import { CONTENT_BOTTOM as BOTTOM, CONTENT_WIDTH, churchPastorsLabel, createChurchPdfAssets, drawChurchHeader, drawChurchWatermark, finishChurchPdf, PAGE_HEIGHT as HEIGHT, PAGE_MARGIN as MARGIN, PAGE_WIDTH as WIDTH, PDF_COLORS, wrapPdfText as wrap } from "@/lib/pdf/church-document";
 import type { MemberSheetDocument } from "../types/member-sheet.types";
 
 const { navy: NAVY, gold: GOLD, muted: MUTED, border: BORDER, paper: PAPER, white: WHITE } = PDF_COLORS;
+const LABEL = rgb(0.46, 0.46, 0.46);
+const VALUE = rgb(0.08, 0.10, 0.14);
 
 export async function createMemberSheetPdf(data: MemberSheetDocument): Promise<Uint8Array> {
   const document = await PDFDocument.create();
@@ -19,19 +21,22 @@ export async function createMemberSheetPdf(data: MemberSheetDocument): Promise<U
 
   function newPage(first = false) {
     page = document.addPage([WIDTH, HEIGHT]);
+    drawChurchWatermark(page, assets);
     if (first) {
       const headerHeight = drawChurchHeader(page, data.church, assets);
-      cursor = headerHeight + 32;
+      cursor = headerHeight + 26;
       for (const line of wrap(data.member.fullName.toLocaleUpperCase("pt-BR"), bold, 20, CONTENT_WIDTH)) {
         draw(line, MARGIN, cursor, 20, bold); cursor += 25;
       }
       cursor += 5;
       const subtitle = [data.member.memberCode, data.member.role, data.member.congregationName].filter(Boolean).join(" · ");
       for (const line of wrap(subtitle, regular, 11, CONTENT_WIDTH)) { draw(line, MARGIN, cursor, 11); cursor += 15; }
-      cursor += 34;
+      cursor += 22;
     } else {
       let y = 28;
       for (const line of wrap(data.church.name, bold, 10, CONTENT_WIDTH)) { draw(line, MARGIN, y, 10, bold); y += 13; }
+      const pastors = churchPastorsLabel(data.church);
+      if (pastors) for (const line of wrap(pastors, regular, 9, CONTENT_WIDTH)) { draw(line, MARGIN, y, 9); y += 12; }
       y += 5;
       for (const line of wrap(data.member.fullName, regular, 10, CONTENT_WIDTH)) { draw(line, MARGIN, y, 10); y += 13; }
       if (data.member.memberCode) { draw(data.member.memberCode, MARGIN, y + 3, 8.5, regular, MUTED); y += 15; }
@@ -44,7 +49,7 @@ export async function createMemberSheetPdf(data: MemberSheetDocument): Promise<U
     for (const line of wrap(title.toLocaleUpperCase("pt-BR"), bold, 13, CONTENT_WIDTH)) {
       draw(line, MARGIN, cursor, 13, bold); cursor += 17;
     }
-    cursor += 16;
+    cursor += 12;
   }
 
   function continueSection(title: string) {
@@ -52,37 +57,38 @@ export async function createMemberSheetPdf(data: MemberSheetDocument): Promise<U
   }
 
   newPage(true);
-  const gap = 14;
+  const gap = 20;
   const columnWidth = (CONTENT_WIDTH - gap * 2) / 3;
   for (const group of data.groups) {
-    if (cursor + 95 > BOTTOM) newPage();
-    heading(group.title);
     for (let index = 0; index < group.fields.length; index += 3) {
       const cells = group.fields.slice(index, index + 3).map((field) => ({
-        labels: wrap(field.label.toLocaleUpperCase("pt-BR"), bold, 8.5, columnWidth - 24),
-        lines: wrap(field.value, regular, 10, columnWidth - 24),
+        labels: wrap(field.label.toLocaleUpperCase("pt-BR"), regular, 8, columnWidth),
+        lines: wrap(field.value, regular, 10, columnWidth),
       }));
       const labelHeight = Math.max(...cells.map((cell) => cell.labels.length)) * 10;
-      const topPadding = 10 + labelHeight + 5;
-      const fullHeight = Math.max(48, topPadding + Math.max(...cells.map((cell) => cell.lines.length)) * 13 + 10);
-      if (cursor + Math.min(fullHeight, 160) > BOTTOM) continueSection(group.title);
+      const topPadding = labelHeight + 6;
+      const fullHeight = Math.max(36, topPadding + Math.max(...cells.map((cell) => cell.lines.length)) * 13 + 7);
+      if (index === 0) {
+        const headingHeight = wrap(group.title.toLocaleUpperCase("pt-BR"), bold, 13, CONTENT_WIDTH).length * 17 + 12;
+        if (cursor + headingHeight + Math.min(fullHeight, 160) > BOTTOM) newPage();
+        heading(group.title);
+      } else if (cursor + Math.min(fullHeight, 160) > BOTTOM) continueSection(group.title);
       while (cells.some((cell) => cell.lines.length)) {
-        if (cursor + topPadding + 23 > BOTTOM) continueSection(group.title);
-        const capacity = Math.max(1, Math.floor((BOTTOM - cursor - topPadding - 10) / 13));
+        if (cursor + topPadding + 20 > BOTTOM) continueSection(group.title);
+        const capacity = Math.max(1, Math.floor((BOTTOM - cursor - topPadding - 7) / 13));
         const portions = cells.map((cell) => cell.lines.splice(0, capacity));
-        const height = Math.max(48, topPadding + Math.max(...portions.map((lines) => lines.length)) * 13 + 10);
+        const height = Math.max(36, topPadding + Math.max(...portions.map((lines) => lines.length)) * 13 + 7);
         cells.forEach((cell, column) => {
           if (!portions[column].length) return;
           const x = MARGIN + column * (columnWidth + gap);
-          page.drawRectangle({ x, y: HEIGHT - cursor - height, width: columnWidth, height, color: PAPER, borderColor: BORDER, borderWidth: 0.6 });
-          cell.labels.forEach((line, i) => draw(line, x + 12, cursor + 10 + i * 10, 8.5, bold));
-          portions[column].forEach((line, i) => draw(line, x + 12, cursor + topPadding + i * 13, 10));
+          cell.labels.forEach((line, i) => draw(line, x, cursor + i * 10, 8, regular, LABEL));
+          portions[column].forEach((line, i) => draw(line, x, cursor + topPadding + i * 13, 10, regular, VALUE));
         });
-        cursor += height + 16;
+        cursor += height + 8;
         if (cells.some((cell) => cell.lines.length)) continueSection(group.title);
       }
     }
-    cursor += 18;
+    cursor += 8;
   }
 
   if (data.history !== null) {
@@ -131,7 +137,7 @@ export async function createMemberSheetPdf(data: MemberSheetDocument): Promise<U
         const capacity = Math.max(1, Math.floor((BOTTOM - cursor - 18) / 13));
         const portions = cells.map((cell) => cell.splice(0, capacity));
         const rowHeight = Math.max(36, Math.max(...portions.map((portion) => portion.length)) * 13 + 18);
-        page.drawRectangle({ x: MARGIN, y: HEIGHT - cursor - rowHeight, width: CONTENT_WIDTH, height: rowHeight, color: index % 2 === 0 ? PAPER : WHITE });
+        page.drawRectangle({ x: MARGIN, y: HEIGHT - cursor - rowHeight, width: CONTENT_WIDTH, height: rowHeight, color: index % 2 === 0 ? PAPER : WHITE, opacity: assets.logo ? 0.3 : 1 });
         let x = MARGIN;
         portions.forEach((lines, i) => {
           lines.forEach((line, n) => draw(line, x + 10, cursor + 9 + n * 13, 9.5));
