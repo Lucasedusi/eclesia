@@ -372,6 +372,7 @@ async function loadOrganizationData(): Promise<OrganizationData> {
     },
     management: {
       regions: isAdministrator && context.permissions.includes(PERMISSIONS.regionsManage),
+      congregationReports: context.access.scope !== "MINISTRY" && context.permissions.includes(PERMISSIONS.congregationsReportsExport),
       regionReports: context.access.scope !== "MINISTRY" && context.permissions.includes(PERMISSIONS.regionsReportsExport),
       congregations:
         isAdministrator && context.permissions.includes(PERMISSIONS.congregationsManage),

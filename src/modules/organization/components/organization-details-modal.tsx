@@ -30,6 +30,8 @@ import type {
   RegionDetails,
   RegionItem,
 } from "../types/organization.types";
+import { useCongregationReport } from "../hooks/use-congregation-report";
+import { Feedback as ReportFeedback } from "./region-report.styles";
 import { DetailSectionHeading } from "./organization-detail-section-heading";
 import * as S from "./organization-details.styles";
 
@@ -51,6 +53,7 @@ type RegionDetailsModalProps = {
 };
 
 type CongregationDetailsModalProps = {
+  canExport: boolean;
   target: OrganizationDetailsTarget;
   canManage: boolean;
   canViewDocuments: boolean;
@@ -538,11 +541,13 @@ export function CongregationDetailsContent({
 export function CongregationDetailsModal({
   target,
   canManage,
+  canExport,
   canViewDocuments,
   onClose,
   onEdit,
   onOpenDocuments,
 }: CongregationDetailsModalProps) {
+  const report = useCongregationReport();
   const [state, setState] = useState<LoadState<CongregationDetails>>({
     status: "loading",
   });
@@ -590,22 +595,24 @@ export function CongregationDetailsModal({
       icon={<Church size={22} />}
       onClose={onClose}
       size="xl"
+      busy={report.busy}
       footer={
+        <div style={{ width: "100%" }}>
+        {report.feedback && <ReportFeedback $error={report.feedback.error} role={report.feedback.error ? "alert" : "status"}>{report.feedback.message}</ReportFeedback>}
         <S.FooterActions>
-          <Button variant="outline" onClick={onClose}>
-            Fechar
-          </Button>
+          {canExport ? <Button variant="outline" disabled={!details || report.busy} loading={report.busy} onClick={() => void report.download({ kind: "individual", format: "pdf", congregationId: target.id })}><Printer size={15} /> Imprimir / PDF</Button> : <Button variant="outline" onClick={onClose}>Fechar</Button>}
           {canViewDocuments && details ? (
-            <Button variant="outline" onClick={() => onOpenDocuments(details)}>
+            <Button variant="outline" disabled={report.busy} onClick={() => onOpenDocuments(details)}>
               <Paperclip size={15} /> Documentos
             </Button>
           ) : null}
           {canManage && details ? (
-            <Button onClick={() => onEdit(details)}>
+            <Button disabled={report.busy} onClick={() => onEdit(details)}>
               <Pencil size={15} /> Editar Congregação
             </Button>
           ) : null}
         </S.FooterActions>
+        </div>
       }
     >
       {state.status === "loading" ? (

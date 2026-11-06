@@ -66,25 +66,26 @@ export async function createChurchPdfAssets(document: PDFDocument, logoDataUri: 
 }
 
 export function drawChurchHeader(page: PDFPage, church: ChurchDocumentIdentity, { regular, bold, logo }: ChurchPdfAssets) {
+  const pageWidth = page.getWidth(), pageHeight = page.getHeight();
   const left = logo ? 115 : PAGE_MARGIN;
-  const width = PAGE_WIDTH - PAGE_MARGIN - left;
+  const width = pageWidth - PAGE_MARGIN - left;
   const name = wrapPdfText(church.name.toLocaleUpperCase("pt-BR"), bold, 14, width);
   const address = wrapPdfText(church.address, regular, 9, width);
   const contacts = wrapPdfText([church.phone && `Fone: ${church.phone}`, church.document && `CNPJ: ${church.document}`].filter(Boolean).join(" · "), regular, 9, width);
   const height = Math.max(94, 22 + name.length * 17 + 8 + address.length * 12 + 5 + contacts.length * 12 + 15);
-  page.drawRectangle({ x: 0, y: PAGE_HEIGHT - height, width: PAGE_WIDTH, height, color: PDF_COLORS.navy });
-  page.drawRectangle({ x: 0, y: PAGE_HEIGHT - height - 6, width: PAGE_WIDTH, height: 6, color: PDF_COLORS.gold });
+  page.drawRectangle({ x: 0, y: pageHeight - height, width: pageWidth, height, color: PDF_COLORS.navy });
+  page.drawRectangle({ x: 0, y: pageHeight - height - 6, width: pageWidth, height: 6, color: PDF_COLORS.gold });
   if (logo) {
-    page.drawCircle({ x: 68, y: PAGE_HEIGHT - height / 2, size: 32, color: PDF_COLORS.white });
+    page.drawCircle({ x: 68, y: pageHeight - height / 2, size: 32, color: PDF_COLORS.white });
     const dimensions = logo.scaleToFit(55, 55);
-    page.drawImage(logo, { x: 68 - dimensions.width / 2, y: PAGE_HEIGHT - height / 2 - dimensions.height / 2, ...dimensions });
+    page.drawImage(logo, { x: 68 - dimensions.width / 2, y: pageHeight - height / 2 - dimensions.height / 2, ...dimensions });
   }
   let top = 22;
-  for (const line of name) { page.drawText(line, { x: left, y: PAGE_HEIGHT - top - 14, size: 14, font: bold, color: PDF_COLORS.white }); top += 17; }
+  for (const line of name) { page.drawText(line, { x: left, y: pageHeight - top - 14, size: 14, font: bold, color: PDF_COLORS.white }); top += 17; }
   top += 8;
-  for (const line of address) { page.drawText(line, { x: left, y: PAGE_HEIGHT - top - 9, size: 9, font: regular, color: PDF_COLORS.white }); top += 12; }
+  for (const line of address) { page.drawText(line, { x: left, y: pageHeight - top - 9, size: 9, font: regular, color: PDF_COLORS.white }); top += 12; }
   top += 5;
-  for (const line of contacts) { page.drawText(line, { x: left, y: PAGE_HEIGHT - top - 9, size: 9, font: regular, color: PDF_COLORS.white }); top += 12; }
+  for (const line of contacts) { page.drawText(line, { x: left, y: pageHeight - top - 9, size: 9, font: regular, color: PDF_COLORS.white }); top += 12; }
   return height;
 }
 
@@ -95,10 +96,10 @@ export function formatPdfIssuedAt(issuedAt: string) {
 export function finishChurchPdf(document: PDFDocument, regular: PDFFont, issuedAt: string, title: string) {
   const pages = document.getPages();
   pages.forEach((page, i) => {
-    page.drawRectangle({ x: 0, y: 0, width: PAGE_WIDTH, height: 13, color: PDF_COLORS.navy });
+    page.drawRectangle({ x: 0, y: 0, width: page.getWidth(), height: 13, color: PDF_COLORS.navy });
     page.drawText(`Emitido em ${formatPdfIssuedAt(issuedAt)}`, { x: PAGE_MARGIN, y: 28, size: 8, font: regular, color: PDF_COLORS.muted });
     const label = `Página ${i + 1} de ${pages.length}`;
-    page.drawText(label, { x: PAGE_WIDTH - PAGE_MARGIN - regular.widthOfTextAtSize(label, 8), y: 28, size: 8, font: regular, color: PDF_COLORS.muted });
+    page.drawText(label, { x: page.getWidth() - PAGE_MARGIN - regular.widthOfTextAtSize(label, 8), y: 28, size: 8, font: regular, color: PDF_COLORS.muted });
   });
   document.setTitle(title); document.setAuthor("Eclésias"); document.setCreator("Eclésias"); document.setProducer("Eclésias");
   document.setCreationDate(new Date(issuedAt)); document.setModificationDate(new Date(issuedAt));

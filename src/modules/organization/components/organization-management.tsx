@@ -70,6 +70,10 @@ const RegionDetailsModal = dynamic(
   () => import("./organization-details-modal").then((module) => module.RegionDetailsModal),
   { loading: () => <ModalLoading title="Preparando Regional" /> },
 );
+const CongregationReportModal = dynamic(
+  () => import("./congregation-report-modal").then((module) => module.CongregationReportModal),
+  { loading: () => <ModalLoading title="Preparando relatórios" /> },
+);
 const RegionReportModal = dynamic(
   () => import("./region-report-modal").then((module) => module.RegionReportModal),
   { loading: () => <ModalLoading title="Preparando relatórios" /> },
@@ -162,6 +166,7 @@ export function OrganizationManagement({ data, activeTab }: { data: Organization
   const [congregationForm, setCongregationForm] = useState<CongregationItem | "new" | null>(null);
   const [congregationDocuments, setCongregationDocuments] = useState<CongregationItem | null>(null);
   const [regionDetails, setRegionDetails] = useState<OrganizationDetailsTarget | null>(null);
+  const [congregationReport, setCongregationReport] = useState(false);
   const [regionReport, setRegionReport] = useState<{ initialRegion?: OrganizationDetailsTarget } | null>(null);
   const [congregationDetails, setCongregationDetails] = useState<OrganizationDetailsTarget | null>(null);
   const [positionDetails, setPositionDetails] = useState<PositionItem | null>(null);
@@ -268,6 +273,7 @@ export function OrganizationManagement({ data, activeTab }: { data: Organization
           <div><h2>{descriptions[activeTab].title}</h2><p>{descriptions[activeTab].text}</p></div>
           <S.HeaderActions>
             {activeTab === "regions" && data.management.regionReports ? <Button variant="outline" aria-label="Relatórios de regionais" title="Relatórios de regionais" onClick={() => setRegionReport({})}><FileText size={17} aria-hidden="true" /></Button> : null}
+            {activeTab === "congregations" && data.management.congregationReports ? <Button variant="outline" aria-label="Relatórios de congregações" title="Relatórios de congregações" onClick={() => setCongregationReport(true)}><FileText size={17} aria-hidden="true" /></Button> : null}
             {canManage ? <Button onClick={openCreate}><Plus size={15} /> Novo cadastro</Button> : null}
           </S.HeaderActions>
         </S.PanelHeader>
@@ -328,7 +334,8 @@ export function OrganizationManagement({ data, activeTab }: { data: Organization
 
       {regionDetails ? <RegionDetailsModal target={regionDetails} canManage={data.management.regions} canExport={data.management.regionReports} onPrint={() => { setRegionReport({ initialRegion: regionDetails }); setRegionDetails(null); }} onClose={() => setRegionDetails(null)} onEdit={(item) => { setRegionDetails(null); setRegionForm(item); }} onOpenCongregation={(target) => { setRegionDetails(null); setCongregationDetails(target); }} /> : null}
       {regionReport ? <RegionReportModal regions={data.regions} initialRegion={regionReport.initialRegion} filters={{ search, status, sort }} onClose={() => { if (regionReport.initialRegion) setRegionDetails(regionReport.initialRegion); setRegionReport(null); }} /> : null}
-      {congregationDetails ? <CongregationDetailsModal target={congregationDetails} canManage={data.management.congregations} canViewDocuments={data.management.congregationDocumentsView} onClose={() => setCongregationDetails(null)} onEdit={(item) => { setCongregationDetails(null); setCongregationForm(item); }} onOpenDocuments={(item) => { setCongregationDetails(null); setCongregationDocuments(item); }} /> : null}
+      {congregationReport ? <CongregationReportModal filters={{ search, status, sort, region, congregationType }} onClose={() => setCongregationReport(false)} /> : null}
+      {congregationDetails ? <CongregationDetailsModal canExport={data.management.congregationReports} target={congregationDetails} canManage={data.management.congregations} canViewDocuments={data.management.congregationDocumentsView} onClose={() => setCongregationDetails(null)} onEdit={(item) => { setCongregationDetails(null); setCongregationForm(item); }} onOpenDocuments={(item) => { setCongregationDetails(null); setCongregationDocuments(item); }} /> : null}
       {positionDetails ? <Modal open size="sm" title="Detalhes do Cargo" description="Informações cadastradas no catálogo eclesiástico." icon={<BadgeCheck />} onClose={() => setPositionDetails(null)} footer={<S.DetailFooter><Button variant="outline" onClick={() => setPositionDetails(null)}>Fechar</Button>{canManage ? <Button onClick={() => { setPositionDetails(null); setPositionForm(positionDetails); }}><Pencil size={15} />Editar Cargo</Button> : null}</S.DetailFooter>}><S.PositionDetailsGrid><div><small>Nome do Cargo</small><strong>{positionDetails.name}</strong></div><div><small>Forma feminina</small><strong>{positionDetails.femaleName || "Não informada"}</strong></div><div><small>Abreviação</small><strong>{positionDetails.abbreviation || "Não informada"}</strong></div><div><small>Abreviação feminina</small><strong>{positionDetails.femaleAbbreviation || "Não informada"}</strong></div><div><small>Ordem de exibição</small><strong>{positionDetails.displayOrder}</strong></div><div><small>Situação</small><Status value={positionDetails.status} /></div><div data-wide><small>Descrição</small><strong>{positionDetails.description || "Sem descrição"}</strong></div><div><small>Criação</small><strong>{formatDate(positionDetails.createdAt)}</strong></div><div><small>Última atualização</small><strong>{formatDate(positionDetails.updatedAt)}</strong></div></S.PositionDetailsGrid></Modal> : null}
       {regionForm ? <RegionForm region={regionForm === "new" ? null : regionForm} onClose={() => setRegionForm(null)} onSuccess={regionSuccess} onError={formError} /> : null}
       {congregationForm ? <CongregationForm congregation={congregationForm === "new" ? null : congregationForm} regions={data.activeRegionOptions} onClose={() => setCongregationForm(null)} onSuccess={congregationSuccess} onError={formError} /> : null}
