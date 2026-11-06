@@ -18,20 +18,20 @@ A listagem inclui sempre numeração, nome da congregação, regional e dirigent
 
 Em **Detalhes da Congregação**, o botão **Imprimir / PDF** baixa diretamente a ficha e mantém os detalhes abertos. Usa a identidade da igreja, fontes e rodapé compartilhados com a ficha de membro.
 
-1. **Identificação:** nome em caixa alta e negrito, regional abaixo.
-2. **Liderança e contato:** dirigente, contato prioritário e e-mail.
+1. **Topo:** nome em caixa alta e negrito, regional abaixo, sem o título “Identificação”.
+2. **Liderança e contato:** dirigente, cônjuge e WhatsApp, em três colunas.
 3. **Endereço:** logradouro e número, complemento, bairro, cidade, estado e CEP.
 4. **Observação:** texto integral quando preenchido.
 
-Complemento e observação vazios são omitidos. Informações essenciais ausentes exibem “Não informado”. Cônjuge é opcional somente na listagem. As seções podem continuar em outras páginas, sem truncar o conteúdo.
+Complemento e observação vazios são omitidos. Informações essenciais ausentes exibem “Não informado”. Cônjuge é opcional na listagem e fixo na ficha. Os dados de liderança e endereço usam três colunas; observação ocupa a largura disponível. Rótulos em cinza diferenciam-se dos valores escuros. As seções podem continuar em outras páginas, sem truncar o conteúdo.
 
-Nos dois relatórios, o contato utiliza **WhatsApp → Telefone → Não informado**, sempre a partir do cadastro da congregação.
+Na listagem, o contato utiliza **WhatsApp → Telefone → Não informado**. Na ficha, o campo **WhatsApp** usa apenas o WhatsApp cadastrado; se ausente, mostra “Não informado”. O e-mail não é incluído na ficha.
 
 ## Acesso e operação
 
 A exportação exige `organization.view` e `congregations.reports.export`, concedida por padrão a ADMIN e SECRETARY. Não exige permissão de edição. Igreja, escopo regional/congregacional e exclusão lógica são verificados no servidor com cliente autenticado e RLS. Escopo de ministério não exporta. Uma sede sem regional pode aparecer no relatório, conforme as regras existentes do cadastro.
 
-O serviço consulta os campos opcionais conforme a seleção. E-mail e observações são lidos apenas para a ficha; cônjuge somente se selecionado na listagem. Auditoria registra formato, quantidade, escopo, opções e presença de filtros, sem nomes, telefones, e-mails, observações ou texto da busca. Falha na auditoria impede a entrega do arquivo. Respostas usam `private, no-store`.
+O serviço consulta os campos opcionais conforme a seleção. Observações são lidas apenas para a ficha; cônjuge é lido na ficha e quando selecionado na listagem. E-mail não é consultado para estes relatórios. Auditoria registra formato, quantidade, escopo, opções e presença de filtros, sem nomes, telefones, e-mails, observações ou texto da busca. Falha na auditoria impede a entrega do arquivo. Respostas usam `private, no-store`.
 
 A consulta é paginada e limitada a 10.000 congregações após os filtros de banco e antes da busca textual. Quantidades inconsistentes ou páginas duplicadas durante a geração produzem erro em vez de exportação incompleta. A interface permite tentar novamente após falha e bloqueia downloads duplicados enquanto gera o arquivo.
 
@@ -65,3 +65,5 @@ node scripts/congregation-reports-local.mjs cleanup
 ```
 
 Porta 3220. O script aceita somente Supabase local. Sessões e identificadores fictícios ficam em `tmp/congregation-reports`, ignorado pelo Git. Execute `setup` uma vez por ciclo e `cleanup` ao finalizar. Os testes de banco estão em `supabase/tests/congregation_reports_verification.sql` (somente leitura) e `supabase/tests/congregation_reports_scope.sql` (dados sintéticos locais em transação revertida).
+
+Revisão da ficha: cobertura de três colunas, diferença entre cores de rótulos/valores, presença de cônjuge e WhatsApp e ausência de título Identificação/e-mail. Build não repetido nesta revisão de conteúdo e diagramação, sem alterações de rotas, dependências ou limites entre servidor e cliente.

@@ -34,12 +34,18 @@ describe("congregation report documents", () => {
     expect(headers.includes("Endereço")).toBe(fields.address);
     await save(`lista-${Number(fields.spouse)}${Number(fields.phone)}${Number(fields.address)}.pdf`, bytes);
   });
-  it("renders individual sections, contact and email without spouse", async () => {
+  it("renders a three-column sheet with spouse and WhatsApp", async () => {
     const drawn = vi.spyOn(PDFPage.prototype, "drawText");
     const bytes = await createCongregationReportPdf(congregationReportFixture("individual"));
     const text = drawn.mock.calls.map(([s]) => s).join(" ");
-    for (const label of ["IDENTIFICAÇÃO", "LIDERANÇA E CONTATO", "ENDEREÇO", "OBSERVAÇÃO", "CONGREGAÇÃO CENTRAL", "contato@example.invalid", "Salão 2"]) expect(text).toContain(label);
-    expect(text).not.toContain("Maria de Souza");
+    for (const label of ["LIDERANÇA E CONTATO", "ENDEREÇO", "OBSERVAÇÃO", "CONGREGAÇÃO CENTRAL", "CÔNJUGE", "WHATSAPP", "Maria de Souza", "Salão 2"]) expect(text).toContain(label);
+    expect(text).not.toContain("IDENTIFICAÇÃO");
+    expect(text).not.toContain("E-MAIL");
+    expect(text).not.toContain("contato@example.invalid");
+    const labels = ["DIRIGENTE", "CÔNJUGE", "WHATSAPP"].map((label) => drawn.mock.calls.find(([s]) => s === label)![1]!);
+    expect(new Set(labels.map((p) => p.y)).size).toBe(1);
+    expect(new Set(labels.map((p) => p.x)).size).toBe(3);
+    expect(labels[0].color).not.toEqual(drawn.mock.calls.find(([s]) => s === "João de Souza")![1]!.color);
     expect((await PDFDocument.load(bytes)).getPageCount()).toBe(1);
     await save("ficha.pdf", bytes);
   });

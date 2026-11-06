@@ -22,3 +22,5 @@ Execução autorizada na branch `codex/relatorios-regionais`, sem subagentes.
 ## Resultado
 
 783 testes e 4 cenários E2E passaram, assim como lint, tipagem, build e SQL local. Revisão direta sem subagentes. Migração online aplicada e conferida. Tipos públicos idênticos; 13 avisos de desempenho preexistentes documentados em `docs/congregation-reports.md`. Ficha baixa diretamente dos detalhes, pois não há opções adicionais para essa modalidade.
+
+Revisão solicitada após a entrega: ficha sem título Identificação, com Cônjuge e WhatsApp cadastrado, sem e-mail, dados em três colunas e rótulos cinza/valores escuros. Listagem mantém suas opções e prioridade de contato.

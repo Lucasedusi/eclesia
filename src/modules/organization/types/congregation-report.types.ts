@@ -6,7 +6,7 @@ export type CongregationReportAddress = { street: string; complement: string; di
 export type ReportCongregation = {
   id: string; name: string; regionName: string; pastorName: string;
   spouseName?: string; contactPhone?: string; address?: CongregationReportAddress;
-  email?: string; notes?: string;
+  whatsapp?: string; notes?: string;
 };
 export type CongregationReportDocument = {
   kind: "simplified" | "individual"; issuedAt: string; church: ChurchDocumentIdentity;

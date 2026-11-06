@@ -61,7 +61,7 @@ describe("congregation report data", () => {
     expect(doc.congregations).toHaveLength(1);
     expect(doc.congregations[0]).toMatchObject({ regionName: "Regional São José", contactPhone: "(11) 99999-8888" });
     expect(doc.congregations[0].spouseName).toBeUndefined();
-    expect(doc.congregations[0].email).toBeUndefined();
+    expect(doc.congregations[0]).not.toHaveProperty("email");
     expect(db.calls.find((c) => c.table === "congregations")!.select).not.toMatch(/pastor_spouse_name|notes|email|\*/);
   });
   it("includes spouse and full address only when selected", async () => {
@@ -74,7 +74,7 @@ describe("congregation report data", () => {
   });
   it.each([["11999998888", "1133334444", "(11) 99999-8888"], ["  ", "1133334444", "(11) 3333-4444"], [null, null, "Não informado"]])("prioritizes registered contact", async (whatsapp, phone, expected) => {
     database({ congregations: [{ ...congregation, whatsapp, phone }] });
-    expect((await loadCongregationReportDocument(context, individual)).congregations[0].contactPhone).toBe(expected);
+    expect((await loadCongregationReportDocument(context, simple)).congregations[0].contactPhone).toBe(expected);
   });
   it("honors status, regional, type and accent-insensitive search", async () => {
     database({ congregations: [congregation, { ...congregation, id: "inactive", status: "INACTIVE" }, { ...congregation, id: "hq", is_headquarters: true }] });
@@ -114,11 +114,16 @@ describe("congregation report data", () => {
   it("exports the individual fields and audits without personal content", async () => {
     const db = database();
     const doc = await loadCongregationReportDocument(context, individual);
-    expect(doc.congregations[0]).toMatchObject({ email: congregation.email, notes: congregation.notes });
-    expect(doc.congregations[0].spouseName).toBeUndefined();
+    expect(doc.congregations[0]).toMatchObject({ whatsapp: "(11) 99999-8888", spouseName: congregation.pastor_spouse_name, notes: congregation.notes });
+    expect(doc.congregations[0]).not.toHaveProperty("email");
+    expect(db.calls.find((c) => c.table === "congregations")!.select).not.toMatch(/email|\bphone\b/);
     expect((await generateCongregationReportDownload(context, individual)).fileName).toMatch(/^ficha-congregacao-/);
     expect(db.rpc).toHaveBeenCalledWith("log_audit", expect.objectContaining({ p_entity_id: congregation.id, p_action: "EXPORT_CONGREGATION_REPORT" }));
     expect(JSON.stringify(db.rpc.mock.calls)).not.toMatch(/Nota privada|Cônjuge Teste|11999998888/);
+  });
+  it("does not label a regular phone as WhatsApp in the sheet", async () => {
+    database({ congregations: [{ ...congregation, whatsapp: null }] });
+    expect((await loadCongregationReportDocument(context, individual)).congregations[0].whatsapp).toBe("Não informado");
   });
   it("fails closed on audit failure and selects workbook format", async () => {
     database({}, { auditError: true });
