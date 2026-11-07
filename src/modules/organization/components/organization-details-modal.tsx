@@ -408,12 +408,6 @@ export function CongregationDetailsContent({
     <S.Content>
       <S.SummaryGrid>
         <SummaryCard
-          icon={<Power />}
-          value={details.status === "ACTIVE" ? "Ativa" : "Inativa"}
-          label="Situação atual"
-          tone={details.status === "ACTIVE" ? "success" : "neutral"}
-        />
-        <SummaryCard
           icon={<Network />}
           value={details.regionName || "Sem Regional"}
           label="Regional"
@@ -438,19 +432,9 @@ export function CongregationDetailsContent({
           />
           <Status value={details.status} />
         </S.SectionHeader>
-        <S.InfoGrid>
+        <S.InfoGrid $columns={2}>
           <Info label="Nome" value={details.name} />
-          <Info label="Código" value={details.code} />
-          <Info
-            label="Tipo"
-            value={details.isHeadquarters ? "Congregação Sede" : "Congregação"}
-          />
           <Info label="Regional" value={details.regionName || "Sem Regional"} />
-          <Info
-            label="Ordem de exibição"
-            value={String(details.displayOrder)}
-          />
-          <Info label="País" value={details.country} />
         </S.InfoGrid>
       </S.Section>
 
@@ -463,19 +447,9 @@ export function CongregationDetailsContent({
             tone="success"
           />
         </S.SectionHeader>
-        <S.InfoGrid>
+        <S.InfoGrid $columns={2}>
           <Info label="Dirigente ou Pastor" value={details.pastorName} />
           <Info label="Cônjuge" value={details.pastorSpouseName} />
-          <Info
-            label="Telefone"
-            value={
-              details.phone ? (
-                <S.Link href={`tel:${details.phone.replace(/\D/g, "")}`}>
-                  {details.phone}
-                </S.Link>
-              ) : null
-            }
-          />
           <Info
             label="WhatsApp"
             value={
@@ -495,7 +469,6 @@ export function CongregationDetailsContent({
                 </S.Link>
               ) : null
             }
-            wide
           />
         </S.InfoGrid>
       </S.Section>

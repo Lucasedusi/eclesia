@@ -44,7 +44,7 @@ export async function loadCongregationReportDocument(context: AuthContext, optio
     const client = await createClient();
     const churchId = context.church.id;
     const columns = ["id, region_id, name, code, pastor_name, city, is_headquarters, status, display_order, created_at, regions(name, church_id, deleted_at)",
-      ...(fields.spouse ? ["pastor_spouse_name"] : []), ...(fields.phone ? [individual ? "whatsapp" : "whatsapp, phone"] : []),
+      ...(fields.spouse ? ["pastor_spouse_name"] : []), ...(fields.phone ? ["whatsapp"] : []),
       ...(fields.address ? ["address, number, complement, district, state, zip_code"] : []), ...(individual ? ["notes"] : [])].join(", ");
     const rows = await allRows((start, end) => {
       let query = client.from("congregations").select(columns, { count: "exact" }).eq("church_id", churchId).is("deleted_at", null);
@@ -81,7 +81,7 @@ export async function loadCongregationReportDocument(context: AuthContext, optio
     const congregations = selected.map((row): ReportCongregation => {
       const item: ReportCongregation = { id: row.id, name: value(row, "name"), regionName: regionName(row, churchId), pastorName: text(value(row, "pastor_name")) };
       if (fields.spouse) item.spouseName = text(value(row, "pastor_spouse_name"));
-      if (fields.phone && !individual) item.contactPhone = text(formatBrazilPhone(value(row, "whatsapp") || value(row, "phone")));
+      if (fields.phone && !individual) item.contactPhone = text(formatBrazilPhone(value(row, "whatsapp")));
       if (fields.address) {
         const street = [value(row, "address"), value(row, "number")].filter(Boolean).join(", ");
         const zipCode = value(row, "zip_code").replace(/^(\d{5})(\d{3})$/, "$1-$2");

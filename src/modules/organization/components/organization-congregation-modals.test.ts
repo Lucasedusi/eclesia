@@ -41,7 +41,7 @@ const congregation: CongregationDetails = {
 };
 
 describe("congregation modals presentation", () => {
-  it("keeps display order only in identification and omits registration history", () => {
+  it("simplifies details while retaining contact, address and document count", () => {
     const Content = (
       DetailsModal as unknown as {
         CongregationDetailsContent?: ComponentType<{
@@ -61,7 +61,8 @@ describe("congregation modals presentation", () => {
       ),
     );
 
-    expect(markup.match(/Ordem de exibição/g)).toHaveLength(1);
+    for (const label of ["Ordem de exibição", "Situação atual", "Código", "Tipo", "País", "Telefone", congregation.phone!]) expect(markup).not.toContain(label);
+    for (const label of ["Documentos anexados", congregation.whatsapp!, congregation.address!, congregation.notes!]) expect(markup).toContain(label);
     expect(markup).not.toContain("Histórico do cadastro");
     expect(markup).not.toContain("Cadastrada em");
     expect(markup).not.toContain("Última atualização");

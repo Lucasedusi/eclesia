@@ -5,7 +5,7 @@ import { formatPdfIssuedAt } from "@/lib/pdf/church-document";
 
 export async function createCongregationReportWorkbook(data: CongregationReportDocument): Promise<Buffer> {
   const workbook = new ExcelJS.Workbook(); workbook.creator = "Eclésias"; workbook.created = new Date(data.issuedAt);
-  const headers = ["Nº", "Congregação", "Regional", "Dirigente", ...(data.fields.spouse ? ["Cônjuge"] : []), ...(data.fields.phone ? ["Telefone"] : []), ...(data.fields.address ? ["Endereço"] : [])];
+  const headers = ["Nº", "Congregação", "Regional", "Dirigente", ...(data.fields.spouse ? ["Cônjuge"] : []), ...(data.fields.phone ? ["WhatsApp"] : []), ...(data.fields.address ? ["Endereço"] : [])];
   const widths = [8, 36, 30, 30, ...(data.fields.spouse ? [30] : []), ...(data.fields.phone ? [23] : []), ...(data.fields.address ? [65] : [])];
   const sheet = workbook.addWorksheet("Congregações", { views: [{ state: "frozen", ySplit: 6 }],
     pageSetup: { paperSize: 9, orientation: data.fields.address ? "landscape" : "portrait", fitToPage: true, fitToWidth: 1, fitToHeight: 0, printTitlesRow: "1:6" },

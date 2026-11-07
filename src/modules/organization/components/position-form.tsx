@@ -100,6 +100,7 @@ export function PositionForm({ position, onClose, onSuccess, onError }: Position
         }}
       >
         {position && <input type="hidden" name="id" value={position.id} />}
+        <input type="hidden" name="description" value={values.description} />
         {state.status === "error" && <S.FormAlert role="alert">{state.message}</S.FormAlert>}
         <S.FormIntro>
           Cargos não concedem permissões. Administrador e Secretário continuam sendo papéis de acesso, não Cargos eclesiásticos.
@@ -154,18 +155,6 @@ export function PositionForm({ position, onClose, onSuccess, onError }: Position
               $invalid={Boolean(errors.femaleAbbreviation)}
             />
             {errors.femaleAbbreviation && <S.FieldError>{errors.femaleAbbreviation}</S.FieldError>}
-          </S.Field>
-          <S.Field $span={2}>
-            <span>Descrição</span>
-            <S.Textarea
-              name="description"
-              value={values.description}
-              onChange={(event) => update("description", event.target.value)}
-              placeholder="Descrição institucional breve"
-              maxLength={500}
-              $invalid={Boolean(errors.description)}
-            />
-            {errors.description && <S.FieldError>{errors.description}</S.FieldError>}
           </S.Field>
           <S.Field>
             <span>Ordem de exibição</span>

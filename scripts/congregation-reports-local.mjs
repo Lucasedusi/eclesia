@@ -28,7 +28,7 @@ if (command === "setup") {
   const admin = createClient(status.API_URL, env.SUPABASE_SECRET_KEY);
   const ids = { church: randomUUID(), otherChurch: randomUUID(), region: randomUUID(), otherRegion: randomUUID(), congregation: randomUUID(), secondCongregation: randomUUID(), otherCongregation: randomUUID() };
   const users = {};
-  for (const [name, role, scope] of [["secretary", "SECRETARY", "CHURCH"], ["regional", "SECRETARY", "REGION"], ["congregation", "SECRETARY", "CONGREGATION"], ["viewer", "VIEWER", "CHURCH"]]) {
+  for (const [name, role, scope] of [["admin", "ADMIN", "CHURCH"], ["secretary", "SECRETARY", "CHURCH"], ["regional", "SECRETARY", "REGION"], ["congregation", "SECRETARY", "CONGREGATION"], ["viewer", "VIEWER", "CHURCH"]]) {
     const email = `region-${randomUUID()}@example.invalid`, password = `${randomUUID()}Az1!`;
     const result = await admin.auth.admin.createUser({ email, password, email_confirm: true });
     if (result.error) throw result.error;
@@ -57,9 +57,14 @@ if (command === "setup") {
     insert into public.congregations(church_id, region_id, name, deleted_at) values ('${ids.church}', '${ids.region}', 'Congregação Arquivada', now());
     ${Object.values(users).map((u) => `insert into public.profiles(id, full_name, status) values ('${u.id}', 'Usuário de teste regional', 'ACTIVE') on conflict(id) do update set status='ACTIVE';
     insert into public.user_church_access(profile_id, church_id, role, access_scope, region_id, congregation_id, status) values ('${u.id}', '${ids.church}', '${u.role}', '${u.scope}', ${u.scope === "REGION" ? `'${ids.region}'` : "null"}, ${u.scope === "CONGREGATION" ? `'${ids.congregation}'` : "null"}, 'ACTIVE');`).join("\n")}
+    insert into public.roles(church_id, name, description) values ('${ids.church}', 'Cargo de Teste', 'Descrição histórica preservada');
+    select set_config('request.jwt.claim.sub', '${users.admin.id}', true);
+    insert into public.congregation_documents(church_id, congregation_id, title, original_file_name, storage_path, mime_type, file_size, uploaded_by, upload_status, deleted_at, deleted_by)
+    select '${ids.church}', '${ids.congregation}', 'Documento fictício ' || i, 'teste.pdf', '${ids.church}/${ids.congregation}/teste-' || i || '.pdf', 'application/pdf', 100, '${users.admin.id}', case when i = 3 then 'PENDING' else 'ACTIVE' end, case when i = 4 then now() else null end, case when i = 4 then '${users.admin.id}'::uuid else null end
+    from generate_series(1, 4) as i;
     commit;`);
   writeFileSync(`${root}/fixture.json`, JSON.stringify({ ...ids, users }), { mode: 0o600 });
-  console.log("Fictional local report fixtures and four scoped sessions created.");
+  console.log("Fictional local report fixtures and five scoped sessions created.");
 } else if (command === "cleanup") {
   const fixture = JSON.parse(readFileSync(`${root}/fixture.json`, "utf8"));
   // Only random IDs created by this harness are accepted for cleanup.
@@ -68,6 +73,8 @@ if (command === "setup") {
   sql(`begin;
     delete from public.audit_logs where church_id in ('${fixture.church}', '${fixture.otherChurch}');
     delete from public.user_church_access where church_id in ('${fixture.church}', '${fixture.otherChurch}');
+    delete from public.congregation_documents where church_id in ('${fixture.church}', '${fixture.otherChurch}');
+    delete from public.roles where church_id in ('${fixture.church}', '${fixture.otherChurch}');
     delete from public.congregations where church_id in ('${fixture.church}', '${fixture.otherChurch}');
     delete from public.regions where church_id in ('${fixture.church}', '${fixture.otherChurch}');
     delete from public.app_settings where church_id in ('${fixture.church}', '${fixture.otherChurch}');

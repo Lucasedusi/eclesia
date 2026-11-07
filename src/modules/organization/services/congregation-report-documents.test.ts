@@ -19,6 +19,11 @@ describe("congregation report documents", () => {
     expect(pdf.getPage(0).getSize()).toEqual(fields.address ? { width: 841.89, height: 595.28 } : { width: 595.28, height: 841.89 });
     const text = drawn.mock.calls.map(([s]) => s).join(" ");
     expect(text).toContain("LISTA DE CONGREGAÇÕES");
+    expect(text).toContain("Presidentes: Paulo e Ana");
+    expect(text).not.toContain("Pastores:");
+    expect(text).not.toContain(data.church.document!);
+    expect(text).not.toContain(data.church.phone!);
+    expect(text.includes("WHATSAPP")).toBe(fields.phone);
     expect(text).toContain("Regional São José");
     expect(text.includes("Maria de Souza")).toBe(fields.spouse);
     expect(text.includes("99999-8888")).toBe(fields.phone);
@@ -30,22 +35,19 @@ describe("congregation report documents", () => {
     const headers = wb.worksheets[0].getRow(6).values as string[];
     expect(headers).toContain("Regional");
     expect(headers.includes("Cônjuge")).toBe(fields.spouse);
-    expect(headers.includes("Telefone")).toBe(fields.phone);
+    expect(headers.includes("WhatsApp")).toBe(fields.phone);
     expect(headers.includes("Endereço")).toBe(fields.address);
     await save(`lista-${Number(fields.spouse)}${Number(fields.phone)}${Number(fields.address)}.pdf`, bytes);
   });
-  it("renders a three-column sheet with spouse and WhatsApp", async () => {
+  it("groups the sheet title and regional below the leadership header, retaining address and notes", async () => {
     const drawn = vi.spyOn(PDFPage.prototype, "drawText");
-    const bytes = await createCongregationReportPdf(congregationReportFixture("individual"));
+    const data = congregationReportFixture("individual");
+    const bytes = await createCongregationReportPdf(data);
     const text = drawn.mock.calls.map(([s]) => s).join(" ");
-    for (const label of ["LIDERANÇA E CONTATO", "ENDEREÇO", "OBSERVAÇÃO", "CONGREGAÇÃO CENTRAL", "CÔNJUGE", "WHATSAPP", "Maria de Souza", "Salão 2"]) expect(text).toContain(label);
-    expect(text).not.toContain("IDENTIFICAÇÃO");
-    expect(text).not.toContain("E-MAIL");
-    expect(text).not.toContain("contato@example.invalid");
-    const labels = ["DIRIGENTE", "CÔNJUGE", "WHATSAPP"].map((label) => drawn.mock.calls.find(([s]) => s === label)![1]!);
-    expect(new Set(labels.map((p) => p.y)).size).toBe(1);
-    expect(new Set(labels.map((p) => p.x)).size).toBe(3);
-    expect(labels[0].color).not.toEqual(drawn.mock.calls.find(([s]) => s === "João de Souza")![1]!.color);
+    for (const label of ["Presidentes: Paulo e Ana", "Dirigente: João de Souza", "Maria de Souza", "(11) 99999-8888", "ENDEREÇO", "OBSERVAÇÃO", "CONGREGAÇÃO CENTRAL", "Salão 2", data.congregations[0].notes!]) expect(text).toContain(label);
+    for (const label of ["LIDERANÇA E CONTATO", "Pastores:", "E-MAIL", data.church.document!, data.church.phone!]) expect(text).not.toContain(label);
+    const y = (label: string) => drawn.mock.calls.find(([s]) => s === label)![1]!.y!;
+    expect(y("CONGREGAÇÃO CENTRAL") - y("Regional São José")).toBeLessThan(y("Regional São José") - y("ENDEREÇO"));
     expect((await PDFDocument.load(bytes)).getPageCount()).toBe(1);
     await save("ficha.pdf", bytes);
   });

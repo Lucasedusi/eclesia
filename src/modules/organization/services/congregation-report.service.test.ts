@@ -71,6 +71,7 @@ describe("congregation report data", () => {
     expect(doc.congregations[0]).toMatchObject({ regionName: "Regional São José", contactPhone: "(11) 99999-8888" });
     expect(doc.congregations[0].spouseName).toBeUndefined();
     expect(doc.congregations[0]).not.toHaveProperty("email");
+    expect(db.calls.find((c) => c.table === "congregations")!.select).not.toMatch(/\bphone\b/);
     expect(db.calls.find((c) => c.table === "congregations")!.select).not.toMatch(/pastor_spouse_name|notes|email|\*/);
   });
   it("includes spouse and full address only when selected", async () => {
@@ -81,7 +82,7 @@ describe("congregation report data", () => {
     expect(doc.congregations[0].contactPhone).toBeUndefined();
     expect(db.calls.find((c) => c.table === "congregations")!.select).not.toMatch(/whatsapp|phone/);
   });
-  it.each([["11999998888", "1133334444", "(11) 99999-8888"], ["  ", "1133334444", "(11) 3333-4444"], [null, null, "Não informado"]])("prioritizes registered contact", async (whatsapp, phone, expected) => {
+  it.each([["11999998888", "1133334444", "(11) 99999-8888"], ["  ", "1133334444", "Não informado"], [null, null, "Não informado"]])("exports only the registered WhatsApp", async (whatsapp, phone, expected) => {
     database({ congregations: [{ ...congregation, whatsapp, phone }] });
     expect((await loadCongregationReportDocument(context, simple)).congregations[0].contactPhone).toBe(expected);
   });

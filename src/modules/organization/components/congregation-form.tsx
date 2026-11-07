@@ -403,20 +403,6 @@ export function CongregationForm({
                 />
               </S.Field>
               <S.Field>
-                <span>Telefone</span>
-                <S.Control
-                  value={values.phone}
-                  onChange={(event) =>
-                    update("phone", formatBrazilPhone(event.target.value))
-                  }
-                  placeholder="(00) 00000-0000"
-                  inputMode="tel"
-                  maxLength={15}
-                  $invalid={Boolean(errors.phone)}
-                />
-                {errors.phone && <S.FieldError>{errors.phone}</S.FieldError>}
-              </S.Field>
-              <S.Field>
                 <span>WhatsApp</span>
                 <S.Control
                   value={values.whatsapp}
@@ -432,7 +418,7 @@ export function CongregationForm({
                   <S.FieldError>{errors.whatsapp}</S.FieldError>
                 )}
               </S.Field>
-              <S.Field $span={2}>
+              <S.Field>
                 <span>E-mail</span>
                 <S.Control
                   value={values.email}
@@ -617,7 +603,7 @@ export function CongregationForm({
                 <p>
                   {values.pastorName || "Não informada"}
                   <br />
-                  {values.phone || values.whatsapp || "Sem telefone"}
+                  {values.whatsapp || "Sem WhatsApp"}
                 </p>
               </S.ReviewCard>
               <S.ReviewCard>

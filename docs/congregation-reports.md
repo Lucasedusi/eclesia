@@ -4,10 +4,10 @@
 
 Em **Estrutura Eclesiástica → Congregações**, use o ícone de relatórios ao lado de **Novo cadastro**. Usuários com permissão de exportar também veem o ícone quando não podem cadastrar.
 
-A listagem inclui sempre numeração, nome da congregação, regional e dirigente. No PDF, a regional aparece menor abaixo do nome; no Excel ela tem coluna própria. **Cônjuge, Telefone e Endereço** são opções independentes, permitindo oito combinações. Inicialmente, apenas Telefone fica marcado.
+A listagem inclui sempre numeração, nome da congregação, regional e dirigente. No PDF, a regional aparece menor abaixo do nome; no Excel ela tem coluna própria. **Cônjuge, WhatsApp e Endereço** são opções independentes, permitindo oito combinações. Inicialmente, apenas WhatsApp fica marcado.
 
 - Formatos: PDF e Excel (`.xlsx`).
-- Abrangência: todos os registros autorizados ou os resultados filtrados na tela, em todas as páginas.
+- Filtros: todos os registros autorizados ou os resultados filtrados na tela, em todas as páginas.
 - Filtros preservados: busca, situação, regional (inclusive sem regional), sede/congregação e ordenação.
 - PDF A4 em retrato; ao selecionar Endereço, a orientação passa automaticamente para paisagem.
 - Endereço completo inclui logradouro, número, complemento, bairro, cidade/UF e CEP, conforme preenchimento.
@@ -18,14 +18,14 @@ A listagem inclui sempre numeração, nome da congregação, regional e dirigent
 
 Em **Detalhes da Congregação**, o botão **Imprimir / PDF** baixa diretamente a ficha e mantém os detalhes abertos. Usa a identidade da igreja, fontes e rodapé compartilhados com a ficha de membro.
 
-1. **Topo:** nome em caixa alta e negrito, regional abaixo, sem o título “Identificação”.
-2. **Liderança e contato:** dirigente, cônjuge e WhatsApp, em três colunas.
+1. **Cabeçalho:** nome do campo, Presidentes e uma linha com dirigente, cônjuge e WhatsApp, usando espaçamento uniforme.
+2. **Topo do corpo:** nome em caixa alta e negrito e regional próximos, com espaço maior antes do endereço.
 3. **Endereço:** logradouro e número, complemento, bairro, cidade, estado e CEP.
 4. **Observação:** texto integral quando preenchido.
 
-Complemento e observação vazios são omitidos. Informações essenciais ausentes exibem “Não informado”. Cônjuge é opcional na listagem e fixo na ficha. Os dados de liderança e endereço usam três colunas; observação ocupa a largura disponível. Rótulos em cinza diferenciam-se dos valores escuros. As seções podem continuar em outras páginas, sem truncar o conteúdo.
+Complemento e observação vazios são omitidos. Informações essenciais ausentes exibem “Não informado”. Cônjuge é opcional na listagem e fixo na ficha. O endereço usa três colunas; observação ocupa a largura disponível. Rótulos em cinza diferenciam-se dos valores escuros. As seções podem continuar em outras páginas, sem truncar o conteúdo.
 
-Na listagem, o contato utiliza **WhatsApp → Telefone → Não informado**. Na ficha, o campo **WhatsApp** usa apenas o WhatsApp cadastrado; se ausente, mostra “Não informado”. O e-mail não é incluído na ficha.
+Na listagem (PDF e Excel) e na ficha, **WhatsApp** usa apenas o WhatsApp cadastrado; se ausente, mostra “Não informado”. O telefone convencional nunca substitui o WhatsApp. O e-mail não é incluído na ficha.
 
 ## Acesso e operação
 
@@ -66,12 +66,16 @@ node scripts/congregation-reports-local.mjs cleanup
 
 Porta 3220. O script aceita somente Supabase local. Sessões e identificadores fictícios ficam em `tmp/congregation-reports`, ignorado pelo Git. Execute `setup` uma vez por ciclo e `cleanup` ao finalizar. Os testes de banco estão em `supabase/tests/congregation_reports_verification.sql` (somente leitura) e `supabase/tests/congregation_reports_scope.sql` (dados sintéticos locais em transação revertida).
 
-Revisão da ficha: cobertura de três colunas, diferença entre cores de rótulos/valores, presença de cônjuge e WhatsApp e ausência de título Identificação/e-mail. Build não repetido nesta revisão de conteúdo e diagramação, sem alterações de rotas, dependências ou limites entre servidor e cliente.
+Revisão visual de novembro: listagem com regional abaixo do nome e cônjuge abaixo do dirigente, sem colunas Regional/Atualização. Formulário sem Telefone visível, preservando valores históricos. Detalhes sem box de situação e sem Código, Tipo, Ordem de exibição, País e Telefone; contagem inclui apenas anexos ACTIVE, não arquivados, com a autorização administrativa existente. Formulário de Cargos sem Descrição visível, preservando o conteúdo já salvo.
 
 ## Marca d’água e cabeçalho pastoral
 
 Os PDFs de listagem e ficha usam a logo cadastrada como marca d’água centralizada em todas as páginas, com proporção preservada e opacidade de 5%. As linhas das tabelas deixam o fundo aparecer discretamente, mantendo texto e cabeçalhos em contraste integral. Sem logo válida, a exportação continua normalmente, sem marca d’água.
 
-O cabeçalho mostra os nomes cadastrados em Pastor Presidente e Cônjuge do Pastor Presidente logo abaixo da igreja, inclusive nas páginas de continuação. Campos vazios são omitidos; nomes extensos quebram linha. A leitura usa a igreja do contexto autenticado e mantém os filtros de exclusão lógica. Nenhuma migração é necessária.
+O cabeçalho mostra apenas o nome do campo e a linha “Presidentes”, com os nomes cadastrados em Pastor Presidente e Cônjuge do Pastor Presidente, inclusive nas páginas de continuação. Na ficha, acrescenta dirigente, cônjuge e WhatsApp; endereço e CNPJ da igreja não entram no cabeçalho. O rodapé mantém Eklesias, data e paginação. Campos vazios são omitidos; nomes extensos quebram linha. A leitura usa a igreja do contexto autenticado e mantém os filtros de exclusão lógica. Nenhuma migração é necessária.
 
 Validação: 793 testes, lint e tipagem aprovados; 9 cenários de navegador de congregações e regionais aprovados. PDFs em retrato, paisagem e múltiplas páginas renderizados e inspecionados. O PDF baixado no fluxo local contém os nomes pastorais cadastrados. Build não repetido: mudança restrita à consulta de campos existentes e à renderização, sem mudanças em rotas, configuração, dependências ou limites entre servidor e cliente. Não houve alterações no banco online.
+
+## Validação dos ajustes visuais — 07/11/2026
+
+864 testes em 136 arquivos e 6 cenários de navegador aprovados. Lint sem avisos, tipagem e build de produção local aprovados. A verificação cobriu a contagem de documentos concluídos (ACTIVE), exclusão de pendentes/arquivados, preservação de telefone e descrição históricos ao editar, WhatsApp sem fallback, filtros, escopos, isolamento entre igrejas e layout desktop/móvel. PDFs em retrato/paisagem e com continuação inspecionados. Sem mudança de banco, permissões ou publicação online nesta etapa.

@@ -313,7 +313,7 @@ export async function getCongregationDetails(
       .select("id", { count: "exact", head: true })
       .eq("church_id", context.church.id)
       .eq("congregation_id", congregationId)
-      .eq("upload_status", "READY")
+      .eq("upload_status", "ACTIVE")
       .is("deleted_at", null);
 
     if (documentsResult.error) {

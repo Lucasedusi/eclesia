@@ -21,11 +21,11 @@ export function CongregationReportModal({ filters, onClose }: Props) {
     footer={<S.Footer><Button onClick={generate} loading={busy} disabled={busy}><Download size={16} />{busy ? "Gerando relatório…" : format === "pdf" ? "Baixar PDF" : "Baixar Excel"}</Button></S.Footer>}>
     <S.Content aria-busy={busy}>
       <S.Options disabled={busy}>
-        <S.Field>Abrangência<S.SelectBox><S.SelectControl value={useFilters ? "FILTERED" : "ALL"} onChange={(e) => setUseFilters(e.target.value === "FILTERED")}><option value="ALL">Todas as congregações</option><option value="FILTERED">Resultados filtrados na tela</option></S.SelectControl></S.SelectBox></S.Field>
+        <S.Field>Filtros<S.SelectBox><S.SelectControl value={useFilters ? "FILTERED" : "ALL"} onChange={(e) => setUseFilters(e.target.value === "FILTERED")}><option value="ALL">Todas as congregações</option><option value="FILTERED">Resultados filtrados na tela</option></S.SelectControl></S.SelectBox></S.Field>
         {useFilters && <S.Hint>{filters.search ? `Busca: ${filters.search}. ` : ""}Inclui todas as páginas dos resultados filtrados.</S.Hint>}
       </S.Options>
       <S.Options disabled={busy}><legend>Campos opcionais</legend>
-        {([{ key: "spouse", label: "Cônjuge" }, { key: "phone", label: "Telefone" }, { key: "address", label: "Endereço" }] as const).map(({ key, label }) => <S.Choice key={key} $selected={fields[key]}><input type="checkbox" checked={fields[key]} onChange={(e) => setFields({ ...fields, [key]: e.target.checked })} /><strong>{label}</strong></S.Choice>)}
+        {([{ key: "spouse", label: "Cônjuge" }, { key: "phone", label: "WhatsApp" }, { key: "address", label: "Endereço" }] as const).map(({ key, label }) => <S.Choice key={key} $selected={fields[key]}><input type="checkbox" checked={fields[key]} onChange={(e) => setFields({ ...fields, [key]: e.target.checked })} /><strong>{label}</strong></S.Choice>)}
       </S.Options>
       <S.Options disabled={busy}>
         <S.Field>Formato<S.SelectBox><S.SelectControl value={format} onChange={(e) => setFormat(e.target.value === "xlsx" ? "xlsx" : "pdf")}><option value="pdf">PDF · pronto para impressão</option><option value="xlsx">Excel · planilha .xlsx</option></S.SelectControl></S.SelectBox></S.Field>

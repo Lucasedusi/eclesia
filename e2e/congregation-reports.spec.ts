@@ -12,7 +12,7 @@ test.describe("relatórios de congregações", () => {
     await page.getByRole("button", { name: "Relatório", exact: true }).click();
     const modal = page.getByRole("dialog", { name: "Relatórios de congregações", exact: true });
     await expect(modal).toHaveCSS("opacity", "1");
-    await expect(modal.getByRole("checkbox", { name: "Telefone", exact: true })).toBeChecked();
+    await expect(modal.getByRole("checkbox", { name: "WhatsApp", exact: true })).toBeChecked();
     await expect(modal.getByRole("checkbox", { name: "Cônjuge", exact: true })).not.toBeChecked();
     let download = page.waitForEvent("download");
     await modal.getByRole("button", { name: "Baixar PDF", exact: true }).click();
@@ -40,9 +40,9 @@ test.describe("relatórios de congregações", () => {
     await page.getByRole("textbox", { name: "Buscar em Congregações" }).fill(name);
     await page.getByRole("button", { name: "Relatório", exact: true }).click();
     const modal = page.getByRole("dialog");
-    await modal.getByRole("combobox", { name: "Abrangência", exact: true }).selectOption("FILTERED");
+    await modal.getByRole("combobox", { name: "Filtros", exact: true }).selectOption("FILTERED");
     await modal.getByRole("combobox", { name: "Formato", exact: true }).selectOption("xlsx");
-    await modal.getByRole("checkbox", { name: "Telefone", exact: true }).uncheck();
+    await modal.getByRole("checkbox", { name: "WhatsApp", exact: true }).uncheck();
     let download = page.waitForEvent("download");
     await modal.getByRole("button", { name: "Baixar Excel", exact: true }).click();
     const wb = new ExcelJS.Workbook(); await wb.xlsx.readFile((await (await download).path())!);
@@ -62,6 +62,8 @@ test.describe("relatórios de congregações", () => {
   });
   test("recupera de erro em tela móvel", async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 390, height: 844 });
+    await page.getByRole("textbox", { name: "Buscar em Congregações" }).fill(name);
+    await expect(page.getByText("Cônjuge de Teste", { exact: true }).last()).toBeVisible();
     await page.getByRole("button", { name: "Relatório", exact: true }).click();
     const modal = page.getByRole("dialog");
     await expect(modal).toHaveCSS("opacity", "1"); await expect(modal.locator("..")).toHaveCSS("opacity", "1");
@@ -73,6 +75,68 @@ test.describe("relatórios de congregações", () => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.keyboard.press("Escape"); await expect(modal).toHaveCount(0);
     await page.screenshot({ path: testInfo.outputPath("botao-relatorio-mobile.png"), animations: "disabled" });
+  });
+  test("simplifica a tabela e mantém a regional e o cônjuge nas novas posições", async ({ page }, testInfo) => {
+    await expect(page.getByText("Gerencie suas congregações e seus dirigentes.", { exact: true })).toBeVisible();
+    await page.getByRole("textbox", { name: "Buscar em Congregações" }).fill(name);
+    const table = page.getByRole("table");
+    await expect(table.getByRole("columnheader")).toHaveText(["Congregação", "Dirigente", "Localidade", "Status", "Ações"]);
+    const cells = table.getByRole("row").nth(1).getByRole("cell");
+    await expect(cells.nth(0)).toContainText(process.env.E2E_REPORT_REGION_NAME!);
+    await expect(cells.nth(0)).not.toContainText("contato@example.invalid");
+    await expect(cells.nth(1)).toContainText("Dirigente de Teste");
+    await expect(cells.nth(1)).toContainText("Cônjuge de Teste");
+    const report = page.getByRole("button", { name: "Relatório", exact: true });
+    await expect(report).toHaveCSS("border-top-color", "rgb(217, 222, 234)");
+    await expect(report).toHaveCSS("color", "rgb(71, 84, 103)");
+    await page.screenshot({ path: testInfo.outputPath("congregacoes-desktop.png"), animations: "disabled" });
+  });
+  test("conta anexos concluídos e preserva telefone e descrição históricos ao editar", async ({ browser }, testInfo) => {
+    const ctx = await browser.newContext({ storageState: path.join(path.dirname(process.env.E2E_REPORT_FIXTURE!), "admin-session.json") });
+    try {
+      const page = await ctx.newPage();
+      await page.goto("/estrutura-eclesiastica/congregacoes");
+      await page.getByRole("textbox", { name: "Buscar em Congregações" }).fill(name);
+      await page.getByRole("button", { name: `Ver detalhes de ${name}`, exact: true }).first().click();
+      let modal = page.getByRole("dialog", { name: "Detalhes da Congregação", exact: true });
+      await expect(modal.getByText("Documentos anexados", { exact: true }).locator(".." )).toContainText("2");
+      for (const label of ["Situação atual", "Código", "Tipo", "Ordem de exibição", "País", "Telefone"]) await expect(modal.getByText(label, { exact: true })).toHaveCount(0);
+      await expect(modal.getByText("Cônjuge de Teste", { exact: true })).toBeVisible();
+      await modal.screenshot({ path: testInfo.outputPath("detalhes-congregacao.png"), animations: "disabled" });
+      await page.keyboard.press("Escape");
+      await page.getByRole("button", { name: `Editar ${name}`, exact: true }).first().click();
+      modal = page.getByRole("dialog", { name: "Editar Congregação", exact: true });
+      await expect(modal.locator('input[name="phone"]')).toHaveValue("1133334444");
+      await modal.getByRole("button", { name: "Continuar", exact: true }).click();
+      await expect(modal.getByLabel("Telefone", { exact: true })).toHaveCount(0);
+      await expect(modal.getByRole("textbox")).toHaveCount(4);
+      await modal.getByLabel("Nome do cônjuge", { exact: true }).fill("Cônjuge de Teste");
+      await modal.screenshot({ path: testInfo.outputPath("lideranca-form.png"), animations: "disabled" });
+      await modal.getByRole("button", { name: "Continuar", exact: true }).click();
+      await modal.getByRole("button", { name: "Continuar", exact: true }).click();
+      await modal.getByRole("button", { name: "Salvar Congregação", exact: true }).click();
+      await expect(modal).toHaveCount(0);
+      await page.getByRole("button", { name: `Editar ${name}`, exact: true }).first().click();
+      await expect(modal.locator('input[name="phone"]')).toHaveValue("1133334444");
+      await page.keyboard.press("Escape");
+      await page.goto("/estrutura-eclesiastica/cargos");
+      await expect(page.getByText("Organize os cargos dos membros.", { exact: true })).toBeVisible();
+      await page.getByRole("button", { name: "Editar Cargo de Teste", exact: true }).first().click();
+      modal = page.getByRole("dialog", { name: "Editar Cargo", exact: true });
+      await expect(modal.getByLabel("Descrição", { exact: true })).toHaveCount(0);
+      await expect(modal.locator('input[name="description"]')).toHaveValue("Descrição histórica preservada");
+      await modal.getByLabel("Variação feminina", { exact: true }).fill("Cargo feminino de Teste");
+      await modal.getByRole("button", { name: "Salvar Cargo", exact: true }).click();
+      await expect(modal).toHaveCount(0);
+      await page.getByRole("button", { name: "Editar Cargo de Teste", exact: true }).first().click();
+      await expect(modal.locator('input[name="description"]')).toHaveValue("Descrição histórica preservada");
+      await expect(modal.getByLabel("Variação feminina", { exact: true })).toHaveValue("Cargo feminino de Teste");
+      await page.keyboard.press("Escape");
+      await page.getByRole("button", { name: "Novo cadastro", exact: true }).click();
+      modal = page.getByRole("dialog", { name: "Novo Cargo", exact: true });
+      await expect(modal.getByLabel("Descrição", { exact: true })).toHaveCount(0);
+      await modal.screenshot({ path: testInfo.outputPath("novo-cargo.png"), animations: "disabled" });
+    } finally { await ctx.close(); }
   });
   test("respeita permissões e escopos e bloqueia dados de outra igreja", async ({ page, browser }) => {
     await expect(page.getByRole("button", { name: "Novo cadastro", exact: true })).toHaveCount(0);

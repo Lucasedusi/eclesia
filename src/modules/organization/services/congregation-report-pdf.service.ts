@@ -1,7 +1,7 @@
 import "server-only";
 
 import { PDFDocument, rgb, type PDFFont, type PDFPage } from "pdf-lib";
-import { createChurchPdfAssets, churchPastorsLabel, drawChurchHeader, drawChurchWatermark, finishChurchPdf, PAGE_HEIGHT, PAGE_MARGIN, PAGE_WIDTH, PDF_COLORS, wrapPdfText } from "@/lib/pdf/church-document";
+import { createChurchPdfAssets, drawChurchHeader, drawChurchWatermark, finishChurchPdf, PAGE_HEIGHT, PAGE_MARGIN, PAGE_WIDTH, PDF_COLORS, wrapPdfText } from "@/lib/pdf/church-document";
 import type { CongregationReportDocument, ReportCongregation } from "../types/congregation-report.types";
 
 export async function createCongregationReportPdf(data: CongregationReportDocument): Promise<Uint8Array> {
@@ -12,31 +12,27 @@ export async function createCongregationReportPdf(data: CongregationReportDocume
   const width = landscape ? PAGE_HEIGHT : PAGE_WIDTH, height = landscape ? PAGE_WIDTH : PAGE_HEIGHT;
   const contentWidth = width - PAGE_MARGIN * 2, bottom = height - 57;
   const title = data.kind === "simplified" ? "Lista de Congregações" : data.congregations[0]?.name || "Congregação";
+  const congregation = data.kind === "individual" ? data.congregations[0] : undefined;
+  const presidents = (data.church.pastorNames ?? []).map((name) => name.trim()).filter(Boolean);
+  const detailLines = [
+    ...(presidents.length ? [`Presidentes: ${presidents.join(" e ")}`] : []),
+    ...(congregation ? [`Dirigente: ${congregation.pastorName} · Cônjuge: ${congregation.spouseName || "Não informado"} · WhatsApp: ${congregation.whatsapp || "Não informado"}`] : []),
+  ];
   let page: PDFPage, cursor = 0;
   function draw(text: string, x: number, top: number, size = 10, font = regular, color = PDF_COLORS.navy) {
     if (text) page.drawText(text, { x, y: height - top - size, size, font, color });
   }
-  function newPage(first = false) {
+  function newPage() {
     page = document.addPage([width, height]);
     drawChurchWatermark(page, assets);
-    if (first) cursor = drawChurchHeader(page, data.church, assets) + 28;
-    else {
-      cursor = 28;
-      for (const line of wrapPdfText(data.church.name, bold, 10, contentWidth)) { draw(line, PAGE_MARGIN, cursor, 10, bold); cursor += 13; }
-      const pastors = churchPastorsLabel(data.church);
-      if (pastors) for (const line of wrapPdfText(pastors, regular, 9, contentWidth)) { draw(line, PAGE_MARGIN, cursor, 9); cursor += 12; }
-      for (const line of wrapPdfText(title, regular, 10, contentWidth)) { draw(line, PAGE_MARGIN, cursor + 5); cursor += 13; }
-      cursor += 17;
-      page.drawRectangle({ x: PAGE_MARGIN, y: height - cursor, width: contentWidth, height: 2, color: PDF_COLORS.gold });
-      cursor += 18;
-    }
+    cursor = drawChurchHeader(page, data.church, assets, { detailLines }) + 28;
   }
-  function paragraph(text: string, size = 10, font = regular, color = PDF_COLORS.navy) {
+  function paragraph(text: string, size = 10, font = regular, color = PDF_COLORS.navy, gapAfter = 8) {
     for (const line of wrapPdfText(text, font, size, contentWidth)) {
       if (cursor + size + 5 > bottom) newPage();
       draw(line, PAGE_MARGIN, cursor, size, font, color); cursor += size + 5;
     }
-    cursor += 8;
+    cursor += gapAfter;
   }
   function heading(text: string) {
     if (cursor + 70 > bottom) newPage();
@@ -50,7 +46,7 @@ export async function createCongregationReportPdf(data: CongregationReportDocume
       { label: "Congregação", weight: 1.6, value: (r) => r.name },
       { label: "Dirigente", weight: 1.2, value: (r) => r.pastorName },
       ...(data.fields.spouse ? [{ label: "Cônjuge", weight: 1, value: (r: ReportCongregation) => r.spouseName || "Não informado" }] : []),
-      ...(data.fields.phone ? [{ label: "Telefone", weight: 0, fixed: 108, value: (r: ReportCongregation) => r.contactPhone || "Não informado" }] : []),
+      ...(data.fields.phone ? [{ label: "WhatsApp", weight: 0, fixed: 108, value: (r: ReportCongregation) => r.contactPhone || "Não informado" }] : []),
       ...(data.fields.address ? [{ label: "Endereço", weight: 2.1, value: (r: ReportCongregation) => r.address?.full || "Não informado" }] : []),
     ];
     const remaining = contentWidth - columns.reduce((sum, c) => sum + (c.fixed ?? 0), 0);
@@ -112,20 +108,18 @@ export async function createCongregationReportPdf(data: CongregationReportDocume
     }
     cursor += 10;
   }
-  newPage(true);
+  newPage();
   if (data.kind === "simplified") {
-    paragraph(title.toLocaleUpperCase("pt-BR"), 18, bold);
-    paragraph(`${data.congregations.length} ${data.congregations.length === 1 ? "congregação" : "congregações"}`, 9, regular, PDF_COLORS.muted);
+    paragraph(title.toLocaleUpperCase("pt-BR"), 18, bold, PDF_COLORS.navy, 0);
+    paragraph(`${data.congregations.length} ${data.congregations.length === 1 ? "congregação" : "congregações"}`, 9, regular, PDF_COLORS.muted, 24);
     if (data.scopeLabel) paragraph(data.scopeLabel, 9, regular, PDF_COLORS.muted);
     if (data.filters.length) paragraph(data.filters.join(" · "), 9, regular, PDF_COLORS.muted);
     list();
   } else {
     const row = data.congregations[0];
-    paragraph(title.toLocaleUpperCase("pt-BR"), 18, bold);
-    paragraph(row?.regionName || "Sem regional", 10, regular, PDF_COLORS.muted);
+    paragraph(title.toLocaleUpperCase("pt-BR"), 18, bold, PDF_COLORS.navy, 0);
+    paragraph(row?.regionName || "Sem regional", 10, regular, PDF_COLORS.muted, 24);
     if (data.scopeLabel) paragraph(data.scopeLabel, 9, regular, PDF_COLORS.muted);
-    cursor += 12;
-    fields("Liderança e contato", [["Dirigente", row?.pastorName], ["Cônjuge", row?.spouseName], ["WhatsApp", row?.whatsapp]]);
     fields("Endereço", [["Logradouro e número", row?.address?.street], ...(row?.address?.complement ? [["Complemento", row.address.complement] as [string, string]] : []), ["Bairro", row?.address?.district], ["Cidade", row?.address?.city], ["Estado", row?.address?.state], ["CEP", row?.address?.zipCode]]);
     if (row?.notes) { heading("Observação"); paragraph(row.notes); }
   }
