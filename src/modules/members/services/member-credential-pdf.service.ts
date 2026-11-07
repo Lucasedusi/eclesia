@@ -291,11 +291,23 @@ export async function createMemberCredentialPdf(
     await addFoldSheet(document, printPreview, fonts);
   }
 
+  const footerFont = fonts.get(400)!;
+  for (const page of document.getPages()) {
+    const compact = format === "pvc";
+    const size = compact ? 4 : 8;
+    const trim = page.getTrimBox();
+    page.drawText("Eklesias", {
+      x: compact ? trim.x + trim.width - mm(3) - footerFont.widthOfTextAtSize("Eklesias", size) : 36,
+      y: compact ? trim.y + 4 : 28,
+      size, font: footerFont, color: rgb(0.4, 0.45, 0.54),
+    });
+  }
+
   document.setTitle("Credencial física de membro");
-  document.setAuthor("Eclésias");
+  document.setAuthor("Eklesias");
   document.setSubject("Documento de identificação eclesiástica");
-  document.setCreator("Eclésias");
-  document.setProducer("Eclésias");
+  document.setCreator("Eklesias");
+  document.setProducer("Eklesias");
   document.setCreationDate(new Date(preview.issuedAt));
 
   return document.save({ useObjectStreams: false });

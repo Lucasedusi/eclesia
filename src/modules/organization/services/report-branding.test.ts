@@ -45,6 +45,7 @@ describe("organization PDF branding", () => {
       expect(options.y! + options.height! / 2).toBeCloseTo(page.getHeight() / 2);
       const pageText = texts.mock.calls.filter((_, i) => texts.mock.instances[i] === page);
       expect(pageText.map(([text]) => text).join(" ")).toContain("Paulo Silva e Ana Silva");
+      expect(pageText.some(([text, options]) => text === "Eklesias" && options!.y! < 40)).toBe(true);
       const name = pageText.find(([text]) => /IGREJA|Igreja/.test(text))![1]!;
       const pastors = pageText.find(([text]) => text.includes("Paulo Silva"))![1]!;
       expect(pastors.y).toBeLessThan(name.y!);

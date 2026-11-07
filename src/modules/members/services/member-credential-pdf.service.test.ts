@@ -1,5 +1,5 @@
 import { mkdir, writeFile } from "node:fs/promises";
-import { decodePDFRawStream, PDFDict, PDFDocument, PDFName, PDFRawStream } from "pdf-lib";
+import { decodePDFRawStream, PDFDict, PDFDocument, PDFName, PDFPage, PDFRawStream } from "pdf-lib";
 import { Resvg } from "@resvg/resvg-js";
 import QRCode from "qrcode";
 import sharp from "sharp";
@@ -59,6 +59,21 @@ const preview: MemberCredentialPreview = {
 };
 
 describe("createMemberCredentialPdf", () => {
+  it.each(["fold", "pvc"] as const)("includes a footer inside every %s page without changing print dimensions", async (format) => {
+    const drawn = vi.spyOn(PDFPage.prototype, "drawText");
+    try {
+      const bytes = await createMemberCredentialPdf(preview, format);
+      const pdf = await PDFDocument.load(bytes);
+      const footers = drawn.mock.calls.filter(([text]) => text === "Eklesias");
+      expect(footers).toHaveLength(pdf.getPageCount());
+      for (const [, options] of footers) {
+        const page = pdf.getPage(0);
+        const trim = page.getTrimBox();
+        expect(options!.y!).toBeGreaterThan(trim.y);
+        expect(options!.x! + options!.font!.widthOfTextAtSize("Eklesias", options!.size!)).toBeLessThan(trim.x + trim.width);
+      }
+    } finally { drawn.mockRestore(); }
+  });
   it("imprime a logo WebP na frente e como marca d'água no verso do PVC", async () => {
     const logo = await sharp({
       create: { width: 40, height: 40, channels: 4, background: "#ff00ff" },

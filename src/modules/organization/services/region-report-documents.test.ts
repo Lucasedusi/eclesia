@@ -19,7 +19,9 @@ async function saveQa(name: string, bytes: Uint8Array) {
 describe("regional report documents", () => {
   it.each(["simplified", "individual"] as const)("creates %s A4 PDF in the member sheet visual identity", async (kind) => {
     const drawn = vi.spyOn(PDFPage.prototype, "drawText");
-    const bytes = await createRegionReportPdf(regionReportFixture(kind));
+    const input = regionReportFixture(kind);
+    input.church.pastorNames = ["Paulo Silva", "Ana Silva"];
+    const bytes = await createRegionReportPdf(input);
     const pdf = await PDFDocument.load(bytes);
     expect(pdf.getPageCount()).toBe(1);
     expect(pdf.getPage(0).getSize()).toEqual({ width: 595.28, height: 841.89 });
@@ -28,6 +30,11 @@ describe("regional report documents", () => {
     expect(text).toContain("Maria de Oliveira");
     expect(text).toContain("Página 1 de 1");
     expect(text).toContain("04/11/2026");
+    expect(text).toContain("Eklesias");
+    expect(text).toContain("Presidentes: Paulo Silva e Ana Silva");
+    expect(text).not.toContain("Rua das Flores");
+    expect(text).not.toContain("CNPJ:");
+    expect(text).not.toContain("(11) 3333-4444");
     if (kind === "individual") {
       expect(text).toContain("Congregação Central");
       expect(text).not.toContain("FICHA DA REGIONAL");
@@ -37,9 +44,13 @@ describe("regional report documents", () => {
       expect(name).toBeDefined();
       expect(count).toBeDefined();
       expect(name[1]!.font).not.toBe(count[1]!.font);
-      const phone = drawn.mock.calls.find(([value]) => value.startsWith("Telefone do coordenador:"))!;
-      const description = drawn.mock.calls.find(([value]) => value === "DESCRIÇÃO")!;
-      expect(phone[1]!.y! - description[1]!.y!).toBeGreaterThanOrEqual(38);
+      const coordinator = drawn.mock.calls.find(([value]) => value.includes("Coordenador: Maria de Oliveira"))!;
+      expect(coordinator[1]!.y!).toBeGreaterThan(name[1]!.y!);
+      expect(text).not.toContain("DESCRIÇÃO");
+      expect(text).not.toContain(input.region!.description!);
+      const table = drawn.mock.calls.find(([value]) => value === "CONGREGAÇÃO")!;
+      expect(name[1]!.y! - count[1]!.y!).toBeLessThanOrEqual(24);
+      expect(count[1]!.y! - table[1]!.y!).toBeGreaterThan(32);
       expect(text).not.toContain("Situação:");
       expect(text).not.toContain("Congregações: ativas e inativas");
     } else {
@@ -66,16 +77,18 @@ describe("regional report documents", () => {
     expect(indices).toEqual(Array.from({ length: 90 }, (_, i) => i + 1));
     await saveQa(`${kind}-numerada.pdf`, bytes);
   });
-  it("keeps long descriptions and table cells within page boundaries", async () => {
+  it("omits descriptions and keeps long headers and cells within page boundaries", async () => {
     const drawn = vi.spyOn(PDFPage.prototype, "drawText");
     const input = regionReportFixture("individual");
+    input.church.pastorNames = ["Presidente de nome longo ".repeat(5), "Cônjuge de nome longo ".repeat(5)];
+    input.region!.coordinatorName = "Coordenador de nome extenso ".repeat(5);
     input.region!.description = "Descrição extensa da regional. ".repeat(450) + "FINAL DA DESCRIÇÃO";
     input.congregations[0].name = "Congregação de nome extenso ".repeat(180) + "FINAL DO NOME";
     input.congregations[0].pastorName = "Álvaro 🎉";
     input.scopeLabel = "Visão restrita: somente registros autorizados para o seu acesso.";
     const bytes = await createRegionReportPdf(input);
     const text = drawn.mock.calls.map(([value]) => value).join(" ");
-    expect(text).toContain("FINAL DA DESCRIÇÃO");
+    expect(text).not.toContain("FINAL DA DESCRIÇÃO");
     expect(text).toContain("FINAL DO NOME");
     expect(text).toContain("registros autorizados");
     for (const [value, opts] of drawn.mock.calls) {

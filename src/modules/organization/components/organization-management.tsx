@@ -106,7 +106,7 @@ const PAGE_SIZE = 20;
 const descriptions: Record<OrganizationTab, { title: string; text: string; empty: string }> = {
   regions: {
     title: "Regionais",
-    text: "Organize agrupamentos territoriais e acompanhe suas congregações vinculadas.",
+    text: "Gerencie as regionais e suas congregações.",
     empty: "Nenhuma regional cadastrada ainda.",
   },
   congregations: {
@@ -138,7 +138,6 @@ function OrganizationStats({ data }: { data: OrganizationData }) {
     { icon: Network, label: "Regionais ativas", value: data.stats.activeRegions, tone: "primary" as const },
     { icon: Church, label: "Congregações ativas", value: data.stats.activeCongregations, tone: "success" as const },
     { icon: Power, label: "Congregações inativas", value: data.stats.inactiveCongregations, tone: "neutral" as const },
-    { icon: BadgeCheck, label: "Cargos ativos", value: data.stats.activePositions, tone: "primary" as const },
   ];
 
   return (
@@ -167,7 +166,7 @@ export function OrganizationManagement({ data, activeTab }: { data: Organization
   const [congregationDocuments, setCongregationDocuments] = useState<CongregationItem | null>(null);
   const [regionDetails, setRegionDetails] = useState<OrganizationDetailsTarget | null>(null);
   const [congregationReport, setCongregationReport] = useState(false);
-  const [regionReport, setRegionReport] = useState<{ initialRegion?: OrganizationDetailsTarget } | null>(null);
+  const [regionReport, setRegionReport] = useState(false);
   const [congregationDetails, setCongregationDetails] = useState<OrganizationDetailsTarget | null>(null);
   const [positionDetails, setPositionDetails] = useState<PositionItem | null>(null);
   const [positionForm, setPositionForm] = useState<PositionItem | "new" | null>(null);
@@ -272,7 +271,7 @@ export function OrganizationManagement({ data, activeTab }: { data: Organization
         <S.PanelHeader>
           <div><h2>{descriptions[activeTab].title}</h2><p>{descriptions[activeTab].text}</p></div>
           <S.HeaderActions>
-            {activeTab === "regions" && data.management.regionReports ? <Button variant="outline" title="Relatório" onClick={() => setRegionReport({})}><FileChartColumn size={17} aria-hidden="true" />Relatório</Button> : null}
+            {activeTab === "regions" && data.management.regionReports ? <S.ReportButton variant="outline" title="Relatório" onClick={() => setRegionReport(true)}><FileChartColumn size={17} aria-hidden="true" />Relatório</S.ReportButton> : null}
             {activeTab === "congregations" && data.management.congregationReports ? <Button variant="outline" title="Relatório" onClick={() => setCongregationReport(true)}><FileChartColumn size={17} aria-hidden="true" />Relatório</Button> : null}
             {canManage ? <Button onClick={openCreate}><Plus size={15} /> Novo cadastro</Button> : null}
           </S.HeaderActions>
@@ -332,8 +331,8 @@ export function OrganizationManagement({ data, activeTab }: { data: Organization
         )}
       </S.Panel>
 
-      {regionDetails ? <RegionDetailsModal target={regionDetails} canManage={data.management.regions} canExport={data.management.regionReports} onPrint={() => { setRegionReport({ initialRegion: regionDetails }); setRegionDetails(null); }} onClose={() => setRegionDetails(null)} onEdit={(item) => { setRegionDetails(null); setRegionForm(item); }} onOpenCongregation={(target) => { setRegionDetails(null); setCongregationDetails(target); }} /> : null}
-      {regionReport ? <RegionReportModal regions={data.regions} initialRegion={regionReport.initialRegion} filters={{ search, status, sort }} onClose={() => { if (regionReport.initialRegion) setRegionDetails(regionReport.initialRegion); setRegionReport(null); }} /> : null}
+      {regionDetails ? <RegionDetailsModal target={regionDetails} canManage={data.management.regions} canExport={data.management.regionReports} onClose={() => setRegionDetails(null)} onEdit={(item) => { setRegionDetails(null); setRegionForm(item); }} onOpenCongregation={(target) => { setRegionDetails(null); setCongregationDetails(target); }} /> : null}
+      {regionReport ? <RegionReportModal regions={data.regions} filters={{ search, status, sort }} onClose={() => setRegionReport(false)} /> : null}
       {congregationReport ? <CongregationReportModal filters={{ search, status, sort, region, congregationType }} onClose={() => setCongregationReport(false)} /> : null}
       {congregationDetails ? <CongregationDetailsModal canExport={data.management.congregationReports} target={congregationDetails} canManage={data.management.congregations} canViewDocuments={data.management.congregationDocumentsView} onClose={() => setCongregationDetails(null)} onEdit={(item) => { setCongregationDetails(null); setCongregationForm(item); }} onOpenDocuments={(item) => { setCongregationDetails(null); setCongregationDocuments(item); }} /> : null}
       {positionDetails ? <Modal open size="sm" title="Detalhes do Cargo" description="Informações cadastradas no catálogo eclesiástico." icon={<BadgeCheck />} onClose={() => setPositionDetails(null)} footer={<S.DetailFooter><Button variant="outline" onClick={() => setPositionDetails(null)}>Fechar</Button>{canManage ? <Button onClick={() => { setPositionDetails(null); setPositionForm(positionDetails); }}><Pencil size={15} />Editar Cargo</Button> : null}</S.DetailFooter>}><S.PositionDetailsGrid><div><small>Nome do Cargo</small><strong>{positionDetails.name}</strong></div><div><small>Forma feminina</small><strong>{positionDetails.femaleName || "Não informada"}</strong></div><div><small>Abreviação</small><strong>{positionDetails.abbreviation || "Não informada"}</strong></div><div><small>Abreviação feminina</small><strong>{positionDetails.femaleAbbreviation || "Não informada"}</strong></div><div><small>Ordem de exibição</small><strong>{positionDetails.displayOrder}</strong></div><div><small>Situação</small><Status value={positionDetails.status} /></div><div data-wide><small>Descrição</small><strong>{positionDetails.description || "Sem descrição"}</strong></div><div><small>Criação</small><strong>{formatDate(positionDetails.createdAt)}</strong></div><div><small>Última atualização</small><strong>{formatDate(positionDetails.updatedAt)}</strong></div></S.PositionDetailsGrid></Modal> : null}

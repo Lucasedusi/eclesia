@@ -148,10 +148,10 @@ function columnsFor(report: EventParticipantReportPreview): Column[] {
 export async function createEventParticipantReportPdf(report: EventParticipantReportPreview) {
   const document = await PDFDocument.create();
   document.setTitle(`Relatório de participantes - ${report.event.name}`);
-  document.setAuthor("Eclésia");
+  document.setAuthor("Eklesias");
   document.setSubject("Relação de participantes do evento");
-  document.setCreator("Eclésia");
-  document.setProducer("Eclésia");
+  document.setCreator("Eklesias");
+  document.setProducer("Eklesias");
   document.setCreationDate(new Date(report.issuedAt));
 
   const regular = await document.embedFont(StandardFonts.Helvetica);
@@ -291,7 +291,7 @@ export async function createEventParticipantReportPdf(report: EventParticipantRe
   pages.forEach((currentPage, index) => {
     const pageWidth = currentPage.getWidth();
     currentPage.drawLine({ start: { x: margin, y: 31 }, end: { x: pageWidth - margin, y: 31 }, thickness: 0.6, color: colors.line });
-    currentPage.drawText("Relatório gerado pelo sistema Eclésia", { x: margin, y: 17, size: 7, font: regular, color: colors.muted });
+    currentPage.drawText("Relatório gerado pelo sistema Eklesias", { x: margin, y: 17, size: 7, font: regular, color: colors.muted });
     const pageNumber = `Página ${index + 1} de ${pages.length}`;
     currentPage.drawText(pageNumber, { x: pageWidth - margin - regular.widthOfTextAtSize(pageNumber, 7), y: 17, size: 7, font: regular, color: colors.muted });
   });

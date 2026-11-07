@@ -2,6 +2,7 @@
 
 import styled, { keyframes } from "styled-components";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import {
   LIST_PANEL_SUBTITLE_STYLE,
   TABLE_CONTENT_GUTTER,
@@ -68,12 +69,9 @@ export const Tab = styled(Link)<{ $active: boolean }>`
 
 export const Stats = styled.section`
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
 
-  @media (max-width: 1120px) {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
   @media (max-width: 700px) {
     grid-template-columns: 1fr 1fr;
   }
@@ -1013,5 +1011,20 @@ export const ErrorState = styled.div`
     font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 500;
     line-height: 1.6;
+  }
+`;
+
+export const ReportButton = styled(Button)`
+  border-color: #d9deea;
+  background: #fff;
+  color: #475467;
+  &:hover:not(:disabled) {
+    border-color: ${({ theme }) => theme.colors.brand.primary};
+    background: #f6f8ff;
+    color: ${({ theme }) => theme.colors.brand.primary};
+  }
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.colors.brand.primary};
+    outline-offset: 2px;
   }
 `;

@@ -74,7 +74,7 @@ export async function createFinanceReportPdf(
           });
   doc.setTitle(`Relatório ${kind} · ${data.congregationName} · ${month}`);
   doc.setAuthor(data.church.name);
-  doc.setCreator("Eclesias");
+  doc.setCreator("Eklesias");
   let activeCashboxName = "";
   let activeBankDetails = "";
   const bankDescription = (box: FinanceReportDocument["cashboxes"][number]) => {
@@ -479,6 +479,7 @@ export async function createFinanceReportPdf(
         regular,
         muted,
       );
+      draw("Eklesias", (W - regular.widthOfTextAtSize("Eklesias", 8)) / 2, H - 28, 8, regular, muted);
       const label = `Página ${i + 1} de ${doc.getPageCount()}`;
       draw(
         label,

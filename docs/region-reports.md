@@ -4,13 +4,13 @@
 
 Em **Estrutura Eclesiástica → Regionais**, o ícone de relatório ao lado de **Novo cadastro** abre as opções de exportação. O ícone também aparece para quem pode exportar, mesmo sem permissão para cadastrar.
 
-- **Lista simplificada:** nome da regional, coordenador e telefone do coordenador; download em PDF ou Excel (`.xlsx`). É possível incluir todas as regionais autorizadas ou os resultados filtrados na tela, incluindo todas as páginas, e selecionar ativas/inativas.
-- **Ficha da regional:** selecione uma regional para baixar seu PDF. Inclui coordenador, telefone, descrição quando preenchida e as congregações vinculadas, com dirigente e contato. Também está disponível em **Detalhes da Regional → Imprimir / PDF**. Ao fechar a exportação, retorna aos detalhes.
+- **Lista simplificada:** nome da regional, coordenador e telefone do coordenador; download em PDF ou Excel (`.xlsx`). O seletor **Filtros** permite incluir todas as regionais autorizadas (ativas e inativas) ou os resultados filtrados na tela, respeitando busca, situação e ordenação e incluindo todas as páginas.
+- **Ficha da regional:** selecione uma regional para baixar seu PDF. Inclui coordenador e telefone no cabeçalho, nome da regional, quantidade e congregações vinculadas, com dirigente e contato. Sempre inclui ativas e inativas dentro do acesso autorizado. Também está disponível em **Detalhes da Regional → Imprimir / PDF**, com download direto e sem fechar os detalhes. A descrição cadastral não é impressa.
 - Para imprimir, abra o PDF baixado e use a impressão do leitor de PDF.
 
 O contato de cada congregação segue **WhatsApp → Telefone → Não informado**. É o contato cadastrado da congregação, não um telefone pessoal do dirigente. O telefone do coordenador usa o campo próprio da regional.
 
-Os PDFs usam o cabeçalho, logo, cores e rodapé compartilhados com a ficha do membro, em A4, com data de emissão e numeração das páginas. Tabelas repetem os títulos nas páginas seguintes. O Excel possui cabeçalho, filtros, títulos fixos e telefones preservados como texto.
+Os PDFs usam logo, cores e rodapé compartilhados com a ficha do membro, em A4, com **Eklesias**, data de emissão e numeração das páginas. O cabeçalho regional exibe apenas nome do campo e Presidentes; a ficha acrescenta coordenador e telefone. Endereço, telefone institucional e CNPJ não aparecem nesses cabeçalhos. Tabelas repetem os títulos nas páginas seguintes. O Excel possui cabeçalho, filtros, títulos fixos e telefones preservados como texto.
 
 ## Acesso e dados
 
@@ -72,3 +72,15 @@ Os PDFs de listagem e ficha usam a logo cadastrada como marca d’água centrali
 O cabeçalho mostra os nomes cadastrados em Pastor Presidente e Cônjuge do Pastor Presidente logo abaixo da igreja, inclusive nas páginas de continuação. Campos vazios são omitidos; nomes extensos quebram linha. A leitura usa a igreja do contexto autenticado e mantém os filtros de exclusão lógica. Nenhuma migração é necessária.
 
 Validação: 793 testes, lint e tipagem aprovados; 9 cenários de navegador de congregações e regionais aprovados. PDFs em retrato, paisagem e múltiplas páginas renderizados e inspecionados. O PDF baixado no fluxo local contém os nomes pastorais cadastrados. Build não repetido: mudança restrita à consulta de campos existentes e à renderização, sem mudanças em rotas, configuração, dependências ou limites entre servidor e cliente. Não houve alterações no banco online.
+
+## Ajustes de Regionais e marca dos PDFs — 07/11/2026
+
+- Subtítulo simplificado; botão Relatório com borda/texto cinza e hover/foco equivalentes aos de Membros. Removido o indicador “Cargos ativos”; os três indicadores restantes ocupam a linha no desktop.
+- Criação e edição organizadas em nome/status, coordenador/telefone e descrição de largura total; campos empilhados no celular.
+- Detalhes com duas contagens (ativas/inativas), informações em quatro colunas no desktop e descrição abaixo, sem última atualização.
+- Removidos os seletores redundantes de situação do modal de relatórios e a etapa intermediária da impressão nos detalhes. O download direto mantém a permissão de exportação, indica andamento e permite nova tentativa após falha.
+- Cabeçalho específico de Regionais com espaçamento uniforme, repetido nas páginas seguintes. Título e quantidade próximos, com espaço maior antes da tabela. Mantidas numeração contínua, marca d’água, colunas, filtros aplicados e indicação de acesso restrito.
+- Marca **Eklesias** no rodapé de todos os geradores PDF: Regionais, Congregações, ficha/listagens/credenciais de Membros, relatórios e comprovante digital do Financeiro, relatórios e comprovantes individuais/coletivos de Eventos. Cada formato mantém suas informações existentes; PVC preserva corte, sangria e QR, com marca discreta dentro da área final.
+- Sem alterações de banco, permissões, escopos, auditoria ou exclusão lógica. Os testes de navegador usam apenas dados fictícios locais; o harness inclui administrador e regional inativa.
+
+Validação: **858 testes em 135 arquivos**, lint sem avisos, tipagem e build de produção com configuração local aprovados. **8 cenários Playwright** passaram, incluindo filtros, impressão direta, recuperação de falha, cadastro/edição, desktop/móvel e restrições de acesso. PDFs sintéticos regionais, credenciais, documentos compartilhados e Eventos renderizados/inspecionados. Revisão realizada diretamente, sem subagentes. Advisors e verificações de migrações não se aplicam (nenhuma alteração de banco); análise de bundles não se aplica (nenhuma mudança destinada a desempenho de rotas). Nenhuma alteração no PDF local fora do escopo. A incorporação desta entrega à `main` online foi autorizada pelo usuário após a validação.

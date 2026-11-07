@@ -30,6 +30,7 @@ import type {
   RegionDetails,
   RegionItem,
 } from "../types/organization.types";
+import { useRegionReport } from "../hooks/use-region-report";
 import { useCongregationReport } from "../hooks/use-congregation-report";
 import { Feedback as ReportFeedback } from "./region-report.styles";
 import { DetailSectionHeading } from "./organization-detail-section-heading";
@@ -46,7 +47,6 @@ type RegionDetailsModalProps = {
   target: OrganizationDetailsTarget;
   canManage: boolean;
   canExport: boolean;
-  onPrint: () => void;
   onClose: () => void;
   onEdit: (region: RegionItem) => void;
   onOpenCongregation: (target: OrganizationDetailsTarget) => void;
@@ -174,11 +174,11 @@ export function RegionDetailsModal({
   target,
   canManage,
   canExport,
-  onPrint,
   onClose,
   onEdit,
   onOpenCongregation,
 }: RegionDetailsModalProps) {
+  const report = useRegionReport();
   const [state, setState] = useState<LoadState<RegionDetails>>({
     status: "loading",
   });
@@ -236,20 +236,24 @@ export function RegionDetailsModal({
   return (
     <Modal
       open
+      busy={report.busy}
       title="Detalhes da Regional"
       description={target.name}
       icon={<Network size={22} />}
       onClose={onClose}
       size="xl"
       footer={
-        <S.FooterActions>
-          {canExport ? <Button variant="outline" onClick={onPrint} disabled={!details}><Printer size={15} /> Imprimir / PDF</Button> : <Button variant="outline" onClick={onClose}>Fechar</Button>}
-          {canManage && details ? (
-            <Button onClick={() => onEdit(details)}>
-              <Pencil size={15} /> Editar Regional
-            </Button>
-          ) : null}
-        </S.FooterActions>
+        <div style={{ width: "100%" }}>
+          {report.feedback && <ReportFeedback $error={report.feedback.error} role={report.feedback.error ? "alert" : "status"}>{report.feedback.message}</ReportFeedback>}
+          <S.FooterActions>
+            {canExport ? <Button variant="outline" disabled={!details || report.busy} loading={report.busy} onClick={() => void report.download({ kind: "individual", format: "pdf", regionId: target.id, congregationStatus: "ALL" })}><Printer size={15} /> Imprimir / PDF</Button> : <Button variant="outline" onClick={onClose}>Fechar</Button>}
+            {canManage && details ? (
+              <Button disabled={report.busy} onClick={() => onEdit(details)}>
+                <Pencil size={15} /> Editar Regional
+              </Button>
+            ) : null}
+          </S.FooterActions>
+        </div>
       }
     >
       {state.status === "loading" ? <LoadingDetails entity="Regional" /> : null}
@@ -259,12 +263,6 @@ export function RegionDetailsModal({
       {details ? (
         <S.Content>
           <S.SummaryGrid>
-            <SummaryCard
-              icon={<Church />}
-              value={details.congregationCount}
-              label="Congregações"
-              tone="primary"
-            />
             <SummaryCard
               icon={<Power />}
               value={details.activeCongregationCount}
@@ -290,7 +288,7 @@ export function RegionDetailsModal({
               </S.SectionHeading>
               <Status value={details.status} />
             </S.SectionHeader>
-            <S.InfoGrid>
+            <S.InfoGrid $columns={4}>
               <Info label="Nome" value={details.name} />
               <Info label="Coordenador" value={details.coordinatorName} />
               <Info
@@ -309,10 +307,7 @@ export function RegionDetailsModal({
                 label="Cadastrada em"
                 value={formatDateTime(details.createdAt)}
               />
-              <Info
-                label="Última atualização"
-                value={formatDateTime(details.updatedAt)}
-              />
+
               <Info label="Descrição" value={details.description} wide />
             </S.InfoGrid>
           </S.Section>

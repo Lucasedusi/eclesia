@@ -1,7 +1,7 @@
 import "server-only";
 
 import { PDFDocument, type PDFFont, type PDFPage } from "pdf-lib";
-import { CONTENT_BOTTOM, CONTENT_WIDTH, createChurchPdfAssets, churchPastorsLabel, drawChurchHeader, drawChurchWatermark, finishChurchPdf, PAGE_HEIGHT, PAGE_MARGIN, PAGE_WIDTH, PDF_COLORS, wrapPdfText } from "@/lib/pdf/church-document";
+import { CONTENT_BOTTOM, CONTENT_WIDTH, createChurchPdfAssets, drawChurchHeader, drawChurchWatermark, finishChurchPdf, PAGE_HEIGHT, PAGE_MARGIN, PAGE_WIDTH, PDF_COLORS, wrapPdfText } from "@/lib/pdf/church-document";
 import type { RegionReportDocument } from "../types/region-report.types";
 
 export async function createRegionReportPdf(data: RegionReportDocument): Promise<Uint8Array> {
@@ -9,38 +9,28 @@ export async function createRegionReportPdf(data: RegionReportDocument): Promise
   const assets = await createChurchPdfAssets(document, data.church.logoDataUri);
   const { regular, bold } = assets;
   const title = data.kind === "simplified" ? "Lista de Regionais" : data.region?.name ?? "Regional";
-  const identity = data.region?.name ?? title;
+  const presidents = (data.church.pastorNames ?? []).map((name) => name.trim()).filter(Boolean);
+  const detailLines = [
+    ...(presidents.length ? [`Presidentes: ${presidents.join(" e ")}`] : []),
+    ...(data.kind === "individual" && data.region ? [`Coordenador: ${data.region.coordinatorName} · ${data.region.coordinatorPhone}`] : []),
+  ];
   let page: PDFPage;
   let cursor = 0;
 
   function draw(text: string, x: number, top: number, size = 10, font: PDFFont = regular, color = PDF_COLORS.navy) {
     if (text) page.drawText(text, { x, y: PAGE_HEIGHT - top - size, size, font, color });
   }
-  function newPage(first = false) {
+  function newPage() {
     page = document.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
     drawChurchWatermark(page, assets);
-    if (first) cursor = drawChurchHeader(page, data.church, assets) + 28;
-    else {
-      cursor = 28;
-      for (const line of wrapPdfText(data.church.name, bold, 10, CONTENT_WIDTH)) { draw(line, PAGE_MARGIN, cursor, 10, bold); cursor += 13; }
-      const pastors = churchPastorsLabel(data.church);
-      if (pastors) for (const line of wrapPdfText(pastors, regular, 9, CONTENT_WIDTH)) { draw(line, PAGE_MARGIN, cursor, 9); cursor += 12; }
-      for (const line of wrapPdfText(identity, regular, 10, CONTENT_WIDTH)) { draw(line, PAGE_MARGIN, cursor + 5); cursor += 13; }
-      cursor += 17;
-      page.drawRectangle({ x: PAGE_MARGIN, y: PAGE_HEIGHT - cursor, width: CONTENT_WIDTH, height: 2, color: PDF_COLORS.gold });
-      cursor += 18;
-    }
+    cursor = drawChurchHeader(page, data.church, assets, { detailLines }) + 28;
   }
-  function paragraph(text: string, size = 10, font: PDFFont = regular, color = PDF_COLORS.navy) {
+  function paragraph(text: string, size = 10, font: PDFFont = regular, color = PDF_COLORS.navy, gapAfter = 8) {
     for (const line of wrapPdfText(text, font, size, CONTENT_WIDTH)) {
       if (cursor + size + 5 > CONTENT_BOTTOM) newPage();
       draw(line, PAGE_MARGIN, cursor, size, font, color); cursor += size + 5;
     }
-    cursor += 8;
-  }
-  function heading(text: string) {
-    if (cursor + 65 > CONTENT_BOTTOM) newPage();
-    paragraph(text.toLocaleUpperCase("pt-BR"), 12, bold);
+    cursor += gapAfter;
   }
   function table(headers: string[], rows: string[][], empty: string) {
     const dataWidth = CONTENT_WIDTH - 44;
@@ -76,22 +66,17 @@ export async function createRegionReportPdf(data: RegionReportDocument): Promise
     });
   }
 
-  newPage(true);
-  paragraph(title.toLocaleUpperCase("pt-BR"), 18, bold);
+  newPage();
+  paragraph(title.toLocaleUpperCase("pt-BR"), 18, bold, PDF_COLORS.navy, 0);
   const count = data.kind === "simplified" ? data.regions.length : data.congregations.length;
   const countLabel = data.kind === "simplified" ? (count === 1 ? "regional" : "regionais") : (count === 1 ? "congregação" : "congregações");
-  paragraph(`${count} ${countLabel}`, 9, regular, PDF_COLORS.muted);
+  paragraph(`${count} ${countLabel}`, 9, regular, PDF_COLORS.muted, 24);
   if (data.scopeLabel) paragraph(data.scopeLabel, 9, regular, PDF_COLORS.muted);
   if (data.kind === "simplified") {
     const activeFilters = data.filters.filter((filter) => filter !== "Ativas e inativas");
     if (activeFilters.length) paragraph(activeFilters.join(" · "), 9, regular, PDF_COLORS.muted);
     table(["Nome da regional", "Coordenador", "Telefone"], data.regions.map((r) => [r.name, r.coordinatorName, r.coordinatorPhone]), "Nenhuma regional encontrada para este relatório.");
   } else if (data.region) {
-    const region = data.region;
-    paragraph(`Coordenador: ${region.coordinatorName}`);
-    paragraph(`Telefone do coordenador: ${region.coordinatorPhone}`);
-    cursor += 18;
-    if (region.description) { heading("Descrição"); paragraph(region.description); }
     const activeFilters = data.filters.filter((filter) => !/^(Congregações: )?ativas e inativas$/i.test(filter));
     if (activeFilters.length) paragraph(activeFilters.join(" · "), 9, regular, PDF_COLORS.muted);
     table(["Congregação", "Dirigente", "Telefone de contato"], data.congregations.map((c) => [`${c.name}${c.status === "INACTIVE" ? " (Inativa)" : ""}`, c.pastorName, c.contactPhone]), "Nenhuma congregação encontrada para este relatório.");

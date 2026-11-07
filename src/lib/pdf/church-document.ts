@@ -81,11 +81,33 @@ export function drawChurchWatermark(page: PDFPage, { logo }: ChurchPdfAssets) {
   });
 }
 
-export function drawChurchHeader(page: PDFPage, church: ChurchDocumentIdentity, { regular, bold, logo }: ChurchPdfAssets) {
+export function drawChurchHeader(page: PDFPage, church: ChurchDocumentIdentity, { regular, bold, logo }: ChurchPdfAssets, options?: { detailLines: string[] }) {
   const pageWidth = page.getWidth(), pageHeight = page.getHeight();
   const left = logo ? 115 : PAGE_MARGIN;
   const width = pageWidth - PAGE_MARGIN - left;
   const name = wrapPdfText(church.name.toLocaleUpperCase("pt-BR"), bold, 14, width);
+  if (options) {
+    const details = options.detailLines.filter(Boolean).flatMap((line) => wrapPdfText(line, regular, 10, width));
+    const lineHeight = 19;
+    const height = Math.max(94, 22 + (name.length + details.length) * lineHeight + 12);
+    page.drawRectangle({ x: 0, y: pageHeight - height, width: pageWidth, height, color: PDF_COLORS.navy });
+    page.drawRectangle({ x: 0, y: pageHeight - height - 6, width: pageWidth, height: 6, color: PDF_COLORS.gold });
+    if (logo) {
+      page.drawCircle({ x: 68, y: pageHeight - height / 2, size: 32, color: PDF_COLORS.white });
+      const dimensions = logo.scaleToFit(55, 55);
+      page.drawImage(logo, { x: 68 - dimensions.width / 2, y: pageHeight - height / 2 - dimensions.height / 2, ...dimensions });
+    }
+    let baseline = pageHeight - 36;
+    for (const line of name) {
+      page.drawText(line, { x: left, y: baseline, size: 14, font: bold, color: PDF_COLORS.white });
+      baseline -= lineHeight;
+    }
+    for (const line of details) {
+      page.drawText(line, { x: left, y: baseline, size: 10, font: regular, color: PDF_COLORS.white });
+      baseline -= lineHeight;
+    }
+    return height;
+  }
   const pastorsLabel = churchPastorsLabel(church);
   const pastors = pastorsLabel ? wrapPdfText(pastorsLabel, regular, 10, width) : [];
   const address = wrapPdfText(church.address, regular, 9, width);
@@ -119,10 +141,11 @@ export function finishChurchPdf(document: PDFDocument, regular: PDFFont, issuedA
   pages.forEach((page, i) => {
     page.drawRectangle({ x: 0, y: 0, width: page.getWidth(), height: 13, color: PDF_COLORS.navy });
     page.drawText(`Emitido em ${formatPdfIssuedAt(issuedAt)}`, { x: PAGE_MARGIN, y: 28, size: 8, font: regular, color: PDF_COLORS.muted });
+    page.drawText("Eklesias", { x: (page.getWidth() - regular.widthOfTextAtSize("Eklesias", 8)) / 2, y: 28, size: 8, font: regular, color: PDF_COLORS.muted });
     const label = `Página ${i + 1} de ${pages.length}`;
     page.drawText(label, { x: page.getWidth() - PAGE_MARGIN - regular.widthOfTextAtSize(label, 8), y: 28, size: 8, font: regular, color: PDF_COLORS.muted });
   });
-  document.setTitle(title); document.setAuthor("Eclésias"); document.setCreator("Eclésias"); document.setProducer("Eclésias");
+  document.setTitle(title); document.setAuthor("Eklesias"); document.setCreator("Eklesias"); document.setProducer("Eklesias");
   document.setCreationDate(new Date(issuedAt)); document.setModificationDate(new Date(issuedAt));
   return document.save({ useObjectStreams: false });
 }

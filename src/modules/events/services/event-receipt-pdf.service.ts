@@ -96,6 +96,6 @@ export async function createEventReceiptPdf(checkout: PublicCheckoutStatus, opti
   }
 
   page.drawText(`Gerado em ${date(new Date().toISOString())}`, { x: 44, y: 48, size: 8, font: regular, color: muted });
-  page.drawText("EKLESIA", { x: 551 - bold.widthOfTextAtSize("EKLESIA", 8), y: 48, size: 8, font: bold, color: blue });
+  page.drawText("Eklesias", { x: 551 - bold.widthOfTextAtSize("Eklesias", 8), y: 48, size: 8, font: bold, color: blue });
   return Buffer.from(await document.save());
 }

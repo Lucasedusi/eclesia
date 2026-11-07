@@ -18,7 +18,7 @@ export async function createFinanceDigitalReceiptPdf(data: DigitalReceipt): Prom
   const [regularBytes, boldBytes] = await (fonts ??= Promise.all(["Rubik-400.ttf", "Rubik-600.ttf"].map((name) => readFile(path.join(process.cwd(), "public/fonts/credential", name)))));
   const regular = await doc.embedFont(regularBytes, { subset: true }), bold = await doc.embedFont(boldBytes, { subset: true });
   doc.setTitle("Comprovante digital");
-  doc.setCreator("Eclesias");
+  doc.setCreator("Eklesias");
   // Measure the full receipt first, then draw on one page at readable font sizes.
   const draw: Array<(page: PDFPage, height: number) => void> = [];
   let y = M;
@@ -89,6 +89,6 @@ export async function createFinanceDigitalReceiptPdf(data: DigitalReceipt): Prom
   const page = doc.addPage([W, height]);
   page.drawRectangle({ x: 0, y: height - 4, width: W, height: 4, color: green });
   for (const render of draw) render(page, height);
-  page.drawText("Emitido com Eclesias", { x: M, y: 20, size: 7, font: regular, color: muted });
+  page.drawText("Emitido com Eklesias", { x: M, y: 20, size: 7, font: regular, color: muted });
   return doc.save();
 }

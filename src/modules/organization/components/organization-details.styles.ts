@@ -164,9 +164,9 @@ export const SectionIcon = styled.span<{ $tone?: SummaryTone }>`
   }
 `;
 
-export const InfoGrid = styled.dl`
+export const InfoGrid = styled.dl<{ $columns?: number }>`
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(${({ $columns = 3 }) => $columns}, minmax(0, 1fr));
   gap: 15px 18px;
   margin: 0;
 

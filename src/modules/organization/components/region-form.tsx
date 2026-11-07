@@ -106,7 +106,7 @@ export function RegionForm({ region, onClose, onSuccess, onError }: RegionFormPr
           O nome deve ser único dentro da igreja e facilitar a identificação da área atendida.
         </S.FormIntro>
         <S.FieldGrid>
-          <S.Field $span={2}>
+          <S.Field>
             <span>Nome da Regional *</span>
             <S.Control
               data-autofocus
@@ -119,6 +119,17 @@ export function RegionForm({ region, onClose, onSuccess, onError }: RegionFormPr
               $invalid={Boolean(errors.name)}
             />
             {errors.name && <S.FieldError>{errors.name}</S.FieldError>}
+          </S.Field>
+          <S.Field>
+            <span>Status</span>
+            <S.SelectControl
+              name="status"
+              value={values.status}
+              onChange={(event) => update("status", event.target.value)}
+            >
+              <option value="ACTIVE">Ativa</option>
+              <option value="INACTIVE">Inativa</option>
+            </S.SelectControl>
           </S.Field>
           <S.Field>
             <span>Nome do Coordenador</span>
@@ -157,17 +168,7 @@ export function RegionForm({ region, onClose, onSuccess, onError }: RegionFormPr
             />
             {errors.description && <S.FieldError>{errors.description}</S.FieldError>}
           </S.Field>
-          <S.Field>
-            <span>Status</span>
-            <S.SelectControl
-              name="status"
-              value={values.status}
-              onChange={(event) => update("status", event.target.value)}
-            >
-              <option value="ACTIVE">Ativa</option>
-              <option value="INACTIVE">Inativa</option>
-            </S.SelectControl>
-          </S.Field>
+
         </S.FieldGrid>
       </S.Form>
     </Modal>

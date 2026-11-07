@@ -28,7 +28,7 @@ if (command === "setup") {
   const admin = createClient(status.API_URL, env.SUPABASE_SECRET_KEY);
   const ids = { church: randomUUID(), otherChurch: randomUUID(), region: randomUUID(), otherRegion: randomUUID(), congregation: randomUUID(), secondCongregation: randomUUID() };
   const users = {};
-  for (const [name, role, scope] of [["secretary", "SECRETARY", "CHURCH"], ["regional", "SECRETARY", "REGION"], ["congregation", "SECRETARY", "CONGREGATION"], ["viewer", "VIEWER", "CHURCH"]]) {
+  for (const [name, role, scope] of [["admin", "ADMIN", "CHURCH"], ["secretary", "SECRETARY", "CHURCH"], ["regional", "SECRETARY", "REGION"], ["congregation", "SECRETARY", "CONGREGATION"], ["viewer", "VIEWER", "CHURCH"]]) {
     const email = `region-${randomUUID()}@example.invalid`, password = `${randomUUID()}Az1!`;
     const result = await admin.auth.admin.createUser({ email, password, email_confirm: true });
     if (result.error) throw result.error;
@@ -45,6 +45,7 @@ if (command === "setup") {
       ('${ids.region}', '${ids.church}', '${env.E2E_REPORT_REGION_NAME}', 'Coordenadora de Teste', '11922223333', 'Descrição de teste da regional central.'),
       ('${ids.otherRegion}', '${ids.otherChurch}', 'Regional de outra igreja', 'Não exportar', '11911112222', null);
     insert into public.regions(church_id, name, display_order) select '${ids.church}', 'Regional de Teste ' || i, i from generate_series(1, 24) as i;
+    update public.regions set status = 'INACTIVE' where church_id = '${ids.church}' and name = 'Regional de Teste 24';
     insert into public.congregations(id, church_id, region_id, name, pastor_name, whatsapp, phone, status) values
       ('${ids.congregation}', '${ids.church}', '${ids.region}', 'Congregação Central de Teste', 'Dirigente de Teste', '11999998888', '1133334444', 'ACTIVE'),
       ('${ids.secondCongregation}', '${ids.church}', '${ids.region}', 'Congregação Inativa de Teste', 'Outro Dirigente', null, '1144445555', 'INACTIVE');
@@ -52,7 +53,7 @@ if (command === "setup") {
     insert into public.user_church_access(profile_id, church_id, role, access_scope, region_id, congregation_id, status) values ('${u.id}', '${ids.church}', '${u.role}', '${u.scope}', ${u.scope === "REGION" ? `'${ids.region}'` : "null"}, ${u.scope === "CONGREGATION" ? `'${ids.congregation}'` : "null"}, 'ACTIVE');`).join("\n")}
     commit;`);
   writeFileSync(`${root}/fixture.json`, JSON.stringify({ ...ids, users }), { mode: 0o600 });
-  console.log("Fictional local report fixtures and four scoped sessions created.");
+  console.log("Fictional local report fixtures and five scoped sessions created.");
 } else if (command === "cleanup") {
   const fixture = JSON.parse(readFileSync(`${root}/fixture.json`, "utf8"));
   // Only random IDs created by this harness are accepted for cleanup.
