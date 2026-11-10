@@ -20,7 +20,7 @@ const data: MemberFinancialDocument = {
     phone: "",
     document: "",
   },
-  member: { id: "m", name: "MARIA DE SOUZA", code: "001" },
+  member: { id: "m", name: "MARIA DE SOUZA", code: "001", congregationName: "Congregação de Teste" },
   period: "01/11/2026 a 30/11/2026",
   category: null,
   categories: [],

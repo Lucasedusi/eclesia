@@ -18,6 +18,7 @@ export async function loadMemberFinancialData(
   context: AuthContext,
   memberId: string,
   input: unknown,
+  options: { confirmedIncomeOnly?: boolean } = {},
 ): Promise<MemberFinancialData> {
   if (
     ![PERMISSIONS.financeView, PERMISSIONS.membersViewBasic].every((p) =>
@@ -31,7 +32,7 @@ export async function loadMemberFinancialData(
   let memberQuery = c
     .from("members")
     .select(
-      "id,full_name,member_code,congregation_id,congregation:congregations!members_congregation_id_fkey(region_id)",
+      "id,full_name,member_code,congregation_id,congregation:congregations!members_congregation_id_fkey(region_id,name)",
     )
     .eq("church_id", context.church.id)
     .eq("id", memberId);
@@ -76,6 +77,7 @@ export async function loadMemberFinancialData(
       id: member.id,
       name: member.full_name,
       code: member.member_code ?? "",
+      congregationName: (first(member.congregation).name as string) || null,
     },
     items: [],
     category: null,
@@ -156,6 +158,8 @@ export async function loadMemberFinancialData(
     if (filters.dateFrom) q = q.gte("transaction_date", filters.dateFrom);
     if (filters.dateTo) q = q.lte("transaction_date", filters.dateTo);
     if (filters.categoryId) q = q.eq("category_id", filters.categoryId);
+    if (options.confirmedIncomeOnly)
+      q = q.eq("transaction_type", "INCOME").eq("status", "CONFIRMED");
     const page = await q
       .order("transaction_date", { ascending: false })
       .order("id", { ascending: false })
@@ -176,6 +180,8 @@ export async function loadMemberFinancialData(
         row.church_id !== context.church.id ||
         row.member_id !== memberId ||
         (filters.categoryId && row.category_id !== filters.categoryId) ||
+        (options.confirmedIncomeOnly &&
+          (row.transaction_type !== "INCOME" || row.status !== "CONFIRMED")) ||
         !units.includes(String(row.congregation_id))
       )
         throw new MemberFinanceError("UNAVAILABLE");

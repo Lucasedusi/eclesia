@@ -19,3 +19,11 @@ export const memberFinanceExportSchema = z
   })
   .strict();
 export type MemberFinanceFilters = z.infer<typeof memberFinanceFiltersSchema>;
+export const memberThermalStatementSchema = z
+  .object({
+    memberId: z.uuid(),
+    filters: memberFinanceFiltersSchema,
+    width: z.union([z.literal(80), z.literal(58)]),
+    intent: z.enum(["preview", "print"]),
+  })
+  .strict();

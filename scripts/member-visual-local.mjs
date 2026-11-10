@@ -85,6 +85,15 @@ if (process.argv[2] === "setup") {
  select '${ids.churches[0]}','${ids.congregations[0]}','${ids.members[0]}',id,'INCOME','Lançamento fictício '||i,10,'2026-11-01',case when i=25 then 'CANCELLED' else 'CONFIRMED' end,'Dízimo' from public.financial_categories cross join generate_series(1,25) i where church_id='${ids.churches[0]}' and name='Categoria fictícia do membro';
  update public.financial_transactions set category_id='${ids.financeCategories.mission}',category_name='Ofertas missionárias'
  where church_id='${ids.churches[0]}' and description in (select 'Lançamento fictício '||i from generate_series(1,22) i);
+ insert into public.financial_transactions(church_id,congregation_id,member_id,category_id,transaction_type,description,amount,transaction_date,status,category_name)
+ select '${ids.churches[0]}','${ids.congregations[0]}','${ids.members[1]}',
+ case when i<=22 then '${ids.financeCategories.mission}'::uuid else '${ids.financeCategories.other}'::uuid end,
+ case when i=25 then 'EXPENSE' else 'INCOME' end,'Extrato térmico fictício '||i,
+ case when i>=25 then (i-24)*1000 else 10 end,
+ case when i=24 then '2026-11-02'::date else '2026-11-01'::date end,
+ case when i=26 then 'CANCELLED' when i=27 then 'DRAFT' else 'CONFIRMED' end,
+ case when i<=22 then 'Ofertas missionárias' else 'Outra categoria' end
+ from generate_series(1,27) i;
  commit;`);
   console.log(
     "Local finance and history fixtures created (24 confirmed, one cancelled).",

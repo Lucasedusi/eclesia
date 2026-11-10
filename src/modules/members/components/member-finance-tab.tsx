@@ -6,6 +6,7 @@ import {
   CircleX,
   Download,
   Loader2,
+  Printer,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getMemberFinanceAction } from "../actions/member.actions";
@@ -18,6 +19,7 @@ import {
 } from "../utils/member-finance-formatters";
 import { formatDateOnly } from "../utils/member-formatters";
 import * as S from "./member-details.styles";
+import { MemberThermalStatementModal } from "./member-thermal-statement-modal";
 export function MemberFinanceTab({
   memberId,
   canExport,
@@ -31,6 +33,7 @@ export function MemberFinanceTab({
       categoryId: "",
     }),
     [applied, setApplied] = useState(filters),
+    [thermalFilters, setThermalFilters] = useState<typeof filters | null>(null),
     [data, setData] = useState<MemberFinancialPage | null>(null),
     [categories, setCategories] = useState<MemberFinancialPage["categories"]>(
       [],
@@ -142,6 +145,13 @@ export function MemberFinanceTab({
   }
   return (
     <S.Section>
+      {thermalFilters && (
+        <MemberThermalStatementModal
+          memberId={memberId}
+          filters={thermalFilters}
+          onClose={() => setThermalFilters(null)}
+        />
+      )}
       <S.FinanceFilters onSubmit={filter}>
         <S.FormField>
           <span>Data inicial</span>
@@ -234,6 +244,15 @@ export function MemberFinanceTab({
                   >
                     {downloadFormat !== "xlsx" && <Download size={14} />}
                     Excel
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={downloading}
+                    onClick={() => setThermalFilters({ ...applied })}
+                  >
+                    <Printer size={14} />
+                    Imprimir extrato
                   </Button>
                 </S.ExportActions>
               )}

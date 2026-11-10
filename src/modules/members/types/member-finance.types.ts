@@ -7,7 +7,12 @@ export type MemberFinanceSummary = {
   pendingCents: number;
 };
 export type MemberFinancialData = {
-  member: { id: string; name: string; code: string };
+  member: {
+    id: string;
+    name: string;
+    code: string;
+    congregationName: string | null;
+  };
   items: MemberFinanceItem[];
   summary: MemberFinanceSummary;
   period: string;

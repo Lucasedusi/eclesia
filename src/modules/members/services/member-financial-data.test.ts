@@ -90,9 +90,13 @@ function database(
             error: null,
           };
         const selected = call.filters.find(([k]) => k === "category_id")?.[1];
-        const filtered = selected
+        let filtered = selected
           ? rows.filter((r) => r.category_id === selected)
           : rows;
+        if (call.filters.some(([k]) => k === "transaction_type"))
+          filtered = filtered.filter((r) => r.transaction_type === "INCOME");
+        if (call.filters.some(([k]) => k === "status"))
+          filtered = filtered.filter((r) => r.status === "CONFIRMED");
         return {
           data: filtered.slice(a, b + 1),
           count: options.count ?? filtered.length,
@@ -127,6 +131,30 @@ beforeEach(() => {
   ]);
 });
 describe("member financial data", () => {
+  it("limits contributor statements to confirmed income at the database before pagination", async () => {
+    const calls = database();
+    const result = await loadMemberFinancialData(
+      context,
+      memberId,
+      {},
+      { confirmedIncomeOnly: true },
+    );
+    expect(result.items).toHaveLength(499);
+    expect(result.summary).toEqual({
+      incomeCents: 4990,
+      expenseCents: 0,
+      cancelledCents: 0,
+      pendingCents: 0,
+    });
+    expect(
+      calls.find((c) => c.table === "financial_transactions")?.filters,
+    ).toEqual(
+      expect.arrayContaining([
+        ["transaction_type", "INCOME"],
+        ["status", "CONFIRMED"],
+      ]),
+    );
+  });
   it("combines category and dates before paging and calculating totals", async () => {
     const calls = database();
     const result = await loadMemberFinancialData(context, memberId, {
