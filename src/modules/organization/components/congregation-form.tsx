@@ -22,7 +22,6 @@ import {
   UserRound,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Modal } from "@/components/ui/modal";
 import { formatBrazilPhone, formatBrazilZipCode } from "@/utils/input-masks";
 import {
   createCongregationAction,
@@ -242,7 +241,7 @@ export function CongregationForm({
   const isReviewStep = currentStep === steps.length - 1;
 
   return (
-    <Modal
+    <S.CongregationModal
       open
       title={congregation ? "Editar Congregação" : "Nova Congregação"}
       description={
@@ -627,6 +626,6 @@ export function CongregationForm({
           </>
         )}
       </S.Form>
-    </Modal>
+    </S.CongregationModal>
   );
 }

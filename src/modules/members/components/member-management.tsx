@@ -159,7 +159,7 @@ export function MemberManagement({
   const [searchInput, setSearchInput] = useState(initialParams.search);
   const [advancedFiltersOpen, setAdvancedFiltersOpen] = useState(
     Boolean(
-      initialParams.status ||
+      initialParams.roleId ||
       initialParams.memberType ||
       initialParams.archived ||
       initialParams.sort !== "name_asc",
@@ -491,6 +491,19 @@ export function MemberManagement({
               </S.Search>
             </S.SearchField>
             <S.Select
+              aria-label="Situação dos membros"
+              value={params.status}
+              onChange={(event) => changeFilter("status", event.target.value)}
+            >
+              <option value="">Todas as Situações</option>
+              {memberStatusOptions.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </S.Select>
+            <S.Select
+              aria-label="Regional"
               value={params.regionId}
               onChange={(event) => changeFilter("regionId", event.target.value)}
             >
@@ -502,6 +515,7 @@ export function MemberManagement({
               ))}
             </S.Select>
             <S.Select
+              aria-label="Congregação"
               value={params.congregationId}
               onChange={(event) =>
                 changeFilter("congregationId", event.target.value)
@@ -509,17 +523,6 @@ export function MemberManagement({
             >
               <option value="">Todas as Congregações</option>
               {filters.congregations.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </S.Select>
-            <S.Select
-              value={params.roleId}
-              onChange={(event) => changeFilter("roleId", event.target.value)}
-            >
-              <option value="">Todos os Cargos</option>
-              {filters.roles.map((item) => (
                 <option key={item.value} value={item.value}>
                   {item.label}
                 </option>
@@ -549,13 +552,14 @@ export function MemberManagement({
             {advancedFiltersOpen && (
               <S.AdvancedFilters id="member-advanced-filters">
                 <S.Select
-                  value={params.status}
+                  aria-label="Cargo"
+                  value={params.roleId}
                   onChange={(event) =>
-                    changeFilter("status", event.target.value)
+                    changeFilter("roleId", event.target.value)
                   }
                 >
-                  <option value="">Todas as situações</option>
-                  {memberStatusOptions.map((item) => (
+                  <option value="">Todos os Cargos</option>
+                  {filters.roles.map((item) => (
                     <option key={item.value} value={item.value}>
                       {item.label}
                     </option>

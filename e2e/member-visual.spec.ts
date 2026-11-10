@@ -45,18 +45,22 @@ test.describe("ajustes de membros", () => {
     await expect(
       page.getByRole("columnheader", { name: "Tipo", exact: true }),
     ).toHaveCount(0);
-    const status = page
-      .locator("select")
-      .filter({ has: page.locator('option[value="INACTIVE"]') });
-    if (!(await status.isVisible()))
-      await page.getByRole("button", { name: "Filtros avançados" }).click();
+    const advanced = page.getByRole("button", { name: "Filtros avançados" });
+    await expect(advanced).toHaveAttribute("aria-expanded", "false");
+    const basicFilters = page.getByRole("combobox");
+    await expect(basicFilters.nth(0)).toHaveAccessibleName(
+      "Situação dos membros",
+    );
+    await expect(basicFilters.nth(1)).toHaveAccessibleName("Regional");
+    await expect(basicFilters.nth(2)).toHaveAccessibleName("Congregação");
+    const status = page.getByRole("combobox", { name: "Situação dos membros" });
     await expect(status).toHaveValue("ACTIVE");
     await status.selectOption("");
     await expect(page).toHaveURL(/status=/);
     await page.reload();
-    if (!(await status.isVisible()))
-      await page.getByRole("button", { name: "Filtros avançados" }).click();
+    await expect(advanced).toHaveAttribute("aria-expanded", "false");
     await expect(status).toHaveValue("");
+    await advanced.click();
     const archive = page
       .locator("select")
       .filter({ has: page.locator('option[value="archived"]') });
@@ -68,6 +72,16 @@ test.describe("ajustes de membros", () => {
       animations: "disabled",
       path: info.outputPath("arquivados.png"),
     });
+    await page.goto(`/membros?role=${fixture.role}`);
+    await expect(advanced).toHaveAttribute("aria-expanded", "true");
+    await expect(
+      page.getByRole("combobox", { name: "Cargo", exact: true }),
+    ).toHaveValue(fixture.role);
+    await page
+      .getByRole("button", { name: "Limpar filtros da listagem de membros" })
+      .click();
+    await expect(advanced).toHaveAttribute("aria-expanded", "false");
+    await expect(status).toHaveValue("ACTIVE");
   });
   test("detalhes completos, cargos sanfona e histórico legível com altura estável", async ({
     page,
@@ -84,6 +98,11 @@ test.describe("ajustes de membros", () => {
       await expect(dialog.getByText(field, { exact: true })).toBeVisible();
     const roles = dialog.locator("details");
     await expect(roles).not.toHaveAttribute("open", "");
+    await expect(roles.locator("summary")).toContainText("Cargo");
+    await expect(roles.locator("summary")).not.toContainText("Cargos");
+    await expect(
+      roles.locator("summary").getByText("Diaconisa", { exact: true }),
+    ).toBeVisible();
     await roles.locator("summary").click();
     await expect(
       dialog.getByRole("button", { name: "Editar Cargo", exact: true }),
@@ -115,9 +134,7 @@ test.describe("ajustes de membros", () => {
     await dialog
       .getByRole("button", { name: "Financeiro", exact: true })
       .click();
-    await expect(
-      dialog.getByText("Entradas confirmadas", { exact: true }),
-    ).toBeVisible();
+    await expect(dialog.getByText("Entradas", { exact: true })).toBeVisible();
     expect(
       Math.abs((await dialog.boundingBox())!.height - height),
     ).toBeLessThan(1);
@@ -133,7 +150,22 @@ test.describe("ajustes de membros", () => {
       dialog.getByText("Todo o período · 25 lançamento(s)", { exact: true }),
     ).toBeVisible();
     await expect(dialog.getByText(/R\$\s*240,00/)).toBeVisible();
+    const summary = dialog.getByRole("region", {
+      name: "Resumo financeiro do membro",
+    });
+    await expect(summary.locator("article")).toHaveCount(3);
+    for (const label of ["Entradas", "Saídas", "Cancelados"]) {
+      const card = summary.locator("article").filter({ hasText: label });
+      await expect(card.locator("svg")).toBeVisible();
+    }
+    await expect(summary).not.toContainText("Não confirmados");
     await expect(dialog.locator("tbody tr")).toHaveCount(20);
+    await expect(
+      dialog.getByText("Entrada", { exact: true }).first(),
+    ).toHaveCSS("background-color", "rgb(231, 248, 239)");
+    await expect(
+      dialog.getByText("Confirmado", { exact: true }).first(),
+    ).toHaveCSS("background-color", "rgb(231, 248, 239)");
     await dialog.getByRole("button", { name: "Próxima", exact: true }).click();
     await expect(dialog.locator("tbody tr")).toHaveCount(5);
     for (const format of ["Excel", "PDF"]) {
@@ -258,9 +290,7 @@ test.describe("ajustes de membros", () => {
     await dialog
       .getByRole("button", { name: "Financeiro", exact: true })
       .click();
-    await expect(
-      dialog.getByText("Entradas confirmadas", { exact: true }),
-    ).toBeVisible();
+    await expect(dialog.getByText("Entradas", { exact: true })).toBeVisible();
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,
@@ -312,6 +342,62 @@ test.describe("ajustes de membros", () => {
       animations: "disabled",
       path: info.outputPath("configuracoes-campos.png"),
     });
+  });
+  test("cadastro de congregação mantém a altura em todas as etapas", async ({
+    page,
+  }, info) => {
+    for (const viewport of [
+      { width: 1440, height: 1000 },
+      { width: 390, height: 844 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await page.goto("/estrutura-eclesiastica/congregacoes");
+      await page.getByRole("button", { name: "Novo cadastro" }).click();
+      const dialog = page.getByRole("dialog", {
+        name: "Nova Congregação",
+        exact: true,
+      });
+      await dialog
+        .getByRole("textbox", { name: "Nome da Congregação *", exact: true })
+        .fill("Congregação de teste visual");
+      await dialog
+        .getByRole("combobox", { name: "Regional *", exact: true })
+        .selectOption(fixture.regions[0]);
+      await expect(dialog).toHaveCSS("opacity", "1");
+      const height = (await dialog.boundingBox())!.height;
+      for (const step of ["Pastor/Dirigente", "CEP", "Salvar Congregação"]) {
+        await dialog
+          .getByRole("button", { name: "Continuar", exact: true })
+          .click();
+        if (step === "Salvar Congregação") {
+          await expect(
+            dialog.getByRole("button", { name: step, exact: true }),
+          ).toBeVisible();
+        } else {
+          await expect(
+            dialog.getByRole("textbox", { name: step, exact: true }),
+          ).toBeVisible();
+        }
+        const rect = (await dialog.boundingBox())!;
+        expect(Math.abs(rect.height - height)).toBeLessThan(1);
+        expect(rect.x).toBeGreaterThanOrEqual(0);
+        expect(rect.y + rect.height).toBeLessThanOrEqual(viewport.height);
+        await expect(
+          dialog.getByRole("button", { name: "Voltar", exact: true }),
+        ).toBeInViewport();
+      }
+      await page.screenshot({
+        animations: "disabled",
+        path: info.outputPath(`congregacao-revisao-${viewport.width}.png`),
+      });
+      await dialog.getByRole("button", { name: "Voltar", exact: true }).click();
+      expect(
+        Math.abs((await dialog.boundingBox())!.height - height),
+      ).toBeLessThan(1);
+      await dialog
+        .getByRole("button", { name: "Cancelar", exact: true })
+        .click();
+    }
   });
   test("edição preserva o tipo legado sem oferecê-lo em novos cadastros", async ({
     page,

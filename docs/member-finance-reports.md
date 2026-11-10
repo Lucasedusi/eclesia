@@ -2,7 +2,9 @@
 
 Na ficha do membro, a aba **Financeiro** consulta os lançamentos vinculados ao cadastro nas unidades financeiras autorizadas. O período pode ser delimitado por data inicial, final ou ambas. Sem datas, a consulta abrange todo o período.
 
-A tela apresenta 20 lançamentos por página. Os totais consideram todas as páginas do período: entradas e saídas confirmadas, cancelados e não confirmados separadamente. Os cancelados não compõem entradas ou saídas confirmadas. As somas são feitas em centavos.
+A tela apresenta 20 lançamentos por página e três indicadores com ícones: **Entradas**, **Saídas** e **Cancelados**. Entradas e saídas somam apenas os lançamentos confirmados; os cancelados são contabilizados separadamente. Os totais consideram todas as páginas do período, com somas em centavos. Os relatórios exportados também preservam o total de não confirmados.
+
+Na listagem, as badges de tipo usam sucesso para entrada e danger para saída. A situação usa sucesso para confirmado, danger para cancelado, aviso para pendente e neutro para outros estados. Esses estilos ficam restritos à ficha do membro, preservando a identidade do módulo Financeiro.
 
 **PDF** e **Excel** exportam todos os lançamentos autorizados do período aplicado, com data, tipo, categoria, descrição, forma de pagamento, situação e valor. A exportação não depende da página atual. O cabeçalho usa o nome de exibição e a logo configurados do campo, os Presidentes, o nome/matrícula do membro e o período. O PDF mantém marca d'água, data, paginação e rodapé **Eklesias**. A planilha mantém valores monetários numéricos e textos literais, sem interpretar descrições como fórmulas.
 

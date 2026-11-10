@@ -4,9 +4,26 @@ import { administrativeControl, administrativeSelect } from "@/styles/administra
 import styled from "styled-components";
 import { Modal } from "@/components/ui/modal";
 import { Body } from "@/components/ui/modal.styles";
+import { Badge } from "@/components/ui/badge";
 
 export const DetailsModal = styled(Modal)`height: min(860px, calc(100dvh - 40px)); ${Body} { flex: 1; } @media (max-width: 640px) { height: calc(100dvh - 24px); }`;
-export const RolesAccordion = styled.details`summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; list-style: none; color: #344054; font-size: 12px; font-weight: 600; } summary::-webkit-details-marker { display: none; } summary svg { transition: transform .2s; } &[open] summary svg { transform: rotate(180deg); } > div { display: grid; gap: 14px; padding-top: 18px; }`;
+export const RolesAccordion = styled.details`
+  min-width: 0;
+  padding: 4px 8px;
+  summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 4px 0; cursor: pointer; list-style: none; color: #344054; font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 600; }
+  summary > span { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; min-width: 0; }
+  summary::-webkit-details-marker { display: none; }
+  summary > svg { flex-shrink: 0; transition: transform .2s; }
+  &[open] summary > svg { transform: rotate(180deg); }
+  > div { display: grid; gap: 14px; padding-top: 18px; }
+`;
+export const RoleBadge = styled(Badge)`
+  min-width: 0;
+  padding: 5px 9px;
+  font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+`;
 
 export const HeaderCard = styled.section`display: flex; align-items: center; justify-content: space-between; gap: 16px; border: 1px solid #e8ebf0; border-radius: 6px; background: linear-gradient(135deg, #f7f9ff, #fff); padding: 16px;`;
 export const Identity = styled.div`display: flex; align-items: center; gap: 13px; > span { display: grid; width: 48px; height: 48px; place-items: center; border-radius: 6px; background: #415ba5; color: #fff; font-weight: 700; } h3 { margin: 0; color: #101828; font-size: calc(16px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 700; } p { margin: 4px 0 0; color: #667085; font-size: calc(10px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 500; }`;
@@ -36,7 +53,28 @@ export const HistoryChange = styled.div`
   svg { width: 13px; height: 13px; color: #98a2b3; }
 `;
 export const TabHeader = styled.header`display: flex; align-items: center; justify-content: space-between; gap: 12px; h4 { margin: 0; } p { margin: 3px 0 0; color: #667085; font-size: calc(10px + var(--eclesia-font-size-adjustment, 0px)); }`;
-export const FinanceSummary = styled.div`display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); @media (max-width: 700px) { grid-template-columns: repeat(2, minmax(0, 1fr)); } gap: 10px; article { border: 1px solid #e8ebf0; border-radius: 6px; background: #fbfcfd; padding: 13px; } small { color: #98a2b3; font-size: calc(8px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 700; text-transform: uppercase; } strong { display: block; margin-top: 4px; color: #101828; font-size: calc(15px + var(--eclesia-font-size-adjustment, 0px)); }`;
+export const FinanceSummary = styled.section`
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px;
+  @media (max-width: 520px) { grid-template-columns: 1fr; }
+`;
+export const FinanceSummaryCard = styled.article<{ $tone: "success" | "danger" | "neutral" }>`
+  display: flex; align-items: center; gap: 12px; min-width: 0;
+  border: 1px solid #e8ebf0; border-radius: 6px; background: #fbfcfd; padding: 14px;
+  transition: border-color .2s ease, background .2s ease;
+  &:hover { border-color: #d0d5dd; background: #fff; }
+  > span {
+    display: grid; width: 38px; height: 38px; flex-shrink: 0; place-items: center; border-radius: 6px;
+    background: ${({ theme, $tone }) => $tone === "neutral" ? theme.colors.surface.muted : theme.colors.state[`${$tone}Soft`]};
+    color: ${({ theme, $tone }) => $tone === "neutral" ? theme.colors.text.muted : theme.colors.state[$tone]};
+  }
+  > div { min-width: 0; }
+  small { color: #667085; font-size: calc(9px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 600; text-transform: uppercase; }
+  strong { display: block; margin-top: 4px; color: #101828; font-size: calc(15px + var(--eclesia-font-size-adjustment, 0px)); overflow-wrap: anywhere; }
+`;
+export const FinanceBadge = styled(Badge)`
+  font-size: calc(10px + var(--eclesia-font-size-adjustment, 0px));
+  white-space: nowrap;
+`;
 export const SimpleTable = styled.div`overflow-x: auto; table { width: 100%; border-collapse: collapse; } th { background: #f8f9fb; color: #98a2b3; font-size: calc(8px + var(--eclesia-font-size-adjustment, 0px)); text-align: left; text-transform: uppercase; } th, td { border-bottom: 1px solid #edf0f4; padding: 10px; } td { color: #475467; font-size: calc(10px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 500; }`;
 export const Documents = styled.div`display: grid; gap: 9px;`;
 export const Document = styled.article`display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 1px solid #e8ebf0; border-radius: 6px; padding: 12px; h5 { margin: 0; color: #101828; font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 700; } p { margin: 3px 0 0; color: #98a2b3; font-size: calc(9px + var(--eclesia-font-size-adjustment, 0px)); } > div:last-child { display: flex; gap: 6px; }`;

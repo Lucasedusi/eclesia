@@ -4,6 +4,8 @@ import { administrativeControl, administrativeSelect, administrativeTextarea } f
 import styled, { keyframes } from "styled-components";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Modal } from "@/components/ui/modal";
+import { Body } from "@/components/ui/modal.styles";
 import {
   LIST_PANEL_SUBTITLE_STYLE,
   TABLE_CONTENT_GUTTER,
@@ -19,6 +21,12 @@ const enter = keyframes`
 const shimmer = keyframes`
   from { background-position: 100% 0; }
   to { background-position: -100% 0; }
+`;
+
+export const CongregationModal = styled(Modal)`
+  height: min(860px, calc(100dvh - 40px));
+  ${Body} { flex: 1; }
+  @media (max-width: 640px) { height: calc(100dvh - 24px); }
 `;
 
 export const Module = styled.div`

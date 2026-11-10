@@ -836,7 +836,15 @@ export function MemberDetailsModal({
 
                 <S.Divider />
                 <S.RolesAccordion>
-                  <summary><span>Cargos · {details.roles.find((role) => role.status === "ACTIVE")?.name || "Sem cargo atual"}</span><ChevronDown size={17} /></summary>
+                  <summary>
+                    <span>
+                      Cargo
+                      <S.RoleBadge>
+                        {details.roles.find((role) => role.status === "ACTIVE")?.name || "Sem cargo atual"}
+                      </S.RoleBadge>
+                    </span>
+                    <ChevronDown size={17} aria-hidden="true" />
+                  </summary>
                   <div>
                 <S.TabHeader>
                   <div>

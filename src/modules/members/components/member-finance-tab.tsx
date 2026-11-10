@@ -1,6 +1,12 @@
 "use client";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { Download, Loader2 } from "lucide-react";
+import {
+  ArrowDownLeft,
+  ArrowUpRight,
+  CircleX,
+  Download,
+  Loader2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getMemberFinanceAction } from "../actions/member.actions";
 import type { MemberFinancialPage } from "../types/member-finance.types";
@@ -203,17 +209,38 @@ export function MemberFinanceTab({
                 </S.ExportActions>
               )}
             </S.TabHeader>
-            <S.FinanceSummary>
-              {[
-                ["Entradas confirmadas", data.summary.incomeCents],
-                ["Saídas confirmadas", data.summary.expenseCents],
-                ["Cancelados", data.summary.cancelledCents],
-                ["Não confirmados", data.summary.pendingCents],
-              ].map(([label, cents]) => (
-                <article key={label}>
-                  <small>{label}</small>
-                  <strong>{formatMemberMoney(Number(cents) / 100)}</strong>
-                </article>
+            <S.FinanceSummary aria-label="Resumo financeiro do membro">
+              {(
+                [
+                  {
+                    label: "Entradas",
+                    cents: data.summary.incomeCents,
+                    icon: ArrowDownLeft,
+                    tone: "success",
+                  },
+                  {
+                    label: "Saídas",
+                    cents: data.summary.expenseCents,
+                    icon: ArrowUpRight,
+                    tone: "danger",
+                  },
+                  {
+                    label: "Cancelados",
+                    cents: data.summary.cancelledCents,
+                    icon: CircleX,
+                    tone: "neutral",
+                  },
+                ] as const
+              ).map(({ label, cents, icon: Icon, tone }) => (
+                <S.FinanceSummaryCard key={label} $tone={tone}>
+                  <span>
+                    <Icon size={20} aria-hidden="true" />
+                  </span>
+                  <div>
+                    <small>{label}</small>
+                    <strong>{formatMemberMoney(cents / 100)}</strong>
+                  </div>
+                </S.FinanceSummaryCard>
               ))}
             </S.FinanceSummary>
             {!data.items.length ? (
@@ -240,14 +267,40 @@ export function MemberFinanceTab({
                     {data.items.map((item) => (
                       <tr key={item.id}>
                         <td>{formatDateOnly(item.transactionDate)}</td>
-                        <td>{financeDirectionLabel(item.transactionType)}</td>
+                        <td>
+                          <S.FinanceBadge
+                            variant={
+                              item.transactionType === "INCOME"
+                                ? "success"
+                                : item.transactionType === "EXPENSE"
+                                  ? "danger"
+                                  : "neutral"
+                            }
+                          >
+                            {financeDirectionLabel(item.transactionType)}
+                          </S.FinanceBadge>
+                        </td>
                         <td>{item.category}</td>
                         <td>
                           {item.description || item.transactionNumber || "—"}
                         </td>
                         <td>{item.paymentMethod || "Não informado"}</td>
                         <td>{formatMemberMoney(item.amount)}</td>
-                        <td>{financeStatusLabel(item.status)}</td>
+                        <td>
+                          <S.FinanceBadge
+                            variant={
+                              item.status === "CONFIRMED"
+                                ? "success"
+                                : item.status === "CANCELLED"
+                                  ? "danger"
+                                  : item.status === "PENDING"
+                                    ? "warning"
+                                    : "neutral"
+                            }
+                          >
+                            {financeStatusLabel(item.status)}
+                          </S.FinanceBadge>
+                        </td>
                       </tr>
                     ))}
                   </tbody>

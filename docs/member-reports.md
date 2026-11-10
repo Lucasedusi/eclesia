@@ -12,6 +12,8 @@ Na personalizada, a ordem de seleção define a ordem das colunas. Congregação
 
 A tela inicia com membros **Ativos**. O indicador **Total de Cadastros** inclui os arquivados; os outros indicadores são Ativos, Inativos e Arquivados. Selecionar todas as situações continua disponível e permanece após recarregar a página.
 
+Os filtros principais aparecem na ordem **Situação**, **Regional** e **Congregação**. Cargo, tipo, arquivados e ordenação ficam em **Filtros avançados**, fechado inicialmente. O painel abre ao acessar um endereço que já contenha um desses filtros avançados; o status Ativo inicial não abre o painel.
+
 ## Abrangência e filtros
 
 - **Todos os membros não arquivados**: todos os registros autorizados, em ordem alfabética, independentemente da página aberta.
