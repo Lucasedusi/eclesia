@@ -7,7 +7,7 @@ export const administrativeControl = css`
   height: 52px;
   min-height: 52px;
   border-radius: 6px;
-  border: 1px solid #66708573;
+  border: 1px solid #66708557;
   background-color: #fff;
   padding: 0 14px;
   color: #101828;
@@ -49,6 +49,7 @@ export const administrativeSelect = css`
 `;
 export const administrativeTextarea = css`
   ${administrativeControl}
+  border-color: #66708573;
   height: auto;
   min-height: 120px;
   padding: 12px 14px;

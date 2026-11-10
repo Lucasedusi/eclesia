@@ -6,7 +6,7 @@ Detalhes com altura estável responsiva, mais espaço entre seções, cadastro c
 
 Financeiro: corrigir consulta ambígua, paginação e totais de todo o período; exportação PDF/XLSX com identificação, período, lançamentos e totais por tipo/situação, somente unidades autorizadas. Identidade visual do módulo Financeiro preservada. Não alterar seu tema/estilos.
 
-Campos dos formulários de Membros, Regionais, Congregações, Cargos, Eventos e Configurações: altura 52px, raio 6px, borda #66708573, fundo branco, texto 13px peso 400, labels 500/600. Preservar foco/erro/desabilitado, cursor de texto nos inputs e ponteiro/seta nos selects. Textareas com altura própria. Remover badges repetidos; novos tipos Membro/Criança sem converter dados legados. Revisão em cards por assunto.
+Campos dos formulários de Membros, Regionais, Congregações, Cargos, Eventos e Configurações: altura 52px, raio 6px, borda #66708557 nos inputs e selects, fundo branco, texto 13px peso 400, labels 500/600. Preservar foco/erro/desabilitado, cursor de texto nos inputs e ponteiro/seta nos selects. Textareas com altura própria e borda #66708573. Remover badges repetidos; novos tipos Membro/Criança sem converter dados legados. Revisão em cards por assunto.
 
 PDFs de listagem com campo/Presidentes, sem texto redundante Membros não arquivados; nomes pessoais com capitalização portuguesa apenas na saída; preservar nomes institucionais/siglas, logo e rodapé Eklesias.
 
