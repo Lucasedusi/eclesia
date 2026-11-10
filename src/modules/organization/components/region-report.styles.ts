@@ -1,7 +1,6 @@
 "use client";
 
 import styled from "styled-components";
-import { administrativeSelect } from "@/styles/administrative-controls";
 import { Modal } from "@/components/ui/modal";
 import { SelectControl as SharedSelectControl, SelectBox } from "@/components/ui/select.styles";
 
@@ -16,8 +15,7 @@ export const ReportModal = styled(Modal)<{ $stableHeight: boolean }>`
   `}
 `;
 export const SelectControl = styled(SharedSelectControl)`
-  ${administrativeSelect}
-  background-image: none;
+  border-color: #d9deea;
 `;
 
 export const Content = styled.div`

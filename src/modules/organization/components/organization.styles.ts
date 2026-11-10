@@ -231,8 +231,10 @@ export const Control = styled.input<{ $invalid?: boolean }>`
     cursor: not-allowed;
   }
 
-  ${administrativeControl}
-  ${({ $invalid }) => $invalid && "border-color: #ef7770;"}
+  form & {
+    ${administrativeControl}
+    ${({ $invalid }) => $invalid && "border-color: #ef7770;"}
+  }
 `;
 
 export const SelectControl = styled.select<{ $invalid?: boolean }>`
@@ -257,8 +259,10 @@ export const SelectControl = styled.select<{ $invalid?: boolean }>`
     cursor: not-allowed;
   }
 
-  ${administrativeSelect}
-  ${({ $invalid }) => $invalid && "border-color: #ef7770;"}
+  form & {
+    ${administrativeSelect}
+    ${({ $invalid }) => $invalid && "border-color: #ef7770;"}
+  }
 `;
 
 export const ResetFiltersButton = styled.button`
@@ -761,8 +765,10 @@ export const Textarea = styled.textarea<{ $invalid?: boolean }>`
     box-shadow: ${({ theme }) => theme.shadows.focus};
   }
 
-  ${administrativeTextarea}
-  ${({ $invalid }) => $invalid && "border-color: #ef7770;"}
+  form & {
+    ${administrativeTextarea}
+    ${({ $invalid }) => $invalid && "border-color: #ef7770;"}
+  }
 `;
 
 export const FieldError = styled.small`

@@ -53,12 +53,14 @@ export const FormField = styled.label<{ $span?: number }>`
   > span { color: #475467; font-size: calc(10px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 600; }
   @media (max-width: 600px) { grid-column: auto; }
 `;
-export const FormControl = styled.input`
+export const FilterControl = styled.input`
   width: 100%; min-height: 44px; border: 1px solid #d9deea; border-radius: 6px; outline: 0; background: #f8f9fc; padding: 0 13px;
   color: #344054; font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 500;
   &:focus { border-color: #415ba5; background: #fff; box-shadow: 0 0 0 3px rgba(65, 91, 165, .12); }
   &[type="file"] { padding: 9px 11px; }
 
+`;
+export const FormControl = styled(FilterControl)`
   &:not([type="file"]) { ${administrativeControl} }
 `;
 export const SelectControl = styled.select`

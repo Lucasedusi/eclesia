@@ -358,9 +358,11 @@ export const Control = styled.input<{
     box-shadow: ${({ theme }) => theme.shadows.focus};
   }
 
-  ${administrativeControl}
-  padding-right: ${({ $withInlineStatus, $withClear }) =>
-    $withInlineStatus ? "190px" : $withClear ? "45px" : "14px"};
+  form & {
+    ${administrativeControl}
+    padding-right: ${({ $withInlineStatus, $withClear }) =>
+      $withInlineStatus ? "190px" : $withClear ? "45px" : "14px"};
+  }
 `;
 export const ClearSearchButton = styled.button`
   position: absolute;
@@ -408,7 +410,7 @@ export const Select = styled.select`
     box-shadow: ${({ theme }) => theme.shadows.focus};
   }
 
-  ${administrativeSelect}
+  form & { ${administrativeSelect} }
 `;
 export const TableWrap = styled.div`
   overflow-x: auto;
@@ -724,7 +726,7 @@ export const Textarea = styled.textarea`
     box-shadow: ${({ theme }) => theme.shadows.focus};
   }
 
-  ${administrativeTextarea}
+  form & { ${administrativeTextarea} }
 `;
 export const ModalFooter = styled.div`
   display: flex;

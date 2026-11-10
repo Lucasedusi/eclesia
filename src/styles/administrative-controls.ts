@@ -1,13 +1,13 @@
 "use client";
 import styled, { css } from "styled-components";
 
-// Opt-in: financial components retain their independent visual identity.
+// Form fields only: listing/report filters and financial components keep their own styles.
 export const administrativeControl = css`
   width: 100%;
   height: 52px;
   min-height: 52px;
   border-radius: 6px;
-  border: 1px solid #66708596;
+  border: 1px solid #66708573;
   background-color: #fff;
   padding: 0 14px;
   color: #101828;

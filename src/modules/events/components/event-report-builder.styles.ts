@@ -1,5 +1,4 @@
 "use client";
-import { administrativeControl, administrativeSelect } from "@/styles/administrative-controls";
 
 import styled, { css } from "styled-components";
 
@@ -64,11 +63,9 @@ export const FilterGrid = styled.div`
 `;
 
 export const Field = styled.label`
-  display:grid;gap:6px;>span{color:#475467;font-size: calc(9px + var(--eclesia-font-size-adjustment, 0px));font-weight:600;}
+  display:grid;gap:6px;>span{color:#475467;font-size: calc(9px + var(--eclesia-font-size-adjustment, 0px));font-weight:700;}
   select,input{width:100%;min-height:42px;border:1px solid #d9deea;border-radius:6px;background:#f8f9fc;padding:0 11px;outline:0;color:#344054;font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));font-weight:500;}
   select:focus,input:focus{border-color:#415ba5;background:#fff;}select{cursor:pointer;}
-  input { ${administrativeControl} }
-  select { ${administrativeSelect} }
 `;
 
 export const FilterToolbar = styled.div`

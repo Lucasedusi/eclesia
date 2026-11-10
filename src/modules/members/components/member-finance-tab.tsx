@@ -132,7 +132,7 @@ export function MemberFinanceTab({
       <S.FinanceFilters onSubmit={filter}>
         <S.FormField>
           <span>Data inicial</span>
-          <S.FormControl
+          <S.FilterControl
             type="date"
             value={filters.dateFrom}
             onChange={(e) =>
@@ -142,7 +142,7 @@ export function MemberFinanceTab({
         </S.FormField>
         <S.FormField>
           <span>Data final</span>
-          <S.FormControl
+          <S.FilterControl
             type="date"
             value={filters.dateTo}
             onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })}
