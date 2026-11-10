@@ -38,7 +38,7 @@ async function MemberListContent({
 }
 
 function MemberStatsLoading() {
-  return <div className="app-skeleton-stats" aria-busy="true" aria-label="Carregando resumo dos membros">{Array.from({ length: 5 }, (_, index) => <span key={index} className="app-skeleton-block app-skeleton-stat" />)}</div>;
+  return <div className="app-skeleton-stats" aria-busy="true" aria-label="Carregando resumo dos membros">{Array.from({ length: 4 }, (_, index) => <span key={index} className="app-skeleton-block app-skeleton-stat" />)}</div>;
 }
 
 function MemberListLoading() {
@@ -51,7 +51,7 @@ export default async function MembersPage({ searchParams }: { searchParams: Sear
   const params = normalizeMemberListParams({
     page: Number(value(query.page)), pageSize: Number(value(query.pageSize)) as 20 | 50 | 100,
     search: value(query.search), congregationId: value(query.congregation), regionId: value(query.region),
-    roleId: value(query.role), status: value(query.status), memberType: value(query.type),
+    roleId: value(query.role), status: query.status === undefined ? (value(query.archived) === "true" ? "" : "ACTIVE") : value(query.status), memberType: value(query.type),
     importBatchId: value(query.importBatch),
     archived: value(query.archived) === "true", sort: value(query.sort) as never,
   });
@@ -60,7 +60,7 @@ export default async function MembersPage({ searchParams }: { searchParams: Sear
   const listPromise = Promise.all([listMembers(context, params), getMemberFilters(context)]);
 
   return <>
-    <PageHeader title="Membros" subtitle="Gestão completa de membros, congregados, visitantes e crianças." badge="Administração" />
+    <PageHeader title="Membros" subtitle="Gerencie os cadastros de membros e crianças." badge="Administração" />
     <div className="grid gap-[18px]">
       <Suspense fallback={<MemberStatsLoading />}><MemberStatsContent promise={statsPromise} /></Suspense>
       <Suspense fallback={<MemberListLoading />}><MemberListContent promise={listPromise} params={params} capabilities={capabilities} /></Suspense>

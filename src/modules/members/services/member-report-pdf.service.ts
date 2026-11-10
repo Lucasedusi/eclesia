@@ -1,6 +1,7 @@
 import "server-only";
+import { formatPersonName } from "@/utils/person-name";
 import { PDFDocument, type PDFPage } from "pdf-lib";
-import { createChurchPdfAssets, churchPastorsLabel, drawChurchHeader, drawChurchWatermark, finishChurchPdf, PAGE_HEIGHT, PAGE_MARGIN, PAGE_WIDTH, PDF_COLORS, wrapPdfText } from "@/lib/pdf/church-document";
+import { createChurchPdfAssets, drawChurchHeader, drawChurchWatermark, finishChurchPdf, PAGE_HEIGHT, PAGE_MARGIN, PAGE_WIDTH, PDF_COLORS, wrapPdfText } from "@/lib/pdf/church-document";
 import { MEMBER_REPORT_TITLES } from "../constants/member-report-fields";
 import type { MemberReportDocument } from "../types/member-report.types";
 
@@ -27,17 +28,9 @@ export async function createMemberReportPdf(data: MemberReportDocument): Promise
   function draw(text: string, x: number, top: number, size = 9, font = regular, color = PDF_COLORS.navy) {
     if (text) page.drawText(text, { x, y: height - top - size, size, font, color });
   }
-  function newPage(first = false) {
+  function newPage() {
     page = document.addPage([width, height]); drawChurchWatermark(page, assets);
-    if (first) cursor = drawChurchHeader(page, data.church, assets) + 24;
-    else {
-      cursor = 28;
-      for (const line of wrapPdfText(data.church.name, bold, 10, contentWidth)) { draw(line, PAGE_MARGIN, cursor, 10, bold); cursor += 13; }
-      for (const line of wrapPdfText(churchPastorsLabel(data.church), regular, 9, contentWidth)) { draw(line, PAGE_MARGIN, cursor); cursor += 12; }
-      for (const line of wrapPdfText(title, regular, 10, contentWidth)) { draw(line, PAGE_MARGIN, cursor + 5, 10); cursor += 13; }
-      cursor += 17;
-      page.drawRectangle({ x: PAGE_MARGIN, y: height - cursor, width: contentWidth, height: 2, color: PDF_COLORS.gold }); cursor += 18;
-    }
+    cursor = drawChurchHeader(page, data.church, assets, { detailLines: data.church.pastorNames?.length ? [`Presidentes: ${data.church.pastorNames.map(formatPersonName).join(" e ")}`] : [] }) + 24;
   }
   function paragraph(text: string, size = 9, font = regular, color = PDF_COLORS.muted) {
     if (!text) return;
@@ -57,16 +50,20 @@ export async function createMemberReportPdf(data: MemberReportDocument): Promise
     headerLines.forEach((lines, i) => { lines.forEach((line, n) => draw(line, x + 7, cursor + 8 + n * 11, 8, bold, PDF_COLORS.white)); x += widths[i]; });
     cursor += headerHeight;
   }
-  newPage(true);
+  newPage();
   paragraph(title.toLocaleUpperCase("pt-BR"), 17, bold, PDF_COLORS.navy);
   paragraph(`${data.rows.length} ${data.rows.length === 1 ? "membro" : "membros"}`);
-  paragraph(data.scopeLabel); paragraph(data.filters.join(" · "));
+  paragraph(data.scopeLabel); paragraph(data.filters.filter((filter) => filter !== "Membros não arquivados").join(" · "));
+  const value = (row: MemberReportDocument["rows"][number], key: MemberReportDocument["columns"][number]["key"]) => {
+    const text = row.values[key] || "Não informado";
+    return ["full_name", "father_name", "mother_name", "spouse_name"].includes(key) ? formatPersonName(text) : text;
+  };
   const firstRow = data.rows[0];
-  const firstRowHeight = firstRow ? Math.max(34, Math.max(...data.columns.map((c, i) => wrapPdfText(firstRow.values[c.key] || "Não informado", regular, 9, widths[i] - 14).length)) * 12 + 18) : 38;
+  const firstRowHeight = firstRow ? Math.max(34, Math.max(...data.columns.map((c, i) => wrapPdfText(value(firstRow, c.key), regular, 9, widths[i] - 14).length)) * 12 + 18) : 38;
   header(Math.min(firstRowHeight, 160));
   if (!data.rows.length) { cursor += 14; paragraph("Nenhum membro encontrado para este relatório.", 10); }
   data.rows.forEach((row, index) => {
-    const cells = data.columns.map((c, i) => wrapPdfText(row.values[c.key] || "Não informado", regular, 9, widths[i] - 14));
+    const cells = data.columns.map((c, i) => wrapPdfText(value(row, c.key), regular, 9, widths[i] - 14));
     const fullHeight = Math.max(34, Math.max(...cells.map((lines) => lines.length)) * 12 + 18);
     if (cursor + Math.min(fullHeight, 160) > bottom) { newPage(); header(); }
     while (cells.some((lines) => lines.length)) {

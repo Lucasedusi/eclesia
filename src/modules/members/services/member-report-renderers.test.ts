@@ -22,6 +22,13 @@ async function saveQa(name: string, bytes: Uint8Array) {
   if (directory) { await mkdir(directory, { recursive: true }); await writeFile(path.join(directory, name), bytes); }
 }
 describe("member report files", () => {
+  it("uses the concise header and formats personal names only in the PDF", async () => {
+    const data=fixture();data.rows[0].values.full_name="MARIA DE SOUZA";
+    const draw=vi.spyOn(PDFPage.prototype,"drawText");await createMemberReportPdf(data);
+    const text=draw.mock.calls.map(([t])=>t).join(" ");
+    expect(text).toContain("Maria de Souza");expect(text).toContain("Presidentes: Paulo de Teste e Ana de Teste");
+    expect(text).not.toContain("Membros não arquivados");expect(data.rows[0].values.full_name).toBe("MARIA DE SOUZA");
+  });
   it("keeps the matrícula heading, CPF and phone on one line", async () => {
     const draw = vi.spyOn(PDFPage.prototype, "drawText");
     await createMemberReportPdf(fixture());

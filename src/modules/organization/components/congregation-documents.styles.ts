@@ -1,4 +1,5 @@
 "use client";
+import { administrativeControl, administrativeSelect } from "@/styles/administrative-controls";
 
 import styled from "styled-components";
 
@@ -60,7 +61,7 @@ export const Field = styled.label`
   > span {
     color: #475467;
     font-size: calc(10px + var(--eclesia-font-size-adjustment, 0px));
-    font-weight: 700;
+    font-weight: 600;
   }
 `;
 
@@ -85,6 +86,9 @@ export const Input = styled.input<{ $invalid?: boolean }>`
     border-color: ${({ theme }) => theme.colors.brand.primary};
     box-shadow: ${({ theme }) => theme.shadows.focus};
   }
+
+  ${administrativeControl}
+  ${({ $invalid }) => $invalid && "border-color: #ef7770;"}
 `;
 
 export const Select = styled.select<{ $invalid?: boolean }>`
@@ -95,6 +99,8 @@ export const Select = styled.select<{ $invalid?: boolean }>`
     border-color: ${({ theme }) => theme.colors.brand.primary};
     box-shadow: ${({ theme }) => theme.shadows.focus};
   }
+
+  ${administrativeSelect}
 `;
 
 export const FileDrop = styled.label<{ $invalid?: boolean }>`

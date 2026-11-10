@@ -10,6 +10,8 @@ Na tela **Membros**, use o botão **Relatório**, ao lado de **Novo membro**. A 
 
 Na personalizada, a ordem de seleção define a ordem das colunas. Congregação e WhatsApp começam selecionados. Ao atingir quatro opções, é necessário desmarcar uma para escolher outra. Naturalidade / UF e endereço completo são opções compostas; as partes também podem ser selecionadas individualmente.
 
+A tela inicia com membros **Ativos**. O indicador **Total de Cadastros** inclui os arquivados; os outros indicadores são Ativos, Inativos e Arquivados. Selecionar todas as situações continua disponível e permanece após recarregar a página.
+
 ## Abrangência e filtros
 
 - **Todos os membros não arquivados**: todos os registros autorizados, em ordem alfabética, independentemente da página aberta.
@@ -50,7 +52,7 @@ Não há migração nem mudança de permissões no banco para esta funcionalidad
 
 ## Arquivos
 
-O PDF simplificado usa A4 em retrato. A personalizada passa a paisagem quando tem seis colunas ou inclui endereço completo, observações gerais ou motivo da inativação. Ambos reutilizam o cabeçalho institucional, nomes pastorais, marca d'água proporcional a 5%, contagem e rodapé com data/paginação. Textos longos quebram linhas e continuam nas páginas seguintes. Sem logo válida, a geração continua normalmente.
+O PDF simplificado usa A4 em retrato. A personalizada passa a paisagem quando tem seis colunas ou inclui endereço completo, observações gerais ou motivo da inativação. Ambos usam cabeçalho com nome do campo e **Presidentes**, marca d'água proporcional a 5%, contagem e rodapé **Eklesias** com data/paginação. O texto redundante “Membros não arquivados” não aparece no PDF. Nomes pessoais são apresentados como “Maria de Souza”, preservando partículas e acentos; essa formatação não altera o cadastro nem a grafia do Excel. Textos longos quebram linhas e continuam nas páginas seguintes. Sem logo válida, a geração continua normalmente.
 
 O Excel tem cabeçalho fixo, filtros e larguras de coluna apropriadas. Datas são células de data; matrícula, CPF, RG, CEP e telefones são texto, preservando zeros iniciais. Valores iniciados por `=` são texto literal, nunca fórmulas. Informações ausentes ficam vazias no Excel e aparecem como “Não informado” no PDF.
 
@@ -80,3 +82,5 @@ Para gerar amostras fictícias de revisão visual:
 ```sh
 MEMBER_REPORT_QA_DIR=tmp/pdfs/member-reports npm test -- src/modules/members/services/member-report-renderers.test.ts
 ```
+
+O relatório financeiro individual é independente das listagens cadastrais. Consulte [Financeiro individual do membro](member-finance-reports.md).

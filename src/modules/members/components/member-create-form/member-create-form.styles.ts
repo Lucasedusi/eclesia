@@ -1,4 +1,5 @@
 "use client";
+import { administrativeControl, administrativeSelect, administrativeTextarea } from "@/styles/administrative-controls";
 
 import styled from "styled-components";
 
@@ -122,7 +123,7 @@ export const FieldBlock = styled.div`
 export const FieldLabel = styled.label`
   color: #475467;
   font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
-  font-weight: 700;
+  font-weight: 600;
 `;
 
 export const Field = styled.label`
@@ -132,7 +133,7 @@ export const Field = styled.label`
   > span:first-child {
     color: #475467;
     font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
-    font-weight: 700;
+    font-weight: 600;
   }
 `;
 
@@ -148,7 +149,7 @@ export const FieldHeader = styled.span`
   > label:first-child {
     color: #475467;
     font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
-    font-weight: 700;
+    font-weight: 600;
   }
 `;
 
@@ -229,6 +230,10 @@ export const Control = styled.input<{
     color: #98a2b3;
     cursor: not-allowed;
   }
+
+  ${administrativeControl}
+  ${({ $invalid }) => $invalid && "border-color: #ef7770;"}
+  ${({ $withInlineStatus }) => $withInlineStatus && "padding-right: 150px;"}
 `;
 
 export const SelectControl = styled.select<{ $invalid?: boolean }>`
@@ -249,6 +254,9 @@ export const SelectControl = styled.select<{ $invalid?: boolean }>`
     background: #fff;
     box-shadow: ${({ theme }) => theme.shadows.focus};
   }
+
+  ${administrativeSelect}
+  ${({ $invalid }) => $invalid && "border-color: #ef7770;"}
 `;
 
 export const Textarea = styled.textarea<{ $hasError?: boolean }>`
@@ -282,6 +290,9 @@ export const Textarea = styled.textarea<{ $hasError?: boolean }>`
       ${({ $hasError }) =>
         $hasError ? "rgba(245, 126, 119, 0.14)" : "rgba(65, 91, 165, 0.14)"};
   }
+
+  ${administrativeTextarea}
+  ${({ $hasError }) => $hasError && "border-color: #ef7770;"}
 `;
 
 export const ErrorText = styled.p`
@@ -436,4 +447,11 @@ export const ReviewValue = styled.dd`
   font-weight: 500;
   line-height: 20px;
   word-break: break-word;
+`;
+
+export const ReviewSection = styled.section`
+  grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px;
+  padding: 20px; border: 1px solid #e4e7ec; border-radius: 6px; background: #fff;
+  h3 { grid-column: 1 / -1; margin: 0 0 4px; color: #415ba5; font-size: 14px; font-weight: 600; }
+  @media (max-width: 600px) { grid-template-columns: 1fr; }
 `;

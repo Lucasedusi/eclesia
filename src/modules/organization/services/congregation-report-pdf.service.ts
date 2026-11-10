@@ -1,4 +1,5 @@
 import "server-only";
+import { formatPersonName } from "@/utils/person-name";
 
 import { PDFDocument, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 import { createChurchPdfAssets, drawChurchHeader, drawChurchWatermark, finishChurchPdf, PAGE_HEIGHT, PAGE_MARGIN, PAGE_WIDTH, PDF_COLORS, wrapPdfText } from "@/lib/pdf/church-document";
@@ -13,10 +14,10 @@ export async function createCongregationReportPdf(data: CongregationReportDocume
   const contentWidth = width - PAGE_MARGIN * 2, bottom = height - 57;
   const title = data.kind === "simplified" ? "Lista de Congregações" : data.congregations[0]?.name || "Congregação";
   const congregation = data.kind === "individual" ? data.congregations[0] : undefined;
-  const presidents = (data.church.pastorNames ?? []).map((name) => name.trim()).filter(Boolean);
+  const presidents = (data.church.pastorNames ?? []).map((name) => formatPersonName(name.trim())).filter(Boolean);
   const detailLines = [
     ...(presidents.length ? [`Presidentes: ${presidents.join(" e ")}`] : []),
-    ...(congregation ? [`Dirigente: ${congregation.pastorName} · Cônjuge: ${congregation.spouseName || "Não informado"} · WhatsApp: ${congregation.whatsapp || "Não informado"}`] : []),
+    ...(congregation ? [`Dirigente: ${formatPersonName(congregation.pastorName)} · Cônjuge: ${formatPersonName(congregation.spouseName || "Não informado")} · WhatsApp: ${congregation.whatsapp || "Não informado"}`] : []),
   ];
   let page: PDFPage, cursor = 0;
   function draw(text: string, x: number, top: number, size = 10, font = regular, color = PDF_COLORS.navy) {
@@ -44,8 +45,8 @@ export async function createCongregationReportPdf(data: CongregationReportDocume
     const columns: Column[] = [
       { label: "Nº", weight: 0, fixed: 40, value: (_, i) => String(i + 1) },
       { label: "Congregação", weight: 1.6, value: (r) => r.name },
-      { label: "Dirigente", weight: 1.2, value: (r) => r.pastorName },
-      ...(data.fields.spouse ? [{ label: "Cônjuge", weight: 1, value: (r: ReportCongregation) => r.spouseName || "Não informado" }] : []),
+      { label: "Dirigente", weight: 1.2, value: (r) => formatPersonName(r.pastorName) },
+      ...(data.fields.spouse ? [{ label: "Cônjuge", weight: 1, value: (r: ReportCongregation) => formatPersonName(r.spouseName || "Não informado") }] : []),
       ...(data.fields.phone ? [{ label: "WhatsApp", weight: 0, fixed: 108, value: (r: ReportCongregation) => r.contactPhone || "Não informado" }] : []),
       ...(data.fields.address ? [{ label: "Endereço", weight: 2.1, value: (r: ReportCongregation) => r.address?.full || "Não informado" }] : []),
     ];

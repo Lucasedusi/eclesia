@@ -1,9 +1,11 @@
 import "server-only";
+import { formatMemberHistoryValue, translateMemberHistoryText } from "../utils/member-formatters";
 
 import { cacheLife, cacheTag } from "next/cache";
 import { cacheTags } from "@/lib/cache-tags";
 import { createClient } from "@/lib/supabase/server";
-import { listFinanceUnits } from "@/modules/finance/services/finance-access.service";
+import { loadMemberFinancialData } from "./member-financial-data.service";
+import type { MemberFinancialPage } from "../types/member-finance.types";
 import { measureServerOperation } from "@/lib/performance/server-performance";
 import { PERMISSIONS, hasPermission } from "@/modules/auth/constants/permissions";
 import type { AuthContext } from "@/modules/auth/types/auth.types";
@@ -15,7 +17,6 @@ import type {
   MemberDocumentItem,
   MemberEventItem,
   MemberFilters,
-  MemberFinanceItem,
   MemberHistoryItem,
   MemberListItem,
   MemberListParams,
@@ -38,7 +39,7 @@ const DEFAULT_PARAMS: MemberListParams = {
   congregationId: "",
   regionId: "",
   roleId: "",
-  status: "",
+  status: "ACTIVE",
   memberType: "",
   importBatchId: "",
   archived: false,
@@ -104,6 +105,7 @@ export function normalizeMemberListParams(value: Partial<MemberListParams>): Mem
   return {
     ...DEFAULT_PARAMS,
     ...value,
+    status: value.status ?? (value.archived ? "" : "ACTIVE"),
     page: Math.max(1, Number(value.page) || 1),
     pageSize,
     search: String(value.search ?? "").slice(0, 80),
@@ -217,7 +219,7 @@ export async function getMemberStats(context: AuthContext): Promise<MemberStats>
   if (error) return { total: 0, active: 0, inactive: 0, visitors: 0, archived: 0 };
   const row = (data ?? {}) as AnyRow;
   return {
-    total: Number(row.total ?? 0), active: Number(row.active ?? 0), inactive: Number(row.inactive ?? 0),
+    total: Number(row.total ?? 0) + Number(row.archived ?? 0), active: Number(row.active ?? 0), inactive: Number(row.inactive ?? 0),
     visitors: Number(row.visitors ?? 0), archived: Number(row.archived ?? 0),
   };
 }
@@ -309,7 +311,7 @@ export async function getMemberCoreDetails(context: AuthContext, memberId: strin
       notes: link.notes,
     };
   });
-  const address = [row.address, row.number, row.complement, row.district, row.city, row.state, row.zip_code].filter(Boolean).join(", ");
+  const address = [row.address, row.number, row.complement, row.district, row.city, row.state, row.zip_code, row.country].filter(Boolean).join(", ");
   return {
     id: row.id, memberCode: row.member_code, fullName: row.full_name, gender: row.gender,
     birthDate: row.birth_date, maritalStatus: row.marital_status, nationality: row.nationality, naturalCity: row.natural_city,
@@ -339,55 +341,45 @@ export async function getMemberHistory(context: AuthContext, memberId: string, p
     .order("event_date", { ascending: false }).order("created_at", { ascending: false }).order("id", { ascending: false }).range(from, from + pageSize - 1);
   if (error) throw new Error(error.message);
   const rows = (data ?? []) as unknown as AnyRow[];
-  const roleIds = new Set<string>();
   const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  rows.forEach((row) => {
-    if (!String(row.history_type).startsWith("ROLE_")) return;
-    const metadata = (row.metadata ?? {}) as AnyRow;
-    [metadata.role_id, metadata.old_role_id, metadata.new_role_id, row.old_value, row.new_value]
-      .filter((value): value is string => typeof value === "string" && uuid.test(value))
-      .forEach((value) => roleIds.add(value));
+  const roleIds = new Set<string>();
+  rows.filter((row) => String(row.history_type).startsWith("ROLE_")).forEach((row) => {
+    [row.old_value, row.new_value].filter((v) => typeof v === "string" && uuid.test(v)).forEach((v) => roleIds.add(v));
   });
-  const roleMap = new Map<string, string>();
+  const roleMap = new Map<string, { name: string; female_name: string | null }>();
+  let gender: string | null = null;
+  const variants = new Map<string, string>();
   if (roleIds.size) {
-    const { data: roles, error: rolesError } = await supabase.from("roles").select("id, name").eq("church_id", context.church.id).is("deleted_at", null).in("id", [...roleIds]);
-    if (rolesError) throw new Error(rolesError.message);
-    (roles ?? []).forEach((role) => roleMap.set(role.id, role.name));
+    const [roles, member, links] = await Promise.all([
+      supabase.from("roles").select("id, name, female_name").eq("church_id", context.church.id).in("id", [...roleIds]),
+      supabase.from("members").select("gender").eq("church_id", context.church.id).eq("id", memberId).maybeSingle(),
+      supabase.from("member_roles").select("id, title_variant").eq("church_id", context.church.id).eq("member_id", memberId),
+    ]);
+    if (roles.error || member.error || links.error) throw new Error("MEMBER_HISTORY_LOAD_FAILED");
+    gender = member.data?.gender ?? null;
+    (roles.data ?? []).forEach((role) => roleMap.set(role.id, role));
+    (links.data ?? []).forEach((link) => variants.set(link.id, link.title_variant));
   }
   const items = rows.map((row) => {
     const metadata = (row.metadata ?? {}) as AnyRow;
-    const oldRoleId = String(metadata.old_role_id ?? (uuid.test(String(row.old_value ?? "")) ? row.old_value : ""));
-    const newRoleId = String(metadata.new_role_id ?? metadata.role_id ?? (uuid.test(String(row.new_value ?? "")) ? row.new_value : ""));
-    const oldValue = row.history_type === "ROLE_ENDED"
-      ? roleMap.get(String(metadata.role_id ?? "")) ?? row.old_value
-      : roleMap.get(oldRoleId) ?? row.old_value;
-    const newValue = row.history_type === "ROLE_ASSIGNED"
-      ? roleMap.get(newRoleId) ?? row.new_value
-      : roleMap.get(newRoleId) ?? row.new_value;
-    return { id: row.id, type: row.history_type, title: row.title, description: row.description,
-      oldValue, newValue, eventDate: row.event_date, sensitive: row.is_sensitive, createdAt: row.created_at };
+    function roleValue(value: string | null, side: "old" | "new") {
+      if (!value || !uuid.test(value) || !String(row.history_type).startsWith("ROLE_")) return formatMemberHistoryValue(value);
+      const role = roleMap.get(value);
+      const variant = metadata[`${side}_title_variant`] ?? metadata.title_variant ?? variants.get(metadata[`${side}_link_id`] ?? metadata.member_role_id) ?? "AUTO";
+      return role ? (variant === "FEMALE" || (variant === "AUTO" && gender === "FEMALE")) && role.female_name || role.name : "Cargo não disponível";
+    }
+    return { id: row.id, type: row.history_type, title: translateMemberHistoryText(row.title), description: row.description ? translateMemberHistoryText(row.description) : null,
+      oldValue: roleValue(row.old_value, "old"), newValue: roleValue(row.new_value, "new"), eventDate: row.event_date, sensitive: row.is_sensitive, createdAt: row.created_at };
   });
   return { items, total: count ?? 0, page, pageCount: Math.ceil((count ?? 0) / pageSize) };
 }
 
-export async function getMemberFinance(context: AuthContext, memberId: string, page = 1): Promise<PaginatedTab<MemberFinanceItem>> {
-  if (!context.permissions.includes(PERMISSIONS.financeView)) throw new Error("MEMBER_FINANCE_PERMISSION_DENIED");
-  const units = await listFinanceUnits(context);
-  if (!units.length) return { items: [], total: 0, page: 1, pageCount: 0 };
+export async function getMemberFinance(context: AuthContext, memberId: string, page = 1, filters: unknown = {}): Promise<MemberFinancialPage> {
+  const data = await loadMemberFinancialData(context, memberId, filters);
   page = Number.isSafeInteger(page) ? Math.max(1, page) : 1;
-  const supabase = await createClient();
-  const pageSize = 20;
-  const from = (Math.max(1, page) - 1) * pageSize;
-  const { data, count, error } = await supabase.from("financial_transactions")
-    .select("id, transaction_number, transaction_type, description, amount, transaction_date, status, financial_categories(name), financial_payment_methods(name)", { count: "exact" })
-    .in("congregation_id", units.map(unit => unit.id)).eq("member_id", memberId).eq("church_id", context.church.id).is("deleted_at", null)
-    .order("transaction_date", { ascending: false }).order("id", { ascending: false }).range(from, from + pageSize - 1);
-  if (error) throw new Error(error.message);
-  const items = ((data ?? []) as unknown as AnyRow[]).map((row) => ({ id: row.id, transactionNumber: row.transaction_number,
-    transactionType: row.transaction_type, description: row.description, amount: Number(row.amount), transactionDate: row.transaction_date,
-    status: row.status, category: first<AnyRow>(row.financial_categories)?.name ?? "Sem categoria",
-    paymentMethod: first<AnyRow>(row.financial_payment_methods)?.name ?? null }));
-  return { items, total: count ?? 0, page, pageCount: Math.ceil((count ?? 0) / pageSize) };
+  const pageCount = Math.ceil(data.items.length / 20);
+  page = Math.min(page, pageCount || 1);
+  return { items: data.items.slice((page - 1) * 20, page * 20), total: data.items.length, page, pageCount, summary: data.summary, period: data.period };
 }
 
 export async function getMemberEvents(context: AuthContext, memberId: string, page = 1): Promise<PaginatedTab<MemberEventItem>> {

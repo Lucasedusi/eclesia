@@ -1,4 +1,5 @@
 "use client";
+import { administrativeControl, administrativeSelect, administrativeTextarea } from "@/styles/administrative-controls";
 
 import styled, { keyframes } from "styled-components";
 import Link from "next/link";
@@ -229,6 +230,9 @@ export const Control = styled.input<{ $invalid?: boolean }>`
     color: #98a2b3;
     cursor: not-allowed;
   }
+
+  ${administrativeControl}
+  ${({ $invalid }) => $invalid && "border-color: #ef7770;"}
 `;
 
 export const SelectControl = styled.select<{ $invalid?: boolean }>`
@@ -252,6 +256,9 @@ export const SelectControl = styled.select<{ $invalid?: boolean }>`
     color: #98a2b3;
     cursor: not-allowed;
   }
+
+  ${administrativeSelect}
+  ${({ $invalid }) => $invalid && "border-color: #ef7770;"}
 `;
 
 export const ResetFiltersButton = styled.button`
@@ -722,7 +729,7 @@ export const Field = styled.label<{ $span?: number }>`
   > span {
     color: #475467;
     font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
-    font-weight: 700;
+    font-weight: 600;
   }
   > small {
     color: #98a2b3;
@@ -753,6 +760,9 @@ export const Textarea = styled.textarea<{ $invalid?: boolean }>`
     background: #fff;
     box-shadow: ${({ theme }) => theme.shadows.focus};
   }
+
+  ${administrativeTextarea}
+  ${({ $invalid }) => $invalid && "border-color: #ef7770;"}
 `;
 
 export const FieldError = styled.small`
@@ -858,7 +868,7 @@ export const ReviewCardHeader = styled.div`
   > strong {
     color: #344054;
     font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
-    font-weight: 700;
+    font-weight: 600;
   }
 `;
 

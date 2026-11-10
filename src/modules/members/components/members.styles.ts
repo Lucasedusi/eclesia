@@ -1,4 +1,5 @@
 "use client";
+import { administrativeControl, administrativeSelect, administrativeTextarea } from "@/styles/administrative-controls";
 
 import styled, { keyframes } from "styled-components";
 import Link from "next/link";
@@ -17,10 +18,10 @@ export const Module = styled.div`
 `;
 export const Stats = styled.section`
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
   @media (max-width: 1050px) {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
   }
   @media (max-width: 620px) {
     grid-template-columns: repeat(2, 1fr);
@@ -356,6 +357,10 @@ export const Control = styled.input<{
     background: #fff;
     box-shadow: ${({ theme }) => theme.shadows.focus};
   }
+
+  ${administrativeControl}
+  padding-right: ${({ $withInlineStatus, $withClear }) =>
+    $withInlineStatus ? "190px" : $withClear ? "45px" : "14px"};
 `;
 export const ClearSearchButton = styled.button`
   position: absolute;
@@ -402,6 +407,8 @@ export const Select = styled.select`
     background: #fff;
     box-shadow: ${({ theme }) => theme.shadows.focus};
   }
+
+  ${administrativeSelect}
 `;
 export const TableWrap = styled.div`
   overflow-x: auto;
@@ -716,6 +723,8 @@ export const Textarea = styled.textarea`
     background: #fff;
     box-shadow: ${({ theme }) => theme.shadows.focus};
   }
+
+  ${administrativeTextarea}
 `;
 export const ModalFooter = styled.div`
   display: flex;

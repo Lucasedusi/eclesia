@@ -1,0 +1,331 @@
+import { expect, test, type Page } from "@playwright/test";
+import { readFileSync } from "node:fs";
+import { readFile } from "node:fs/promises";
+import ExcelJS from "exceljs";
+import { PDFDocument } from "pdf-lib";
+const fixture = process.env.E2E_MEMBER_REPORT_FIXTURE
+  ? JSON.parse(readFileSync(process.env.E2E_MEMBER_REPORT_FIXTURE, "utf8"))
+  : null;
+async function openMember(page: Page) {
+  await page.goto("/membros");
+  await page
+    .getByRole("button", { name: "Ver ficha", exact: true })
+    .first()
+    .click();
+  const dialog = page.getByRole("dialog", {
+    name: "Ficha do membro",
+    exact: true,
+  });
+  await expect(
+    dialog.getByRole("heading", { name: "Ana de Teste", exact: true }),
+  ).toBeVisible();
+  return dialog;
+}
+test.describe("ajustes de membros", () => {
+  test.skip(
+    !fixture || !process.env.E2E_STORAGE_STATE,
+    "Requer os dados fictícios locais de member-visual-local.",
+  );
+  test("total inclui arquivados, inicia em ativos e preserva filtros", async ({
+    page,
+  }, info) => {
+    await page.goto("/membros");
+    const summary = page.getByRole("region", {
+      name: "Resumo dos membros",
+      exact: true,
+    });
+    await expect(summary).toContainText("33Total de Cadastros");
+    await expect(summary).toContainText("31Ativos");
+    await expect(summary).toContainText("1Inativos");
+    await expect(summary).toContainText("1Arquivados");
+    expect(await summary.locator(":scope > *").count()).toBe(4);
+    await expect(
+      page.getByRole("columnheader", { name: "WhatsApp", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("columnheader", { name: "Tipo", exact: true }),
+    ).toHaveCount(0);
+    const status = page
+      .locator("select")
+      .filter({ has: page.locator('option[value="INACTIVE"]') });
+    if (!(await status.isVisible()))
+      await page.getByRole("button", { name: "Filtros avançados" }).click();
+    await expect(status).toHaveValue("ACTIVE");
+    await status.selectOption("");
+    await expect(page).toHaveURL(/status=/);
+    await page.reload();
+    if (!(await status.isVisible()))
+      await page.getByRole("button", { name: "Filtros avançados" }).click();
+    await expect(status).toHaveValue("");
+    const archive = page
+      .locator("select")
+      .filter({ has: page.locator('option[value="archived"]') });
+    await archive.selectOption("archived");
+    await expect(
+      page.getByText("ARQUIVADO_TESTE", { exact: true }).first(),
+    ).toBeVisible();
+    await page.screenshot({
+      animations: "disabled",
+      path: info.outputPath("arquivados.png"),
+    });
+  });
+  test("detalhes completos, cargos sanfona e histórico legível com altura estável", async ({
+    page,
+  }, info) => {
+    const dialog = await openMember(page);
+    const height = (await dialog.boundingBox())!.height;
+    for (const field of [
+      "Nacionalidade",
+      "Naturalidade / UF",
+      "Profissão",
+      "Escolaridade",
+      "Matrícula",
+    ])
+      await expect(dialog.getByText(field, { exact: true })).toBeVisible();
+    const roles = dialog.locator("details");
+    await expect(roles).not.toHaveAttribute("open", "");
+    await roles.locator("summary").click();
+    await expect(
+      dialog.getByRole("button", { name: "Editar Cargo", exact: true }),
+    ).toBeVisible();
+    await page.screenshot({
+      animations: "disabled",
+      path: info.outputPath("dados-desktop.png"),
+    });
+    await dialog
+      .getByRole("button", { name: "Histórico eclesiástico" })
+      .click();
+    await expect(
+      dialog.getByText("Missionária", { exact: false }).first(),
+    ).toBeVisible();
+    await expect(
+      dialog.getByText("Diaconisa", { exact: false }).first(),
+    ).toBeVisible();
+    await expect(
+      dialog.getByText(/Recebimento atualizado: Batismo/),
+    ).toBeVisible();
+    await expect(dialog).not.toContainText("BAPTISM");
+    expect(
+      Math.abs((await dialog.boundingBox())!.height - height),
+    ).toBeLessThan(1);
+    await page.screenshot({
+      animations: "disabled",
+      path: info.outputPath("historico-desktop.png"),
+    });
+    await dialog
+      .getByRole("button", { name: "Financeiro", exact: true })
+      .click();
+    await expect(
+      dialog.getByText("Entradas confirmadas", { exact: true }),
+    ).toBeVisible();
+    expect(
+      Math.abs((await dialog.boundingBox())!.height - height),
+    ).toBeLessThan(1);
+  });
+  test("financeiro consulta todas as páginas e exporta PDF e Excel do período", async ({
+    page,
+  }, info) => {
+    const dialog = await openMember(page);
+    await dialog
+      .getByRole("button", { name: "Financeiro", exact: true })
+      .click();
+    await expect(
+      dialog.getByText("Todo o período · 25 lançamento(s)", { exact: true }),
+    ).toBeVisible();
+    await expect(dialog.getByText(/R\$\s*240,00/)).toBeVisible();
+    await expect(dialog.locator("tbody tr")).toHaveCount(20);
+    await dialog.getByRole("button", { name: "Próxima", exact: true }).click();
+    await expect(dialog.locator("tbody tr")).toHaveCount(5);
+    for (const format of ["Excel", "PDF"]) {
+      const promise = page.waitForEvent("download");
+      await dialog.getByRole("button", { name: format, exact: true }).click();
+      const download = await promise;
+      const bytes = await readFile((await download.path())!);
+      if (format === "Excel") {
+        const wb = new ExcelJS.Workbook();
+        await wb.xlsx.load(bytes as unknown as ExcelJS.Buffer);
+        const sheet = wb.worksheets[0];
+        expect(sheet.rowCount - 7).toBe(25);
+        expect(JSON.stringify(sheet.getSheetValues())).not.toMatch(
+          /OUTRA_IGREJA|SEGREDO_PASTORAL/,
+        );
+      } else
+        expect((await PDFDocument.load(bytes)).getPageCount()).toBeGreaterThan(
+          1,
+        );
+      await download.saveAs(
+        info.outputPath(`financeiro.${format === "Excel" ? "xlsx" : "pdf"}`),
+      );
+    }
+    await page.screenshot({
+      animations: "disabled",
+      path: info.outputPath("financeiro-desktop.png"),
+    });
+    await dialog.getByLabel("Data inicial", { exact: true }).fill("2026-11-02");
+    await dialog.getByRole("button", { name: "Aplicar período" }).click();
+    await expect(
+      dialog.getByText("Nenhum lançamento encontrado para o período."),
+    ).toBeVisible();
+  });
+  test("exportação financeira respeita igreja e permissão", async ({
+    request,
+    playwright,
+  }) => {
+    const input = {
+      memberId: fixture.members[33],
+      format: "xlsx",
+      filters: {},
+    };
+    expect(
+      (
+        await request.post("/api/members/finance/reports", { data: input })
+      ).status(),
+    ).toBe(404);
+    const viewer = await playwright.request.newContext({
+      baseURL: process.env.E2E_BASE_URL,
+      storageState: fixture.sessions.viewer,
+    });
+    try {
+      expect(
+        (
+          await viewer.post("/api/members/finance/reports", {
+            data: { ...input, memberId: fixture.members[0] },
+          })
+        ).status(),
+      ).toBe(403);
+    } finally {
+      await viewer.dispose();
+    }
+  });
+  test("formulário tem dois tipos e revisão completa com controles padronizados", async ({
+    page,
+  }, info) => {
+    await page.goto("/membros/novo");
+    const name = page.getByRole("textbox", {
+      name: "Nome completo *",
+      exact: true,
+    });
+    await name.fill("Maria de Teste Visual");
+    await expect(name).toHaveCSS("height", "52px");
+    await expect(name).toHaveCSS("border-radius", "6px");
+    await expect(name).toHaveCSS("font-weight", "400");
+    await page
+      .getByRole("textbox", { name: "Nacionalidade", exact: true })
+      .fill("Brasileira");
+    await page
+      .getByRole("textbox", { name: "Profissão", exact: true })
+      .fill("Professora");
+    await page.screenshot({
+      animations: "disabled",
+      path: info.outputPath("formulario-desktop.png"),
+    });
+    await page.getByRole("button", { name: "Próximo", exact: true }).click();
+    await page.getByRole("button", { name: "Próximo", exact: true }).click();
+    await page.getByRole("button", { name: "Próximo", exact: true }).click();
+    const type = page.getByRole("combobox", {
+      name: "Tipo de cadastro *",
+      exact: true,
+    });
+    expect(await type.locator("option").allTextContents()).toEqual([
+      "Selecione uma opção",
+      "Membro",
+      "Criança",
+    ]);
+    await page
+      .getByRole("combobox", { name: "Congregação *", exact: true })
+      .selectOption(fixture.congregations[0]);
+    await page.getByRole("button", { name: "Próximo", exact: true }).click();
+    await page.getByRole("button", { name: "Próximo", exact: true }).click();
+    await expect(
+      page.getByText("Maria de Teste Visual", { exact: true }),
+    ).toBeVisible();
+    await expect(page.getByText("Professora", { exact: true })).toBeVisible();
+    await page.screenshot({
+      animations: "disabled",
+      path: info.outputPath("revisao-desktop.png"),
+    });
+  });
+  test("detalhes e financeiro cabem no celular", async ({ page }, info) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const dialog = await openMember(page);
+    await page.screenshot({
+      animations: "disabled",
+      path: info.outputPath("dados-mobile.png"),
+    });
+    const rect = (await dialog.boundingBox())!;
+    expect(rect.x).toBeGreaterThanOrEqual(0);
+    expect(rect.y + rect.height).toBeLessThanOrEqual(844);
+    await dialog
+      .getByRole("button", { name: "Financeiro", exact: true })
+      .click();
+    await expect(
+      dialog.getByText("Entradas confirmadas", { exact: true }),
+    ).toBeVisible();
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+    await page.screenshot({
+      animations: "disabled",
+      path: info.outputPath("financeiro-mobile.png"),
+    });
+  });
+  test("campos administrativos seguem o padrão em organização, eventos e configurações", async ({
+    page,
+  }, info) => {
+    for (const [slug, title] of [
+      ["regionais", "Nova Regional"],
+      ["congregacoes", "Nova Congregação"],
+      ["cargos", "Novo Cargo"],
+    ]) {
+      await page.goto(`/estrutura-eclesiastica/${slug}`);
+      await page.getByRole("button", { name: "Novo cadastro" }).click();
+      const dialog = page.getByRole("dialog", { name: title, exact: true });
+      const field = dialog.getByRole("textbox").first();
+      await expect(field).toHaveCSS("height", "52px");
+      await expect(field).toHaveCSS("font-weight", "400");
+      await field.fill("Exemplo visual");
+      await expect(dialog).toHaveCSS("opacity", "1");
+      await expect(dialog.locator("..")).toHaveCSS("opacity", "1");
+      await page.screenshot({
+        animations: "disabled",
+        path: info.outputPath(`${slug}-campos.png`),
+      });
+    }
+    await page.goto("/eventos/novo");
+    await expect(
+      page.getByRole("textbox", { name: "Nome do evento *", exact: true }),
+    ).toHaveCSS("height", "52px");
+    await page.screenshot({
+      animations: "disabled",
+      path: info.outputPath("eventos-campos.png"),
+    });
+    await page.goto("/configuracoes");
+    await expect(
+      page.getByRole("textbox", {
+        name: "Nome da igreja ou campo",
+        exact: true,
+      }),
+    ).toHaveCSS("height", "52px");
+    await page.screenshot({
+      animations: "disabled",
+      path: info.outputPath("configuracoes-campos.png"),
+    });
+  });
+  test("edição preserva o tipo legado sem oferecê-lo em novos cadastros", async ({
+    page,
+  }) => {
+    await page.goto(`/membros/${fixture.members[30]}/editar`);
+    for (let i = 0; i < 3; i++)
+      await page.getByRole("button", { name: "Próximo", exact: true }).click();
+    const type = page.getByRole("combobox", {
+      name: "Tipo de cadastro *",
+      exact: true,
+    });
+    await expect(type).toHaveValue("CONGREGATED");
+    expect(await type.locator("option").allTextContents()).toContain(
+      "Congregado",
+    );
+  });
+});

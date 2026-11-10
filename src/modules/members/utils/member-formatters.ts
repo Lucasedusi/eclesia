@@ -31,12 +31,20 @@ export const memberRoleStatusLabels: Record<string, string> = {
   ENDED: "Encerrado",
 };
 
+const historyLabels: Record<string, string> = {
+  ...memberStatusLabels, ...memberTypeLabels, ...receivedByLabels, ...memberRoleStatusLabels,
+  MALE: "Masculino", FEMALE: "Feminino", AUTO: "Automático", SINGLE: "Solteiro(a)", MARRIED: "Casado(a)",
+  DIVORCED: "Divorciado(a)", SEPARATED: "Separado(a)", WIDOWED: "Viúvo(a)", STABLE_UNION: "União estável",
+  true: "Sim", false: "Não",
+};
+
 export function formatMemberHistoryValue(value: string | null) {
   if (!value) return null;
-  if (value in memberStatusLabels) {
-    return memberStatusLabels[value as MemberStatus];
-  }
-  return value;
+  return historyLabels[value] ?? value;
+}
+
+export function translateMemberHistoryText(text: string) {
+  return text.replace(/\b[A-Z][A-Z_]+\b/g, (value) => historyLabels[value] ?? value);
 }
 
 export function formatDateOnly(value: string | null | undefined) {

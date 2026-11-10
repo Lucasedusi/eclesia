@@ -19,7 +19,6 @@ import {
   ArrowRight,
   Building2,
   Church,
-  CircleUserRound,
   Eye,
   FileSpreadsheet,
   FileChartColumn,
@@ -61,7 +60,6 @@ import type {
 } from "../types/member.types";
 import {
   memberStatusLabels,
-  memberTypeLabels,
 } from "../utils/member-formatters";
 import * as S from "./members.styles";
 
@@ -116,7 +114,7 @@ export function MemberStatsCards({ stats }: { stats: MemberStats }) {
         </span>
         <div>
           <strong>{stats.total}</strong>
-          <small>Total visível no escopo</small>
+          <small>Total de Cadastros</small>
         </div>
       </S.Stat>
       <S.Stat $tone="success">
@@ -135,15 +133,6 @@ export function MemberStatsCards({ stats }: { stats: MemberStats }) {
         <div>
           <strong>{stats.inactive}</strong>
           <small>Inativos</small>
-        </div>
-      </S.Stat>
-      <S.Stat>
-        <span>
-          <CircleUserRound size={19} />
-        </span>
-        <div>
-          <strong>{stats.visitors}</strong>
-          <small>Visitantes</small>
         </div>
       </S.Stat>
       <S.Stat $tone="danger">
@@ -203,7 +192,7 @@ export function MemberManagement({
     if (next.congregationId) query.set("congregation", next.congregationId);
     if (next.regionId) query.set("region", next.regionId);
     if (next.roleId) query.set("role", next.roleId);
-    if (next.status) query.set("status", next.status);
+    query.set("status", next.status);
     if (next.memberType) query.set("type", next.memberType);
     if (next.importBatchId) query.set("importBatch", next.importBatchId);
     if (next.archived) query.set("archived", "true");
@@ -413,7 +402,7 @@ export function MemberManagement({
       regionId: "",
       congregationId: "",
       roleId: "",
-      status: "",
+      status: "ACTIVE",
       memberType: "",
       importBatchId: "",
       archived: false,
@@ -429,8 +418,7 @@ export function MemberManagement({
             <div>
               <h2>Relação de membros</h2>
               <p>
-                Paginação, pesquisa, filtros e ordenação executados diretamente
-                no Supabase.
+                Listagem de Membros
               </p>
             </div>
             <S.HeaderActions>
@@ -589,7 +577,7 @@ export function MemberManagement({
                 <S.Select
                   value={params.archived ? "archived" : "current"}
                   onChange={(event) =>
-                    changeFilter("archived", event.target.value === "archived")
+                    load({ ...params, page: 1, archived: event.target.value === "archived", status: event.target.value === "archived" ? "" : "ACTIVE" })
                   }
                 >
                   <option value="current">Cadastros atuais</option>
@@ -630,7 +618,7 @@ export function MemberManagement({
                       <th>Membro</th>
                       <th>Congregação</th>
                       <th>Cargo</th>
-                      <th>Tipo</th>
+                      <th>WhatsApp</th>
                       <th>Situação</th>
                       <th>Ações</th>
                     </tr>
@@ -653,7 +641,7 @@ export function MemberManagement({
                           <small>{member.regionName}</small>
                         </td>
                         <td>{member.role || "—"}</td>
-                        <td>{memberTypeLabels[member.memberType]}</td>
+                        <td>{member.whatsapp || "Não informado"}</td>
                         <td>
                           <S.Status $status={member.memberStatus}>
                             {member.archived
@@ -712,9 +700,13 @@ export function MemberManagement({
                         <span>Cargo</span>
                         <strong>{member.role || "—"}</strong>
                       </div>
+                      <div>
+                        <span>WhatsApp</span>
+                        <strong>{member.whatsapp || "Não informado"}</strong>
+                      </div>
                     </S.MobileMeta>
                     <S.Actions>
-                      <S.IconButton onClick={() => setDetailsId(member.id)}>
+                      <S.IconButton aria-label="Ver ficha" onClick={() => setDetailsId(member.id)}>
                         <Eye />
                       </S.IconButton>
                       {capabilities.update && !member.archived && (

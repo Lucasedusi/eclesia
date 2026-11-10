@@ -1,4 +1,5 @@
 import "server-only";
+import { formatPersonName } from "@/utils/person-name";
 
 import {
   PDFDocument,
@@ -131,7 +132,7 @@ function genderLabel(value: string | null) {
 function columnsFor(report: EventParticipantReportPreview): Column[] {
   const columns: Column[] = [];
   if (report.config.columns.index) columns.push({ key: "index", label: "#", weight: 0.42, align: "right", value: (row) => String(row.index) });
-  columns.push({ key: "name", label: "Nome do participante", weight: 2.2, value: (row) => row.participantName });
+  columns.push({ key: "name", label: "Nome do participante", weight: 2.2, value: (row) => formatPersonName(row.participantName) });
   columns.push({ key: "location", label: "Congregação / Regional", weight: 2.25, value: (row) => row.congregationAndRegion });
   if (report.config.columns.registrationNumber) columns.push({ key: "registrationNumber", label: "Inscrição", weight: 1.15, value: (row) => row.registrationNumber ?? "-" });
   if (report.config.columns.role) columns.push({ key: "role", label: "Cargo", weight: 1.3, value: (row) => row.roleName ?? "Sem cargo" });

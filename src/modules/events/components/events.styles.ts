@@ -1,4 +1,5 @@
 "use client";
+import { administrativeControl, administrativeSelect, administrativeTextarea } from "@/styles/administrative-controls";
 
 import styled, { css } from "styled-components";
 import { TABLE_HEADER_STYLE } from "@/styles/visual-standards";
@@ -19,6 +20,12 @@ export const Field = styled.label`
   input:read-only,textarea:read-only{color:#667085;-webkit-text-fill-color:#667085;cursor:default;}
   select{color:#344054;-webkit-text-fill-color:#344054;font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));font-weight:600;cursor:pointer;opacity:1;option{color:#344054;background:#fff;}}
   textarea{min-height:92px;padding:12px 13px;resize:vertical;line-height:1.55;}
+  ${Module} form &, [role="dialog"] & {
+    > span { font-weight: 600; }
+    input:not([type="checkbox"]):not([type="radio"]):not([type="file"]) { ${administrativeControl} }
+    select { ${administrativeSelect} }
+    textarea { ${administrativeTextarea} }
+  }
 `;
 export const FieldHeader = styled.span`
   &&{display:flex;min-width:0;min-height:16px;align-items:center;justify-content:space-between;gap:8px;}

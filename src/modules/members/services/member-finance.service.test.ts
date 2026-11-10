@@ -1,13 +1,11 @@
-import {it,expect,vi} from "vitest";
+import {expect,it,vi} from "vitest";
 import type {AuthContext} from "@/modules/auth/types/auth.types";
-vi.mock("server-only",()=>({}));const mocks=vi.hoisted(()=>({client:vi.fn(),units:vi.fn()}));
-vi.mock("@/lib/supabase/server",()=>({createClient:mocks.client}));vi.mock("@/modules/finance/services/finance-access.service",()=>({listFinanceUnits:mocks.units}));
+vi.mock("server-only",()=>({}));const mocks=vi.hoisted(()=>({load:vi.fn()}));
+vi.mock("./member-financial-data.service",()=>({loadMemberFinancialData:mocks.load}));
 import {getMemberFinance} from "./member.service";
-const context={church:{id:"field"},permissions:["finance.view"]} as AuthContext;
-it("does not grant financial history through identity lookup permission",async()=>{
- await expect(getMemberFinance({...context,permissions:["finance.contributors.lookup"]},"member")).rejects.toThrow("MEMBER_FINANCE_PERMISSION_DENIED");expect(mocks.client).not.toHaveBeenCalled();
-});
-it("filters financial history to authorized units and deterministic pages",async()=>{
- const q={select:vi.fn().mockReturnThis(),eq:vi.fn().mockReturnThis(),in:vi.fn().mockReturnThis(),is:vi.fn().mockReturnThis(),order:vi.fn().mockReturnThis(),range:vi.fn().mockResolvedValue({data:[],count:0,error:null})};mocks.units.mockResolvedValue([{id:"unit"}]);mocks.client.mockResolvedValue({from:()=>q});
- await getMemberFinance(context,"member",2);expect(q.in).toHaveBeenCalledWith("congregation_id",["unit"]);expect(q.eq).toHaveBeenCalledWith("church_id","field");expect(q.range).toHaveBeenCalledWith(20,39);expect(q.order).toHaveBeenCalledWith("id",{ascending:false});
+it("paginates the view while keeping whole-period totals and bounds",async()=>{
+ const items=Array.from({length:25},(_,i)=>({id:String(i)})),summary={incomeCents:2500,expenseCents:0,cancelledCents:0,pendingCents:0};
+ mocks.load.mockResolvedValue({items,summary,period:"Todo o período"});
+ const result=await getMemberFinance({} as AuthContext,"m",2,{});expect(result.items).toHaveLength(5);expect(result.total).toBe(25);expect(result.summary).toEqual(summary);expect(result.pageCount).toBe(2);
+ expect((await getMemberFinance({} as AuthContext,"m",99,{})).page).toBe(2);
 });

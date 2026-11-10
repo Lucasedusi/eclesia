@@ -1,12 +1,18 @@
 "use client";
+import { administrativeControl, administrativeSelect } from "@/styles/administrative-controls";
 
 import styled from "styled-components";
+import { Modal } from "@/components/ui/modal";
+import { Body } from "@/components/ui/modal.styles";
+
+export const DetailsModal = styled(Modal)`height: min(860px, calc(100dvh - 40px)); ${Body} { flex: 1; } @media (max-width: 640px) { height: calc(100dvh - 24px); }`;
+export const RolesAccordion = styled.details`summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; list-style: none; color: #344054; font-size: 12px; font-weight: 600; } summary::-webkit-details-marker { display: none; } summary svg { transition: transform .2s; } &[open] summary svg { transform: rotate(180deg); } > div { display: grid; gap: 14px; padding-top: 18px; }`;
 
 export const HeaderCard = styled.section`display: flex; align-items: center; justify-content: space-between; gap: 16px; border: 1px solid #e8ebf0; border-radius: 6px; background: linear-gradient(135deg, #f7f9ff, #fff); padding: 16px;`;
 export const Identity = styled.div`display: flex; align-items: center; gap: 13px; > span { display: grid; width: 48px; height: 48px; place-items: center; border-radius: 6px; background: #415ba5; color: #fff; font-weight: 700; } h3 { margin: 0; color: #101828; font-size: calc(16px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 700; } p { margin: 4px 0 0; color: #667085; font-size: calc(10px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 500; }`;
 export const Tabs = styled.nav`display: flex; gap: 5px; margin: 16px 0; overflow-x: auto; border-bottom: 1px solid #e9ecf1;`;
 export const Tab = styled.button<{ $active: boolean }>`display: inline-flex; min-height: 42px; align-items: center; gap: 7px; border: 0; border-bottom: 2px solid ${({ $active }) => $active ? "#415ba5" : "transparent"}; background: transparent; padding: 0 13px; color: ${({ $active }) => $active ? "#415ba5" : "#667085"}; font-size: calc(10px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 700; white-space: nowrap; cursor: pointer; svg { width: 15px; }`;
-export const Section = styled.section`display: grid; gap: 13px; h4 { margin: 2px 0 0; color: #101828; font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 700; }`;
+export const Section = styled.section`display: grid; gap: 18px; h4 { margin: 2px 0 0; color: #101828; font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 700; }`;
 export const Grid = styled.dl`display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 0; @media (max-width: 780px) { grid-template-columns: 1fr 1fr; } @media (max-width: 520px) { grid-template-columns: 1fr; }`;
 export const Field = styled.div`border: 1px solid #e8ebf0; border-radius: 6px; background: #fbfcfd; padding: 11px 12px; dt { color: #98a2b3; font-size: calc(8px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 700; text-transform: uppercase; } dd { margin: 4px 0 0; color: #344054; font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 600; line-height: 1.45; word-break: break-word; }`;
 export const WhatsAppValue = styled.span`
@@ -20,17 +26,17 @@ export const WhatsAppLink = styled.a`
   svg { width: 13px; height: 13px; }
   &:hover { background: #d9f3e4; color: #0c6d38; }
 `;
-export const Divider = styled.hr`width: 100%; height: 1px; border: 0; background: #edf0f4;`;
+export const Divider = styled.hr`width: 100%; height: 1px; border: 0; background: #edf0f4; margin: 10px 0;`;
 export const Timeline = styled.ol`display: grid; gap: 10px; margin: 0; padding: 0; list-style: none;`;
-export const Event = styled.li`display: grid; grid-template-columns: 11px 1fr; gap: 12px; &:before { content: ""; width: 10px; height: 10px; margin-top: 5px; border: 3px solid #dce4ff; border-radius: 50%; background: #415ba5; } article { border: 1px solid #e8ebf0; border-radius: 6px; padding: 12px; } h5 { margin: 0; color: #101828; font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 700; } time { color: #98a2b3; font-size: calc(9px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 600; } p { margin: 6px 0 0; color: #667085; font-size: calc(10px + var(--eclesia-font-size-adjustment, 0px)); line-height: 1.55; }`;
+export const Event = styled.li`display: grid; grid-template-columns: 11px 1fr; gap: 12px; &:before { content: ""; width: 10px; height: 10px; margin-top: 5px; border: 3px solid #dce4ff; border-radius: 50%; background: #415ba5; } article { border: 1px solid #e8ebf0; border-radius: 6px; padding: 12px; } h5 { margin: 0; color: #101828; font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 700; } time { color: #667085; font-size: calc(10px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 600; } p { margin: 6px 0 0; color: #667085; font-size: calc(10px + var(--eclesia-font-size-adjustment, 0px)); line-height: 1.55; }`;
 export const HistoryChange = styled.div`
   display: inline-flex; align-items: center; gap: 8px; margin-top: 8px; border-radius: 6px; background: #eef2ff; padding: 7px 9px;
   color: #344054; font-size: calc(10px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 600;
-  strong { color: #415ba5; }
+  strong { color: #415ba5; font-weight: 500; }
   svg { width: 13px; height: 13px; color: #98a2b3; }
 `;
 export const TabHeader = styled.header`display: flex; align-items: center; justify-content: space-between; gap: 12px; h4 { margin: 0; } p { margin: 3px 0 0; color: #667085; font-size: calc(10px + var(--eclesia-font-size-adjustment, 0px)); }`;
-export const FinanceSummary = styled.div`display: grid; grid-template-columns: 1fr 1fr; gap: 10px; article { border: 1px solid #e8ebf0; border-radius: 6px; background: #fbfcfd; padding: 13px; } small { color: #98a2b3; font-size: calc(8px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 700; text-transform: uppercase; } strong { display: block; margin-top: 4px; color: #101828; font-size: calc(15px + var(--eclesia-font-size-adjustment, 0px)); }`;
+export const FinanceSummary = styled.div`display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); @media (max-width: 700px) { grid-template-columns: repeat(2, minmax(0, 1fr)); } gap: 10px; article { border: 1px solid #e8ebf0; border-radius: 6px; background: #fbfcfd; padding: 13px; } small { color: #98a2b3; font-size: calc(8px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 700; text-transform: uppercase; } strong { display: block; margin-top: 4px; color: #101828; font-size: calc(15px + var(--eclesia-font-size-adjustment, 0px)); }`;
 export const SimpleTable = styled.div`overflow-x: auto; table { width: 100%; border-collapse: collapse; } th { background: #f8f9fb; color: #98a2b3; font-size: calc(8px + var(--eclesia-font-size-adjustment, 0px)); text-align: left; text-transform: uppercase; } th, td { border-bottom: 1px solid #edf0f4; padding: 10px; } td { color: #475467; font-size: calc(10px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 500; }`;
 export const Documents = styled.div`display: grid; gap: 9px;`;
 export const Document = styled.article`display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 1px solid #e8ebf0; border-radius: 6px; padding: 12px; h5 { margin: 0; color: #101828; font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 700; } p { margin: 3px 0 0; color: #98a2b3; font-size: calc(9px + var(--eclesia-font-size-adjustment, 0px)); } > div:last-child { display: flex; gap: 6px; }`;
@@ -44,7 +50,7 @@ export const UploadForm = styled.form`
 `;
 export const FormField = styled.label<{ $span?: number }>`
   display: grid; grid-column: span ${({ $span = 1 }) => $span}; gap: 7px;
-  > span { color: #475467; font-size: calc(10px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 700; }
+  > span { color: #475467; font-size: calc(10px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 600; }
   @media (max-width: 600px) { grid-column: auto; }
 `;
 export const FormControl = styled.input`
@@ -52,11 +58,15 @@ export const FormControl = styled.input`
   color: #344054; font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 500;
   &:focus { border-color: #415ba5; background: #fff; box-shadow: 0 0 0 3px rgba(65, 91, 165, .12); }
   &[type="file"] { padding: 9px 11px; }
+
+  &:not([type="file"]) { ${administrativeControl} }
 `;
 export const SelectControl = styled.select`
   width: 100%; min-height: 44px; border: 1px solid #d9deea; border-radius: 6px; outline: 0; background: #f8f9fc; padding: 0 12px;
   color: #344054; font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 600;
   &:focus { border-color: #415ba5; background: #fff; box-shadow: 0 0 0 3px rgba(65, 91, 165, .12); }
+
+  ${administrativeSelect}
 `;
 export const CheckField = styled.div<{ $span?: number }>`
   grid-column: span ${({ $span = 1 }) => $span}; border: 1px solid #e2e6ed; border-radius: 6px; background: #fff; padding: 12px 13px;
@@ -102,4 +112,12 @@ export const FooterActions = styled.div`
     flex-direction: column-reverse;
     button, a { width: 100%; justify-content: center; }
   }
+`;
+
+export const ExportActions = styled.div`display: flex; flex-wrap: wrap; gap: 8px;`;
+
+export const FinanceFilters = styled.form`
+  display: grid; grid-template-columns: 1fr 1fr auto; align-items: end; gap: 12px;
+  > div { min-width: 0; grid-column: auto; } input { min-width: 0; }
+  @media (max-width: 640px) { grid-template-columns: 1fr 1fr; > div:last-child { grid-column: 1 / -1; } }
 `;

@@ -29,7 +29,7 @@ import {
   validateAllMemberFormSteps,
   validateMemberFormStep,
 } from "../../utils/member-form-validation";
-import { formatDateOnly } from "../../utils/member-formatters";
+import { formatDateOnly, formatGender, formatMaritalStatus, receivedByLabels } from "../../utils/member-formatters";
 import { MemberFormFooter } from "./member-form-footer";
 import { MemberFormProgress } from "./member-form-progress";
 import * as S from "./member-create-form.styles";
@@ -316,7 +316,6 @@ export function MemberCreateForm({ options, mode = "create", initialData }: Prop
         <S.FormCard onSubmit={(event) => event.preventDefault()}>
           <S.FormBody>
             <S.StepHeader>
-              <S.StepEyebrow>{currentStep.title}</S.StepEyebrow>
               <S.StepTitle>{currentStep.title}</S.StepTitle>
               <S.StepDescription>{currentStep.description}</S.StepDescription>
             </S.StepHeader>
@@ -396,7 +395,7 @@ export function MemberCreateForm({ options, mode = "create", initialData }: Prop
               <S.FieldsGrid>
                 <S.FieldFull><S.ChurchContextBox><Info />Igreja atual: <strong>{options.churchName}</strong>.</S.ChurchContextBox></S.FieldFull>
                 {select("congregation_id", "Congregação *", options.congregations)}
-                {select("member_type", "Tipo de cadastro *", memberTypeOptions)}
+                {select("member_type", "Tipo de cadastro *", memberTypeOptions.filter((item) => ["MEMBER", "CHILD"].includes(item.value) || (mode === "edit" && item.value === initialData?.member_type)))}
                 {options.canManageRoles && mode === "create" && select("main_role_id", "Cargo", options.roles, "Sem Cargo")}
                 {options.canManageRoles && mode === "create" && input("role_start_date", "Início no Cargo", "date")}
               </S.FieldsGrid>
@@ -418,12 +417,47 @@ export function MemberCreateForm({ options, mode = "create", initialData }: Prop
 
             {currentStep.id === "review" && (
               <S.ReviewGrid>
-                <ReviewItem label="Nome" value={data.full_name} />
-                <ReviewItem label="Tipo" value={memberTypeOptions.find((item) => item.value === data.member_type)?.label} />
-                <ReviewItem label="Congregação" value={options.congregations.find((item) => item.value === data.congregation_id)?.label} />
-                {mode === "create" && <ReviewItem label="Cargo" value={options.roles.find((item) => item.value === data.main_role_id)?.label} />}
-                <ReviewItem label="WhatsApp" value={data.whatsapp} />
-                <ReviewItem label="Recebimento" value={formatDateOnly(data.received_date)} />
+                <S.ReviewSection>
+                  <h3>Dados pessoais</h3>
+                  <ReviewItem label="Nome" value={data.full_name} />
+                  <ReviewItem label="Nascimento" value={formatDateOnly(data.birth_date)} />
+                  <ReviewItem label="Sexo" value={formatGender(data.gender)} />
+                  <ReviewItem label="Estado civil" value={formatMaritalStatus(data.marital_status, data.gender)} />
+                  <ReviewItem label="Nacionalidade" value={data.nationality} />
+                  <ReviewItem label="Naturalidade / UF" value={[data.natural_city, data.natural_state].filter(Boolean).join(" / ")} />
+                  <ReviewItem label="Profissão" value={data.profession} />
+                  <ReviewItem label="Escolaridade" value={data.education_level} />
+                  {options.canManageSensitiveIdentity && <><ReviewItem label="CPF" value={data.cpf} /><ReviewItem label="RG / órgão" value={[data.rg, data.issuing_agency].filter(Boolean).join(" / ")} /></>}
+                </S.ReviewSection>
+                <S.ReviewSection>
+                  <h3>Contato e endereço</h3>
+                  <ReviewItem label="WhatsApp" value={data.whatsapp} />
+                  <ReviewItem label="E-mail" value={data.email} />
+                  <ReviewItem label="Endereço" value={[data.address, data.number, data.complement, data.district, data.city, data.state, data.zip_code, data.country].filter(Boolean).join(", ")} />
+                </S.ReviewSection>
+                <S.ReviewSection>
+                  <h3>Família</h3>
+                  <ReviewItem label="Pai" value={data.father_name} />
+                  <ReviewItem label="Mãe" value={data.mother_name} />
+                  <ReviewItem label="Cônjuge" value={data.spouse_name} />
+                </S.ReviewSection>
+                <S.ReviewSection>
+                  <h3>Vínculo e cargo</h3>
+                  <ReviewItem label="Tipo" value={memberTypeOptions.find((item) => item.value === data.member_type)?.label} />
+                  <ReviewItem label="Congregação" value={options.congregations.find((item) => item.value === data.congregation_id)?.label} />
+                  {mode === "create" && <><ReviewItem label="Cargo" value={options.roles.find((item) => item.value === data.main_role_id)?.label} /><ReviewItem label="Início no cargo" value={formatDateOnly(data.role_start_date)} /></>}
+                </S.ReviewSection>
+                <S.ReviewSection>
+                  <h3>Histórico eclesiástico</h3>
+                  <ReviewItem label="Conversão" value={formatDateOnly(data.conversion_date)} />
+                  <ReviewItem label="Batismo nas águas" value={formatDateOnly(data.baptism_date)} />
+                  <ReviewItem label="Igreja do batismo" value={data.baptism_church} />
+                  <ReviewItem label="Batismo com o Espírito Santo" value={data.has_holy_spirit_baptism ? `Sim${data.holy_spirit_baptism_date ? ` · ${formatDateOnly(data.holy_spirit_baptism_date)}` : ""}` : "Não"} />
+                  <ReviewItem label="Igreja anterior" value={data.previous_church} />
+                  <ReviewItem label="Forma de recebimento" value={receivedByLabels[data.received_by]} />
+                  <ReviewItem label="Recebimento" value={formatDateOnly(data.received_date)} />
+                  {data.received_by === "LETTER" && <ReviewItem label="Igreja de origem da carta" value={data.letter_origin_church} />}
+                </S.ReviewSection>
                 <S.FieldFull>
                   <S.FieldBlock><S.FieldLabel htmlFor="notes">Observações gerais</S.FieldLabel><S.Textarea id="notes" value={data.notes} onChange={(event) => update("notes", event.target.value)} /></S.FieldBlock>
                 </S.FieldFull>

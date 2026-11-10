@@ -1,4 +1,6 @@
 "use client";
+import { MemberFinanceTab } from "./member-finance-tab";
+import { ChevronDown } from "lucide-react";
 
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
@@ -34,7 +36,6 @@ import {
   getMemberDetailsAction,
   getMemberDocumentsAction,
   getMemberEventsAction,
-  getMemberFinanceAction,
   getMemberHistoryAction,
   manageMemberRoleAction,
 } from "../actions/member.actions";
@@ -60,7 +61,6 @@ import type {
   MemberDocumentItem,
   MemberEventItem,
   MemberFilters,
-  MemberFinanceItem,
   MemberHistoryItem,
   PaginatedTab,
 } from "../types/member.types";
@@ -112,12 +112,7 @@ function eventDateTime(value: string) {
   }).format(new Date(value));
 }
 
-function money(value: number) {
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(value);
-}
+
 
 function formatFileSize(value: number | null) {
   if (value == null) return "Tamanho não informado";
@@ -231,8 +226,7 @@ export function MemberDetailsModal({
   const [tab, setTab] = useState<Tab>("data");
   const [history, setHistory] =
     useState<PaginatedTab<MemberHistoryItem> | null>(null);
-  const [finance, setFinance] =
-    useState<PaginatedTab<MemberFinanceItem> | null>(null);
+
   const [events, setEvents] = useState<PaginatedTab<MemberEventItem> | null>(
     null,
   );
@@ -279,7 +273,7 @@ export function MemberDetailsModal({
       next === "data" ||
       (next === "history" && history) ||
       (next === "events" && events) ||
-      (next === "finance" && finance) ||
+      next === "finance" ||
       (next === "documents" && documents)
     ) {
       return;
@@ -291,16 +285,6 @@ export function MemberDetailsModal({
       else
         setNotice({
           title: "Histórico indisponível",
-          description: result.message,
-          variant: "danger",
-        });
-    }
-    if (next === "finance") {
-      const result = await getMemberFinanceAction(memberId);
-      if (result.success) setFinance(result.data);
-      else
-        setNotice({
-          title: "Financeiro indisponível",
           description: result.message,
           variant: "danger",
         });
@@ -721,7 +705,7 @@ export function MemberDetailsModal({
 
   return (
     <>
-      <Modal
+      <S.DetailsModal
         open={!showSheet}
         title="Ficha do membro"
         description="Consulta cadastral, eclesiástica, de eventos, financeira e documental."
@@ -823,6 +807,13 @@ export function MemberDetailsModal({
                       details.gender,
                     )}
                   />
+                  <Field label="Nacionalidade" value={details.nationality} />
+                  <Field label="Naturalidade / UF" value={[details.naturalCity, details.naturalState].filter(Boolean).join(" / ")} />
+                  <Field label="Profissão" value={details.profession} />
+                  <Field label="Escolaridade" value={details.educationLevel} />
+                  <Field label="Congregação" value={details.congregationName} />
+                  <Field label="Regional" value={details.regionName} />
+                  <Field label="Matrícula" value={details.memberCode} />
                   <Field label="CPF" value={details.cpf} />
                   <Field
                     label="RG / órgão"
@@ -844,6 +835,9 @@ export function MemberDetailsModal({
                 </S.Grid>
 
                 <S.Divider />
+                <S.RolesAccordion>
+                  <summary><span>Cargos · {details.roles.find((role) => role.status === "ACTIVE")?.name || "Sem cargo atual"}</span><ChevronDown size={17} /></summary>
+                  <div>
                 <S.TabHeader>
                   <div>
                     <h4>Cargo</h4>
@@ -886,9 +880,14 @@ export function MemberDetailsModal({
                   </S.Documents>
                 )}
 
+                  </div>
+                </S.RolesAccordion>
+
                 <S.Divider />
                 <h4>Histórico de fé</h4>
                 <S.Grid>
+                  <Field label="Igreja anterior" value={details.previousChurch} />
+                  <Field label="Igreja de origem da carta" value={details.letterOriginChurch} />
                   <Field
                     label="Conversão"
                     value={date(details.conversionDate)}
@@ -905,8 +904,8 @@ export function MemberDetailsModal({
                     label="Batismo com Espírito Santo"
                     value={
                       details.hasHolySpiritBaptism
-                        ? date(details.holySpiritBaptismDate)
-                        : "Não informado"
+                        ? `Sim${details.holySpiritBaptismDate ? ` · ${date(details.holySpiritBaptismDate)}` : ""}`
+                        : "Não"
                     }
                   />
                   <Field
@@ -1012,65 +1011,7 @@ export function MemberDetailsModal({
               </S.Section>
             )}
 
-            {!tabLoading && tab === "finance" && (
-              <S.Section>
-                <S.TabHeader>
-                  <div>
-                    <h4>Histórico financeiro</h4>
-                    <p>Consulta somente leitura dos lançamentos vinculados.</p>
-                  </div>
-                </S.TabHeader>
-                <S.FinanceSummary>
-                  <article>
-                    <small>Total visível</small>
-                    <strong>
-                      {money(
-                        finance?.items.reduce(
-                          (sum, item) => sum + item.amount,
-                          0,
-                        ) ?? 0,
-                      )}
-                    </strong>
-                  </article>
-                  <article>
-                    <small>Lançamentos</small>
-                    <strong>{finance?.total ?? 0}</strong>
-                  </article>
-                </S.FinanceSummary>
-                {!finance?.items.length ? (
-                  <S.Empty>Nenhum lançamento vinculado ao membro.</S.Empty>
-                ) : (
-                  <S.SimpleTable>
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>Data</th>
-                          <th>Categoria</th>
-                          <th>Descrição</th>
-                          <th>Valor</th>
-                          <th>Situação</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {finance.items.map((item) => (
-                          <tr key={item.id}>
-                            <td>{date(item.transactionDate)}</td>
-                            <td>{item.category}</td>
-                            <td>
-                              {item.description ||
-                                item.transactionNumber ||
-                                "—"}
-                            </td>
-                            <td>{money(item.amount)}</td>
-                            <td>{item.status}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </S.SimpleTable>
-                )}
-              </S.Section>
-            )}
+            {tab === "finance" && <MemberFinanceTab memberId={memberId} canExport={capabilities.exportSheet} />}
 
             {!tabLoading && tab === "events" && (
               <S.Section>
@@ -1318,7 +1259,7 @@ export function MemberDetailsModal({
             )}
           </>
         )}
-      </Modal>
+      </S.DetailsModal>
 
       {showSheet && details && (
         <MemberSheetModal
