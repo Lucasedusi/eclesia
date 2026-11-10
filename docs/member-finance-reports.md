@@ -8,6 +8,8 @@ Na listagem, as badges de tipo usam sucesso para entrada e danger para saída. A
 
 **PDF** e **Excel** exportam todos os lançamentos autorizados do período aplicado, com data, tipo, categoria, descrição, forma de pagamento, situação e valor. A exportação não depende da página atual. O cabeçalho usa o nome de exibição e a logo configurados do campo, os Presidentes, o nome/matrícula do membro e o período. O PDF mantém marca d'água, data, paginação e rodapé **Eklesias**. A planilha mantém valores monetários numéricos e textos literais, sem interpretar descrições como fórmulas.
 
+No PDF, o texto do cabeçalho fica centralizado verticalmente. A quantidade de lançamentos aparece em destaque à esquerda e os totais à direita, com rótulos curtos e valores em seminegrito; totais extensos quebram em linhas sem sobreposição. O período só aparece quando delimitado por datas. Valores da tabela também usam seminegrito, e saídas têm tipo e valor na cor danger.
+
 ## Acesso e integridade
 
 - Consulta: `members.view_basic` e `finance.view`, com sessão autenticada e acesso ao membro.

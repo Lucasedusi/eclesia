@@ -7,6 +7,7 @@ import {
   createMemberFinancialWorkbook,
 } from "./member-financial-documents.service";
 import type { MemberFinancialDocument } from "../types/member-finance.types";
+import { PDF_COLORS } from "@/lib/pdf/church-document";
 vi.mock("server-only", () => ({}));
 afterEach(() => vi.restoreAllMocks());
 const data: MemberFinancialDocument = {
@@ -90,4 +91,65 @@ it("exports literal descriptions, numeric money and all rows to Excel", async ()
   expect(sheet.getCell("G8").value).toBe(100);
   expect(sheet.getCell("F8").value).toBe("Confirmado");
   expect(sheet.getCell("G8").numFmt).toContain("0.00");
+});
+
+it("centers the short header, aligns the summary and emphasizes amounts and expenses", async () => {
+  const draw = vi.spyOn(PDFPage.prototype, "drawText");
+  const input = {
+    ...data,
+    period: "Todo o período",
+    summary: {
+      incomeCents: 249200,
+      expenseCents: 12000,
+      cancelledCents: 3500,
+      pendingCents: 0,
+    },
+    items: Array.from({ length: 10 }, (_, i) => ({
+      ...data.items[0],
+      id: String(i),
+      transactionType: i % 2 ? "EXPENSE" : "INCOME",
+      amount: i % 2 ? 120 : 249.2,
+      category: i % 2 ? "Assistência" : "Dízimo",
+      description: i % 2 ? "Auxílio ao membro" : "Contribuição do membro",
+    })),
+  };
+  const bytes = await createMemberFinancialPdf(input);
+  const calls = draw.mock.calls;
+  const text = calls.map(([t]) => t).join(" ");
+  expect(text).not.toMatch(
+    /Todo o período|Entradas confirmadas|Saídas confirmadas/,
+  );
+  const count = calls.find(([t]) => t === "10 lançamento(s)")![1]!;
+  const total = calls.find(([t]) => t === "Entradas: ")![1]!;
+  expect(total.y).toBe(count.y);
+  expect(total.x).toBeGreaterThan(count.x! + 100);
+  const money = calls.filter(([t]) => t.startsWith("R$"));
+  expect(money.length).toBe(14);
+  expect(money.every(([, o]) => o!.font === count.font)).toBe(true);
+  const expenses = calls.filter(
+    ([t, o]) =>
+      t === "Saída" || (t.includes("120,00") && o!.color === PDF_COLORS.danger),
+  );
+  expect(expenses).toHaveLength(10);
+  expect(expenses.every(([, o]) => o!.color === PDF_COLORS.danger)).toBe(true);
+  const name = calls.find(([t]) => t === "CAMPO DE TESTE")![1]!;
+  const presidents = calls.find(([t]) => t === "Presidentes: Paulo e Ana")![1]!;
+  const topPadding =
+    595.28 -
+    name.y! -
+    name.font!.heightAtSize(name.size!, { descender: false });
+  const bottomPadding = presidents.y! - (595.28 - 94);
+  expect(Math.abs(topPadding - bottomPadding)).toBeLessThan(1);
+  for (const [t, o] of calls) {
+    expect(o!.x! + o!.font!.widthOfTextAtSize(t, o!.size!)).toBeLessThanOrEqual(
+      841.89 - 30,
+    );
+  }
+  if (process.env.MEMBER_REPORT_QA_DIR) {
+    await mkdir(process.env.MEMBER_REPORT_QA_DIR, { recursive: true });
+    await writeFile(
+      `${process.env.MEMBER_REPORT_QA_DIR}/financeiro-resumo.pdf`,
+      bytes,
+    );
+  }
 });

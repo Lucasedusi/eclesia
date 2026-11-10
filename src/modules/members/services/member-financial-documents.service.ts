@@ -69,6 +69,7 @@ export async function createMemberFinancialPdf(data: MemberFinancialDocument) {
     drawChurchWatermark(page, assets);
     y =
       drawChurchHeader(page, data.church, assets, {
+        verticalAlign: "center",
         detailLines: data.church.pastorNames?.length
           ? [
               `Presidentes: ${data.church.pastorNames.map(formatPersonName).join(" e ")}`,
@@ -106,8 +107,49 @@ export async function createMemberFinancialPdf(data: MemberFinancialDocument) {
     11,
     bold,
   );
-  paragraph(`${data.period} · ${data.items.length} lançamento(s)`, 9);
-  paragraph(summary(data), 9);
+  if (data.period !== "Todo o período") paragraph(data.period, 9);
+  y += 8;
+  const count = `${data.items.length} lançamento(s)`;
+  const summarySize = 9;
+  const available =
+    width - margin * 2 - bold.widthOfTextAtSize(count, summarySize) - 20;
+  const groups = [
+    ["Entradas", data.summary.incomeCents],
+    ["Saídas", data.summary.expenseCents],
+    ["Cancelados", data.summary.cancelledCents],
+    ["Não confirmados", data.summary.pendingCents],
+  ] as const;
+  const rows: { text: string; font: typeof regular }[][] = [[]];
+  const segmentWidth = (segments: (typeof rows)[number]) =>
+    segments.reduce(
+      (total, segment) =>
+        total + segment.font.widthOfTextAtSize(segment.text, summarySize),
+      0,
+    );
+  for (const [label, cents] of groups) {
+    const segments = [
+      { text: `${label}: `, font: regular },
+      { text: formatMemberMoney(cents / 100), font: bold },
+    ];
+    const current = rows[rows.length - 1];
+    const separator = current.length ? [{ text: " · ", font: regular }] : [];
+    if (
+      current.length &&
+      segmentWidth([...current, ...separator, ...segments]) > available
+    ) {
+      rows.push(segments);
+    } else current.push(...separator, ...segments);
+  }
+  draw(count, margin, y, summarySize, bold);
+  for (const segments of rows) {
+    let x = width - margin - segmentWidth(segments);
+    for (const segment of segments) {
+      draw(segment.text, x, y, summarySize, segment.font);
+      x += segment.font.widthOfTextAtSize(segment.text, summarySize);
+    }
+    y += 14;
+  }
+  y += 16;
   if (y + 65 > bottom) newPage();
   tableHeader();
   if (!data.items.length) {
@@ -116,7 +158,7 @@ export async function createMemberFinancialPdf(data: MemberFinancialDocument) {
   }
   data.items.forEach((row, index) => {
     const cells = values(row).map((text, i) =>
-      wrapPdfText(text, regular, 9, widths[i] - 12),
+      wrapPdfText(text, i === 6 ? bold : regular, 9, widths[i] - 12),
     );
     const fullHeight = Math.max(...cells.map((c) => c.length)) * 12 + 18;
     if (y + Math.min(fullHeight, 140) > bottom) {
@@ -141,7 +183,18 @@ export async function createMemberFinancialPdf(data: MemberFinancialDocument) {
       });
       let x = margin;
       portion.forEach((lines, i) => {
-        lines.forEach((text, n) => draw(text, x + 6, y + 8 + n * 12));
+        lines.forEach((text, n) =>
+          draw(
+            text,
+            x + 6,
+            y + 8 + n * 12,
+            9,
+            i === 6 ? bold : regular,
+            row.transactionType === "EXPENSE" && (i === 1 || i === 6)
+              ? PDF_COLORS.danger
+              : PDF_COLORS.navy,
+          ),
+        );
         x += widths[i];
       });
       y += h;

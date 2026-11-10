@@ -14,6 +14,7 @@ export const CONTENT_BOTTOM = PAGE_HEIGHT - 57;
 export const PDF_COLORS = {
   navy: rgb(0.04, 0.16, 0.31), gold: rgb(0.86, 0.69, 0.23), muted: rgb(0.36, 0.42, 0.51),
   border: rgb(0.80, 0.83, 0.87), paper: rgb(0.973, 0.974, 0.977), white: rgb(1, 1, 1),
+  danger: rgb(245 / 255, 126 / 255, 119 / 255),
 };
 export type ChurchDocumentIdentity = { name: string; logoDataUri: string | null; address: string; phone: string; document: string; pastorNames?: string[] };
 export type ChurchPdfAssets = { regular: PDFFont; bold: PDFFont; logo: PDFImage | null };
@@ -81,7 +82,7 @@ export function drawChurchWatermark(page: PDFPage, { logo }: ChurchPdfAssets) {
   });
 }
 
-export function drawChurchHeader(page: PDFPage, church: ChurchDocumentIdentity, { regular, bold, logo }: ChurchPdfAssets, options?: { detailLines: string[] }) {
+export function drawChurchHeader(page: PDFPage, church: ChurchDocumentIdentity, { regular, bold, logo }: ChurchPdfAssets, options?: { detailLines: string[]; verticalAlign?: "center" }) {
   const pageWidth = page.getWidth(), pageHeight = page.getHeight();
   const left = logo ? 115 : PAGE_MARGIN;
   const width = pageWidth - PAGE_MARGIN - left;
@@ -98,6 +99,11 @@ export function drawChurchHeader(page: PDFPage, church: ChurchDocumentIdentity, 
       page.drawImage(logo, { x: 68 - dimensions.width / 2, y: pageHeight - height / 2 - dimensions.height / 2, ...dimensions });
     }
     let baseline = pageHeight - 36;
+    if (options.verticalAlign === "center") {
+      const nameHeight = bold.heightAtSize(14, { descender: false });
+      const textHeight = (name.length + details.length - 1) * lineHeight + nameHeight;
+      baseline = pageHeight - (height - textHeight) / 2 - nameHeight;
+    }
     for (const line of name) {
       page.drawText(line, { x: left, y: baseline, size: 14, font: bold, color: PDF_COLORS.white });
       baseline -= lineHeight;
