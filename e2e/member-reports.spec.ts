@@ -60,7 +60,7 @@ test.describe("listagens de membros", () => {
   });
   test("resultados filtrados mantêm a seleção da tela e incluem todas as páginas", async ({ page }) => {
     await page.goto(`/membros?congregation=${fixture!.congregations[1]}`); await page.getByRole("button", { name: "Relatório", exact: true }).click();
-    const dialog = page.getByRole("dialog", { name: "Listagem de membros", exact: true }); await dialog.getByLabel("Abrangência", { exact: true }).selectOption("FILTERED"); await dialog.getByLabel("Formato", { exact: true }).selectOption("xlsx");
+    const dialog = page.getByRole("dialog", { name: "Listagem de membros", exact: true }); await dialog.getByLabel("Filtros", { exact: true }).selectOption("FILTERED"); await dialog.getByLabel("Formato", { exact: true }).selectOption("xlsx");
     const requested = page.waitForRequest((r) => r.url().endsWith("/api/members/reports")); const promise = page.waitForEvent("download"); await dialog.getByRole("button", { name: "Baixar Excel" }).click();
     expect((await requested).postDataJSON().filters.congregationId).toBe(fixture!.congregations[1]); const file = await promise; expect((await workbook(await readFileAsync((await file.path())!))).rowCount - 6).toBe(3);
   });

@@ -24,7 +24,7 @@ export function MemberReportModal({ params, capabilities, onClose }: Props) {
     if (!input.success) { setFeedback({ error: true, message: "Revise os filtros da tela e escolha até quatro campos adicionais." }); return; }
     void download(input.data);
   }
-  return <S.ReportModal open $stableHeight title="Listagem de membros" description="Escolha o modelo, a abrangência e o formato." icon={<FileText />} size="md" onClose={onClose} busy={busy}
+  return <S.ReportModal open $stableHeight title="Listagem de membros" description="Escolha o modelo, os filtros e o formato." icon={<FileText />} size="md" onClose={onClose} busy={busy}
     footer={<S.Footer><Button onClick={generate} loading={busy} disabled={busy}><Download size={16} />{busy ? "Gerando listagem…" : kind === "complete" || format === "xlsx" ? "Baixar Excel" : "Baixar PDF"}</Button></S.Footer>}>
     <S.Content aria-busy={busy}>
       <S.Options disabled={busy}>
@@ -34,7 +34,7 @@ export function MemberReportModal({ params, capabilities, onClose }: Props) {
         <S.Hint>{kind === "simplified" ? "Matrícula, nome do membro, congregação, WhatsApp e cargo." : kind === "complete" ? "Todos os campos do cadastro disponíveis para o seu acesso, em uma planilha. Não inclui observações pastorais restritas." : "Matrícula e nome são fixos. Escolha até quatro campos adicionais, na ordem em que devem aparecer."}</S.Hint>
       </S.Options>
       <S.Options disabled={busy}>
-        <S.Field>Abrangência<S.SelectBox><S.SelectControl aria-label="Abrangência" value={useFilters ? "FILTERED" : "ALL"} onChange={(e) => { setUseFilters(e.target.value === "FILTERED"); setFeedback(null); }}>
+        <S.Field>Filtros<S.SelectBox><S.SelectControl aria-label="Filtros" value={useFilters ? "FILTERED" : "ALL"} onChange={(e) => { setUseFilters(e.target.value === "FILTERED"); setFeedback(null); }}>
           <option value="ALL">Todos os membros não arquivados</option><option value="FILTERED">Resultados filtrados na tela</option>
         </S.SelectControl></S.SelectBox></S.Field>
         <S.Hint>{useFilters ? `Inclui todas as páginas e mantém a ordenação da tela.${params.archived ? " Somente membros arquivados." : ""}` : "Inclui todos os membros permitidos pelo seu acesso, em ordem alfabética."}</S.Hint>
