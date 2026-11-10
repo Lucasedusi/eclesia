@@ -26,7 +26,10 @@ export async function createCongregationReportPdf(data: CongregationReportDocume
   function newPage() {
     page = document.addPage([width, height]);
     drawChurchWatermark(page, assets);
-    cursor = drawChurchHeader(page, data.church, assets, { detailLines }) + 28;
+    cursor = drawChurchHeader(page, data.church, assets, {
+      detailLines,
+      verticalAlign: data.kind === "simplified" ? "center" : undefined,
+    }) + 28;
   }
   function paragraph(text: string, size = 10, font = regular, color = PDF_COLORS.navy, gapAfter = 8) {
     for (const line of wrapPdfText(text, font, size, contentWidth)) {
