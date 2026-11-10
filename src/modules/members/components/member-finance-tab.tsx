@@ -30,7 +30,8 @@ export function MemberFinanceTab({
     [data, setData] = useState<MemberFinancialPage | null>(null),
     [error, setError] = useState(""),
     [loading, setLoading] = useState(true),
-    [downloading, setDownloading] = useState(false);
+    [downloadFormat, setDownloadFormat] = useState<"pdf" | "xlsx" | null>(null);
+  const downloading = downloadFormat !== null;
   const request = useRef(0),
     downloadLock = useRef(false);
   async function load(page: number, next = applied) {
@@ -92,7 +93,7 @@ export function MemberFinanceTab({
   async function download(format: "pdf" | "xlsx") {
     if (downloadLock.current) return;
     downloadLock.current = true;
-    setDownloading(true);
+    setDownloadFormat(format);
     setError("");
     try {
       const response = await fetch("/api/members/finance/reports", {
@@ -124,17 +125,11 @@ export function MemberFinanceTab({
       setError(e instanceof Error ? e.message : "Não foi possível exportar.");
     } finally {
       downloadLock.current = false;
-      setDownloading(false);
+      setDownloadFormat(null);
     }
   }
   return (
     <S.Section>
-      <S.TabHeader>
-        <div>
-          <h4>Financeiro do membro</h4>
-          <p>Consulta dos lançamentos vinculados nas unidades autorizadas.</p>
-        </div>
-      </S.TabHeader>
       <S.FinanceFilters onSubmit={filter}>
         <S.FormField>
           <span>Data inicial</span>
@@ -192,18 +187,22 @@ export function MemberFinanceTab({
                     variant="outline"
                     size="sm"
                     disabled={downloading}
+                    loading={downloadFormat === "pdf"}
+                    aria-busy={downloadFormat === "pdf"}
                     onClick={() => void download("pdf")}
                   >
-                    <Download size={14} />
+                    {downloadFormat !== "pdf" && <Download size={14} />}
                     PDF
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     disabled={downloading}
+                    loading={downloadFormat === "xlsx"}
+                    aria-busy={downloadFormat === "xlsx"}
                     onClick={() => void download("xlsx")}
                   >
-                    <Download size={14} />
+                    {downloadFormat !== "xlsx" && <Download size={14} />}
                     Excel
                   </Button>
                 </S.ExportActions>

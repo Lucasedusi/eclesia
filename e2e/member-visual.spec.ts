@@ -199,6 +199,65 @@ test.describe("ajustes de membros", () => {
       dialog.getByText("Nenhum lançamento encontrado para o período."),
     ).toBeVisible();
   });
+  test("exportação financeira mostra carregamento no botão acionado e permite tentar novamente", async ({
+    page,
+  }) => {
+    const dialog = await openMember(page);
+    await dialog
+      .getByRole("button", { name: "Financeiro", exact: true })
+      .click();
+    const pdf = dialog.getByRole("button", { name: "PDF", exact: true });
+    const excel = dialog.getByRole("button", { name: "Excel", exact: true });
+    await expect(pdf).toBeEnabled();
+    await expect(
+      dialog.getByRole("heading", {
+        name: "Financeiro do membro",
+        exact: true,
+      }),
+    ).toHaveCount(0);
+    await expect(
+      dialog.getByText(
+        "Consulta dos lançamentos vinculados nas unidades autorizadas.",
+        { exact: true },
+      ),
+    ).toHaveCount(0);
+    await expect(dialog.locator("form")).toHaveCSS("margin-top", "20px");
+    await expect(dialog.locator("form")).toHaveCSS("margin-bottom", "20px");
+    for (const [active, other] of [
+      [pdf, excel],
+      [excel, pdf],
+    ]) {
+      let release!: () => void;
+      const pending = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      await page.route("**/api/members/finance/reports", async (route) => {
+        await pending;
+        await route.fulfill({
+          status: 503,
+          contentType: "application/json",
+          body: JSON.stringify({ message: "Falha simulada na exportação." }),
+        });
+      });
+      try {
+        await active.click();
+        await expect(active).toHaveAttribute("aria-busy", "true");
+        await expect(active.locator("svg")).toHaveClass(/lucide-loader/);
+        await expect(other).toHaveAttribute("aria-busy", "false");
+        await expect(pdf).toBeDisabled();
+        await expect(excel).toBeDisabled();
+      } finally {
+        release();
+      }
+      await expect(dialog.getByRole("alert")).toContainText(
+        "Falha simulada na exportação.",
+      );
+      await expect(active).toHaveAttribute("aria-busy", "false");
+      await expect(pdf).toBeEnabled();
+      await expect(excel).toBeEnabled();
+      await page.unroute("**/api/members/finance/reports");
+    }
+  });
   test("exportação financeira respeita igreja e permissão", async ({
     request,
     playwright,

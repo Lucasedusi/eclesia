@@ -157,6 +157,7 @@ export const FooterActions = styled.div`
 export const ExportActions = styled.div`display: flex; flex-wrap: wrap; gap: 8px;`;
 
 export const FinanceFilters = styled.form`
+  margin: 20px 0;
   display: grid; grid-template-columns: 1fr 1fr auto; align-items: end; gap: 12px;
   > div { min-width: 0; grid-column: auto; } input { min-width: 0; }
   @media (max-width: 640px) { grid-template-columns: 1fr 1fr; > div:last-child { grid-column: 1 / -1; } }
