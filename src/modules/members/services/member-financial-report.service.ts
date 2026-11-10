@@ -81,7 +81,11 @@ export async function generateMemberFinancialDownload(
     p_metadata: {
       format: options.format,
       count: data.items.length,
-      filtered: !!(options.filters.dateFrom || options.filters.dateTo),
+      filtered: !!(
+        options.filters.dateFrom ||
+        options.filters.dateTo ||
+        options.filters.categoryId
+      ),
     },
     p_severity: "INFO",
   });

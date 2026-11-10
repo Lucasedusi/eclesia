@@ -1,6 +1,8 @@
 # Financeiro individual do membro
 
-Na ficha do membro, a aba **Financeiro** consulta os lançamentos vinculados ao cadastro nas unidades financeiras autorizadas. O período pode ser delimitado por data inicial, final ou ambas. Sem datas, a consulta abrange todo o período.
+Na ficha do membro, a aba **Financeiro** consulta os lançamentos vinculados ao cadastro nas unidades financeiras autorizadas. O período pode ser delimitado por data inicial, final ou ambas. Sem datas, a consulta abrange todo o período. O campo **Categoria**, junto às datas, começa em **Todas as categorias**; **Aplicar filtros** combina a categoria e o período na listagem, nos totais e nas exportações de todas as páginas.
+
+As opções vêm do catálogo financeiro da igreja, com as permissões existentes, incluindo categorias inativas ainda disponíveis para consulta histórica. A seleção é validada no servidor pelo identificador; uma categoria indisponível ou de outra igreja não amplia a consulta. PDF e Excel identificam a categoria selecionada e usam os últimos filtros aplicados, mesmo que os campos tenham sido alterados sem aplicar. A seleção permanece disponível quando o resultado está vazio.
 
 A tela apresenta 20 lançamentos por página e três indicadores com ícones: **Entradas**, **Saídas** e **Cancelados**. Entradas e saídas somam apenas os lançamentos confirmados; os cancelados são contabilizados separadamente. Os totais consideram todas as páginas do período, com somas em centavos. Os relatórios exportados também preservam o total de não confirmados.
 

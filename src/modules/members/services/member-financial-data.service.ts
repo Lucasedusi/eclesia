@@ -78,6 +78,8 @@ export async function loadMemberFinancialData(
       code: member.member_code ?? "",
     },
     items: [],
+    category: null,
+    categories: [],
     summary: {
       incomeCents: 0,
       expenseCents: 0,
@@ -93,14 +95,58 @@ export async function loadMemberFinancialData(
             ? `Até ${formatDateOnly(filters.dateTo)}`
             : "Todo o período",
   };
-  if (!units.length) return result;
+  if (!units.length) {
+    if (filters.categoryId) throw new MemberFinanceError("NOT_FOUND");
+    return result;
+  }
+  let categoryCount: number | undefined;
+  const categoryIds = new Set<string>();
+  do {
+    const page = await c
+      .from("financial_categories")
+      .select("id,name,church_id", { count: "exact" })
+      .eq("church_id", context.church.id)
+      .is("deleted_at", null)
+      .order("name")
+      .order("id")
+      .range(result.categories.length, result.categories.length + 499);
+    if (
+      page.error ||
+      page.count === null ||
+      !Array.isArray(page.data) ||
+      page.count > 10000
+    )
+      throw new MemberFinanceError("UNAVAILABLE");
+    categoryCount ??= page.count;
+    if (
+      page.count !== categoryCount ||
+      (result.categories.length < categoryCount && !page.data.length)
+    )
+      throw new MemberFinanceError("UNAVAILABLE");
+    for (const category of page.data) {
+      if (
+        category.church_id !== context.church.id ||
+        categoryIds.has(category.id)
+      )
+        throw new MemberFinanceError("UNAVAILABLE");
+      categoryIds.add(category.id);
+      result.categories.push({ id: category.id, name: category.name });
+    }
+  } while (result.categories.length < categoryCount);
+  if (filters.categoryId) {
+    const category = result.categories.find(
+      (item) => item.id === filters.categoryId,
+    );
+    if (!category) throw new MemberFinanceError("NOT_FOUND");
+    result.category = category.name;
+  }
   const seen = new Set<string>();
   let total: number | undefined;
   do {
     let q = c
       .from("financial_transactions")
       .select(
-        "id,church_id,member_id,congregation_id,transaction_number,transaction_type,description,amount,transaction_date,status,category_name,category:financial_categories!finance_tx_category(name),method:financial_payment_methods!financial_transactions_payment_method_id_fkey(name)",
+        "id,church_id,member_id,congregation_id,transaction_number,transaction_type,description,amount,transaction_date,status,category_id,category_name,category:financial_categories!finance_tx_category(name),method:financial_payment_methods!financial_transactions_payment_method_id_fkey(name)",
         { count: "exact" },
       )
       .eq("church_id", context.church.id)
@@ -109,6 +155,7 @@ export async function loadMemberFinancialData(
       .is("deleted_at", null);
     if (filters.dateFrom) q = q.gte("transaction_date", filters.dateFrom);
     if (filters.dateTo) q = q.lte("transaction_date", filters.dateTo);
+    if (filters.categoryId) q = q.eq("category_id", filters.categoryId);
     const page = await q
       .order("transaction_date", { ascending: false })
       .order("id", { ascending: false })
@@ -128,6 +175,7 @@ export async function loadMemberFinancialData(
         seen.has(row.id) ||
         row.church_id !== context.church.id ||
         row.member_id !== memberId ||
+        (filters.categoryId && row.category_id !== filters.categoryId) ||
         !units.includes(String(row.congregation_id))
       )
         throw new MemberFinanceError("UNAVAILABLE");

@@ -22,6 +22,8 @@ const data: MemberFinancialDocument = {
   },
   member: { id: "m", name: "MARIA DE SOUZA", code: "001" },
   period: "01/11/2026 a 30/11/2026",
+  category: null,
+  categories: [],
   summary: {
     incomeCents: 10000,
     expenseCents: 0,
@@ -91,6 +93,21 @@ it("exports literal descriptions, numeric money and all rows to Excel", async ()
   expect(sheet.getCell("G8").value).toBe(100);
   expect(sheet.getCell("F8").value).toBe("Confirmado");
   expect(sheet.getCell("G8").numFmt).toContain("0.00");
+});
+
+it("identifies the selected category in PDF and Excel even with no transactions", async () => {
+  const input = { ...data, items: [], category: "Ofertas missionárias" };
+  const draw = vi.spyOn(PDFPage.prototype, "drawText");
+  await createMemberFinancialPdf(input);
+  expect(draw.mock.calls.map(([text]) => text).join(" ")).toContain(
+    "Categoria: Ofertas missionárias",
+  );
+  const book = new ExcelJS.Workbook();
+  await book.xlsx.load((await createMemberFinancialWorkbook(input)) as never);
+  expect(book.worksheets[0].getCell("A4").value).toContain(
+    "Categoria: Ofertas missionárias",
+  );
+  expect(book.worksheets[0].getRow(7).values).toContain("Valor");
 });
 
 it("centers the short header, aligns the summary and emphasizes amounts and expenses", async () => {

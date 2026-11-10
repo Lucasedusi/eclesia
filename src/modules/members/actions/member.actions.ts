@@ -62,7 +62,7 @@ export async function getMemberFinanceAction(memberId: string, page = 1, filters
   try {
     return { success: true as const, data: await getMemberFinance(context, memberId, page, filters) };
   } catch (error) {
-    return { success: false as const, message: error instanceof Error && error.message === "TOO_LARGE" ? "Selecione um período menor para consultar até 10.000 lançamentos." : "Não foi possível carregar os lançamentos financeiros. Revise o período e tente novamente." };
+    return { success: false as const, message: error instanceof Error && error.message === "TOO_LARGE" ? "Selecione um período menor ou uma categoria para consultar até 10.000 lançamentos." : "Não foi possível carregar os lançamentos financeiros. Revise os filtros e tente novamente." };
   }
 }
 

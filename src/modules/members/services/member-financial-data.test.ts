@@ -8,6 +8,8 @@ vi.mock("@/modules/finance/services/finance-access.service", () => ({
   listFinanceUnits: mocks.units,
 }));
 const memberId = "00000000-0000-4000-8000-000000000001";
+const categoryId = "00000000-0000-4000-8000-000000000002";
+const otherCategoryId = "00000000-0000-4000-8000-000000000003";
 const context = {
   church: { id: "church" },
   access: { scope: "CHURCH" },
@@ -40,6 +42,7 @@ function database(
       amount: "0.10",
       transaction_date: "2026-11-01",
       category_name: "Dízimo",
+      category_id: i === 1 || i === 2 ? otherCategoryId : categoryId,
       category: { name: "Categoria renomeada" },
     }));
     const q = {
@@ -59,14 +62,43 @@ function database(
         call.filters.push([k, v]);
         return q;
       },
-      gte: () => q,
-      lte: () => q,
+      gte: (k: string, v: unknown) => {
+        call.filters.push([k, v]);
+        return q;
+      },
+      lte: (k: string, v: unknown) => {
+        call.filters.push([k, v]);
+        return q;
+      },
       order: () => q,
-      range: async (a: number, b: number) => ({
-        data: rows.slice(a, b + 1),
-        count: options.count ?? rows.length,
-        error: null,
-      }),
+      range: async (a: number, b: number) => {
+        if (table === "financial_categories")
+          return {
+            data: [
+              {
+                id: categoryId,
+                church_id: "church",
+                name: "Ofertas missionárias",
+              },
+              {
+                id: otherCategoryId,
+                church_id: "church",
+                name: "Outras ofertas",
+              },
+            ].slice(a, b + 1),
+            count: 2,
+            error: null,
+          };
+        const selected = call.filters.find(([k]) => k === "category_id")?.[1];
+        const filtered = selected
+          ? rows.filter((r) => r.category_id === selected)
+          : rows;
+        return {
+          data: filtered.slice(a, b + 1),
+          count: options.count ?? filtered.length,
+          error: null,
+        };
+      },
       maybeSingle: async () => ({
         data:
           options.missing ||
@@ -95,6 +127,59 @@ beforeEach(() => {
   ]);
 });
 describe("member financial data", () => {
+  it("combines category and dates before paging and calculating totals", async () => {
+    const calls = database();
+    const result = await loadMemberFinancialData(context, memberId, {
+      categoryId: otherCategoryId,
+      dateFrom: "2026-11-01",
+      dateTo: "2026-11-30",
+    });
+    expect(result.items).toHaveLength(2);
+    expect(result.summary).toEqual({
+      incomeCents: 0,
+      expenseCents: 10,
+      cancelledCents: 10,
+      pendingCents: 0,
+    });
+    expect(result.category).toBe("Outras ofertas");
+    expect(result.categories).toHaveLength(2);
+    expect(
+      calls.find((c) => c.table === "financial_categories")?.filters,
+    ).toEqual(
+      expect.arrayContaining([
+        ["church_id", "church"],
+        ["deleted_at", null],
+      ]),
+    );
+    expect(
+      calls.find((c) => c.table === "financial_transactions")?.filters,
+    ).toEqual(
+      expect.arrayContaining([
+        ["church_id", "church"],
+        ["member_id", memberId],
+        ["congregation_id", ["unit"]],
+        ["category_id", otherCategoryId],
+        ["transaction_date", "2026-11-01"],
+        ["transaction_date", "2026-11-30"],
+      ]),
+    );
+  });
+  it("rejects a foreign or unavailable category without reading transactions", async () => {
+    const calls = database();
+    await expect(
+      loadMemberFinancialData(context, memberId, {
+        categoryId: "00000000-0000-4000-8000-000000000099",
+      }),
+    ).rejects.toThrow("NOT_FOUND");
+    expect(calls.some((c) => c.table === "financial_transactions")).toBe(false);
+  });
+  it("rejects malformed category identifiers before database access", async () => {
+    database();
+    await expect(
+      loadMemberFinancialData(context, memberId, { categoryId: "invalid" }),
+    ).rejects.toThrow();
+    expect(mocks.client).not.toHaveBeenCalled();
+  });
   it("reads all pages, uses unambiguous category relation and totals confirmed movements in cents", async () => {
     const calls = database();
     const result = await loadMemberFinancialData(context, memberId, {});

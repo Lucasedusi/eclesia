@@ -108,6 +108,7 @@ export async function createMemberFinancialPdf(data: MemberFinancialDocument) {
     bold,
   );
   if (data.period !== "Todo o período") paragraph(data.period, 9);
+  if (data.category) paragraph(`Categoria: ${data.category}`, 9);
   y += 8;
   const count = `${data.items.length} lançamento(s)`;
   const summarySize = 9;
@@ -229,7 +230,9 @@ export async function createMemberFinancialWorkbook(
     data.church.name,
     "Relatório financeiro do membro",
     `${formatPersonName(data.member.name)} · Matrícula: ${data.member.code || "Não informada"}`,
-    data.period,
+    [data.period, data.category && `Categoria: ${data.category}`]
+      .filter(Boolean)
+      .join(" · "),
     summary(data),
     `Presidentes: ${(data.church.pastorNames ?? []).join(" e ")} · Emissão: ${formatDateOnly(data.issuedAt)}`,
   ].forEach((text, i) => {
@@ -243,7 +246,8 @@ export async function createMemberFinancialWorkbook(
       color: { argb: i < 2 ? "FFFFFFFF" : "FF344054" },
     };
     cell.alignment = { wrapText: true, vertical: "middle" };
-    sheet.getRow(i + 1).height = i === 4 ? 40 : 30;
+    sheet.getRow(i + 1).height =
+      i === 3 && data.category ? 44 : i === 4 ? 40 : 30;
     if (i < 2)
       cell.fill = {
         type: "pattern",

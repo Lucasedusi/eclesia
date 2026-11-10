@@ -194,7 +194,7 @@ test.describe("ajustes de membros", () => {
       path: info.outputPath("financeiro-desktop.png"),
     });
     await dialog.getByLabel("Data inicial", { exact: true }).fill("2026-11-02");
-    await dialog.getByRole("button", { name: "Aplicar período" }).click();
+    await dialog.getByRole("button", { name: "Aplicar filtros" }).click();
     await expect(
       dialog.getByText("Nenhum lançamento encontrado para o período."),
     ).toBeVisible();
@@ -256,6 +256,88 @@ test.describe("ajustes de membros", () => {
       await expect(pdf).toBeEnabled();
       await expect(excel).toBeEnabled();
       await page.unroute("**/api/members/finance/reports");
+    }
+  });
+  test("categoria filtra todas as páginas, totais e os dois formatos de exportação", async ({
+    page,
+    request,
+  }, info) => {
+    const dialog = await openMember(page);
+    await dialog
+      .getByRole("button", { name: "Financeiro", exact: true })
+      .click();
+    const category = dialog.getByRole("combobox", {
+      name: "Categoria",
+      exact: true,
+    });
+    await expect(category).toBeEnabled();
+    await expect(category).toHaveValue("");
+    expect(await category.locator("option").allTextContents()).not.toContain(
+      "Categoria de outra igreja",
+    );
+    await category.selectOption(fixture.financeCategories.mission);
+    await dialog
+      .getByRole("button", { name: "Aplicar filtros", exact: true })
+      .click();
+    await expect(
+      dialog.getByText(/22 lançamento\(s\).*Ofertas missionárias/),
+    ).toBeVisible();
+    await expect(dialog.getByText(/R\$\s*220,00/)).toBeVisible();
+    await expect(dialog.locator("tbody tr")).toHaveCount(20);
+    await dialog.getByRole("button", { name: "Próxima", exact: true }).click();
+    await expect(dialog.locator("tbody tr")).toHaveCount(2);
+    await category.selectOption(fixture.financeCategories.other);
+    for (const format of ["Excel", "PDF"]) {
+      const downloading = page.waitForEvent("download");
+      const exporting = page.waitForRequest((r) =>
+        r.url().endsWith("/api/members/finance/reports"),
+      );
+      await dialog.getByRole("button", { name: format, exact: true }).click();
+      expect((await exporting).postDataJSON().filters.categoryId).toBe(
+        fixture.financeCategories.mission,
+      );
+      const file = await downloading;
+      const bytes = await readFile((await file.path())!);
+      if (format === "Excel") {
+        const wb = new ExcelJS.Workbook();
+        await wb.xlsx.load(bytes as unknown as ExcelJS.Buffer);
+        const sheet = wb.worksheets[0];
+        expect(sheet.rowCount - 7).toBe(22);
+        expect(sheet.getCell("A4").value).toContain(
+          "Categoria: Ofertas missionárias",
+        );
+        for (let row = 8; row <= sheet.rowCount; row++)
+          expect(sheet.getCell(row, 3).value).toBe("Ofertas missionárias");
+      } else
+        expect((await PDFDocument.load(bytes)).getPageCount()).toBeGreaterThan(
+          1,
+        );
+      await file.saveAs(
+        info.outputPath(`categoria.${format === "Excel" ? "xlsx" : "pdf"}`),
+      );
+    }
+    await dialog
+      .getByRole("button", { name: "Aplicar filtros", exact: true })
+      .click();
+    await expect(dialog.locator("tbody tr")).toHaveCount(3);
+    await expect(dialog.getByText(/R\$\s*20,00/)).toBeVisible();
+    await dialog.getByLabel("Data inicial", { exact: true }).fill("2026-11-02");
+    await dialog
+      .getByRole("button", { name: "Aplicar filtros", exact: true })
+      .click();
+    await expect(
+      dialog.getByText("Nenhum lançamento encontrado para o período."),
+    ).toBeVisible();
+    await expect(category).toHaveValue(fixture.financeCategories.other);
+    for (const format of ["pdf", "xlsx"]) {
+      const response = await request.post("/api/members/finance/reports", {
+        data: {
+          memberId: fixture.members[0],
+          format,
+          filters: { categoryId: fixture.financeCategories.foreign },
+        },
+      });
+      expect(response.status()).toBe(404);
     }
   });
   test("exportação financeira respeita igreja e permissão", async ({

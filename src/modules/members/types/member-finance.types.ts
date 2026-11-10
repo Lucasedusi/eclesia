@@ -11,9 +11,11 @@ export type MemberFinancialData = {
   items: MemberFinanceItem[];
   summary: MemberFinanceSummary;
   period: string;
+  category: string | null;
+  categories: { id: string; name: string }[];
 };
 export type MemberFinancialPage = PaginatedTab<MemberFinanceItem> &
-  Pick<MemberFinancialData, "summary" | "period">;
+  Pick<MemberFinancialData, "summary" | "period" | "category" | "categories">;
 export type MemberFinancialDocument = MemberFinancialData & {
   church: ChurchDocumentIdentity;
   issuedAt: string;

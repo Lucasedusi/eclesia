@@ -91,6 +91,7 @@ it("uses authorized data, church identity and audits the complete download", asy
   expect(m.load).toHaveBeenCalledWith(context, input.memberId, {
     dateFrom: "2026-11-01",
     dateTo: "",
+    categoryId: "",
   });
   expect(churchQuery.eq).toHaveBeenCalledWith("id", "church");
   expect(m.pdf).toHaveBeenCalledWith(
@@ -125,3 +126,25 @@ it("exports Excel through the same authorized data source", async () => {
   expect(m.excel).toHaveBeenCalledOnce();
   expect(m.pdf).not.toHaveBeenCalled();
 });
+it.each(["pdf", "xlsx"])(
+  "passes the selected category to %s and records a filtered export",
+  async (format) => {
+    const categoryId = "00000000-0000-4000-8000-000000000002";
+    await generateMemberFinancialDownload(context, {
+      ...input,
+      format,
+      filters: { categoryId },
+    });
+    expect(m.load).toHaveBeenCalledWith(context, input.memberId, {
+      dateFrom: "",
+      dateTo: "",
+      categoryId,
+    });
+    expect(m.audit).toHaveBeenCalledWith(
+      "log_audit",
+      expect.objectContaining({
+        p_metadata: { format, count: 1, filtered: true },
+      }),
+    );
+  },
+);

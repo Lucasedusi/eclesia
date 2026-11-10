@@ -379,7 +379,7 @@ export async function getMemberFinance(context: AuthContext, memberId: string, p
   page = Number.isSafeInteger(page) ? Math.max(1, page) : 1;
   const pageCount = Math.ceil(data.items.length / 20);
   page = Math.min(page, pageCount || 1);
-  return { items: data.items.slice((page - 1) * 20, page * 20), total: data.items.length, page, pageCount, summary: data.summary, period: data.period };
+  return { items: data.items.slice((page - 1) * 20, page * 20), total: data.items.length, page, pageCount, summary: data.summary, period: data.period, category: data.category, categories: data.categories };
 }
 
 export async function getMemberEvents(context: AuthContext, memberId: string, page = 1): Promise<PaginatedTab<MemberEventItem>> {

@@ -25,9 +25,16 @@ export function MemberFinanceTab({
   memberId: string;
   canExport: boolean;
 }) {
-  const [filters, setFilters] = useState({ dateFrom: "", dateTo: "" }),
+  const [filters, setFilters] = useState({
+      dateFrom: "",
+      dateTo: "",
+      categoryId: "",
+    }),
     [applied, setApplied] = useState(filters),
     [data, setData] = useState<MemberFinancialPage | null>(null),
+    [categories, setCategories] = useState<MemberFinancialPage["categories"]>(
+      [],
+    ),
     [error, setError] = useState(""),
     [loading, setLoading] = useState(true),
     [downloadFormat, setDownloadFormat] = useState<"pdf" | "xlsx" | null>(null);
@@ -43,6 +50,7 @@ export function MemberFinanceTab({
       if (id !== request.current) return;
       if (result.success) {
         setData(result.data);
+        setCategories(result.data.categories);
         setApplied(next);
       } else {
         setData(null);
@@ -64,8 +72,10 @@ export function MemberFinanceTab({
     getMemberFinanceAction(memberId, 1, {})
       .then((result) => {
         if (!active || id !== request.current) return;
-        if (result.success) setData(result.data);
-        else setError(result.message);
+        if (result.success) {
+          setData(result.data);
+          setCategories(result.data.categories);
+        } else setError(result.message);
       })
       .catch(() => {
         if (active)
@@ -85,7 +95,9 @@ export function MemberFinanceTab({
     event.preventDefault();
     const parsed = memberFinanceFiltersSchema.safeParse(filters);
     if (!parsed.success) {
-      setError("Informe um período válido, com o início anterior ao fim.");
+      setError(
+        "Revise a categoria e as datas; o início deve ser anterior ao fim.",
+      );
       return;
     }
     void load(1, parsed.data);
@@ -149,9 +161,26 @@ export function MemberFinanceTab({
             onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })}
           />
         </S.FormField>
+        <S.FormField>
+          <span>Categoria</span>
+          <S.FinanceFilterSelect
+            value={filters.categoryId}
+            disabled={loading || downloading}
+            onChange={(e) =>
+              setFilters({ ...filters, categoryId: e.target.value })
+            }
+          >
+            <option value="">Todas as categorias</option>
+            {categories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.name}
+              </option>
+            ))}
+          </S.FinanceFilterSelect>
+        </S.FormField>
         <S.FormActions>
           <Button type="submit" disabled={loading || downloading}>
-            Aplicar período
+            Aplicar filtros
           </Button>
         </S.FormActions>
       </S.FinanceFilters>
@@ -180,6 +209,7 @@ export function MemberFinanceTab({
             <S.TabHeader>
               <p>
                 {data.period} · {data.total} lançamento(s)
+                {data.category && ` · Categoria: ${data.category}`}
               </p>
               {canExport && (
                 <S.ExportActions>
