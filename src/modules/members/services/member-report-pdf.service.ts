@@ -30,7 +30,10 @@ export async function createMemberReportPdf(data: MemberReportDocument): Promise
   }
   function newPage() {
     page = document.addPage([width, height]); drawChurchWatermark(page, assets);
-    cursor = drawChurchHeader(page, data.church, assets, { detailLines: data.church.pastorNames?.length ? [`Presidentes: ${data.church.pastorNames.map(formatPersonName).join(" e ")}`] : [] }) + 24;
+    cursor = drawChurchHeader(page, data.church, assets, {
+      verticalAlign: "center",
+      detailLines: data.church.pastorNames?.length ? [`Presidentes: ${data.church.pastorNames.map(formatPersonName).join(" e ")}`] : [],
+    }) + 24;
   }
   function paragraph(text: string, size = 9, font = regular, color = PDF_COLORS.muted) {
     if (!text) return;

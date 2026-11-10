@@ -24,7 +24,10 @@ export async function createRegionReportPdf(data: RegionReportDocument): Promise
   function newPage() {
     page = document.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
     drawChurchWatermark(page, assets);
-    cursor = drawChurchHeader(page, data.church, assets, { detailLines }) + 28;
+    cursor = drawChurchHeader(page, data.church, assets, {
+      detailLines,
+      verticalAlign: data.kind === "simplified" ? "center" : undefined,
+    }) + 28;
   }
   function paragraph(text: string, size = 10, font: PDFFont = regular, color = PDF_COLORS.navy, gapAfter = 8) {
     for (const line of wrapPdfText(text, font, size, CONTENT_WIDTH)) {
