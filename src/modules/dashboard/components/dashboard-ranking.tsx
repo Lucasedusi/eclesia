@@ -44,7 +44,7 @@ function RankingPanel({ view, rows, controls, footer, mobileActive }: {
         <span className="church-dashboard-role-track" aria-hidden><i style={{ width: `${100 * row.count / top[0].count}%` }} /></span>
       </li>)}
     </ol> : <div className="church-dashboard-plot" tabIndex={0} role="region" aria-label="Gráfico de colunas">
-      <ol className="church-dashboard-columns" aria-label={title} style={{ minWidth: `${top.length * 54}px` }}>
+      <ol className="church-dashboard-columns" aria-label={title} style={{ minWidth: `calc(${top.length} * var(--dashboard-column-min))` }}>
         {top.map(row => <li key={row.id} title={`${row.name} · ${format(row.count)}`}>
           <div className="church-dashboard-column-track">
             <strong>{format(row.count)}</strong>

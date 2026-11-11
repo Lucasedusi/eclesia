@@ -28,13 +28,15 @@ async function Dashboard({ searchParams }: { searchParams: DashboardParams }) {
   const field = context.access.scope === "CHURCH";
   return <div className="church-dashboard">
     <PageHeader className="church-dashboard-heading" title="Dashboard" subtitle={field ? context.church.name : summary.congregationName ?? "Minha congregação"} />
-    <DashboardCards summary={summary} />
-    <DashboardRanking congregations={summary.congregations} regions={summary.regions}
-      roles={field ? summary.fieldRoles : summary.roles} total={summary.total} />
-    <Suspense fallback={<div className="church-dashboard-panel" role="status">Carregando aniversariantes…</div>}>
-      <DashboardBirthdays context={context} searchParams={searchParams}
-        showCongregation={field && summary.congregations !== null} />
-    </Suspense>
+    <div className="church-dashboard-grid" data-organization={summary.congregations !== null && summary.regions !== null}>
+      <DashboardCards summary={summary} />
+      <DashboardRanking congregations={summary.congregations} regions={summary.regions}
+        roles={field ? summary.fieldRoles : summary.roles} total={summary.total} />
+      <Suspense fallback={<div className="church-dashboard-panel" role="status">Carregando aniversariantes…</div>}>
+        <DashboardBirthdays context={context} searchParams={searchParams}
+          showCongregation={field && summary.congregations !== null} />
+      </Suspense>
+    </div>
   </div>;
 }
 

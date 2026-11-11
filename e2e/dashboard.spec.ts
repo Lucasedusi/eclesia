@@ -13,10 +13,27 @@ test("administrador vê membros e crianças, alterna o ranking e expande todas a
   await expect(main.getByRole("article", { name: "Total de membros" })).toContainText("29");
   await expect(main.getByRole("article", { name: "Regionais" })).toContainText("2");
   await expect(main.getByRole("article", { name: "Congregações" })).toContainText("13");
-  await expect(main.getByRole("article", { name: "Regionais" })).toContainText("Com membros ativos 2");
-  await expect(main.getByRole("article", { name: "Congregações" })).toContainText("Com membros ativos 3");
+  await expect(main.getByRole("article")).toHaveCount(4);
+  const genders = main.getByRole("article", { name: "Membros por sexo" });
+  await expect(genders.getByRole("term")).toHaveText(["Masculino", "Feminino"]);
+  await expect(genders.getByRole("definition")).toHaveText(["0", "29"]);
   const ranking = main.getByRole("region", { name: "Membros por congregação" });
   const roles = main.getByRole("region", { name: "Membros por cargo" });
+  const bounds = async (name: string, role: "article" | "region") => {
+    const box = await main.getByRole(role, { name, exact: true }).boundingBox();
+    if (!box) throw new Error(`Painel ausente: ${name}`);
+    return box;
+  };
+  const left = await bounds("Membros por congregação", "region");
+  const right = await bounds("Membros por cargo", "region");
+  const cards = await Promise.all(["Total de membros", "Membros por sexo", "Regionais", "Congregações"]
+    .map(name => bounds(name, "article")));
+  expect(cards.map(card => card.y)).toEqual(cards.map(() => cards[0].y));
+  expect(left.y).toBe(right.y);
+  expect(left.x).toBeCloseTo(cards[0].x, 0);
+  expect(left.x + left.width).toBeCloseTo(cards[1].x + cards[1].width, 0);
+  expect(right.x).toBeCloseTo(cards[2].x, 0);
+  expect(right.x + right.width).toBeCloseTo(cards[3].x + cards[3].width, 0);
   await expect(ranking.getByRole("listitem")).toHaveCount(3);
   await expect(ranking.getByRole("listitem").first()).toContainText("Congregação de Teste 1");
   await expect(ranking.getByRole("listitem").first().getByText("23", { exact: true })).toBeVisible();
@@ -73,8 +90,9 @@ for (const role of ["congregation", "localTreasurer", "localViewer"]) {
     try {
       await page.goto("/?scope=CHURCH&congregationId=outra");
       const main = page.getByRole("main");
-      await expect(main.getByRole("article")).toHaveCount(1);
-      await expect(main.getByRole("article")).toContainText("23");
+      await expect(main.getByRole("article")).toHaveCount(2);
+      await expect(main.getByRole("article", { name: "Total de membros" })).toContainText("23");
+      await expect(main.getByRole("article", { name: "Membros por sexo" }).getByRole("definition")).toHaveText(["0", "23"]);
       await expect(main.getByRole("heading", { name: "Membros por cargo" })).toBeVisible();
       await expect(main.getByRole("listitem")).toHaveText(["Diácono1"]);
       await expect(main.getByText("22 membros sem cargo ativo")).toBeVisible();
