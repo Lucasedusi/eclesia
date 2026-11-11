@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AuthContext } from "@/modules/auth/types/auth.types";
 import { PERMISSIONS } from "@/modules/auth/constants/permissions";
+import type { MemberReportDocument } from "../types/member-report.types";
 import { memberReportSchema } from "../validations/member-report.schemas";
+import { birthdayReportSchema } from "../validations/member-birthdays";
 import { loadMemberReportDocument, generateMemberReportDownload } from "./member-report.service";
 
 vi.mock("server-only", () => ({}));
@@ -30,15 +32,20 @@ function database(rows: Row[] = [member], mode: "normal" | "error" | "changed" |
       for (const [key, op, expected] of call.filters) {
         if (key.startsWith("active_roles.") || key.startsWith("identity.") || key.startsWith("ministry_scope.")) continue;
         if (key.startsWith("congregations.") && !call.select.includes("congregations!inner")) continue;
-        data = data.filter((row) => op === "not" ? get(row, key) !== expected : get(row, key) === expected);
+        data = data.filter((row) => {
+          const value = get(row, key);
+          if (op === "in" && Array.isArray(expected)) return expected.includes(value);
+          return op === "not" ? value !== expected : value === expected;
+        });
       }
       const count = data.length + (mode === "changed" && call.range?.[0] ? 1 : 0);
       if (call.range) data = mode === "duplicate" && call.range[0] ? data.slice(0, 500) : data.slice(call.range[0], call.range[1] + 1);
       return { data, count, error: mode === "error" ? { message: "PRIVATE" } : null };
     };
     const q = { select: (select: string) => { call.select = select; return q; }, eq: (key: string, value: unknown) => { call.filters.push([key, "eq", value]); return q; },
+      in: (key: string, values: string[]) => { call.filters.push([key, "in", values]); return q; },
       is: (key: string, value: unknown) => { call.filters.push([key, "is", value]); return q; }, not: (key: string, _op: string, value: unknown) => { call.filters.push([key, "not", value]); return q; },
-      order: () => q, range: (start: number, end: number) => { call.range = [start, end]; return q; },
+      order: () => q, returns: () => q, range: (start: number, end: number) => { call.range = [start, end]; return q; },
       maybeSingle: async () => { const r = result(); return { ...r, data: r.data[0] ?? null }; }, then: (resolve: (value: ReturnType<typeof result>) => unknown) => Promise.resolve(result()).then(resolve) };
     return q;
   }
@@ -48,6 +55,16 @@ function database(rows: Row[] = [member], mode: "normal" | "error" | "changed" |
 beforeEach(() => { vi.clearAllMocks(); mocks.logo.mockResolvedValue(null); mocks.pdf.mockResolvedValue(new Uint8Array([37,80,68,70])); mocks.workbook.mockResolvedValue(Buffer.from("xlsx")); });
 
 describe("member report data", () => {
+  it("omits matrícula from birthday PDFs and places birth date immediately before WhatsApp", async () => {
+    database([{ ...member, birthday_mmdd: 210 }]);
+    const options = birthdayReportSchema.parse({ kind: "birthdays", format: "pdf", filters: { period: "all" } });
+    await generateMemberReportDownload(context, options);
+    const [document] = mocks.pdf.mock.calls[0] as [MemberReportDocument];
+    expect(document.columns.map((column) => column.key)).toEqual(["full_name", "congregation", "region", "role", "birth_date", "whatsapp"]);
+    expect(document.rows[0].values).not.toHaveProperty("member_code");
+    expect(document.rows[0].values).toMatchObject({ birth_date: "10/02/1990", whatsapp: "(11) 99999-8888" });
+  });
+
   it("exports only selected fields and preserves church and archive boundaries", async () => {
     const db = database([member, { ...member, id: "other", church_id: "other" }, { ...member, id: "archived", deleted_at: "2026-01-01" }]);
     const doc = await loadMemberReportDocument(context, simple);

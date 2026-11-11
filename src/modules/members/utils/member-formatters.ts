@@ -73,3 +73,10 @@ export function formatMaritalStatus(value: string | null | undefined, gender?: s
   };
   return value ? labels[value] ?? value : "Não informado";
 }
+
+export function whatsappUrl(value: string | null | undefined) {
+  const digits = value?.replace(/\D/g, "") ?? "";
+  if (/^55\d{10,11}$/.test(digits)) return `https://wa.me/${digits}`;
+  if (/^\d{10,11}$/.test(digits)) return `https://wa.me/55${digits}`;
+  return null;
+}

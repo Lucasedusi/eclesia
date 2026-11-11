@@ -8,7 +8,7 @@ import type { MemberReportDocument } from "../types/member-report.types";
 export async function createMemberReportPdf(data: MemberReportDocument): Promise<Uint8Array> {
   const document = await PDFDocument.create(), assets = await createChurchPdfAssets(document, data.church.logoDataUri);
   const { regular, bold } = assets;
-  const landscape = data.kind === "custom" && (data.columns.length === 6 || data.columns.some((c) => ["full_address", "notes", "inactive_reason"].includes(c.key)));
+  const landscape = data.kind === "birthdays" || data.kind === "custom" && (data.columns.length === 6 || data.columns.some((c) => ["full_address", "notes", "inactive_reason"].includes(c.key)));
   const width = landscape ? PAGE_HEIGHT : PAGE_WIDTH, height = landscape ? PAGE_WIDTH : PAGE_HEIGHT;
   const contentWidth = width - PAGE_MARGIN * 2, bottom = height - 57, title = MEMBER_REPORT_TITLES[data.kind];
   const minimums = data.columns.map((column) => {
@@ -55,7 +55,8 @@ export async function createMemberReportPdf(data: MemberReportDocument): Promise
   }
   newPage();
   paragraph(title.toLocaleUpperCase("pt-BR"), 17, bold, PDF_COLORS.navy);
-  paragraph(`${data.rows.length} ${data.rows.length === 1 ? "membro" : "membros"}`);
+  const noun = data.kind === "birthdays" ? "aniversariante" : "membro";
+  paragraph(`${data.rows.length} ${noun}${data.rows.length === 1 ? "" : "s"}`);
   paragraph(data.scopeLabel); paragraph(data.filters.filter((filter) => filter !== "Membros não arquivados").join(" · "));
   const value = (row: MemberReportDocument["rows"][number], key: MemberReportDocument["columns"][number]["key"]) => {
     const text = row.values[key] || "Não informado";
@@ -64,7 +65,7 @@ export async function createMemberReportPdf(data: MemberReportDocument): Promise
   const firstRow = data.rows[0];
   const firstRowHeight = firstRow ? Math.max(34, Math.max(...data.columns.map((c, i) => wrapPdfText(value(firstRow, c.key), regular, 9, widths[i] - 14).length)) * 12 + 18) : 38;
   header(Math.min(firstRowHeight, 160));
-  if (!data.rows.length) { cursor += 14; paragraph("Nenhum membro encontrado para este relatório.", 10); }
+  if (!data.rows.length) { cursor += 14; paragraph(`Nenhum ${noun} encontrado para este relatório.`, 10); }
   data.rows.forEach((row, index) => {
     const cells = data.columns.map((c, i) => wrapPdfText(value(row, c.key), regular, 9, widths[i] - 14));
     const fullHeight = Math.max(34, Math.max(...cells.map((lines) => lines.length)) * 12 + 18);

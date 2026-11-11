@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { MEMBER_REPORT_OPTIONAL_FIELDS, type MemberReportOptionalKey } from "../constants/member-report-fields";
 
+import { birthdayReportSchema } from "./member-birthdays";
+
 const optionalId = z.union([z.literal(""), z.uuid()]).default("");
 export const memberReportFiltersSchema = z.object({
   search: z.string().trim().max(80).default(""), congregationId: optionalId, regionId: optionalId, roleId: optionalId, importBatchId: optionalId,
@@ -18,3 +20,6 @@ export const memberReportSchema = z.discriminatedUnion("kind", [
 ]);
 export type MemberReportOptions = z.infer<typeof memberReportSchema>;
 export type MemberReportFilters = z.infer<typeof memberReportFiltersSchema>;
+
+export const memberReportRequestSchema = z.union([memberReportSchema, birthdayReportSchema]);
+export type MemberReportRequest = z.infer<typeof memberReportRequestSchema>;

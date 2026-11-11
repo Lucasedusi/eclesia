@@ -44,6 +44,24 @@ if (command === 'setup') {
   });
   query += `insert into public.member_sensitive_identity(member_id,church_id,cpf,rg,issuing_agency) values ('${ids.members[0]}','${ids.churches[0]}','00000000191','RG-TESTE','SSP'); insert into public.member_pastoral_notes(member_id,church_id,notes) values ('${ids.members[0]}','${ids.churches[0]}','SEGREDO_PASTORAL_NUNCA_EXPORTAR'); insert into public.member_roles(church_id,member_id,role_id,status,start_date,title_variant) values ('${ids.churches[0]}','${ids.members[0]}','${ids.role}','ACTIVE','2020-01-01','AUTO');`;
   for (const member of ids.members.slice(0,2)) query += `insert into public.member_ministries(church_id,member_id,ministry_id,status) values ('${ids.churches[0]}','${member}','${ids.ministry}','ACTIVE');`;
+  if (process.argv.includes('--birthdays')) {
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts();
+    const month = Number(today.find(part => part.type === 'month').value);
+    const day = Number(today.find(part => part.type === 'day').value);
+    const year = Number(today.find(part => part.type === 'year').value);
+    const sameWeek = new Date(Date.UTC(year, month - 1, day));
+    sameWeek.setUTCDate(day + (sameWeek.getUTCDay() === 0 ? 1 : -1));
+    ids.otherBirthdayMonth = (month + 5) % 12 + 1;
+    save();
+    query += `update public.members set birth_date=make_date(2000,${ids.otherBirthdayMonth},10) where church_id='${ids.churches[0]}';
+      update public.members set birth_date=make_date(2000,${month},${day}) where id in ('${ids.members[0]}','${ids.members[1]}','${ids.members[32]}','${ids.members[33]}');
+      update public.members set birth_date=make_date(2000,${sameWeek.getUTCMonth() + 1},${sameWeek.getUTCDate()}) where id='${ids.members[6]}';
+      update public.members set member_type='CHILD', whatsapp=null where id='${ids.members[1]}';
+      update public.members set member_type='VISITOR' where id='${ids.members[2]}';
+      update public.members set member_type='CONGREGATED' where id='${ids.members[3]}';
+      update public.members set member_status='INACTIVE' where id='${ids.members[4]}';
+      update public.members set birth_date=null where id='${ids.members[5]}';`;
+  }
   query += 'commit;'; sql(query);
   for (const credential of credentials) {
     const cookies = [];

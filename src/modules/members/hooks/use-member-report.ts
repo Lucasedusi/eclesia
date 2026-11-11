@@ -1,12 +1,12 @@
 "use client";
 import { useRef, useState } from "react";
-import type { MemberReportOptions } from "../types/member-report.types";
+import type { MemberReportRequest } from "../validations/member-report.schemas";
 
 export function useMemberReport() {
   const [busy, setBusy] = useState(false);
   const downloading = useRef(false);
   const [feedback, setFeedback] = useState<{ error: boolean; message: string } | null>(null);
-  async function download(input: MemberReportOptions) {
+  async function download(input: MemberReportRequest) {
     if (downloading.current) return;
     downloading.current = true; setBusy(true); setFeedback(null);
     try {

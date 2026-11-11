@@ -418,7 +418,7 @@ export const TableWrap = styled.div`
     display: none;
   }
 `;
-export const Table = styled.table`
+export const Table = styled.table<{ $lastColumnAlign?: "left" | "right" }>`
   width: 100%;
   border-collapse: collapse;
   th {
@@ -439,7 +439,7 @@ export const Table = styled.table`
   th:last-child,
   td:last-child {
     padding-right: ${TABLE_CONTENT_GUTTER};
-    text-align: right;
+    text-align: ${({ $lastColumnAlign = "right" }) => $lastColumnAlign};
   }
   td {
     border-bottom: 1px solid #f0f2f5;

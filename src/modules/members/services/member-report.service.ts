@@ -5,7 +5,9 @@ import { PERMISSIONS, hasPermission } from "@/modules/auth/constants/permissions
 import { loadChurchLogoDataUri } from "@/modules/auth/services/church-logo.service";
 import type { AuthContext } from "@/modules/auth/types/auth.types";
 import { formatBrazilPhone, formatBrazilZipCode, formatCnpj, formatCpf } from "@/utils/input-masks";
-import { canUseMemberReportField, getMemberReportColumns, type MemberReportFieldKey } from "../constants/member-report-fields";
+import { birthdayCalendar, type BirthdayReportOptions } from "../validations/member-birthdays";
+import { birthdayMember, readBirthdayBatch } from "./member-birthdays.service";
+import { MEMBER_REPORT_FIELDS, canUseMemberReportField, getMemberReportColumns, type MemberReportFieldKey } from "../constants/member-report-fields";
 import { MemberReportError, type MemberReportDocument, type MemberReportOptions } from "../types/member-report.types";
 import { formatDateOnly, formatGender, formatMaritalStatus, memberStatusLabels, memberTypeLabels, receivedByLabels } from "../utils/member-formatters";
 import { createMemberReportPdf } from "./member-report-pdf.service";
@@ -20,8 +22,8 @@ const lower = (text: string) => text.toLocaleLowerCase("pt-BR");
 const addressKeys = ["address", "number", "complement", "district", "city", "state", "zip_code", "country"];
 const computed = new Set(["congregation", "region", "role", "role_start_date", "cpf", "rg", "issuing_agency", "full_address", "natural_origin"]);
 
-async function allRows(load: (start: number, end: number) => PromiseLike<{ data: unknown; count: number | null; error: unknown }>) {
-  const rows: Row[] = [], ids = new Set<string>();
+async function allRows<T extends Row>(load: (start: number, end: number) => PromiseLike<{ data: T[] | null; count: number | null; error: unknown }>) {
+  const rows: T[] = [], ids = new Set<string>();
   let total: number | undefined;
   do {
     const result = await load(rows.length, rows.length + PAGE_SIZE - 1);
@@ -29,7 +31,7 @@ async function allRows(load: (start: number, end: number) => PromiseLike<{ data:
     if (result.count > LIMIT) throw new MemberReportError("MEMBER_REPORT_TOO_LARGE");
     total ??= result.count;
     if (result.count !== total || (rows.length < total && !result.data.length)) throw new MemberReportError("MEMBER_REPORT_LOAD_FAILED");
-    for (const row of result.data as Row[]) {
+    for (const row of result.data) {
       const id = value(row, "id");
       if (!id || ids.has(id)) throw new MemberReportError("MEMBER_REPORT_LOAD_FAILED");
       ids.add(id); rows.push(row);
@@ -37,6 +39,23 @@ async function allRows(load: (start: number, end: number) => PromiseLike<{ data:
     if (rows.length > total) throw new MemberReportError("MEMBER_REPORT_LOAD_FAILED");
   } while (rows.length < total);
   return rows;
+}
+
+async function reportChurch(client: Awaited<ReturnType<typeof createClient>>, context: AuthContext) {
+  const churchId = context.church.id;
+  const [churchResult, settingsResult] = await Promise.all([
+    client.from("churches").select("name,logo_url,address,number,district,city,state,phone,document,senior_pastor_name,senior_pastor_spouse_name").eq("id", churchId).is("deleted_at", null).maybeSingle(),
+    client.from("app_settings").select("display_church_name,logo_url").eq("church_id", churchId).is("deleted_at", null).maybeSingle(),
+  ]);
+  if (churchResult.error || !churchResult.data || settingsResult.error) throw new MemberReportError("MEMBER_REPORT_LOAD_FAILED");
+  const church = churchResult.data, settings = settingsResult.data;
+  return {
+    name: settings?.display_church_name?.trim() || church.name || context.church.name,
+    pastorNames: [church.senior_pastor_name, church.senior_pastor_spouse_name].map((name) => name?.trim() || "").filter(Boolean),
+    logoDataUri: await loadChurchLogoDataUri(settings?.logo_url || church.logo_url || context.church.logoUrl, churchId, client),
+    address: [church.address, church.number, church.district, church.city, church.state].filter(Boolean).join(", "),
+    phone: formatBrazilPhone(church.phone ?? ""), document: formatCnpj(church.document ?? ""),
+  };
 }
 
 export async function loadMemberReportDocument(context: AuthContext, options: MemberReportOptions): Promise<MemberReportDocument> {
@@ -93,7 +112,7 @@ export async function loadMemberReportDocument(context: AuthContext, options: Me
       if (identityKeys.length) query = query.eq("identity.church_id", churchId).is("identity.deleted_at", null);
       const sort = filters.sort;
       query = sort === "recent" || sort === "oldest" ? query.order("created_at", { ascending: sort === "oldest" }) : sort === "code" ? query.order("member_code") : query.order("full_name", { ascending: sort !== "name_desc" });
-      return query.order("id").range(start, end);
+      return query.order("id").range(start, end).returns<Row[]>();
     });
     function identityOf(row: Row) {
       const identity = first(row.identity);
@@ -134,12 +153,6 @@ export async function loadMemberReportDocument(context: AuthContext, options: Me
       }
       return { id: value(row, "id"), values };
     });
-    const [churchResult, settingsResult] = await Promise.all([
-      client.from("churches").select("name,logo_url,address,number,district,city,state,phone,document,senior_pastor_name,senior_pastor_spouse_name").eq("id", churchId).is("deleted_at", null).maybeSingle(),
-      client.from("app_settings").select("display_church_name,logo_url").eq("church_id", churchId).is("deleted_at", null).maybeSingle(),
-    ]);
-    if (churchResult.error || !churchResult.data || settingsResult.error) throw new MemberReportError("MEMBER_REPORT_LOAD_FAILED");
-    const church = churchResult.data, settings = settingsResult.data;
     const labels = [filters.archived ? "Membros arquivados" : "Membros não arquivados"];
     if (search.length >= 3) labels.push("Busca aplicada");
     if (filters.regionId) labels.push("Regional selecionada");
@@ -150,10 +163,7 @@ export async function loadMemberReportDocument(context: AuthContext, options: Me
     if (filters.importBatchId) labels.push("Lote de importação selecionado");
     return { kind: options.kind, issuedAt: new Date().toISOString(), rows: reportRows, columns, filters: labels,
       scopeLabel: scope === "CHURCH" ? "" : "Visão restrita: somente membros autorizados para o seu acesso.",
-      church: { name: settings?.display_church_name?.trim() || church.name || context.church.name,
-        pastorNames: [church.senior_pastor_name, church.senior_pastor_spouse_name].map((name) => name?.trim() || "").filter(Boolean),
-        logoDataUri: await loadChurchLogoDataUri(settings?.logo_url || church.logo_url || context.church.logoUrl, churchId, client),
-        address: [church.address, church.number, church.district, church.city, church.state].filter(Boolean).join(", "), phone: formatBrazilPhone(church.phone ?? ""), document: formatCnpj(church.document ?? "") },
+      church: await reportChurch(client, context),
     };
   } catch (error) {
     if (error instanceof MemberReportError) throw error;
@@ -161,16 +171,46 @@ export async function loadMemberReportDocument(context: AuthContext, options: Me
   }
 }
 
-export async function generateMemberReportDownload(context: AuthContext, options: MemberReportOptions) {
-  const document = await loadMemberReportDocument(context, options);
+async function birthdayDocument(context: AuthContext, options: BirthdayReportOptions): Promise<MemberReportDocument> {
+  if (![PERMISSIONS.membersExport, PERMISSIONS.membersViewBasic, PERMISSIONS.membersViewFull]
+    .every((key) => hasPermission(context.permissions, key))) throw new MemberReportError("MEMBER_REPORT_PERMISSION_DENIED");
+  const { filters } = options;
+  const issuedAt = new Date();
+  const calendar = birthdayCalendar(filters, issuedAt);
+  const client = await createClient();
+  const rows = await allRows((start, end) => readBirthdayBatch(client, context, filters, calendar.ranges, start, end));
+  const keys: MemberReportFieldKey[] = ["full_name", "congregation", "region"];
+  if (hasPermission(context.permissions, PERMISSIONS.memberRolesView)) keys.push("role");
+  keys.push("birth_date", "whatsapp");
+  const labels = [calendar.label, "Membros e crianças ativos"];
+  if (filters.search) labels.push("Busca aplicada");
+  const congregation = rows[0]?.congregations;
+  if (filters.regionId) labels.push(congregation?.regions?.name ? `Regional: ${congregation.regions.name}` : "Regional selecionada");
+  if (filters.congregationId) labels.push(congregation?.name ? `Congregação: ${congregation.name}` : "Congregação selecionada");
+  return {
+    kind: "birthdays", issuedAt: issuedAt.toISOString(), church: await reportChurch(client, context),
+    scopeLabel: context.access.scope === "CHURCH" ? "" : "Visão restrita ao seu acesso.",
+    filters: labels, columns: keys.map((key) => MEMBER_REPORT_FIELDS.find((field) => field.key === key)!),
+    rows: rows.map((row) => {
+      const member = birthdayMember(row);
+      return { id: member.id, values: {
+        full_name: member.name, congregation: member.congregation, region: member.region,
+        role: member.role ?? "", birth_date: formatDateOnly(member.birthDate), whatsapp: member.whatsapp ?? "",
+      } };
+    }),
+  };
+}
+
+export async function generateMemberReportDownload(context: AuthContext, options: MemberReportOptions | BirthdayReportOptions) {
+  const document = options.kind === "birthdays" ? await birthdayDocument(context, options) : await loadMemberReportDocument(context, options);
   const body = options.format === "pdf" ? await createMemberReportPdf(document) : await createMemberReportWorkbook(document);
   try {
     const client = await createClient();
     const { error } = await client.rpc("log_audit", { p_church_id: context.church.id, p_module: "members", p_action: "EXPORT_MEMBER_REPORT", p_entity_type: "member", p_description: "Emissão de listagem de membros.",
-      p_metadata: { kind: options.kind, format: options.format, count: document.rows.length, scope: context.access.scope, fields: document.columns.map((c) => c.key), archived: options.filters.archived,
+      p_metadata: { kind: options.kind, format: options.format, count: document.rows.length, scope: context.access.scope, fields: document.columns.map((c) => c.key), archived: options.kind !== "birthdays" && options.filters.archived,
         filtered: Object.entries(options.filters).some(([key, val]) => key !== "sort" && Boolean(val)) }, p_severity: "INFO" });
     if (error) throw error;
   } catch { throw new MemberReportError("MEMBER_REPORT_AUDIT_FAILED"); }
   const names = { simplified: "simplificada", complete: "completa", custom: "personalizada" };
-  return { body, contentType: options.format === "pdf" ? "application/pdf" : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName: `lista-membros-${names[options.kind]}.${options.format}` };
+  return { body, contentType: options.format === "pdf" ? "application/pdf" : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName: options.kind === "birthdays" ? "aniversariantes.pdf" : `lista-membros-${names[options.kind]}.${options.format}` };
 }

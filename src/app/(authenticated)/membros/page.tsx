@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { PERMISSIONS } from "@/modules/auth/constants/permissions";
 import { requireAccessContext } from "@/modules/auth/services/access-context.service";
+import { MemberListTabs } from "@/modules/members/components/member-list-tabs";
 import { MemberManagement, MemberStatsCards } from "@/modules/members/components/member-management";
 import type { MemberFilters, MemberListResult } from "@/modules/members/types/member.types";
 import {
@@ -61,6 +62,7 @@ export default async function MembersPage({ searchParams }: { searchParams: Sear
 
   return <>
     <PageHeader title="Membros" subtitle="Gerencie os cadastros de membros e crianças." badge="Administração" />
+    <MemberListTabs active="list" />
     <div className="grid gap-[18px]">
       <Suspense fallback={<MemberStatsLoading />}><MemberStatsContent promise={statsPromise} /></Suspense>
       <Suspense fallback={<MemberListLoading />}><MemberListContent promise={listPromise} params={params} capabilities={capabilities} /></Suspense>

@@ -26,7 +26,6 @@ import {
   MoreHorizontal,
   Pencil,
   Plus,
-  Search,
   ShieldAlert,
   ShieldCheck,
   RotateCcw,
@@ -34,7 +33,6 @@ import {
   UserCheck,
   UserRoundX,
   UsersRound,
-  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -61,6 +59,7 @@ import type {
 import {
   memberStatusLabels,
 } from "../utils/member-formatters";
+import { MemberIdentity, MemberSearchField } from "./member-list-fields";
 import * as S from "./members.styles";
 
 const MemberReportModal = dynamic(
@@ -95,15 +94,6 @@ type Notice = {
   description: string;
   variant: "success" | "danger" | "warning";
 };
-
-function initials(name: string) {
-  return name
-    .split(" ")
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase();
-}
 
 export function MemberStatsCards({ stats }: { stats: MemberStats }) {
   return (
@@ -371,8 +361,6 @@ export function MemberManagement({
           "O cadastro arquivado voltará a aparecer nas listagens atuais.",
       }[lifecycle.action]
     : "";
-  const shortSearch =
-    searchInput.trim().length > 0 && searchInput.trim().length < 3;
 
   const hasActiveFilters = Boolean(
     searchInput.trim() ||
@@ -449,47 +437,8 @@ export function MemberManagement({
           </S.PanelHeader>
 
           <S.Toolbar>
-            <S.SearchField>
-              <S.Search>
-                <Search aria-hidden="true" />
-                <S.Control
-                  $withInlineStatus={
-                    shortSearch || (pending && searchInput.trim().length >= 3)
-                  }
-                  $withClear={Boolean(searchInput)}
-                  type="text"
-                  value={searchInput}
-                  onChange={search}
-                  onKeyDown={submitSearch}
-                  placeholder={
-                    capabilities.viewSensitiveIdentity
-                      ? "Nome, código ou CPF"
-                      : "Nome ou código"
-                  }
-                  aria-label="Pesquisar membros"
-                />
-                {shortSearch && (
-                  <S.SearchInlineStatus role="status">
-                    Mínimo de 3 caracteres
-                  </S.SearchInlineStatus>
-                )}
-                {pending && searchInput.trim().length >= 3 && (
-                  <S.SearchInlineStatus role="status">
-                    <Loader2 /> Buscando...
-                  </S.SearchInlineStatus>
-                )}
-                {searchInput && (
-                  <S.ClearSearchButton
-                    type="button"
-                    onClick={clearSearch}
-                    title="Limpar pesquisa"
-                    aria-label="Limpar pesquisa"
-                  >
-                    <X />
-                  </S.ClearSearchButton>
-                )}
-              </S.Search>
-            </S.SearchField>
+            <MemberSearchField label="Pesquisar membros" placeholder={capabilities.viewSensitiveIdentity ? "Nome, código ou CPF" : "Nome ou código"}
+              value={searchInput} pending={pending} onChange={search} onKeyDown={submitSearch} onClear={clearSearch} />
             <S.Select
               aria-label="Situação dos membros"
               value={params.status}
@@ -631,13 +580,7 @@ export function MemberManagement({
                     {result.items.map((member) => (
                       <tr key={member.id}>
                         <td>
-                          <S.Person>
-                            <span>{initials(member.fullName)}</span>
-                            <div>
-                              <strong>{member.fullName}</strong>
-                              <small>{member.memberCode || "Sem código"}</small>
-                            </div>
-                          </S.Person>
+                          <MemberIdentity name={member.fullName} code={member.memberCode} />
                         </td>
                         <td>
                           {member.congregationName}
@@ -688,13 +631,7 @@ export function MemberManagement({
               <S.MobileList>
                 {result.items.map((member) => (
                   <S.MobileCard key={member.id}>
-                    <S.Person>
-                      <span>{initials(member.fullName)}</span>
-                      <div>
-                        <strong>{member.fullName}</strong>
-                        <small>{member.memberCode || "Sem código"}</small>
-                      </div>
-                    </S.Person>
+                    <MemberIdentity name={member.fullName} code={member.memberCode} />
                     <S.MobileMeta>
                       <div>
                         <span>Congregação</span>

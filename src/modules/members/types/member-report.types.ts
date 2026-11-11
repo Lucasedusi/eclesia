@@ -3,7 +3,7 @@ import type { MemberReportField, MemberReportFieldKey } from "../constants/membe
 import type { MemberReportOptions } from "../validations/member-report.schemas";
 export type { MemberReportOptions } from "../validations/member-report.schemas";
 export type MemberReportDocument = {
-  kind: MemberReportOptions["kind"]; issuedAt: string; church: ChurchDocumentIdentity; scopeLabel: string; filters: string[];
+  kind: MemberReportOptions["kind"] | "birthdays"; issuedAt: string; church: ChurchDocumentIdentity; scopeLabel: string; filters: string[];
   columns: MemberReportField[]; rows: { id: string; values: Partial<Record<MemberReportFieldKey, string>> }[];
 };
 export class MemberReportError extends Error {

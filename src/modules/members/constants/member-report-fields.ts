@@ -60,7 +60,7 @@ export type MemberReportOptionalKey = Exclude<MemberReportFieldKey, "member_code
 export type MemberReportAccess = { viewRoles: boolean; viewSensitiveIdentity: boolean };
 export const MEMBER_REPORT_FIXED_KEYS = ["member_code", "full_name"] as const;
 export const MEMBER_REPORT_OPTIONAL_FIELDS = MEMBER_REPORT_FIELDS.filter((f) => f.key !== "member_code" && f.key !== "full_name");
-export const MEMBER_REPORT_TITLES = { simplified: "Listagem simplificada de membros", complete: "Listagem completa de membros", custom: "Listagem personalizada de membros" };
+export const MEMBER_REPORT_TITLES = { birthdays: "Aniversariantes", simplified: "Listagem simplificada de membros", complete: "Listagem completa de membros", custom: "Listagem personalizada de membros" };
 export function canUseMemberReportField(field: MemberReportField, access: MemberReportAccess) {
   return field.permission === "identity" ? access.viewSensitiveIdentity : field.permission === "roles" ? access.viewRoles : true;
 }

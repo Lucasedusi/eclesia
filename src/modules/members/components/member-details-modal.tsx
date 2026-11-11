@@ -72,6 +72,7 @@ import {
   memberStatusLabels,
   memberTypeLabels,
   receivedByLabels,
+  whatsappUrl,
 } from "../utils/member-formatters";
 import * as M from "./members.styles";
 import { MemberCredentialModal } from "./member-credential-modal";
@@ -133,13 +134,6 @@ function validateBrowserFile(file: File | null) {
   if (!/\.(pdf|jpe?g|png|webp)$/i.test(file.name)) {
     return "Formato não permitido. Envie PDF, JPG, PNG ou WebP.";
   }
-  return null;
-}
-
-function whatsappUrl(value: string | null | undefined) {
-  const digits = value?.replace(/\D/g, "") ?? "";
-  if (/^55\d{10,11}$/.test(digits)) return `https://wa.me/${digits}`;
-  if (/^\d{10,11}$/.test(digits)) return `https://wa.me/55${digits}`;
   return null;
 }
 

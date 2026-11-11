@@ -7190,6 +7190,7 @@ export type Database = {
           baptism_church: string | null
           baptism_date: string | null
           birth_date: string | null
+          birthday_mmdd: number | null
           church_id: string
           city: string | null
           complement: string | null
@@ -7242,6 +7243,7 @@ export type Database = {
           baptism_church?: string | null
           baptism_date?: string | null
           birth_date?: string | null
+          birthday_mmdd?: number | null
           church_id: string
           city?: string | null
           complement?: string | null
@@ -7294,6 +7296,7 @@ export type Database = {
           baptism_church?: string | null
           baptism_date?: string | null
           birth_date?: string | null
+          birthday_mmdd?: number | null
           church_id?: string
           city?: string | null
           complement?: string | null
