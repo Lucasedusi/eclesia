@@ -13,6 +13,8 @@ test("administrador vê membros e crianças, alterna o ranking e expande todas a
   await expect(main.getByRole("article", { name: "Total de membros" })).toContainText("29");
   await expect(main.getByRole("article", { name: "Regionais" })).toContainText("2");
   await expect(main.getByRole("article", { name: "Congregações" })).toContainText("13");
+  await expect(main.getByRole("article", { name: "Regionais" })).toContainText("Com membros ativos 2");
+  await expect(main.getByRole("article", { name: "Congregações" })).toContainText("Com membros ativos 3");
   const ranking = main.getByRole("region", { name: "Membros por congregação" });
   const roles = main.getByRole("region", { name: "Membros por cargo" });
   await expect(ranking.getByRole("listitem")).toHaveCount(3);
@@ -51,6 +53,12 @@ test("aniversariantes abrem em Dia e o período atualiza no celular", async ({ p
   await expect(page.getByRole("heading", { name: "Membros por cargo" })).toHaveCount(0);
   await expect(select).toHaveValue("today");
   await expect(rows).toHaveCount(3);
+  const birthdayHeader = page.getByRole("columnheader", { name: "Aniversário", exact: true });
+  expect(await birthdayHeader.evaluate(header => {
+    const text = document.createRange();
+    text.selectNodeContents(header);
+    return text.getClientRects().length;
+  })).toBe(1);
   await select.selectOption("week");
   await expect(rows).toHaveCount(4);
   await select.selectOption("month");
