@@ -21,3 +21,8 @@ export function dashboardPeriod(value: unknown): DashboardPeriod {
 export function orderedRanking(rows: RankingRow[]) {
   return [...rows].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "pt-BR") || a.id.localeCompare(b.id));
 }
+
+export function rankingPreview(rows: RankingRow[], limit: number) {
+  const full = orderedRanking(rows);
+  return { full, top: full.filter(row => row.count > 0).slice(0, limit) };
+}

@@ -47,6 +47,14 @@ if (command === 'setup') {
     query += `insert into public.members(id,church_id,congregation_id,full_name,member_code,gender,birth_date,nationality,natural_city,natural_state,profession,education_level,whatsapp,address,number,city,state,country,notes,deleted_at) values ('${id}','${ids.churches[i===33?1:0]}','${ids.congregations[c]}','${i===0?'Ana de Teste':i===32?'ARQUIVADO_TESTE':i===33?'OUTRA_IGREJA_TESTE':`Membro de Teste ${String(i+1).padStart(2,'0')}`}','${String(i+1).padStart(5,'0')}','FEMALE','1990-02-10','Brasileira','Goiânia','GO','Professora','Superior completo','11999998888','Rua de Teste','001','Goiânia','GO','Brasil','=1+1',${i===32?"'2026-11-01'":'null'});`;
   });
   query += `insert into public.member_sensitive_identity(member_id,church_id,cpf,rg,issuing_agency) values ('${ids.members[0]}','${ids.churches[0]}','00000000191','RG-TESTE','SSP'); insert into public.member_pastoral_notes(member_id,church_id,notes) values ('${ids.members[0]}','${ids.churches[0]}','SEGREDO_PASTORAL_NUNCA_EXPORTAR'); insert into public.member_roles(church_id,member_id,role_id,status,start_date,title_variant) values ('${ids.churches[0]}','${ids.members[0]}','${ids.role}','ACTIVE','2020-01-01','AUTO');`;
+  if (dashboard) {
+    for (const [index, memberId] of ids.members.slice(26, 32).entries()) {
+      const roleId = randomUUID();
+      query += `insert into public.roles(id,church_id,name) values ('${roleId}','${ids.churches[0]}','Cargo de Teste ${index + 1}');
+        insert into public.member_roles(church_id,member_id,role_id,status,start_date,title_variant)
+        values ('${ids.churches[0]}','${memberId}','${roleId}','ACTIVE','2020-01-01','AUTO');`;
+    }
+  }
   for (const member of ids.members.slice(0,2)) query += `insert into public.member_ministries(church_id,member_id,ministry_id,status) values ('${ids.churches[0]}','${member}','${ids.ministry}','ACTIVE');`;
   if (process.argv.includes('--birthdays')) {
     const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts();

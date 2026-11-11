@@ -9,6 +9,7 @@ const ranking = z.array(z.object({ id: z.uuid(), name: z.string(), count })).nul
 const summary = z.object({
   total: count, male: count, female: count,
   congregationName: z.string().nullable(), congregations: ranking, regions: ranking, roles: ranking,
+  fieldRoles: ranking,
 });
 export type DashboardSummary = z.infer<typeof summary>;
 

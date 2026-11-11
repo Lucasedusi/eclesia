@@ -13,14 +13,28 @@ test("administrador vê membros e crianças, alterna o ranking e expande todas a
   await expect(main.getByRole("article", { name: "Total de membros" })).toContainText("29");
   await expect(main.getByRole("article", { name: "Regionais" })).toContainText("2");
   await expect(main.getByRole("article", { name: "Congregações" })).toContainText("13");
-  const ranking = main.getByRole("region", { name: "Ranking de membros" });
-  await expect(ranking.getByRole("listitem")).toHaveCount(10);
-  await expect(ranking.getByRole("listitem").first()).toHaveText("Congregação de Teste 123");
+  const ranking = main.getByRole("region", { name: "Membros por congregação" });
+  const roles = main.getByRole("region", { name: "Membros por cargo" });
+  await expect(ranking.getByRole("listitem")).toHaveCount(3);
+  await expect(ranking.getByRole("listitem").first()).toContainText("Congregação de Teste 1");
+  await expect(ranking.getByRole("listitem").first().getByText("23", { exact: true })).toBeVisible();
+  await expect(roles.getByRole("listitem")).toHaveCount(5);
+  await expect(roles).toContainText("22 membros sem cargo ativo");
   await ranking.getByRole("button", { name: "Ver todas (13)" }).click();
-  await expect(ranking.getByRole("listitem")).toHaveCount(13);
-  await ranking.getByRole("combobox").selectOption("regions");
-  await expect(ranking.getByRole("listitem")).toHaveCount(2);
-  await expect(ranking.getByRole("listitem").first()).toHaveText("Regional de Teste A26");
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByRole("listitem")).toHaveCount(13);
+  await expect(dialog.getByRole("listitem").last().getByText("0", { exact: true })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(ranking.getByRole("button", { name: "Ver todas (13)" })).toBeFocused();
+  await ranking.getByRole("button", { name: "Regionais" }).click();
+  const regions = main.getByRole("region", { name: "Membros por regional" });
+  await expect(regions.getByRole("listitem")).toHaveCount(2);
+  await expect(regions.getByRole("listitem").first()).toContainText("26Regional de Teste A");
+  await roles.getByRole("button", { name: "Ver todos (7)" }).click();
+  await expect(dialog.getByRole("listitem")).toHaveCount(7);
+  await expect(dialog).toContainText("Diácono");
+  await dialog.getByRole("button", { name: "Fechar modal" }).click();
+  await expect(regions).toBeVisible();
 });
 
 test("aniversariantes abrem em Dia e o período atualiza no celular", async ({ page }) => {
@@ -28,6 +42,13 @@ test("aniversariantes abrem em Dia e o período atualiza no celular", async ({ p
   await page.goto("/");
   const select = page.getByRole("combobox", { name: "Período dos aniversariantes" });
   const rows = page.getByRole("table", { name: "Aniversariantes do período" }).getByRole("row");
+  const group = page.getByRole("group", { name: "Exibir ranking por" });
+  await group.getByRole("button", { name: "Cargos" }).click();
+  await expect(page.getByRole("heading", { name: "Membros por cargo" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Membros por congregação" })).toHaveCount(0);
+  await group.getByRole("button", { name: "Regionais" }).click();
+  await expect(page.getByRole("heading", { name: "Membros por regional" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Membros por cargo" })).toHaveCount(0);
   await expect(select).toHaveValue("today");
   await expect(rows).toHaveCount(3);
   await select.selectOption("week");
@@ -48,9 +69,10 @@ for (const role of ["congregation", "localTreasurer", "localViewer"]) {
       await expect(main.getByRole("article")).toContainText("23");
       await expect(main.getByRole("heading", { name: "Membros por cargo" })).toBeVisible();
       await expect(main.getByRole("listitem")).toHaveText(["Diácono1"]);
-      await expect(main.getByRole("columnheader")).toHaveText(["Nome", "Aniversário"]);
+      await expect(main.getByText("22 membros sem cargo ativo")).toBeVisible();
+      await expect(main.getByRole("columnheader")).toHaveText(["Aniversário", "Nome"]);
       await expect(main.getByRole("row")).toHaveCount(3);
-      await expect(main.getByRole("combobox", { name: "Agrupar ranking por" })).toHaveCount(0);
+      await expect(main.getByRole("group", { name: "Exibir ranking por" })).toHaveCount(0);
     } finally { await page.close(); }
   });
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AuthContext } from "@/modules/auth/types/auth.types";
-import { dashboardAudience, dashboardPeriod, orderedRanking } from "./dashboard";
+import { dashboardAudience, dashboardPeriod, orderedRanking, rankingPreview } from "./dashboard";
 
 function context(role: string, scope: string, congregationId: string | null = "unit") {
   return { access: { role, scope, congregationId, status: "ACTIVE", churchId: "church" }, church: { id: "church" }, permissions: ["dashboard.view", "members.view_basic"] } as AuthContext;
@@ -30,4 +30,13 @@ it("aceita os três períodos e inicia em Dia", () => {
 it("ordena por quantidade e desempata por nome sem limitar o ranking completo", () => {
   const rows = Array.from({length: 12}, (_, i) => ({id: String(i), name: String.fromCharCode(65+i), count: i === 11 ? 2 : 1}));
   expect(orderedRanking(rows.toReversed()).map(r => r.name)).toEqual(["L","A","B","C","D","E","F","G","H","I","J","K"]);
+});
+
+it.each([5, 10])("limita o gráfico a %i grupos positivos e preserva o ranking completo", limit => {
+  const rows = Array.from({ length: 14 }, (_, i) => ({ id: String(i), name: `Grupo ${i}`, count: i }));
+  const { top, full } = rankingPreview(rows, limit);
+  expect(top.map(row => row.count)).toEqual(Array.from({ length: limit }, (_, i) => 13 - i));
+  expect(full.at(-1)?.count).toBe(0);
+  expect(rankingPreview(rows.slice(0, 2), limit).top.map(row => row.count)).toEqual([1]);
+  expect(rankingPreview(rows.slice(0, 1), limit).top).toEqual([]);
 });

@@ -1,9 +1,10 @@
 import Link from "next/link";
+import { Cake } from "lucide-react";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import type { AuthContext } from "@/modules/auth/types/auth.types";
 import { BIRTHDAY_PAGE_SIZE, readBirthdayBatch } from "@/modules/members/services/member-birthdays.service";
-import { birthdayCalendar, birthdayFiltersSchema } from "@/modules/members/validations/member-birthdays";
+import { birthdayCalendar, birthdayFiltersSchema, birthdayMonths } from "@/modules/members/validations/member-birthdays";
 import { dashboardPeriod, type DashboardPeriod } from "../dashboard";
 import { BirthdayPeriod } from "./birthday-period";
 
@@ -33,7 +34,7 @@ export async function DashboardBirthdays({ context, searchParams, showCongregati
 
   return <section className="church-dashboard-panel" aria-label="Aniversariantes">
     <div className="church-dashboard-section-header">
-      <div><h2>Aniversariantes</h2><p>{label}</p></div>
+      <div><h2><Cake size={19} aria-hidden />Aniversariantes</h2><p>{label}</p></div>
       <BirthdayPeriod period={period} />
     </div>
     {missingPage ? <p className="church-dashboard-empty"><Link href={pageHref(period, 1)} scroll={false}>Voltar à primeira página</Link></p>
@@ -41,11 +42,17 @@ export async function DashboardBirthdays({ context, searchParams, showCongregati
       : result.data.length === 0 ? <p className="church-dashboard-empty">{period === "today" ? "Nenhum aniversariante hoje." : "Nenhum aniversariante neste período."}</p>
       : <>
         <table className="church-dashboard-table" aria-label="Aniversariantes do período">
-          <thead><tr><th scope="col">Nome</th>{showCongregation && <th scope="col">Congregação</th>}<th scope="col">Aniversário</th></tr></thead>
+          <thead><tr><th scope="col">Aniversário</th><th scope="col">Nome</th>{showCongregation && <th scope="col">Congregação</th>}</tr></thead>
           <tbody>{result.data.map(row => {
             const mmdd = String(row.birthday_mmdd).padStart(4, "0");
-            return <tr key={row.id}><td>{row.full_name}</td>{showCongregation && <td>{row.congregations?.name ?? "—"}</td>}
-              <td>{mmdd.slice(2)}/{mmdd.slice(0, 2)}</td></tr>;
+            const month = birthdayMonths[Number(mmdd.slice(0, 2)) - 1];
+            return <tr key={row.id}>
+              <td><time className="church-dashboard-date" dateTime={`${mmdd.slice(0, 2)}-${mmdd.slice(2)}`}
+                aria-label={`${mmdd.slice(2)} de ${month.toLowerCase()}`}>
+                <b>{mmdd.slice(2)}</b><span>{month.slice(0, 3)}</span>
+              </time></td>
+              <td>{row.full_name}</td>{showCongregation && <td>{row.congregations?.name ?? "—"}</td>}
+            </tr>;
           })}</tbody>
         </table>
         {pages > 1 && <nav className="church-dashboard-pagination" aria-label="Páginas de aniversariantes">

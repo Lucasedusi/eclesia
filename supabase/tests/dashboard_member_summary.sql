@@ -8,6 +8,7 @@ declare
   expected_male integer;
   expected_female integer;
   expected_roles jsonb;
+  role_key text;
   expected_units jsonb;
   expected_areas jsonb;
   allowed boolean;
@@ -43,9 +44,9 @@ begin
     select coalesce(jsonb_object_agg(id,n),'{}') into expected_roles from (
       select r.id,count(distinct m.id) n from public.members m
       join public.member_roles l on l.member_id=m.id and l.church_id=m.church_id and l.deleted_at is null and l.status='ACTIVE'
-        and (l.congregation_id is null or l.congregation_id=a.congregation_id)
+        and (a.access_scope='CHURCH' or l.congregation_id is null or l.congregation_id=a.congregation_id)
       join public.roles r on r.id=l.role_id and r.church_id=m.church_id and r.deleted_at is null and r.status='ACTIVE'
-      where m.church_id=a.church_id and m.congregation_id=a.congregation_id and m.member_type in ('MEMBER','CHILD')
+      where m.church_id=a.church_id and (a.access_scope='CHURCH' or m.congregation_id=a.congregation_id) and m.member_type in ('MEMBER','CHILD')
         and m.member_status='ACTIVE' and m.deleted_at is null group by r.id
     ) counts;
 
@@ -78,10 +79,14 @@ begin
         then raise exception 'Incorrect field ranking'; end if;
     elsif actual->>'congregations' is not null or actual->>'regions' is not null then raise exception 'Unexpected field indicators';
     end if;
-    if a.access_scope='CONGREGATION' and roles_allowed then
-      if (select coalesce(jsonb_object_agg(v->>'id',v->'count'),'{}') from jsonb_array_elements(actual->'roles') v) <> expected_roles
-        then raise exception 'Incorrect congregation role counts'; end if;
-    elsif actual->>'roles' is not null then raise exception 'Unexpected role indicators';
+    role_key := case when a.access_scope='CHURCH' then 'fieldRoles' else 'roles' end;
+    if actual->>(case when role_key='roles' then 'fieldRoles' else 'roles' end) is not null then
+      raise exception 'Unexpected role ranking outside scope';
+    end if;
+    if roles_allowed then
+      if (select coalesce(jsonb_object_agg(v->>'id',v->'count'),'{}') from jsonb_array_elements(actual->role_key) v) <> expected_roles
+        or actual->>role_key is null then raise exception 'Incorrect role counts'; end if;
+    elsif actual->>role_key is not null then raise exception 'Unexpected role indicators';
     end if;
   end loop;
 end;
