@@ -1,0 +1,46 @@
+.church-dashboard { display: grid; gap: 18px; min-width: 0; }
+.church-dashboard .church-dashboard-heading { margin-bottom: 0; }
+.church-dashboard-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); gap: 14px; }
+.church-dashboard-panel, .church-dashboard-metric {
+  min-width: 0; background: var(--card); border: 1px solid var(--border-soft);
+  border-radius: var(--radius-card); color: var(--text-body);
+}
+.church-dashboard-panel { overflow: hidden; padding: 20px; }
+.church-dashboard-metric { padding: 16px 20px; }
+.church-dashboard-metric-top, .church-dashboard-section-header, .church-dashboard-pagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.church-dashboard-metric-top h2 { font-size: 14px; font-weight: 500; color: var(--text-muted); }
+.church-dashboard-metric-top > span { display: grid; place-items: center; width: 36px; height: 36px; border-radius: var(--radius-control); }
+.church-dashboard-blue { color: var(--eclesia-primary); background: var(--eclesia-primary-soft); }
+.church-dashboard-green { color: var(--success); background: var(--success-soft); }
+.church-dashboard-gold { color: #846416; background: var(--warning-soft); }
+.church-dashboard-metric-value { display: block; font-size: 30px; line-height: 1.2; font-weight: 600; color: var(--text-title); font-variant-numeric: tabular-nums; }
+.church-dashboard-breakdown { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border-soft); color: var(--text-muted); font-size: 12px; }
+.church-dashboard-breakdown b { color: var(--text-body); font-weight: 500; }
+.church-dashboard-section-header { margin-bottom: 14px; flex-wrap: wrap; }
+.church-dashboard-section-header h2 { font-size: 16px; font-weight: 600; color: var(--text-title); }
+.church-dashboard-section-header p, .church-dashboard-empty, .church-dashboard-pagination { color: var(--text-muted); font-size: 13px; }
+.church-dashboard-section-header p { margin-top: 2px; }
+.church-dashboard-section-header select { margin-left: auto; max-width: 100%; padding: 6px 10px; min-height: 36px; border: 1px solid var(--border); border-radius: var(--radius-control); font: inherit; font-size: 13px; background: var(--card); }
+.church-dashboard-ranking { list-style: none; display: grid; gap: 10px; padding: 0; margin: 0; }
+.church-dashboard-ranking li { display: grid; grid-template-columns: minmax(110px, 28%) minmax(35px, 1fr) minmax(3ch, auto); gap: 12px; align-items: center; font-size: 13px; }
+.church-dashboard-rank-name { overflow-wrap: anywhere; }
+.church-dashboard-ranking strong { min-width: 3ch; text-align: right; font-weight: 500; font-variant-numeric: tabular-nums; }
+.church-dashboard-track, .church-dashboard-track > span { height: 9px; border-radius: 3px; }
+.church-dashboard-track { background: var(--surface-soft); }
+.church-dashboard-track > span { display: block; background: var(--eclesia-primary); }
+.church-dashboard-more, .church-dashboard-pagination a, .church-dashboard-empty a { color: var(--eclesia-primary); font-size: 13px; font-weight: 500; text-decoration: underline; text-underline-offset: 3px; }
+.church-dashboard-more { cursor: pointer; margin-top: 12px; padding: 6px 0; }
+.church-dashboard-empty { padding: 16px 0; }
+.church-dashboard-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.church-dashboard-table :is(th, td) { text-align: left; padding: 10px 12px; overflow-wrap: anywhere; }
+.church-dashboard-table th { background: var(--surface-soft); color: var(--text-muted); font-size: 12px; font-weight: 500; }
+.church-dashboard-table td { border-bottom: 1px solid var(--border-soft); }
+.church-dashboard-table td:last-child { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.church-dashboard-pagination { justify-content: flex-end; margin-top: 12px; }
+.church-dashboard-pagination span { margin-right: auto; }
+@media (max-width: 600px) {
+  .church-dashboard-panel, .church-dashboard-metric { padding: 14px; }
+  .church-dashboard { gap: 12px; }
+  .church-dashboard-table :is(th, td) { padding: 8px 5px; }
+  .church-dashboard-ranking li { grid-template-columns: minmax(85px, 40%) minmax(20px, 1fr) auto; gap: 8px; }
+}

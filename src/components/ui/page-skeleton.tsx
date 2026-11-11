@@ -33,7 +33,7 @@ export function PageSkeleton({
     return (
       <section className="app-page-skeleton" aria-busy="true" aria-label={label}>
         <header className="app-skeleton-heading"><div><Block className="app-skeleton-title" /><Block className="app-skeleton-subtitle" /></div></header>
-        <div className="app-skeleton-stats">{Array.from({ length: 4 }, (_, index) => <Block key={index} className="app-skeleton-stat" />)}</div>
+        <div className="app-skeleton-dashboard-stats">{Array.from({ length: 3 }, (_, index) => <Block key={index} className="app-skeleton-stat" />)}</div>
         <div className="app-skeleton-dashboard-grid"><Block className="app-skeleton-chart" /><Block className="app-skeleton-chart" /></div>
       </section>
     );

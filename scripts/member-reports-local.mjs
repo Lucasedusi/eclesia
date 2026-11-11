@@ -20,7 +20,10 @@ if (command === 'setup') {
   const ids = { churches: [randomUUID(),randomUUID()], regions: [randomUUID(),randomUUID()], congregations: [randomUUID(),randomUUID(),randomUUID(),randomUUID()], ministry: randomUUID(), role: randomUUID(), members: Array.from({length:34},randomUUID), users: [], sessions: {}, total: 32 };
   const save = () => writeFileSync(`${root}/fixture.json`, JSON.stringify(ids), { mode: 0o600 }); save();
   const credentials = [];
-  for (const name of ['full','limited','region','congregation','ministry','viewer']) {
+  const dashboard = process.argv.includes('--dashboard');
+  const sessionNames = ['full','limited','region','congregation','ministry','viewer'];
+  if (dashboard) sessionNames.push('localTreasurer','localViewer');
+  for (const name of sessionNames) {
     const email = `report-${randomUUID()}@example.invalid`, password = `${randomUUID()}Az1!`;
     const result = await admin.auth.admin.createUser({ email, password, email_confirm: true });
     if (result.error) throw new Error(result.error.message);
@@ -30,11 +33,12 @@ if (command === 'setup') {
   query += `insert into public.regions(id,church_id,name) values ('${ids.regions[0]}','${ids.churches[0]}','Regional de Teste A'),('${ids.regions[1]}','${ids.churches[0]}','Regional de Teste B');`;
   ids.congregations.forEach((id,i) => { query += `insert into public.congregations(id,church_id,region_id,name,is_headquarters) values ('${id}','${ids.churches[i===3?1:0]}',${i===3?'null':`'${ids.regions[i===2?1:0]}'`},'Congregação de Teste ${i+1}',${i===3?'true':'false'});`; });
   query += `insert into public.ministries(id,church_id,name,is_global) values ('${ids.ministry}','${ids.churches[0]}','Ministério de Teste',true); insert into public.roles(id,church_id,name,female_name) values ('${ids.role}','${ids.churches[0]}','Diácono','Diaconisa');`;
+  if (dashboard) query += `insert into public.congregations(church_id,region_id,name) select '${ids.churches[0]}','${ids.regions[0]}','Congregação de Teste Extra ' || i from generate_series(1,10) i;`;
   ids.users.forEach((u) => {
-    const scope = u.name==='region'?'REGION':u.name==='congregation'?'CONGREGATION':u.name==='ministry'?'MINISTRY':'CHURCH';
-    const role = u.name==='full'?'ADMIN':u.name==='ministry'?'MINISTRY_LEADER':u.name==='viewer'?'VIEWER':'SECRETARY';
+    const scope = u.name==='region'?'REGION':['congregation','localTreasurer','localViewer'].includes(u.name)?'CONGREGATION':u.name==='ministry'?'MINISTRY':'CHURCH';
+    const role = u.name==='full'?'ADMIN':u.name==='ministry'?'MINISTRY_LEADER':u.name==='localTreasurer'?'TREASURER':['viewer','localViewer'].includes(u.name)?'VIEWER':'SECRETARY';
     query += `insert into public.profiles(id,full_name,status) values ('${u.id}','Usuário Fictício ${u.name}','ACTIVE') on conflict(id) do update set status='ACTIVE'; insert into public.user_church_access(id,profile_id,church_id,role,access_scope,status,region_id,congregation_id,ministry_id,accepted_at) values ('${u.access}','${u.id}','${ids.churches[0]}','${role}','${scope}','ACTIVE',${scope==='REGION'?`'${ids.regions[0]}'`:'null'},${scope==='CONGREGATION'?`'${ids.congregations[0]}'`:'null'},${scope==='MINISTRY'?`'${ids.ministry}'`:'null'},'2020-01-01');`;
-    if(u.name!=='viewer') query += `insert into public.user_permission_overrides(access_id,permission_id,effect) select '${u.access}',id,case when '${u.name}'='limited' and key in ('members.view_sensitive_identity','member_roles.view','members.restore') then 'DENY' else 'ALLOW' end from public.permissions where status='ACTIVE' and deleted_at is null and key in ('members.export','members.view_basic','members.view_full','members.view_sensitive_identity','members.restore','member_roles.view','ministries.view','organization.view','church.view');`;
+    if(!['viewer','localTreasurer','localViewer'].includes(u.name)) query += `insert into public.user_permission_overrides(access_id,permission_id,effect) select '${u.access}',id,case when '${u.name}'='limited' and key in ('members.view_sensitive_identity','member_roles.view','members.restore') then 'DENY' else 'ALLOW' end from public.permissions where status='ACTIVE' and deleted_at is null and key in ('members.export','members.view_basic','members.view_full','members.view_sensitive_identity','members.restore','member_roles.view','ministries.view','organization.view','church.view');`;
     // A broader second grant makes the explicit selected-scope restriction observable.
     if(u.name==='region') query += `insert into public.user_church_access(profile_id,church_id,role,access_scope,status,accepted_at) values ('${u.id}','${ids.churches[0]}','SECRETARY','CHURCH','ACTIVE','2027-01-01');`;
   });
@@ -69,13 +73,13 @@ if (command === 'setup') {
     const login = await client.auth.signInWithPassword({email:credential.email,password:credential.password}); if(login.error) throw new Error(login.error.message);
     writeFileSync(ids.sessions[credential.name],JSON.stringify({cookies:cookies.map(c=>({name:c.name,value:c.value,domain:'localhost',path:'/',expires:-1,httpOnly:false,secure:false,sameSite:'Lax'})),origins:[]}),{mode:0o600});
   }
-  console.log('Local fictional report fixtures and six sessions created.');
+  console.log(`Local fictional report fixtures and ${sessionNames.length} sessions created.`);
 } else if(command === 'cleanup') {
   const ids=JSON.parse(readFileSync(`${root}/fixture.json`,'utf8'));
   if([...ids.churches,...ids.users.map(u=>u.id)].some(id=>!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(id))) throw new Error('Invalid fixture IDs');
   for(const church of ids.churches) sql(`begin; delete from public.member_ministries where church_id='${church}'; delete from public.member_roles where church_id='${church}'; delete from public.member_history where church_id='${church}'; delete from public.member_pastoral_notes where church_id='${church}'; delete from public.member_sensitive_identity where church_id='${church}'; delete from public.members where church_id='${church}'; delete from public.user_church_access where church_id='${church}'; delete from public.ministries where church_id='${church}'; delete from public.roles where church_id='${church}'; delete from public.congregations where church_id='${church}'; delete from public.regions where church_id='${church}'; delete from public.app_settings where church_id='${church}'; delete from public.audit_logs where church_id='${church}'; delete from public.churches where id='${church}'; commit;`);
   for(const u of ids.users) { const r=await admin.auth.admin.deleteUser(u.id); if(r.error) throw new Error(r.error.message); }
-  for (const name of ['full','limited','region','congregation','ministry','viewer']) { const session = `${root}/${name}.json`; if (existsSync(session)) unlinkSync(session); }
+  for (const name of ['full','limited','region','congregation','ministry','viewer','localTreasurer','localViewer']) { const session = `${root}/${name}.json`; if (existsSync(session)) unlinkSync(session); }
   writeFileSync(`${root}/fixture.json`, JSON.stringify({ ...ids, cleanedUp: true }), { mode: 0o600 });
   console.log('Local fictional report fixtures removed.');
 } else {

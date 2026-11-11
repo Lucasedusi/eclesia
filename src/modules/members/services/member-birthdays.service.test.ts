@@ -31,6 +31,19 @@ describe("birthday list and report query", () => {
     expect(query.get("order")).toBe("birthday_mmdd.asc,full_name.asc,id.asc");
   });
 
+  it("requests only name, day/month and permitted congregation for the dashboard", async () => {
+    for (const scope of ["CHURCH", "CONGREGATION"] as const) {
+      const db = database();
+      const access = { ...context.access, scope };
+      await readBirthdayBatch(db.client, { ...context, access, permissions: Object.values(PERMISSIONS) },
+        filters, [[101, 101]], 0, 19, "dashboard");
+      const params = new URL(String(db.fetch.mock.calls[0][0])).searchParams;
+      expect(params.get("select")).toBe("id,full_name,birthday_mmdd" + (scope === "CHURCH" ? ",congregations(name)" : ""));
+      expect(params.get("church_id")).toBe("eq.church");
+      if (scope === "CONGREGATION") expect(params.get("congregation_id")).toBe("eq.local");
+    }
+  });
+
   it.each([
     [0, 1, ["Dec 30", "Dec 31"]],
     [1, 2, ["Dec 31", "Jan 01"]],

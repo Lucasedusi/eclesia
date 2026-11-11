@@ -288,7 +288,8 @@ export const GlobalStyles = createGlobalStyle`
   .app-skeleton-section-title { grid-column: 1 / -1; width: 180px; height: 21px; }
   .app-skeleton-field { height: 66px; }
 
-  .app-skeleton-dashboard-grid { display: grid; grid-template-columns: 1.35fr .65fr; gap: 18px; }
+  .app-skeleton-dashboard-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); gap: 14px; }
+  .app-skeleton-dashboard-grid { display: grid; gap: 18px; }
   .app-skeleton-chart { height: 330px; }
   .app-skeleton-details { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
   .app-skeleton-details > span { height: 210px; }

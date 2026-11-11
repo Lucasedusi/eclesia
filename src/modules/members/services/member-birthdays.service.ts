@@ -8,10 +8,11 @@ import { whatsappUrl } from "../utils/member-formatters";
 import type { BirthdayFilters, BirthdayRange } from "../validations/member-birthdays";
 
 export const BIRTHDAY_PAGE_SIZE = 20;
+type BirthdayView = "list" | "dashboard";
 type Client = Awaited<ReturnType<typeof createClient>>;
 type BirthdayRow = {
   id: string; full_name: string; member_code: string | null; birth_date: string;
-  whatsapp?: string; gender?: string;
+  whatsapp?: string; gender?: string; birthday_mmdd?: number;
   congregations: { name: string; regions: { name: string } | null } | null;
   active_roles?: { title_variant: string; roles: { name: string; female_name: string | null } | null }[];
 };
@@ -26,17 +27,18 @@ function requireBirthdayScope(context: AuthContext) {
   }
 }
 
-export function birthdayQuery(client: Client, context: AuthContext, filters: BirthdayFilters, range: [number, number] | null) {
+export function birthdayQuery(client: Client, context: AuthContext, filters: BirthdayFilters, range: [number, number] | null, view: BirthdayView = "list") {
   requireBirthdayScope(context);
   const { scope, regionId, congregationId, ministryId } = context.access;
   const church = context.church.id;
-  const organization = hasPermission(context.permissions, PERMISSIONS.organizationView);
+  const organization = hasPermission(context.permissions, PERMISSIONS.organizationView) && (view === "list" || scope === "CHURCH");
   const regional = scope === "REGION" || Boolean(filters.regionId);
-  const roles = hasPermission(context.permissions, PERMISSIONS.memberRolesView);
-  const contact = hasPermission(context.permissions, PERMISSIONS.membersViewFull);
+  const roles = view === "list" && hasPermission(context.permissions, PERMISSIONS.memberRolesView);
+  const contact = view === "list" && hasPermission(context.permissions, PERMISSIONS.membersViewFull);
+  const unitFields = view === "dashboard" ? "name" : "name,regions(name)";
   const projection = [
-    "id,full_name,member_code,birth_date",
-    ...(organization || regional ? [`congregations${regional ? "!inner" : ""}(${organization ? "name,regions(name)" : ""})`] : []),
+    view === "dashboard" ? "id,full_name,birthday_mmdd" : "id,full_name,member_code,birth_date",
+    ...(organization || regional ? [`congregations${regional ? "!inner" : ""}(${organization ? unitFields : ""})`] : []),
     ...(contact ? ["whatsapp"] : []),
     ...(roles ? ["gender,active_roles:member_roles!member_roles_member_id_fkey(title_variant,roles!member_roles_role_id_fkey(name,female_name))"] : []),
     ...(scope === "MINISTRY" ? ["membership:member_ministries!member_ministries_member_id_fkey!inner()"] : []),
@@ -47,7 +49,7 @@ export function birthdayQuery(client: Client, context: AuthContext, filters: Bir
   if (organization || regional) {
     query = query.eq("congregations.church_id", church).is("congregations.deleted_at", null);
   }
-  if (organization) query = query.eq("congregations.regions.church_id", church).is("congregations.regions.deleted_at", null);
+  if (organization && view === "list") query = query.eq("congregations.regions.church_id", church).is("congregations.regions.deleted_at", null);
   if (scope === "REGION") query = query.eq("congregations.region_id", regionId!);
   if (scope === "CONGREGATION") query = query.eq("congregation_id", congregationId!);
   if (scope === "MINISTRY") {
@@ -74,8 +76,8 @@ export function birthdayQuery(client: Client, context: AuthContext, filters: Bir
 
 // A week crossing a month boundary consists of two chronological ranges.
 // Split the requested page at that boundary, including December before January.
-export async function readBirthdayBatch(client: Client, context: AuthContext, filters: BirthdayFilters, ranges: BirthdayRange[], start: number, end: number) {
-  const query = (range: BirthdayRange | null) => birthdayQuery(client, context, filters, range);
+export async function readBirthdayBatch(client: Client, context: AuthContext, filters: BirthdayFilters, ranges: BirthdayRange[], start: number, end: number, view: BirthdayView = "list") {
+  const query = (range: BirthdayRange | null) => birthdayQuery(client, context, filters, range, view);
   if (ranges.length < 2) return query(ranges[0] ?? null).range(start, end);
   const firstRange = ranges[0];
   const secondRange = ranges[1];

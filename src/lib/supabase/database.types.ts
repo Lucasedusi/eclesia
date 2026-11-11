@@ -9169,6 +9169,10 @@ export type Database = {
           deleted_count: number
         }[]
       }
+      get_dashboard_member_summary: {
+        Args: { p_access_id: string }
+        Returns: Json
+      }
       get_event_stats: { Args: { p_church_id: string }; Returns: Json }
       get_finance_bank_import: {
         Args: {
