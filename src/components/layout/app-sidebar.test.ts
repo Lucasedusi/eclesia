@@ -33,7 +33,8 @@ it.each([{}, { collapsed: true }, { mobile: true }])("exibe a igreja e os atalho
   const html = sidebar(props);
   const footer = html.slice(html.indexOf("<footer"), html.indexOf("</footer>"));
   expect(footer).toContain(context.church.name);
-  expect(footer).toContain(">AC<");
+  expect(footer).toContain('aria-label="Sair do sistema"');
+  expect(footer).not.toContain(">AC<");
   expect(html).not.toContain(">Ana<");
   for (const path of ["/relatorios", "/notificacoes", "/design-system", "/suporte"]) {
     expect(html).not.toContain(`href="${path}"`);
@@ -49,6 +50,13 @@ it.each([true, false])("respeita a permissão de configurações no menu do perf
   ));
   const links = Array.from(html.matchAll(/<a\b[^>]*href="([^"]+)"/g), (match) => match[1]);
   expect(links).toEqual(allowed ? ["/perfil", "/configuracoes"] : ["/perfil"]);
+});
+
+it.each([true, false])("oferece o sino apenas para quem pode consultar aniversariantes (%s)", (allowed) => {
+  const authContext = { ...context, permissions: allowed ? [PERMISSIONS.membersViewBasic] : [] };
+  const html = renderToStaticMarkup(createElement(ThemeProvider, { theme }, createElement(AppHeader, { authContext })));
+  expect(html.includes('aria-label="Notificações"')).toBe(allowed);
+  expect(html).not.toMatch(/aria-label="(?:Alternar tema|Mensagens)"/);
 });
 
 it("exibe apenas a navegação autorizada quando o menu do sistema fica vazio", () => {

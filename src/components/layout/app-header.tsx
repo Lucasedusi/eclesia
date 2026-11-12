@@ -1,18 +1,17 @@
 "use client";
 
 import {
-  Bell,
   Building2,
   ChevronDown,
   LoaderCircle,
   LogOut,
   Menu,
-  MessageCircle,
-  Moon,
   Settings,
-  SunMedium,
   UserRound,
 } from "lucide-react";
+import { useEffect, useRef } from "react";
+import { canViewBirthdays } from "@/modules/members/utils/birthday-access";
+import { BirthdayNotification } from "./birthday-notification";
 import { useFormStatus } from "react-dom";
 import { logoutAction, switchChurchAction } from "@/modules/auth/actions/auth.actions";
 import { hasPermission, PERMISSIONS } from "@/modules/auth/constants/permissions";
@@ -27,23 +26,6 @@ type AppHeaderProps = {
   onOpenSidebar?: () => void;
   authContext: AuthContext;
 };
-
-function HeaderIconButton({
-  label,
-  children,
-  hasNotification = false,
-}: {
-  label: string;
-  children: React.ReactNode;
-  hasNotification?: boolean;
-}) {
-  return (
-    <S.IconButton type="button" aria-label={label}>
-      {children}
-      {hasNotification && <S.NotificationDot />}
-    </S.IconButton>
-  );
-}
 
 function ChurchSwitchButton({ name, active }: { name: string; active: boolean }) {
   const { pending } = useFormStatus();
@@ -81,6 +63,32 @@ function LogoutButton() {
 export function AppHeader({ onOpenSidebar, authContext }: AppHeaderProps) {
   const initials = getInitials(authContext.profile.fullName);
 
+  const actions = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    function openMenu() {
+      return actions.current?.querySelector<HTMLDetailsElement>("details[open]");
+    }
+    function dismissOutside(event: Event) {
+      const menu = openMenu();
+      if (menu && event.target instanceof Node && !menu.contains(event.target)) menu.open = false;
+    }
+    function onKeyDown(event: KeyboardEvent) {
+      const menu = openMenu();
+      if (event.key === "Escape" && menu) {
+        menu.open = false;
+        menu.querySelector("summary")?.focus();
+      }
+    }
+    document.addEventListener("pointerdown", dismissOutside, true);
+    document.addEventListener("focusin", dismissOutside);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", dismissOutside, true);
+      document.removeEventListener("focusin", dismissOutside);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, []);
+
   return (
     <S.HeaderRoot>
       <S.HeaderInner>
@@ -98,25 +106,10 @@ export function AppHeader({ onOpenSidebar, authContext }: AppHeaderProps) {
           </S.Greeting>
         </S.HeaderLeft>
 
-        <S.HeaderActions>
-          <S.ThemeToggle type="button" aria-label="Alternar tema">
-            <S.ThemeToggleThumb>
-              <SunMedium size={15} strokeWidth={1.7} />
-            </S.ThemeToggleThumb>
-            <S.ThemeToggleIcon>
-              <Moon size={14} strokeWidth={1.7} />
-            </S.ThemeToggleIcon>
-          </S.ThemeToggle>
+        <S.HeaderActions ref={actions}>
+          {canViewBirthdays(authContext) && <BirthdayNotification key={authContext.access.id} />}
 
-          <HeaderIconButton label="Mensagens" hasNotification>
-            <MessageCircle size={18} strokeWidth={1.7} />
-          </HeaderIconButton>
-
-          <HeaderIconButton label="Notificações" hasNotification>
-            <Bell size={18} strokeWidth={1.7} />
-          </HeaderIconButton>
-
-          <S.UserMenu ref={(details) => () => details?.removeAttribute("open")}>
+          <S.UserMenu name="header-menu" ref={(details) => () => details?.removeAttribute("open")}>
             <summary aria-label="Menu do perfil">
               <S.UserArea>
                 <S.UserMeta>

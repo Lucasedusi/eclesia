@@ -5,10 +5,11 @@ import type { AuthContext } from "@/modules/auth/types/auth.types";
 import { formatBrazilPhone } from "@/utils/input-masks";
 import { MemberReportError } from "../types/member-report.types";
 import { whatsappUrl } from "../utils/member-formatters";
-import type { BirthdayFilters, BirthdayRange } from "../validations/member-birthdays";
+import { canViewBirthdays } from "../utils/birthday-access";
+import { birthdayCalendar, birthdayFiltersSchema, type BirthdayFilters, type BirthdayRange } from "../validations/member-birthdays";
 
 export const BIRTHDAY_PAGE_SIZE = 20;
-type BirthdayView = "list" | "dashboard";
+type BirthdayView = "list" | "dashboard" | "count";
 type Client = Awaited<ReturnType<typeof createClient>>;
 type BirthdayRow = {
   id: string; full_name: string; member_code: string | null; birth_date: string;
@@ -18,11 +19,7 @@ type BirthdayRow = {
 };
 
 function requireBirthdayScope(context: AuthContext) {
-  const { scope, regionId, congregationId, ministryId } = context.access;
-  const valid = scope === "CHURCH" || (scope === "REGION" && regionId)
-    || (scope === "CONGREGATION" && congregationId)
-    || (scope === "MINISTRY" && ministryId && hasPermission(context.permissions, PERMISSIONS.ministriesView));
-  if (!valid || !hasPermission(context.permissions, PERMISSIONS.membersViewBasic)) {
+  if (!canViewBirthdays(context)) {
     throw new MemberReportError("MEMBER_REPORT_PERMISSION_DENIED");
   }
 }
@@ -31,19 +28,20 @@ export function birthdayQuery(client: Client, context: AuthContext, filters: Bir
   requireBirthdayScope(context);
   const { scope, regionId, congregationId, ministryId } = context.access;
   const church = context.church.id;
-  const organization = hasPermission(context.permissions, PERMISSIONS.organizationView) && (view === "list" || scope === "CHURCH");
+  const organization = view !== "count" && hasPermission(context.permissions, PERMISSIONS.organizationView) && (view === "list" || scope === "CHURCH");
   const regional = scope === "REGION" || Boolean(filters.regionId);
   const roles = view === "list" && hasPermission(context.permissions, PERMISSIONS.memberRolesView);
-  const contact = hasPermission(context.permissions, PERMISSIONS.membersViewFull);
+  const contact = view !== "count" && hasPermission(context.permissions, PERMISSIONS.membersViewFull);
   const unitFields = view === "dashboard" ? "name" : "name,regions(name)";
+  const identity = view === "dashboard" ? "id,full_name,birthday_mmdd" : "id,full_name,member_code,birth_date";
   const projection = [
-    view === "dashboard" ? "id,full_name,birthday_mmdd" : "id,full_name,member_code,birth_date",
+    view === "count" ? "id" : identity,
     ...(organization || regional ? [`congregations${regional ? "!inner" : ""}(${organization ? unitFields : ""})`] : []),
     ...(contact ? ["whatsapp"] : []),
     ...(roles ? ["gender,active_roles:member_roles!member_roles_member_id_fkey(title_variant,roles!member_roles_role_id_fkey(name,female_name))"] : []),
     ...(scope === "MINISTRY" ? ["membership:member_ministries!member_ministries_member_id_fkey!inner()"] : []),
   ].join(",");
-  let query = client.from("members").select(projection, { count: "exact" })
+  let query = client.from("members").select(projection, { count: "exact", head: view === "count" })
     .eq("church_id", church).is("deleted_at", null).eq("member_status", "ACTIVE")
     .in("member_type", ["MEMBER", "CHILD"]).not("birthday_mmdd", "is", null);
   if (organization || regional) {
@@ -71,7 +69,16 @@ export function birthdayQuery(client: Client, context: AuthContext, filters: Bir
       .order("start_date", { referencedTable: "active_roles", ascending: false })
       .order("id", { referencedTable: "active_roles" });
   }
+  if (view === "count") return query.returns<BirthdayRow[]>();
   return query.order("birthday_mmdd").order("full_name").order("id").returns<BirthdayRow[]>();
+}
+
+export async function countBirthdaysToday(context: AuthContext) {
+  const filters = birthdayFiltersSchema.parse({});
+  const [today] = birthdayCalendar(filters).ranges;
+  const { count, error } = await birthdayQuery(await createClient(), context, filters, today, "count");
+  if (error || count === null) throw new MemberReportError("MEMBER_REPORT_LOAD_FAILED");
+  return count;
 }
 
 // A week crossing a month boundary consists of two chronological ranges.

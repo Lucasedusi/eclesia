@@ -2,12 +2,13 @@
 
 import { usePathname } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, LogOut } from "lucide-react";
 import { mainNavigation, secondaryNavigation } from "@/constants/navigation";
 import { APP_CONFIG } from "@/constants/app";
 import { LinkPendingIndicator } from "@/components/navigation/navigation-feedback";
 import type { AuthContext } from "@/modules/auth/types/auth.types";
-import { getInitials } from "@/utils/person-name";
+import { useFormStatus } from "react-dom";
+import { logoutAction } from "@/modules/auth/actions/auth.actions";
 import * as S from "./app-sidebar.styles";
 
 type NavigationItem = {
@@ -53,6 +54,13 @@ function EclesiaLogo({ collapsed = false }: { collapsed?: boolean }) {
       </svg>
     </S.LogoWrapper>
   );
+}
+
+function SidebarLogout() {
+  const { pending } = useFormStatus();
+  return <S.FooterLogout type="submit" aria-label="Sair do sistema" title="Encerrar sessão" disabled={pending} aria-busy={pending}>
+    <LogOut size={20} aria-hidden />
+  </S.FooterLogout>;
 }
 
 export function AppSidebar({
@@ -150,7 +158,7 @@ export function AppSidebar({
       </S.SidebarScrollArea>
 
       <S.SidebarFooter $collapsed={isCollapsed} title={authContext.church.name}>
-        <S.FooterAvatar aria-hidden="true">{getInitials(authContext.profile.fullName)}</S.FooterAvatar>
+        <form action={logoutAction}><SidebarLogout /></form>
         <span className={isCollapsed ? "sr-only" : undefined}>{authContext.church.name}</span>
       </S.SidebarFooter>
     </S.SidebarRoot>

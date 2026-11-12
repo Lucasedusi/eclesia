@@ -2,10 +2,22 @@
 
 import styled from "styled-components";
 
-export const Layout = styled.div`display:grid;gap:22px;`;
+export const Layout = styled.div`display:grid;gap:22px;container-type:inline-size;`;
 export const Stats = styled.div`display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;@media(max-width:760px){grid-template-columns:1fr;}`;
 export const Stat = styled.article`display:flex;align-items:center;gap:13px;border:1px solid ${({theme})=>theme.colors.border.soft};border-radius: 6px;background:#fff;padding:17px;box-shadow:${({theme})=>theme.shadows.card};>span{display:grid;width:42px;height:42px;place-items:center;border-radius: 6px;background:#eef2ff;color:${({theme})=>theme.colors.brand.primary};}>div strong{display:block;color:${({theme})=>theme.colors.text.title};font-size: calc(20px + var(--eclesia-font-size-adjustment, 0px));font-weight:700;}>div small{display:block;margin-top:2px;color:${({theme})=>theme.colors.text.muted};font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));font-weight:600;}`;
-export const Grid = styled.div`display:grid;grid-template-columns:minmax(0,1fr) minmax(310px,.38fr);gap:20px;align-items:start;@media(max-width:1080px){grid-template-columns:1fr;}`;
+export const Grid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  align-items: start;
+  > :first-child { grid-column: span 2; }
+  > * { min-width: 0; }
+
+  @container (max-width: 940px) {
+    grid-template-columns: minmax(0, 1fr);
+    > :first-child { grid-column: auto; }
+  }
+`;
 export const Card = styled.section`overflow:hidden;border:1px solid ${({theme})=>theme.colors.border.soft};border-radius: 6px;background:#fff;box-shadow:${({theme})=>theme.shadows.card};`;
 export const CardHeader = styled.div`display:flex;align-items:flex-start;justify-content:space-between;gap:14px;border-bottom:1px solid #edf0f4;padding:20px 22px;h2{margin:0;color:#101828;font-size: calc(16px + var(--eclesia-font-size-adjustment, 0px));font-weight:700;}p{margin:5px 0 0;color:#667085;font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px));font-weight:500;line-height:1.5;}`;
 export const CardBody = styled.div`padding:20px 22px;`;

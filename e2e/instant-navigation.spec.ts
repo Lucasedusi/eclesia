@@ -44,7 +44,15 @@ test.describe("navegação autenticada instantânea", () => {
       await page.setViewportSize({ width, height: 844 });
       await page.goto("/");
       const header = page.locator("header").filter({ visible: true });
-      await header.getByLabel("Menu do perfil").click();
+      const profile = header.getByLabel("Menu do perfil");
+      await profile.click();
+      await page.getByRole("heading", { name: "Dashboard", exact: true }).click();
+      await expect(header.locator("details[open]")).toHaveCount(0);
+      await profile.click();
+      await page.keyboard.press("Escape");
+      await expect(profile).toBeFocused();
+      await expect(header.locator("details[open]")).toHaveCount(0);
+      await profile.click();
       const links = header.locator("details[open] a");
       await expect(links.nth(0)).toHaveText("Meu perfil");
       await expect(links.nth(1)).toHaveText("Configurações");
@@ -53,6 +61,25 @@ test.describe("navegação autenticada instantânea", () => {
       await expect(page.getByRole("heading", { name: "Configurações da igreja" })).toBeVisible();
     });
   }
+
+  test("sino de aniversariantes respeita a contagem do dia", async ({ page, request }) => {
+    const response = await request.get("/api/members/birthdays/today");
+    expect(response.ok()).toBe(true);
+    const { count } = await response.json();
+    await page.goto("/");
+    const bell = page.getByLabel(/^Notificações/);
+    await bell.click();
+    const message = count === 0 ? "Nenhum aniversariante hoje." :
+      count === 1 ? "Hoje há 1 aniversariante." : `Hoje há ${count} aniversariantes.`;
+    await expect(page.getByRole("status").filter({ hasText: message })).toBeVisible();
+    const link = page.getByRole("link", { name: "Ver aniversariantes", exact: true }).filter({ visible: true });
+    if (count > 0) {
+      await link.click();
+      await expect(page).toHaveURL(/\/membros\/aniversariantes$/);
+    } else {
+      await expect(link).toHaveCount(0);
+    }
+  });
 
   test("Dashboard → Membros", async ({ page }) => {
     await page.goto("/");
@@ -242,7 +269,7 @@ test.describe("regressões de feedback e modais", () => {
 
   test("logout não deixa a barra global ativa", async ({ page }) => {
     await page.goto("/");
-    await page.locator("header details > summary").filter({visible:true}).click();
+    await page.getByLabel("Menu do perfil", { exact: true }).filter({visible:true}).click();
     await page.getByRole("button", { name: "Encerrar sessão" }).click();
     await page.waitForURL((url) => url.pathname === "/login");
 

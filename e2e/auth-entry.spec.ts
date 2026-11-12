@@ -55,7 +55,7 @@ test("entrar e sair duas vezes mantém o login utilizável e a barra de navegaç
     await page.locator("form").filter({ visible: true }).getByLabel("Senha", { exact: true }).fill(password!);
     await page.getByRole("button", { name: "Entrar no sistema" }).click();
     await expect(page.getByRole("heading", { name: "Dashboard", exact: true })).toBeVisible();
-    await page.locator("header details > summary").filter({ visible: true }).click();
+    await page.getByLabel("Menu do perfil", { exact: true }).filter({ visible: true }).click();
     await page.getByRole("button", { name: "Encerrar sessão" }).click();
     await expect(page.getByRole("heading", { name: "Acesse sua conta" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Entrar no sistema" })).toBeEnabled();

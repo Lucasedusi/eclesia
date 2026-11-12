@@ -13,7 +13,7 @@ type MobileSidebarProps = {
 
 export function MobileSidebar({ open, onClose, authContext }: MobileSidebarProps) {
   return (
-    <S.OverlayRoot $open={open}>
+    <S.OverlayRoot $open={open} inert={!open}>
       <S.Backdrop
         type="button"
         $open={open}

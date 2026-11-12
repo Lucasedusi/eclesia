@@ -86,48 +86,7 @@ export const HeaderActions = styled.div`
   }
 `;
 
-export const ThemeToggle = styled.button`
-  width: 56px;
-  height: 30px;
-  display: flex;
-  align-items: center;
-  padding: 4px;
-  border: 0;
-  border-radius: ${({ theme }) => theme.radius.full};
-  color: #98a2b3;
-  background: #e2e8f0;
-  cursor: pointer;
-  transition: background ${({ theme }) => theme.transitions.fast};
-
-  &:hover {
-    background: #d8dee8;
-  }
-
-  @media (max-width: 767px) {
-    display: none;
-  }
-`;
-
-export const ThemeToggleThumb = styled.span`
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: ${({ theme }) => theme.radius.full};
-  color: #637381;
-  background: #ffffff;
-  box-shadow: 0 1px 4px rgba(16, 24, 40, 0.14);
-`;
-
-export const ThemeToggleIcon = styled.span`
-  margin-left: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-`;
-
-export const IconButton = styled.button`
+export const BellTrigger = styled.summary`
   position: relative;
   width: 40px;
   height: 40px;
@@ -224,7 +183,7 @@ export const UserMenu = styled.details`
 
   > summary { cursor: pointer; list-style: none; }
   > summary::-webkit-details-marker { display: none; }
-  &[open] > summary svg:last-child { transform: rotate(180deg); }
+  &[open] > summary .lucide-chevron-down { transform: rotate(180deg); }
 
 `;
 
@@ -240,6 +199,17 @@ export const UserDropdown = styled.div`
   background: #fff;
   padding: 9px;
   box-shadow: 0 20px 55px rgba(16, 24, 40, 0.16);
+`;
+
+export const NotificationPanel = styled(UserDropdown)`
+  width: min(260px, calc(100vw - 90px));
+  p {
+    margin: 0;
+    padding: 10px;
+    color: ${({ theme }) => theme.colors.text.body};
+    font-size: calc(13px + var(--eclesia-font-size-adjustment, 0px));
+  }
+  a { color: ${({ theme }) => theme.colors.brand.primary}; }
 `;
 
 export const DropdownIdentity = styled.div`

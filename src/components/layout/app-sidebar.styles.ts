@@ -240,15 +240,16 @@ export const SidebarFooter = styled.footer<{ $collapsed: boolean }>`
   `}
 `;
 
-export const FooterAvatar = styled.span`
+export const FooterLogout = styled.button`
   display: grid;
-  width: 48px;
-  height: 48px;
-  flex: none;
+  width: 44px;
+  height: 44px;
   place-items: center;
-  border-radius: ${({ theme }) => theme.radius.full};
-  color: ${({ theme }) => theme.colors.sidebar.background};
-  background: #ffb31f;
-  font-size: calc(13px + var(--eclesia-font-size-adjustment, 0px));
-  font-weight: 700;
+  border: 0;
+  border-radius: 6px;
+  color: ${({ theme }) => theme.colors.sidebar.item};
+  background: transparent;
+  cursor: pointer;
+  &:hover, &:focus-visible { color: white; background: ${({ theme }) => theme.colors.sidebar.hoverBackground}; }
+  &:disabled { opacity: .65; cursor: wait; }
 `;

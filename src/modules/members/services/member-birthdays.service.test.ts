@@ -31,6 +31,24 @@ describe("birthday list and report query", () => {
     expect(query.get("order")).toBe("birthday_mmdd.asc,full_name.asc,id.asc");
   });
 
+  it.each(["CHURCH", "REGION", "CONGREGATION", "MINISTRY"] as const)("counts only today's eligible members in %s without returning rows", async (scope) => {
+    const db = database();
+    const access = { ...context.access, scope, regionId: "r", ministryId: "m" };
+    const permissions = Object.values(PERMISSIONS);
+    await birthdayQuery(db.client, { ...context, access, permissions }, filters, [1112, 1112], "count");
+    const [url, init] = db.fetch.mock.calls[0];
+    const params = new URL(String(url)).searchParams;
+    expect(init?.method).toBe("HEAD");
+    expect(params.get("select")).not.toMatch(/full_name|birth_date|whatsapp/);
+    expect(params.get("church_id")).toBe("eq.church");
+    expect(params.get("member_type")).toBe("in.(MEMBER,CHILD)");
+    expect(params.get("member_status")).toBe("eq.ACTIVE");
+    expect(params.getAll("birthday_mmdd")).toEqual(["not.is.null", "gte.1112", "lte.1112"]);
+    if (scope === "REGION") expect(params.get("congregations.region_id")).toBe("eq.r");
+    if (scope === "CONGREGATION") expect(params.get("congregation_id")).toBe("eq.local");
+    if (scope === "MINISTRY") expect(params.get("membership.ministry_id")).toBe("eq.m");
+  });
+
   it.each([true, false])("keeps dashboard records scoped and selects WhatsApp only with full access (%s)", async (allowContact) => {
     for (const scope of ["CHURCH", "CONGREGATION"] as const) {
       const db = database();
