@@ -188,17 +188,6 @@ export const IconSlot = styled.span`
   justify-content: center;
 `;
 
-export const Indicator = styled.span`
-  position: absolute;
-  bottom: -4px;
-  left: -4px;
-  width: 10px;
-  height: 10px;
-  border-radius: ${({ theme }) => theme.radius.full};
-  background: ${({ theme }) => theme.colors.icon.alert};
-  box-shadow: 0 0 0 2px ${({ theme }) => theme.colors.sidebar.background};
-`;
-
 export const NavLabel = styled.span`
   min-width: 0;
   overflow: hidden;
@@ -232,64 +221,21 @@ export const Tooltip = styled.span`
   }
 `;
 
-export const SidebarFooter = styled.div`
+export const SidebarFooter = styled.footer<{ $collapsed: boolean }>`
+  flex-shrink: 0;
   border-top: 1px solid ${({ theme }) => theme.colors.sidebar.divider};
   padding: 24px;
-`;
-
-export const FooterCollapsed = styled.div`
-  display: flex;
-  justify-content: center;
-`;
-
-export const FooterContent = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-`;
-
-export const FooterText = styled.div`
-  min-width: 0;
-  flex: 1;
-`;
-
-export const FooterEyebrow = styled.p`
-  margin: 0;
   color: ${({ theme }) => theme.colors.sidebar.item};
-  font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px));
+  font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
   font-weight: 600;
   line-height: 1.2;
-`;
+  overflow-wrap: anywhere;
 
-export const FooterName = styled.p`
-  margin: 6px 0 0;
-  overflow: hidden;
-  color: #ffffff;
-  font-size: calc(14px + var(--eclesia-font-size-adjustment, 0px));
-  font-weight: 700;
-  line-height: 1.2;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-`;
-
-export const Avatar = styled.div`
-  position: relative;
-  width: 48px;
-  height: 48px;
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  border-radius: ${({ theme }) => theme.radius.full};
-  color: ${({ theme }) => theme.colors.sidebar.background};
-  background: #ffb31f;
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
-  font-size: calc(13px + var(--eclesia-font-size-adjustment, 0px));
-  font-weight: 700;
-
-  span {
-    position: relative;
-    z-index: 2;
-  }
+  ${({ $collapsed }) => $collapsed && css`
+    padding-inline: 8px;
+    overflow: hidden;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  `}
 `;

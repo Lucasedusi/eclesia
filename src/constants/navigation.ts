@@ -1,12 +1,8 @@
 import {
-  Bell,
   CalendarDays,
-  CircleHelp,
   FileArchive,
-  FileText,
   LayoutDashboard,
   Network,
-  Palette,
   Settings,
   ShieldCheck,
   UserCog,
@@ -53,11 +49,6 @@ export const mainNavigation = [
     requiredPermission: PERMISSIONS.documentsView,
     churchAdminOnly: true,
   },
-  {
-    label: "Relatórios",
-    href: "/relatorios",
-    icon: FileText,
-  },
 ];
 
 export const secondaryNavigation = [
@@ -74,26 +65,10 @@ export const secondaryNavigation = [
     requiredPermission: PERMISSIONS.auditView,
   },
   {
-    label: "Notificações",
-    href: "/notificacoes",
-    icon: Bell,
-    notification: true,
-  },
-  {
     label: "Configurações",
     href: "/configuracoes",
     icon: Settings,
     requiredPermission: PERMISSIONS.settingsView,
-  },
-  {
-    label: "Design System",
-    href: "/design-system",
-    icon: Palette,
-  },
-  {
-    label: "Suporte",
-    href: "/suporte",
-    icon: CircleHelp,
   },
 ];
 

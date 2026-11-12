@@ -13,8 +13,6 @@ type NavigationItem = {
   label: string;
   href: string;
   icon: LucideIcon;
-  indicator?: boolean;
-  notification?: boolean;
   requiredPermission?: string;
   churchAdminOnly?: boolean;
 };
@@ -56,14 +54,6 @@ function EclesiaLogo({ collapsed = false }: { collapsed?: boolean }) {
   );
 }
 
-function SidebarAvatar({ initials }: { initials: string }) {
-  return (
-    <S.Avatar aria-hidden="true">
-      <span>{initials}</span>
-    </S.Avatar>
-  );
-}
-
 export function AppSidebar({
   collapsed = false,
   onToggleCollapse,
@@ -73,13 +63,6 @@ export function AppSidebar({
 }: AppSidebarProps) {
   const pathname = usePathname();
   const isCollapsed = collapsed && !mobile;
-  const initials = authContext.profile.fullName
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase() || "US";
 
   function canShow(item: NavigationItem) {
     const hasRequiredPermission =
@@ -101,7 +84,6 @@ export function AppSidebar({
   function renderNavItem(item: NavigationItem) {
     const Icon = item.icon;
     const active = isActive(item.href);
-    const hasIndicator = item.indicator ?? item.notification;
 
     return (
       <S.NavItem
@@ -114,7 +96,6 @@ export function AppSidebar({
       >
         <S.IconSlot>
           <Icon size={20} strokeWidth={1.55} />
-          {hasIndicator && <S.Indicator />}
         </S.IconSlot>
 
         {!isCollapsed && <S.NavLabel>{item.label}</S.NavLabel>}
@@ -123,6 +104,9 @@ export function AppSidebar({
       </S.NavItem>
     );
   }
+
+  const mainItems = mainNavigation.filter(canShow);
+  const secondaryItems = secondaryNavigation.filter(canShow);
 
   return (
     <S.SidebarRoot $collapsed={isCollapsed}>
@@ -149,34 +133,23 @@ export function AppSidebar({
       </S.SidebarHeader>
 
       <S.SidebarScrollArea>
-        <S.NavList $collapsed={isCollapsed} aria-label="Menu principal">
-          {mainNavigation.filter(canShow).map((item) => renderNavItem(item))}
-        </S.NavList>
+        {mainItems.length > 0 && (
+          <S.NavList $collapsed={isCollapsed} aria-label="Menu principal">
+            {mainItems.map(renderNavItem)}
+          </S.NavList>
+        )}
 
-        <S.NavDivider />
+        {mainItems.length > 0 && secondaryItems.length > 0 && <S.NavDivider />}
 
-        <S.NavList $collapsed={isCollapsed} $secondary aria-label="Menu do sistema">
-          {secondaryNavigation.filter(canShow).map((item) => renderNavItem(item))}
-        </S.NavList>
+        {secondaryItems.length > 0 && (
+          <S.NavList $collapsed={isCollapsed} $secondary aria-label="Menu do sistema">
+            {secondaryItems.map(renderNavItem)}
+          </S.NavList>
+        )}
       </S.SidebarScrollArea>
 
-      <S.SidebarFooter>
-        {isCollapsed ? (
-          <S.FooterCollapsed>
-            <SidebarAvatar initials={initials} />
-          </S.FooterCollapsed>
-        ) : (
-          <S.FooterContent>
-            <SidebarAvatar initials={initials} />
-
-            <S.FooterText>
-              <S.FooterEyebrow>{authContext.church.name}</S.FooterEyebrow>
-              <S.FooterName>{authContext.profile.displayName}</S.FooterName>
-            </S.FooterText>
-
-            <ChevronRight size={19} strokeWidth={1.9} />
-          </S.FooterContent>
-        )}
+      <S.SidebarFooter $collapsed={isCollapsed} title={authContext.church.name}>
+        {authContext.church.name}
       </S.SidebarFooter>
     </S.SidebarRoot>
   );
