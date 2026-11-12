@@ -7,6 +7,7 @@ import { mainNavigation, secondaryNavigation } from "@/constants/navigation";
 import { APP_CONFIG } from "@/constants/app";
 import { LinkPendingIndicator } from "@/components/navigation/navigation-feedback";
 import type { AuthContext } from "@/modules/auth/types/auth.types";
+import { getInitials } from "@/utils/person-name";
 import * as S from "./app-sidebar.styles";
 
 type NavigationItem = {
@@ -149,7 +150,8 @@ export function AppSidebar({
       </S.SidebarScrollArea>
 
       <S.SidebarFooter $collapsed={isCollapsed} title={authContext.church.name}>
-        {authContext.church.name}
+        <S.FooterAvatar aria-hidden="true">{getInitials(authContext.profile.fullName)}</S.FooterAvatar>
+        <span className={isCollapsed ? "sr-only" : undefined}>{authContext.church.name}</span>
       </S.SidebarFooter>
     </S.SidebarRoot>
   );

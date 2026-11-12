@@ -39,6 +39,21 @@ async function expectInstantLinkNavigation({
 }
 
 test.describe("navegação autenticada instantânea", () => {
+  for (const width of [1440, 390]) {
+    test(`abre as configurações pelo menu do perfil em ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 844 });
+      await page.goto("/");
+      const header = page.locator("header").filter({ visible: true });
+      await header.getByLabel("Menu do perfil").click();
+      const links = header.locator("details[open] a");
+      await expect(links.nth(0)).toHaveText("Meu perfil");
+      await expect(links.nth(1)).toHaveText("Configurações");
+      await links.nth(1).click();
+      await expect(page).toHaveURL(/\/configuracoes$/);
+      await expect(page.getByRole("heading", { name: "Configurações da igreja" })).toBeVisible();
+    });
+  }
+
   test("Dashboard → Membros", async ({ page }) => {
     await page.goto("/");
     await expectInstantLinkNavigation({

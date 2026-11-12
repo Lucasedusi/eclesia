@@ -6,8 +6,13 @@ import { PERMISSIONS } from "@/modules/auth/constants/permissions";
 import type { AuthContext } from "@/modules/auth/types/auth.types";
 import { theme } from "@/styles/theme";
 import { AppSidebar } from "./app-sidebar";
+import { AppHeader } from "./app-header";
 
 vi.mock("next/navigation", () => ({ usePathname: () => "/" }));
+vi.mock("@/modules/auth/actions/auth.actions", () => ({
+  logoutAction: vi.fn(),
+  switchChurchAction: vi.fn(),
+}));
 
 const context: AuthContext = {
   profile: { id: "user", fullName: "Ana Costa", displayName: "Ana", email: "", avatarUrl: null, status: "ACTIVE" },
@@ -26,14 +31,24 @@ function sidebar(props: Partial<Parameters<typeof AppSidebar>[0]> = {}) {
 
 it.each([{}, { collapsed: true }, { mobile: true }])("exibe a igreja e os atalhos disponíveis na sidebar (%j)", (props) => {
   const html = sidebar(props);
-  expect(html).toContain(context.church.name);
+  const footer = html.slice(html.indexOf("<footer"), html.indexOf("</footer>"));
+  expect(footer).toContain(context.church.name);
+  expect(footer).toContain(">AC<");
   expect(html).not.toContain(">Ana<");
-  expect(html).not.toContain(">AC<");
   for (const path of ["/relatorios", "/notificacoes", "/design-system", "/suporte"]) {
     expect(html).not.toContain(`href="${path}"`);
   }
   expect(html).toContain('href="/membros"');
   expect(html).toContain('href="/configuracoes"');
+});
+
+it.each([true, false])("respeita a permissão de configurações no menu do perfil (%s)", (allowed) => {
+  const authContext = { ...context, permissions: allowed ? [PERMISSIONS.settingsView] : [] };
+  const html = renderToStaticMarkup(createElement(ThemeProvider, { theme },
+    createElement(AppHeader, { authContext }),
+  ));
+  const links = Array.from(html.matchAll(/<a\b[^>]*href="([^"]+)"/g), (match) => match[1]);
+  expect(links).toEqual(allowed ? ["/perfil", "/configuracoes"] : ["/perfil"]);
 });
 
 it("exibe apenas a navegação autorizada quando o menu do sistema fica vazio", () => {

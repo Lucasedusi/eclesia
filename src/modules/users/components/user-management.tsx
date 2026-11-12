@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useMemo, useState } from "react";
+import { getInitials } from "@/utils/person-name";
 import { ChevronDown, ChevronUp, Clock3, Copy, MailPlus, Save, ShieldCheck, UserCheck, Users } from "lucide-react";
 import { ACCESS_ROLES, ACCESS_SCOPES, INITIAL_ACTION_STATE, ROLE_LABELS, SCOPE_LABELS, type AccessScope, type AccessRole, type AccessStatus } from "@/modules/auth/types/auth.types";
 import type { InvitationItem, PermissionOption, ScopeOption, UserAccessItem, UserManagementData } from "../services/user-management.service";
@@ -10,7 +11,6 @@ import * as S from "./user-management.styles";
 
 const statusLabels = { ACTIVE: "Ativo", INACTIVE: "Inativo", BLOCKED: "Bloqueado" } as const;
 
-function getInitials(name: string) { return name.split(" ").filter(Boolean).slice(0,2).map((part)=>part[0]).join("").toUpperCase() || "US"; }
 function scopeOptions(scope: AccessScope, data: Pick<UserManagementData,"regions"|"congregations"|"ministries">): ScopeOption[] {
   if (scope === "REGION") return data.regions;
   if (scope === "CONGREGATION") return data.congregations;

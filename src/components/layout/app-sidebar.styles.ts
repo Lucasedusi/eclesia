@@ -223,6 +223,9 @@ export const Tooltip = styled.span`
 
 export const SidebarFooter = styled.footer<{ $collapsed: boolean }>`
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   border-top: 1px solid ${({ theme }) => theme.colors.sidebar.divider};
   padding: 24px;
   color: ${({ theme }) => theme.colors.sidebar.item};
@@ -233,9 +236,19 @@ export const SidebarFooter = styled.footer<{ $collapsed: boolean }>`
 
   ${({ $collapsed }) => $collapsed && css`
     padding-inline: 8px;
-    overflow: hidden;
-    text-align: center;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    justify-content: center;
   `}
+`;
+
+export const FooterAvatar = styled.span`
+  display: grid;
+  width: 48px;
+  height: 48px;
+  flex: none;
+  place-items: center;
+  border-radius: ${({ theme }) => theme.radius.full};
+  color: ${({ theme }) => theme.colors.sidebar.background};
+  background: #ffb31f;
+  font-size: calc(13px + var(--eclesia-font-size-adjustment, 0px));
+  font-weight: 700;
 `;

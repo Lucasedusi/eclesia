@@ -9,11 +9,14 @@ import {
   Menu,
   MessageCircle,
   Moon,
+  Settings,
   SunMedium,
   UserRound,
 } from "lucide-react";
 import { useFormStatus } from "react-dom";
 import { logoutAction, switchChurchAction } from "@/modules/auth/actions/auth.actions";
+import { hasPermission, PERMISSIONS } from "@/modules/auth/constants/permissions";
+import { getInitials } from "@/utils/person-name";
 import { LinkPendingIndicator } from "@/components/navigation/navigation-feedback";
 import { ROLE_LABELS, type AuthContext } from "@/modules/auth/types/auth.types";
 import * as S from "./app-header.styles";
@@ -76,14 +79,7 @@ function LogoutButton() {
 }
 
 export function AppHeader({ onOpenSidebar, authContext }: AppHeaderProps) {
-  const initials =
-    authContext.profile.fullName
-      .split(" ")
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => part[0])
-      .join("")
-      .toUpperCase() || "US";
+  const initials = getInitials(authContext.profile.fullName);
 
   return (
     <S.HeaderRoot>
@@ -121,7 +117,7 @@ export function AppHeader({ onOpenSidebar, authContext }: AppHeaderProps) {
           </HeaderIconButton>
 
           <S.UserMenu ref={(details) => () => details?.removeAttribute("open")}>
-            <summary>
+            <summary aria-label="Menu do perfil">
               <S.UserArea>
                 <S.UserMeta>
                   <S.UserName>{authContext.profile.displayName}</S.UserName>
@@ -131,6 +127,7 @@ export function AppHeader({ onOpenSidebar, authContext }: AppHeaderProps) {
                 <S.UserAvatar>{initials}</S.UserAvatar>
                 <ChevronDown size={18} strokeWidth={1.8} color="#637381" />
               </S.UserArea>
+              <S.MobileAvatar>{initials}</S.MobileAvatar>
             </summary>
 
             <S.UserDropdown>
@@ -139,6 +136,11 @@ export function AppHeader({ onOpenSidebar, authContext }: AppHeaderProps) {
                 <div><strong>{authContext.profile.fullName}</strong><span>{authContext.profile.email}</span></div>
               </S.DropdownIdentity>
               <S.DropdownItem href="/perfil"><UserRound size={16} /> Meu perfil <LinkPendingIndicator /></S.DropdownItem>
+              {hasPermission(authContext.permissions, PERMISSIONS.settingsView) && (
+                <S.DropdownItem href="/configuracoes">
+                  <Settings size={16} aria-hidden="true" /> Configurações <LinkPendingIndicator />
+                </S.DropdownItem>
+              )}
               {authContext.availableChurches.length > 1 ? (
                 <S.ChurchList>
                   <span><Building2 size={14} /> Trocar igreja</span>
@@ -158,8 +160,6 @@ export function AppHeader({ onOpenSidebar, authContext }: AppHeaderProps) {
               </form>
             </S.UserDropdown>
           </S.UserMenu>
-
-          <S.MobileAvatar>{initials}</S.MobileAvatar>
         </S.HeaderActions>
       </S.HeaderInner>
     </S.HeaderRoot>

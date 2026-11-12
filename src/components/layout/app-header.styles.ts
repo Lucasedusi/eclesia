@@ -222,11 +222,10 @@ export const MobileAvatar = styled(UserAvatar)`
 export const UserMenu = styled.details`
   position: relative;
 
-  > summary { list-style: none; }
+  > summary { cursor: pointer; list-style: none; }
   > summary::-webkit-details-marker { display: none; }
   &[open] > summary svg:last-child { transform: rotate(180deg); }
 
-  @media (max-width: 640px) { display: none; }
 `;
 
 export const UserDropdown = styled.div`
