@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import * as S from "./auth-shell/auth-shell.styles";
 
@@ -21,23 +21,24 @@ export function PasswordField({
   autoComplete = "current-password",
   labelAction,
 }: PasswordFieldProps) {
+  const id = useId();
   const [visible, setVisible] = useState(false);
 
   return (
     <S.Field>
       <S.FieldTop>
-        <S.Label htmlFor={name}>{label}</S.Label>
+        <S.Label htmlFor={id}>{label}</S.Label>
         {labelAction}
       </S.FieldTop>
       <S.InputWrap>
         <S.Input
-          id={name}
+          id={id}
           name={name}
           type={visible ? "text" : "password"}
           placeholder={placeholder}
           autoComplete={autoComplete}
           aria-invalid={Boolean(error)}
-          aria-describedby={error ? `${name}-error` : undefined}
+          aria-describedby={error ? `${id}-error` : undefined}
           $invalid={Boolean(error)}
           required
         />
@@ -49,7 +50,7 @@ export function PasswordField({
           {visible ? <EyeOff size={18} /> : <Eye size={18} />}
         </S.PasswordButton>
       </S.InputWrap>
-      {error ? <S.FieldError id={`${name}-error`}>{error}</S.FieldError> : null}
+      {error ? <S.FieldError id={`${id}-error`}>{error}</S.FieldError> : null}
     </S.Field>
   );
 }

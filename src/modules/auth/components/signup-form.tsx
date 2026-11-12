@@ -1,10 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useActionState } from "react";
 import { LockKeyhole } from "lucide-react";
-import { useNavigationFeedback } from "@/components/navigation/navigation-feedback";
+import { APP_CONFIG } from "@/constants/app";
 import { signUpAction } from "../actions/auth.actions";
 import { INITIAL_ACTION_STATE } from "../types/auth.types";
 import { AuthBrand } from "./auth-shell/auth-shell";
@@ -16,16 +15,6 @@ export function SignUpForm() {
     signUpAction,
     INITIAL_ACTION_STATE,
   );
-  const router = useRouter();
-  const { startNavigation } = useNavigationFeedback();
-
-  useEffect(() => {
-    if (state.status === "success" && state.redirectTo) {
-      startNavigation();
-      router.replace(state.redirectTo);
-      router.refresh();
-    }
-  }, [router, startNavigation, state]);
 
   return (
     <>
@@ -58,9 +47,9 @@ export function SignUpForm() {
           ) : null}
         </S.Field>
         <S.Field>
-          <S.Label htmlFor="email">E-mail</S.Label>
+          <S.Label htmlFor="signup-email">E-mail</S.Label>
           <S.Input
-            id="email"
+            id="signup-email"
             name="email"
             type="email"
             placeholder="voce@igreja.com.br"
@@ -103,7 +92,7 @@ export function SignUpForm() {
         Já possui uma conta? <Link href="/login">Entrar no sistema</Link>
       </S.SwitchText>
       <S.SecurityNote>
-        <LockKeyhole size={14} /> Sua senha nunca é armazenada pelo Eclesias.
+        <LockKeyhole size={14} /> Sua senha nunca é armazenada pelo {APP_CONFIG.name}.
       </S.SecurityNote>
     </>
   );

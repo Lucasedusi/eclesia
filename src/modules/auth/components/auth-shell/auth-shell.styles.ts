@@ -18,7 +18,7 @@ export const Page = styled.main`
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
-  grid-template-columns: minmax(410px, 42%) minmax(0, 58%);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   background: #f3f5fa;
   overscroll-behavior: none;
 
@@ -52,7 +52,7 @@ export const FormPanel = styled.section`
 
 export const FormContent = styled.div`
   width: 100%;
-  max-width: 410px;
+  max-width: 480px;
   margin: auto;
   animation: ${rise} 420ms ease both;
 `;
@@ -68,7 +68,7 @@ export const LoginStack = styled.div`
 `;
 
 export const LoginBrandSlot = styled.div`
-  padding: 0 clamp(28px, 3.2vw, 42px);
+  justify-self: center;
 `;
 
 export const LoginCard = styled.div`
@@ -163,8 +163,8 @@ export const BrandText = styled.div`
   span {
     display: block;
     margin-top: 2px;
-    color: ${({ theme }) => theme.colors.text.soft};
-    font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px));
+    color: ${({ theme }) => theme.colors.text.muted};
+    font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 600;
   }
 `;
@@ -179,7 +179,7 @@ export const Eyebrow = styled.p`
 export const Title = styled.h1`
   margin: 0;
   color: ${({ theme }) => theme.colors.text.title};
-  font-size: clamp(calc(30px + var(--eclesia-font-size-adjustment, 0px)), 3.4vw, calc(38px + var(--eclesia-font-size-adjustment, 0px)));
+  font-size: clamp(calc(26px + var(--eclesia-font-size-adjustment, 0px)), 2.6vw, calc(32px + var(--eclesia-font-size-adjustment, 0px)));
   font-weight: 700;
   letter-spacing: -0.045em;
   line-height: 1.08;
@@ -510,6 +510,7 @@ export const VisualBadge = styled.span`
 `;
 
 export const VisualTitle = styled.h2`
+  text-wrap: balance;
   max-width: 730px;
   margin: 22px 0 30px;
   font-size: clamp(calc(36px + var(--eclesia-font-size-adjustment, 0px)), 4.2vw, calc(58px + var(--eclesia-font-size-adjustment, 0px)));
@@ -524,91 +525,37 @@ export const VisualTitle = styled.h2`
   }
 `;
 
-export const Preview = styled.div`
+export const ModuleList = styled.ul`
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+  padding: clamp(18px, 2vw, 28px) 8px;
+  list-style: none;
   border: 1px solid rgba(255, 255, 255, 0.32);
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.95);
-  color: #101828;
-  padding: clamp(20px, 2.5vw, 30px);
-  box-shadow: 0 28px 70px rgba(7, 20, 38, 0.22);
+  box-shadow: 0 12px 28px rgba(7, 20, 38, 0.14);
 
-  @media (max-height: 760px) and (min-width: 1041px) {
-    padding: 18px 22px;
-  }
-`;
-
-export const PreviewTop = styled.div`
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 18px;
-  span {
-    color: #98a2b3;
-    font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
-    font-weight: 700;
-  }
-  strong {
-    display: block;
-    margin-top: 4px;
-    font-size: calc(16px + var(--eclesia-font-size-adjustment, 0px));
-  }
-`;
-
-export const Today = styled.span`
-  border-radius: 6px;
-  background: #eef2ff;
-  color: #415ba5 !important;
-  padding: 7px 10px;
-`;
-
-export const PreviewStats = styled.div`
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 15px;
-  margin: 26px 0;
-
-  @media (max-height: 760px) and (min-width: 1041px) {
-    margin: 18px 0;
-  }
-`;
-
-export const PreviewStat = styled.div`
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 10px;
-  align-items: center;
-  color: #415ba5;
-  strong {
-    font-size: calc(15px + var(--eclesia-font-size-adjustment, 0px));
-    color: #101828;
-  }
-  small {
-    display: block;
-    margin-top: 2px;
-    color: #98a2b3;
-    font-size: calc(10px + var(--eclesia-font-size-adjustment, 0px));
+  li {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    color: #253452;
+    font-size: calc(14px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 500;
   }
-`;
 
-export const Bars = styled.div`
-  display: flex;
-  height: clamp(92px, 14vh, 122px);
-  align-items: flex-end;
-  gap: 12px;
-  border-radius: 6px;
-  background: #f6f8fc;
-  padding: 18px;
+  li + li { border-inline-start: 1px solid #dce2f0; }
 
-  @media (max-height: 760px) and (min-width: 1041px) {
-    height: 86px;
+  svg {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    color: #415ba5;
   }
-`;
 
-export const Bar = styled.span<{ $height: number }>`
-  flex: 1;
-  height: ${({ $height }) => $height}%;
-  min-width: 12px;
-  border-radius: 7px 7px 3px 3px;
-  background: linear-gradient(180deg, #8ea0f2, #415ba5);
+  @media (max-width: 1300px) {
+    li { flex-direction: column; }
+  }
 `;

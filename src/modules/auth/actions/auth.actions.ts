@@ -1,7 +1,7 @@
 "use server";
 
 import { headers, cookies } from "next/headers";
-import { redirect } from "next/navigation";
+import { redirect, RedirectType } from "next/navigation";
 import { revalidatePath, updateTag } from "next/cache";
 import { cacheTags } from "@/lib/cache-tags";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -79,11 +79,7 @@ export async function loginAction(
       ? requestedDestination
       : automaticDestination;
 
-  return {
-    status: "success",
-    message: "Login realizado com sucesso.",
-    redirectTo,
-  };
+  redirect(redirectTo, RedirectType.replace);
 }
 
 export async function signUpAction(
@@ -151,7 +147,6 @@ export async function signUpAction(
   }
 
   const supabase = await createClient();
-  const destination = "/onboarding";
 
   const { error: signInError } = await supabase.auth.signInWithPassword({
     email: parsed.data.email,
@@ -169,11 +164,7 @@ export async function signUpAction(
 
   updateTag(cacheTags.initialRegistration);
 
-  return {
-    status: "success",
-    message: "Conta administrativa criada. Vamos configurar sua igreja.",
-    redirectTo: destination,
-  };
+  redirect("/onboarding", RedirectType.replace);
 }
 
 export async function forgotPasswordAction(
@@ -222,11 +213,7 @@ export async function updatePasswordAction(
     };
   }
 
-  return {
-    status: "success",
-    message: "Senha alterada com sucesso.",
-    redirectTo: "/",
-  };
+  redirect("/", RedirectType.replace);
 }
 
 export async function logoutAction() {
@@ -235,7 +222,7 @@ export async function logoutAction() {
 
   const cookieStore = await cookies();
   cookieStore.delete(CHURCH_CONTEXT_COOKIE);
-  redirect("/login");
+  redirect("/login", RedirectType.replace);
 }
 
 export async function switchChurchAction(formData: FormData) {

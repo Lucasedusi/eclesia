@@ -1,4 +1,5 @@
-import { Building2, CheckCircle2, ShieldCheck, Users } from "lucide-react";
+import { Building2, CheckCircle2, Church, Users, Wallet } from "lucide-react";
+import { APP_CONFIG } from "@/constants/app";
 import * as S from "./auth-shell.styles";
 
 export function AuthShell({ children }: { children: React.ReactNode }) {
@@ -8,13 +9,13 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
         <S.FormContent>{children}</S.FormContent>
       </S.FormPanel>
 
-      <S.VisualPanel aria-label="Sobre o Eclesias">
+      <S.VisualPanel aria-label={`Sobre o ${APP_CONFIG.name}`}>
         <S.VisualFrame>
           <S.VisualBrand>
             <S.VisualBrandMark><Building2 /></S.VisualBrandMark>
             <S.VisualBrandText>
-              <strong>Eclesias</strong>
-              <span>Gestão para igrejas</span>
+              <strong>{APP_CONFIG.name}</strong>
+              <span>Gestão de igrejas</span>
             </S.VisualBrandText>
           </S.VisualBrand>
 
@@ -25,34 +26,11 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
             <S.VisualTitle>
               Toda a secretaria da sua igreja em um só lugar.
             </S.VisualTitle>
-            <S.Preview aria-hidden="true">
-              <S.PreviewTop>
-                <div>
-                  <span>VISÃO GERAL</span>
-                  <strong>Comunidade em movimento</strong>
-                </div>
-                <S.Today>Hoje</S.Today>
-              </S.PreviewTop>
-              <S.PreviewStats>
-                <S.PreviewStat>
-                  <Users size={20} />
-                  <div><strong>1.284</strong><small>Membros</small></div>
-                </S.PreviewStat>
-                <S.PreviewStat>
-                  <Building2 size={20} />
-                  <div><strong>18</strong><small>Congregações</small></div>
-                </S.PreviewStat>
-                <S.PreviewStat>
-                  <ShieldCheck size={20} />
-                  <div><strong>100%</strong><small>Acesso protegido</small></div>
-                </S.PreviewStat>
-              </S.PreviewStats>
-              <S.Bars>
-                {[42, 65, 54, 79, 60, 73, 88, 69, 84].map((height, index) => (
-                  <S.Bar key={index} $height={height} />
-                ))}
-              </S.Bars>
-            </S.Preview>
+            <S.ModuleList aria-label="Módulos do sistema">
+              <li><Users aria-hidden="true" />Membros</li>
+              <li><Church aria-hidden="true" />Congregações</li>
+              <li><Wallet aria-hidden="true" />Financeiro</li>
+            </S.ModuleList>
           </S.VisualContent>
         </S.VisualFrame>
       </S.VisualPanel>
@@ -64,7 +42,19 @@ export function AuthBrand({ alwaysVisible = false }: { alwaysVisible?: boolean }
   return (
     <S.Brand $alwaysVisible={alwaysVisible}>
       <S.BrandMark><Building2 /></S.BrandMark>
-      <S.BrandText><strong>Eclesias</strong><span>Gestão para igrejas</span></S.BrandText>
+      <S.BrandText><strong>{APP_CONFIG.name}</strong><span>Gestão de igrejas</span></S.BrandText>
     </S.Brand>
+  );
+}
+
+export function AuthFormCard({ children, loading = false }: {
+  children: React.ReactNode;
+  loading?: boolean;
+}) {
+  return (
+    <S.LoginStack aria-busy={loading || undefined} aria-label={loading ? "Preparando formulário de acesso" : undefined}>
+      <S.LoginBrandSlot><AuthBrand alwaysVisible /></S.LoginBrandSlot>
+      <S.LoginCard>{children}</S.LoginCard>
+    </S.LoginStack>
   );
 }
