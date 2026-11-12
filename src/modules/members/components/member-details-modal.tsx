@@ -2,7 +2,7 @@
 import { MemberFinanceTab } from "./member-finance-tab";
 import { ChevronDown } from "lucide-react";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -244,22 +244,19 @@ export function MemberDetailsModal({
   const [roleNotes, setRoleNotes] = useState("");
   const [roleSaved, setRoleSaved] = useState(false);
 
+  const currentRole = details?.roles.find((role) => role.status === "ACTIVE");
+  const detailsLifetime = useRef<AbortSignal | null>(null);
+
   useEffect(() => {
-    let active = true;
+    const controller = new AbortController();
+    detailsLifetime.current = controller.signal;
     void getMemberDetailsAction(memberId).then((result) => {
-      if (!active) return;
+      if (controller.signal.aborted) return;
       if (result.success) setDetails(result.data);
       else setLoadError(result.message);
     });
-    return () => {
-      active = false;
-    };
+    return () => controller.abort();
   }, [memberId]);
-
-  async function refreshDetails() {
-    const result = await getMemberDetailsAction(memberId);
-    if (result.success) setDetails(result.data);
-  }
 
   async function chooseTab(next: Tab) {
     setTab(next);
@@ -610,7 +607,6 @@ export function MemberDetailsModal({
   }
 
   function openRoleEditor() {
-    const currentRole = details?.roles.find((role) => role.status === "ACTIVE");
     setRoleId(currentRole?.roleId ?? "");
     setRoleStartDate(
       currentRole?.startDate ?? new Date().toISOString().slice(0, 10),
@@ -621,7 +617,6 @@ export function MemberDetailsModal({
   }
 
   function changeSelectedRole(nextRoleId: string) {
-    const currentRole = details?.roles.find((role) => role.status === "ACTIVE");
     setRoleId(nextRoleId);
     setRoleSaved(false);
     if (nextRoleId !== (currentRole?.roleId ?? "")) {
@@ -632,6 +627,8 @@ export function MemberDetailsModal({
 
   async function saveRole(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const lifetime = detailsLifetime.current;
+    if (!lifetime || lifetime.aborted) return;
     setBusy(true);
     try {
       const result = await manageMemberRoleAction({
@@ -641,19 +638,27 @@ export function MemberDetailsModal({
         startDate: roleStartDate,
         notes: roleNotes,
       });
+      if (lifetime.aborted) return;
+      if (result.success && roleId !== (currentRole?.roleId ?? "")) {
+        // The action already revalidates the filtered list with the new assignment.
+        onClose();
+        return;
+      }
       setNotice({
         title: result.success ? "Cargo atualizado" : "Falha ao atualizar Cargo",
         description: result.message,
         variant: result.success ? "success" : "danger",
       });
       if (result.success) {
-        await refreshDetails();
+        const updatedDetails = await getMemberDetailsAction(memberId);
+        if (lifetime.aborted) return;
+        if (updatedDetails.success) setDetails(updatedDetails.data);
         if (history) {
           const updatedHistory = await getMemberHistoryAction(memberId);
+          if (lifetime.aborted) return;
           if (updatedHistory.success) setHistory(updatedHistory.data);
         }
         setRoleSaved(true);
-        onChanged();
       }
     } catch (error) {
       console.error("Erro ao atualizar Cargo do membro:", error);
@@ -834,7 +839,7 @@ export function MemberDetailsModal({
                     <span>
                       Cargo
                       <S.RoleBadge>
-                        {details.roles.find((role) => role.status === "ACTIVE")?.name || "Sem cargo atual"}
+                        {currentRole?.name || "Sem cargo atual"}
                       </S.RoleBadge>
                     </span>
                     <ChevronDown size={17} aria-hidden="true" />

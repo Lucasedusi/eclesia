@@ -83,6 +83,29 @@ test.describe("ajustes de membros", () => {
     await expect(advanced).toHaveAttribute("aria-expanded", "false");
     await expect(status).toHaveValue("ACTIVE");
   });
+  test("libera a rolagem ao sair de Membros com a ficha e o editor de cargo abertos", async ({ page }) => {
+    await page.goto("/membros/aniversariantes");
+    await page.getByRole("link", { name: "Listagem", exact: true }).click();
+    const overflow = () => page.evaluate(() => [
+      document.documentElement.style.overflow,
+      document.body.style.overflow,
+      document.body.style.paddingRight,
+    ]);
+    const original = await overflow();
+    await page.getByRole("row", { name: /Ana de Teste 00001/ })
+      .getByRole("button", { name: "Ver ficha" }).click();
+    const details = page.getByRole("dialog", { name: "Ficha do membro", exact: true });
+    await details.locator("details summary").click();
+    await details.getByRole("button", { name: "Editar Cargo" }).click();
+    await expect(page.getByRole("dialog", { name: "Editar Cargo" })).toBeVisible();
+    await expect.poll(async () => (await overflow()).slice(0, 2)).toEqual(["hidden", "hidden"]);
+
+    await page.goBack();
+    await expect(page).toHaveURL(/\/membros\/aniversariantes$/);
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect.poll(overflow).toEqual(original);
+  });
+
   test("detalhes completos, cargos sanfona e histórico legível com altura estável", async ({
     page,
   }, info) => {

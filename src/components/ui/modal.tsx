@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { CheckCircle2, LoaderCircle, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useModalPortalRoot } from "@/components/ui/modal-portal";
+import { lockModalScroll } from "./modal-scroll-lock";
 import * as S from "./modal.styles";
 
 const FOCUSABLE_ELEMENTS = [
@@ -76,20 +77,7 @@ export function Modal({
     }
 
     const previouslyFocused = document.activeElement as HTMLElement | null;
-    const body = document.body;
-    const root = document.documentElement;
-    const previousBodyOverflow = body.style.overflow;
-    const previousBodyPaddingRight = body.style.paddingRight;
-    const previousRootOverflow = root.style.overflow;
-    const scrollbarWidth = window.innerWidth - root.clientWidth;
-
-    root.style.overflow = "hidden";
-    body.style.overflow = "hidden";
-
-    if (scrollbarWidth > 0) {
-      const currentPadding = Number.parseFloat(window.getComputedStyle(body).paddingRight) || 0;
-      body.style.paddingRight = `${currentPadding + scrollbarWidth}px`;
-    }
+    const releaseScroll = lockModalScroll();
 
     const frame = window.requestAnimationFrame(() => {
       const target = dialogRef.current?.querySelector<HTMLElement>(
@@ -144,9 +132,7 @@ export function Modal({
 
       window.cancelAnimationFrame(frame);
       document.removeEventListener("keydown", handleKeyDown);
-      root.style.overflow = previousRootOverflow;
-      body.style.overflow = previousBodyOverflow;
-      body.style.paddingRight = previousBodyPaddingRight;
+      releaseScroll();
 
       if (previouslyFocused?.isConnected) previouslyFocused.focus();
     };
