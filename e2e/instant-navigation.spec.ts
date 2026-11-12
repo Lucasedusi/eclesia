@@ -69,16 +69,22 @@ test.describe("navegação autenticada instantânea", () => {
     await page.goto("/");
     const bell = page.getByLabel(/^Notificações/);
     await bell.click();
-    const message = count === 0 ? "Nenhum aniversariante hoje." :
-      count === 1 ? "Hoje há 1 aniversariante." : `Hoje há ${count} aniversariantes.`;
-    await expect(page.getByRole("status").filter({ hasText: message })).toBeVisible();
-    const link = page.getByRole("link", { name: "Ver aniversariantes", exact: true }).filter({ visible: true });
+    const panel = page.locator("header details[open]").filter({ visible: true });
+    await expect(panel.getByRole("heading", { name: "Aniversariantes" })).toBeVisible();
+    const clear = panel.getByRole("button", { name: "Limpar notificações de hoje" });
     if (count > 0) {
-      await link.click();
-      await expect(page).toHaveURL(/\/membros\/aniversariantes$/);
+      await expect(panel.getByRole("listitem")).toHaveCount(Math.min(count, 20));
+      await clear.click();
+      await expect(panel.getByRole("status")).toHaveText("Notificações de hoje limpas.");
+      await page.reload();
+      await bell.click();
+      await expect(panel.getByRole("status")).toHaveText("Notificações de hoje limpas.");
     } else {
-      await expect(link).toHaveCount(0);
+      await expect(panel.getByRole("status")).toHaveText("Nenhum aniversariante hoje.");
+      await expect(clear).toBeDisabled();
     }
+    await panel.getByRole("link", { name: "Ver Lista de Aniversariantes" }).click();
+    await expect(page).toHaveURL(/\/membros\/aniversariantes$/);
   });
 
   test("Dashboard → Membros", async ({ page }) => {

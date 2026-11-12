@@ -202,14 +202,66 @@ export const UserDropdown = styled.div`
 `;
 
 export const NotificationPanel = styled(UserDropdown)`
-  width: min(260px, calc(100vw - 90px));
-  p {
-    margin: 0;
-    padding: 10px;
-    color: ${({ theme }) => theme.colors.text.body};
-    font-size: calc(13px + var(--eclesia-font-size-adjustment, 0px));
+  width: min(392px, calc(100vw - 32px));
+  padding: 0;
+  color: ${({ theme }) => theme.colors.text.body};
+  @media (max-width: 640px) { right: -48px; }
+  @media (min-width: 641px) and (max-width: 820px) { width: min(392px, 55vw); }
+
+  .notice-heading, li { display: flex; align-items: center; gap: 12px; }
+  .notice-heading {
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border-soft);
+    padding: 10px 14px 10px 18px;
   }
-  a { color: ${({ theme }) => theme.colors.brand.primary}; }
+  h2 { margin: 0; color: var(--text-title); font-size: 16px; font-weight: 600; }
+  .notice-heading button, .notice-whatsapp {
+    display: inline-grid;
+    flex: none;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    cursor: pointer;
+  }
+  .notice-heading button { color: ${({ theme }) => theme.colors.text.muted}; }
+  .notice-heading button:hover:enabled { background: var(--eclesia-primary-soft); }
+  .notice-heading button:disabled { opacity: .4; cursor: default; }
+  .notice-body { max-height: min(340px, 50dvh); overflow-y: auto; overscroll-behavior: contain; }
+  ul { margin: 0; padding: 0; list-style: none; }
+  li { padding: 12px 14px 12px 18px; }
+  li + li { border-top: 1px solid var(--border-soft); }
+  .notice-cake {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--eclesia-primary-soft);
+    color: var(--eclesia-primary);
+  }
+  .notice-person { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  strong, small { display: block; }
+  strong { font-size: 14px; font-weight: 600; line-height: 1.35; }
+  small, p { color: ${({ theme }) => theme.colors.text.muted}; font-size: 12px; }
+  small { margin-top: 3px; }
+  p { margin: 0; padding: 18px; }
+  .notice-whatsapp { color: #18754e; }
+  .notice-whatsapp svg { grid-area: 1 / 1; }
+  .notice-whatsapp:hover { background: ${({ theme }) => theme.colors.state.successSoft}; }
+  .notice-footer {
+    display: block;
+    padding: 14px;
+    border-top: 1px solid var(--border-soft);
+    color: var(--eclesia-primary);
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
+  }
+  .notice-footer:hover { background: var(--eclesia-primary-soft); }
 `;
 
 export const DropdownIdentity = styled.div`

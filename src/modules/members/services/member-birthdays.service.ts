@@ -9,7 +9,7 @@ import { canViewBirthdays } from "../utils/birthday-access";
 import { birthdayCalendar, birthdayFiltersSchema, type BirthdayFilters, type BirthdayRange } from "../validations/member-birthdays";
 
 export const BIRTHDAY_PAGE_SIZE = 20;
-type BirthdayView = "list" | "dashboard" | "count";
+type BirthdayView = "list" | "dashboard" | "count" | "notification";
 type Client = Awaited<ReturnType<typeof createClient>>;
 type BirthdayRow = {
   id: string; full_name: string; member_code: string | null; birth_date: string;
@@ -28,14 +28,19 @@ export function birthdayQuery(client: Client, context: AuthContext, filters: Bir
   requireBirthdayScope(context);
   const { scope, regionId, congregationId, ministryId } = context.access;
   const church = context.church.id;
-  const organization = view !== "count" && hasPermission(context.permissions, PERMISSIONS.organizationView) && (view === "list" || scope === "CHURCH");
+  const organization = view !== "count" && hasPermission(context.permissions, PERMISSIONS.organizationView) && (view !== "dashboard" || scope === "CHURCH");
   const regional = scope === "REGION" || Boolean(filters.regionId);
   const roles = view === "list" && hasPermission(context.permissions, PERMISSIONS.memberRolesView);
   const contact = view !== "count" && hasPermission(context.permissions, PERMISSIONS.membersViewFull);
-  const unitFields = view === "dashboard" ? "name" : "name,regions(name)";
-  const identity = view === "dashboard" ? "id,full_name,birthday_mmdd" : "id,full_name,member_code,birth_date";
+  const unitFields = view === "list" ? "name,regions(name)" : "name";
+  const identity = {
+    list: "id,full_name,member_code,birth_date",
+    dashboard: "id,full_name,birthday_mmdd",
+    notification: "id,full_name",
+    count: "id",
+  }[view];
   const projection = [
-    view === "count" ? "id" : identity,
+    identity,
     ...(organization || regional ? [`congregations${regional ? "!inner" : ""}(${organization ? unitFields : ""})`] : []),
     ...(contact ? ["whatsapp"] : []),
     ...(roles ? ["gender,active_roles:member_roles!member_roles_member_id_fkey(title_variant,roles!member_roles_role_id_fkey(name,female_name))"] : []),
@@ -73,12 +78,24 @@ export function birthdayQuery(client: Client, context: AuthContext, filters: Bir
   return query.order("birthday_mmdd").order("full_name").order("id").returns<BirthdayRow[]>();
 }
 
-export async function countBirthdaysToday(context: AuthContext) {
+export async function getBirthdayNotification(context: AuthContext, includeItems: boolean) {
   const filters = birthdayFiltersSchema.parse({});
-  const [today] = birthdayCalendar(filters).ranges;
-  const { count, error } = await birthdayQuery(await createClient(), context, filters, today, "count");
+  const { ranges, label: day } = birthdayCalendar(filters);
+  const view = includeItems ? "notification" : "count";
+  const query = birthdayQuery(await createClient(), context, filters, ranges[0], view);
+  const { count, data, error } = await (includeItems ? query.limit(BIRTHDAY_PAGE_SIZE) : query);
   if (error || count === null) throw new MemberReportError("MEMBER_REPORT_LOAD_FAILED");
-  return count;
+  if (!includeItems) return { day, count };
+  if (!data) throw new MemberReportError("MEMBER_REPORT_LOAD_FAILED");
+  return {
+    day, count,
+    items: data.map((row) => ({
+      id: row.id,
+      name: row.full_name,
+      congregation: row.congregations?.name ?? null,
+      whatsapp: whatsappUrl(row.whatsapp),
+    })),
+  };
 }
 
 // A week crossing a month boundary consists of two chronological ranges.

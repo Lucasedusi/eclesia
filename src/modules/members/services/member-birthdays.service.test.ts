@@ -49,6 +49,22 @@ describe("birthday list and report query", () => {
     if (scope === "MINISTRY") expect(params.get("membership.ministry_id")).toBe("eq.m");
   });
 
+  it.each([
+    [[], "id,full_name"],
+    [[PERMISSIONS.organizationView], "id,full_name,congregations(name)"],
+    [[PERMISSIONS.membersViewFull], "id,full_name,whatsapp"],
+    [[PERMISSIONS.membersViewFull, PERMISSIONS.organizationView], "id,full_name,congregations(name),whatsapp"],
+  ] as const)("restricts notification details to authorized fields (%j)", async (extra, expected) => {
+    const db = database();
+    const permissions = [PERMISSIONS.membersViewBasic, ...extra];
+    await birthdayQuery(db.client, { ...context, permissions }, filters, [1112, 1112], "notification");
+    const params = new URL(String(db.fetch.mock.calls[0][0])).searchParams;
+    expect(params.get("select")).toBe(expected);
+    expect(params.get("church_id")).toBe("eq.church");
+    expect(params.get("congregation_id")).toBe("eq.local");
+    expect(params.getAll("birthday_mmdd")).toEqual(["not.is.null", "gte.1112", "lte.1112"]);
+  });
+
   it.each([true, false])("keeps dashboard records scoped and selects WhatsApp only with full access (%s)", async (allowContact) => {
     for (const scope of ["CHURCH", "CONGREGATION"] as const) {
       const db = database();

@@ -107,7 +107,7 @@ export function AppHeader({ onOpenSidebar, authContext }: AppHeaderProps) {
         </S.HeaderLeft>
 
         <S.HeaderActions ref={actions}>
-          {canViewBirthdays(authContext) && <BirthdayNotification key={authContext.access.id} />}
+          {canViewBirthdays(authContext) && <BirthdayNotification key={authContext.access.id} accessId={authContext.access.id} />}
 
           <S.UserMenu name="header-menu" ref={(details) => () => details?.removeAttribute("open")}>
             <summary aria-label="Menu do perfil">
