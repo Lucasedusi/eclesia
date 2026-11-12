@@ -31,14 +31,18 @@ describe("birthday list and report query", () => {
     expect(query.get("order")).toBe("birthday_mmdd.asc,full_name.asc,id.asc");
   });
 
-  it("requests only name, day/month and permitted congregation for the dashboard", async () => {
+  it.each([true, false])("keeps dashboard records scoped and selects WhatsApp only with full access (%s)", async (allowContact) => {
     for (const scope of ["CHURCH", "CONGREGATION"] as const) {
       const db = database();
       const access = { ...context.access, scope };
-      await readBirthdayBatch(db.client, { ...context, access, permissions: Object.values(PERMISSIONS) },
+      const permissions = [PERMISSIONS.membersViewBasic, PERMISSIONS.organizationView, ...(allowContact ? [PERMISSIONS.membersViewFull] : [])];
+      await readBirthdayBatch(db.client, { ...context, access, permissions },
         filters, [[101, 101]], 0, 19, "dashboard");
       const params = new URL(String(db.fetch.mock.calls[0][0])).searchParams;
-      expect(params.get("select")).toBe("id,full_name,birthday_mmdd" + (scope === "CHURCH" ? ",congregations(name)" : ""));
+      const fields = ["id", "full_name", "birthday_mmdd"];
+      if (scope === "CHURCH") fields.push("congregations(name)");
+      if (allowContact) fields.push("whatsapp");
+      expect(params.get("select")?.split(",").sort()).toEqual(fields.sort());
       expect(params.get("church_id")).toBe("eq.church");
       if (scope === "CONGREGATION") expect(params.get("congregation_id")).toBe("eq.local");
     }

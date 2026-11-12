@@ -1,10 +1,13 @@
 import Link from "next/link";
-import { Cake } from "lucide-react";
+import { Cake, MessageCircle } from "lucide-react";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { hasPermission, PERMISSIONS } from "@/modules/auth/constants/permissions";
 import type { AuthContext } from "@/modules/auth/types/auth.types";
 import { BIRTHDAY_PAGE_SIZE, readBirthdayBatch } from "@/modules/members/services/member-birthdays.service";
+import { whatsappUrl } from "@/modules/members/utils/member-formatters";
 import { birthdayCalendar, birthdayFiltersSchema, birthdayMonths } from "@/modules/members/validations/member-birthdays";
+import { formatBrazilPhone } from "@/utils/input-masks";
 import { dashboardPeriod, type DashboardPeriod } from "../dashboard";
 import { BirthdayPeriod } from "./birthday-period";
 
@@ -22,6 +25,7 @@ export async function DashboardBirthdays({ context, searchParams, showCongregati
   context: AuthContext; searchParams: DashboardParams; showCongregation: boolean;
 }) {
   const query = await searchParams;
+  const showContact = hasPermission(context.permissions, PERMISSIONS.membersViewFull);
   const period = dashboardPeriod(query.period);
   const page = pageNumber.parse(query.page);
   const filters = birthdayFiltersSchema.parse({ period });
@@ -42,16 +46,27 @@ export async function DashboardBirthdays({ context, searchParams, showCongregati
       : result.data.length === 0 ? <p className="church-dashboard-empty">{period === "today" ? "Nenhum aniversariante hoje." : "Nenhum aniversariante neste período."}</p>
       : <>
         <table className="church-dashboard-table" aria-label="Aniversariantes do período">
-          <thead><tr><th scope="col">Aniversário</th><th scope="col">Nome</th>{showCongregation && <th scope="col">Congregação</th>}</tr></thead>
+          <thead><tr>
+            <th scope="col" aria-label="Aniversário" /><th scope="col">Nome</th>
+            {showCongregation && <th scope="col">Congregação</th>}
+            {showContact && <th scope="col" className="church-dashboard-contact-heading">WhatsApp</th>}
+          </tr></thead>
           <tbody>{result.data.map(row => {
             const mmdd = String(row.birthday_mmdd).padStart(4, "0");
             const month = birthdayMonths[Number(mmdd.slice(0, 2)) - 1];
+            const contact = showContact ? whatsappUrl(row.whatsapp) : null;
             return <tr key={row.id}>
               <td><time className="church-dashboard-date" dateTime={`${mmdd.slice(0, 2)}-${mmdd.slice(2)}`}
                 aria-label={`${mmdd.slice(2)} de ${month.toLowerCase()}`}>
                 <b>{mmdd.slice(2)}</b><span>{month.slice(0, 3)}</span>
               </time></td>
-              <td>{row.full_name}</td>{showCongregation && <td>{row.congregations?.name ?? "—"}</td>}
+              <td>{row.full_name.toLocaleUpperCase("pt-BR")}</td>{showCongregation && <td>{row.congregations?.name ?? "—"}</td>}
+              {showContact && <td>{contact && row.whatsapp
+                ? <a className="church-dashboard-whatsapp" href={contact} target="_blank" rel="noopener noreferrer"
+                    aria-label={`Abrir WhatsApp de ${row.full_name}`}>
+                    <MessageCircle aria-hidden size={18} /><span>{formatBrazilPhone(row.whatsapp)}</span>
+                  </a>
+                : "—"}</td>}
             </tr>;
           })}</tbody>
         </table>

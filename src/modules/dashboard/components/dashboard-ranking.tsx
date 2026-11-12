@@ -27,7 +27,7 @@ function RankingPanel({ view, rows, controls, footer, mobileActive }: {
 }) {
   const [expanded, setExpanded] = useState(false);
   const byRole = view === "roles";
-  const { full, top } = rankingPreview(rows, byRole ? 5 : 10);
+  const { full, top } = rankingPreview(rows, byRole ? 4 : 10);
   const title = titles[view];
   const Icon = byRole ? ContactRound : ChartColumnDecreasing;
   const hasMore = full.length > top.length;

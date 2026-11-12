@@ -37,7 +37,7 @@ test("administrador vê membros e crianças, alterna o ranking e expande todas a
   await expect(ranking.getByRole("listitem")).toHaveCount(3);
   await expect(ranking.getByRole("listitem").first()).toContainText("Congregação de Teste 1");
   await expect(ranking.getByRole("listitem").first().getByText("23", { exact: true })).toBeVisible();
-  await expect(roles.getByRole("listitem")).toHaveCount(5);
+  await expect(roles.getByRole("listitem")).toHaveCount(4);
   await expect(roles).toContainText("22 membros sem cargo ativo");
   await ranking.getByRole("button", { name: "Ver todas (13)" }).click();
   const dialog = page.getByRole("dialog");
@@ -71,11 +71,12 @@ test("aniversariantes abrem em Dia e o período atualiza no celular", async ({ p
   await expect(select).toHaveValue("today");
   await expect(rows).toHaveCount(3);
   const birthdayHeader = page.getByRole("columnheader", { name: "Aniversário", exact: true });
-  expect(await birthdayHeader.evaluate(header => {
-    const text = document.createRange();
-    text.selectNodeContents(header);
-    return text.getClientRects().length;
-  })).toBe(1);
+  await expect(birthdayHeader).toBeVisible();
+  await expect(birthdayHeader).toHaveText("");
+  const contact = rows.filter({ hasText: "ANA DE TESTE" }).getByRole("link", { name: "Abrir WhatsApp de Ana de Teste" });
+  await expect(contact).toHaveAttribute("href", "https://wa.me/5511999998888");
+  await expect(contact.locator("span")).toBeHidden();
+  await expect(rows.filter({ hasText: "MEMBRO DE TESTE 02" }).getByRole("link")).toHaveCount(0);
   await select.selectOption("week");
   await expect(rows).toHaveCount(4);
   await select.selectOption("month");
@@ -96,7 +97,7 @@ for (const role of ["congregation", "localTreasurer", "localViewer"]) {
       await expect(main.getByRole("heading", { name: "Membros por cargo" })).toBeVisible();
       await expect(main.getByRole("listitem")).toHaveText(["Diácono1"]);
       await expect(main.getByText("22 membros sem cargo ativo")).toBeVisible();
-      await expect(main.getByRole("columnheader")).toHaveText(["Aniversário", "Nome"]);
+      await expect(main.getByRole("columnheader")).toHaveText(role === "congregation" ? ["", "Nome", "WhatsApp"] : ["", "Nome"]);
       await expect(main.getByRole("row")).toHaveCount(3);
       await expect(main.getByRole("group", { name: "Exibir ranking por" })).toHaveCount(0);
     } finally { await page.close(); }
@@ -119,12 +120,18 @@ test("a resposta autenticada do Dashboard mantém os dados pessoais e os ranking
       const response = await api.get("/?period=week&scope=CHURCH&congregationId=outra");
       expect(response.status()).toBe(200);
       const html = await response.text();
-      expect(html).not.toMatch(/OUTRA_IGREJA_TESTE|SEGREDO_PASTORAL_NUNCA_EXPORTAR|11999998888|RG-TESTE/);
+      expect(html).not.toMatch(/OUTRA_IGREJA_TESTE|SEGREDO_PASTORAL_NUNCA_EXPORTAR|RG-TESTE/);
+      if (session === "full" || session === "congregation") {
+        expect(html).toContain("https://wa.me/5511999998888");
+        expect(html).toContain("ANA DE TESTE");
+      } else {
+        expect(html).not.toMatch(/wa\.me|11999998888|99999-8888/);
+      }
       if (session === "full") {
         expect(html).toContain("Regional de Teste B");
       } else {
         expect(html).not.toMatch(/Regional de Teste B|Congregação de Teste 2/);
-        if (session === "region") expect(html).not.toContain("Ana de Teste");
+        if (session === "region") expect(html).not.toMatch(/ana de teste/i);
         else expect(html).toContain("Membros por cargo");
       }
     } finally { await api.dispose(); }

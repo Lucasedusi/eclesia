@@ -34,7 +34,7 @@ export function birthdayQuery(client: Client, context: AuthContext, filters: Bir
   const organization = hasPermission(context.permissions, PERMISSIONS.organizationView) && (view === "list" || scope === "CHURCH");
   const regional = scope === "REGION" || Boolean(filters.regionId);
   const roles = view === "list" && hasPermission(context.permissions, PERMISSIONS.memberRolesView);
-  const contact = view === "list" && hasPermission(context.permissions, PERMISSIONS.membersViewFull);
+  const contact = hasPermission(context.permissions, PERMISSIONS.membersViewFull);
   const unitFields = view === "dashboard" ? "name" : "name,regions(name)";
   const projection = [
     view === "dashboard" ? "id,full_name,birthday_mmdd" : "id,full_name,member_code,birth_date",
