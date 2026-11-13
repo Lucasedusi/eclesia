@@ -10,6 +10,7 @@ const m = vi.hoisted(() => ({
   ranking: vi.fn(),
   deliveries: vi.fn(),
   category: vi.fn(),
+  daily: vi.fn(),
 }));
 vi.mock("@/modules/auth/services/access-context.service", () => ({
   resolveAccessContext: m.access,
@@ -33,6 +34,9 @@ vi.mock("@/modules/finance/services/finance-administrative.service", () => ({
 }));
 vi.mock("@/modules/finance/services/finance-category-report.service", () => ({
   getFinanceCategoryReport: m.category,
+}));
+vi.mock("@/modules/finance/services/finance-daily-report.service", () => ({
+  getDailyCashFlowReport: m.daily,
 }));
 import { POST } from "./route";
 const unit = "30000000-0000-4000-8000-000000000001";
@@ -240,4 +244,48 @@ it("rejects category filters and out-of-scope requests before creating a PDF", a
   m.context.mockRejectedValueOnce(new Error("FORBIDDEN"));
   expect((await request(categoryPayload)).status).toBe(403);
   expect(m.pdf).not.toHaveBeenCalled();
+});
+
+const daily = {
+  type: "DAILY",
+  date: "2026-10-02",
+  presentation: "DETAIL",
+  includePayments: true,
+};
+it.each(["ADMIN", "TREASURER"])(
+  "checks %s before generating the daily PDF",
+  async (role) => {
+    const context = {
+      congregationId: unit,
+      capabilities: { view: true },
+      auth: {
+        profile: { status: "ACTIVE" },
+        access: { status: "ACTIVE", scope: "CHURCH", role },
+      },
+    };
+    m.context.mockResolvedValue(context);
+    m.daily.mockResolvedValue({ type: "DAILY" });
+    const response = await request(daily);
+    if (role === "ADMIN") {
+      expect(response.status).toBe(200);
+      expect(m.daily).toHaveBeenCalledWith(context, daily);
+      expect(response.headers.get("Content-Disposition")).toContain(
+        "fluxo-diario-detalhado-2026-10-02.pdf",
+      );
+    } else {
+      expect(response.status).toBe(403);
+      expect(m.daily).not.toHaveBeenCalled();
+    }
+  },
+);
+it("refuses unsupported date, congregation, pagination and list filters for daily PDFs", async () => {
+  for (const extra of [
+    { date: "2026-02-30" },
+    { congregationId: unit },
+    { page: 2 },
+    { search: "oferta" },
+  ]) {
+    expect((await request({ ...daily, ...extra })).status).toBe(400);
+  }
+  expect(m.daily).not.toHaveBeenCalled();
 });

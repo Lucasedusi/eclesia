@@ -1,4 +1,5 @@
 import "server-only";
+import type { DailyReportDocument, DailyTotals } from "../validations/finance-daily-report.schemas";
 import type { CategoryReportDocument } from "../types/finance-category-report.types";
 import type {
   RankingDocument,
@@ -41,7 +42,8 @@ export async function createFinanceReportPdf(
     | FinanceInformativeReportDocument
     | RankingDocument
     | DeliveryDocument
-    | CategoryReportDocument,
+    | CategoryReportDocument
+    | DailyReportDocument,
 ): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   doc.registerFontkit(fontkit);
@@ -49,8 +51,10 @@ export async function createFinanceReportPdf(
   const regular = await doc.embedFont(r, { subset: true }),
     bold = await doc.embedFont(b, { subset: true });
   const globalReport = data.type === "RANKING" || data.type === "DELIVERIES";
-  const kind =
-    data.type === "CATEGORY"
+  const daily = data.type === "DAILY";
+  const kind = daily
+    ? `Fluxo de caixa diário — ${data.presentation === "SUMMARY" ? "Resumido" : "Detalhado"}`
+    : data.type === "CATEGORY"
       ? "Por categoria"
       : data.type === "RANKING"
         ? "Informativo geral"
@@ -62,8 +66,9 @@ export async function createFinanceReportPdf(
               ? "Analítico"
               : "Sintético";
   const analytic = data.type === "ANALYTIC";
-  const month =
-    data.type === "CATEGORY"
+  const month = daily
+    ? data.date.split("-").reverse().join("/")
+    : data.type === "CATEGORY"
       ? `${data.dateFrom.split("-").reverse().join("/")} a ${data.dateTo.split("-").reverse().join("/")}`
       : data.type === "INFORMATIVE" || data.type === "RANKING"
         ? `${formatFinanceMonth(data.startMonth)} a ${formatFinanceMonth(data.endMonth)}`
@@ -77,7 +82,9 @@ export async function createFinanceReportPdf(
   doc.setCreator("Eklesias");
   let activeCashboxName = "";
   let activeBankDetails = "";
-  const bankDescription = (box: FinanceReportDocument["cashboxes"][number]) => {
+  const bankDescription = (
+    box: Pick<FinanceReportDocument["cashboxes"][number], "bankDetails">,
+  ) => {
     const bank = box.bankDetails;
     return bank
       ? [
@@ -567,10 +574,10 @@ export async function createFinanceReportPdf(
   y += 17;
   {
     const titleLines = wrap(
-      data.type === "DELIVERIES"
+      daily ? kind.toLocaleUpperCase("pt-BR") : data.type === "DELIVERIES"
         ? "ENTREGA DE RELATÓRIOS"
         : `RELATÓRIO FINANCEIRO ${kind.toLocaleUpperCase("pt-BR")}`,
-      data.type === "INFORMATIVE" || data.type === "CATEGORY" || globalReport
+      daily || data.type === "INFORMATIVE" || data.type === "CATEGORY" || globalReport
         ? CW - 236
         : CW,
       10,
@@ -590,6 +597,185 @@ export async function createFinanceReportPdf(
       muted,
     );
     y += Math.max(30, titleLines.length * 13 + 10, unitLines.length * 12 + 23);
+  }
+  if (daily) {
+    function indicators(totals: DailyTotals, compact = false) {
+      const gap = 6,
+        width = (CW - 3 * gap) / 4,
+        height = compact ? 36 : 48;
+      ensure(height + 8);
+      const metrics = [
+        ["Saldo inicial", totals.opening],
+        ["Entradas", totals.income],
+        ["Saídas", totals.expense],
+        ["Saldo final", totals.closing],
+      ] as const;
+      metrics.forEach(([label, cents], i) => {
+        const x = M + i * (width + gap);
+        roundedSurface(x, y, width, height, i === 3 ? green : pale);
+        const white = rgb(1, 1, 1);
+        draw(label, x + 8, y + 5, 8, regular, i === 3 ? white : muted);
+        const value = formatMoney(cents);
+        const size = Math.min(
+          compact ? 10 : 13,
+          (width - 16) / bold.widthOfTextAtSize(value, 1),
+        );
+        draw(
+          value,
+          x + 8,
+          y + (compact ? 18 : 23),
+          size,
+          bold,
+          i === 3 ? white : ink,
+        );
+      });
+      y += height + 8;
+    }
+
+    const scope = data.box ? data.boxes[0].name : "Todos os caixas e contas";
+    paragraph(scope);
+    heading("Resumo do dia");
+    indicators(data.summary);
+    if (data.includePayments) {
+      heading("Resumo por forma de pagamento");
+      const rows: Cell[][] = data.payments.map((p) => [
+        p.method,
+        formatMoney(p.income),
+        formatMoney(p.expense),
+      ]);
+      rows.push([
+        "Total",
+        formatMoney(data.summary.income),
+        formatMoney(data.summary.expense),
+      ]);
+      table(
+        {
+          title: "Resumo por forma de pagamento",
+          headers: ["Forma de pagamento", "Entradas", "Saídas"],
+          widths: [CW - 190, 95, 95],
+          right: [1, 2],
+        },
+        rows,
+      );
+    }
+    heading("Resumo por Caixa", ink, 115);
+    if (!data.boxes.length) paragraph("Sem movimentação no dia.");
+    for (const box of data.boxes) {
+      activeCashboxName = box.name;
+      activeBankDetails = bankDescription(box);
+      band("Caixa ou conta", green, undefined, box.name, activeBankDetails, 65);
+      if (!data.box) indicators(box, true);
+      if (!box.categories.length && !box.movements.length)
+        paragraph("Sem movimentação no dia.");
+      for (const direction of ["INCOME", "EXPENSE"] as const) {
+        const categories = box.categories.filter(
+          (c) => c.direction === direction,
+        );
+        if (!categories.length) continue;
+        const incoming = direction === "INCOME";
+        const label = incoming ? "Entradas" : "Saídas";
+        const color = incoming ? green : red;
+        groupHeading(label, 10, 3);
+        if (data.presentation === "SUMMARY") {
+          const rows = categories.map((c) => [
+            c.name,
+            String(c.count),
+            formatMoney(c.cents),
+          ]);
+          rows.push([
+            `Total de ${label.toLocaleLowerCase("pt-BR")}`,
+            String(categories.reduce((n, c) => n + c.count, 0)),
+            formatMoney(incoming ? box.income : box.expense),
+          ]);
+          table(
+            {
+              title: label,
+              color,
+              headers: ["Categoria", "Quantidade", "Valor total"],
+              widths: [CW - 175, 70, 105],
+              right: [1, 2],
+            },
+            rows,
+          );
+        } else {
+          for (const category of categories) {
+            groupHeading(category.name, 9, 2);
+            const rows: Cell[][] = category.items.map((item) => [
+              [
+                { text: item.identity, bold: true },
+                ...(item.description && item.description !== item.identity
+                  ? [{ text: item.description }]
+                  : []),
+              ],
+              item.department,
+              item.method,
+              formatMoney(item.cents),
+            ]);
+            rows.push([
+              [{ text: "Subtotal", bold: true }],
+              "",
+              "",
+              [{ text: formatMoney(category.cents), bold: true }],
+            ]);
+            table(
+              {
+                title: `${label} · ${category.name}`,
+                color,
+                headers: [
+                  incoming
+                    ? "Recebido de / Identificação"
+                    : "Pago a / Identificação",
+                  "Departamento",
+                  "Forma de pagamento",
+                  "Valor",
+                ],
+                widths: [CW - 301, 102, 104, 95],
+                right: [3],
+                rowStyles: rows.map((_, i) => ({
+                  keepNext: i === rows.length - 2,
+                })),
+              },
+              rows,
+            );
+          }
+        }
+      }
+      if (box.movements.length) {
+        heading("Outras movimentações de saldo");
+        table(
+          {
+            title: "Outras movimentações de saldo",
+            headers: ["Movimento", "Efeito no saldo"],
+            widths: [CW - 105, 105],
+            right: [1],
+          },
+          box.movements.map((m) => [
+            m.label,
+            (m.cents > 0 ? "+" : "") + formatMoney(m.cents),
+          ]),
+        );
+      }
+      activeCashboxName = "";
+      activeBankDetails = "";
+    }
+    ensure(110);
+    heading("Conferência e aprovação");
+    const signatureWidth = (CW - 30) / 2;
+    for (const [i, label] of [
+      "Conferido por — Tesouraria",
+      "Aprovado por — Gestor",
+    ].entries()) {
+      const x = M + i * (signatureWidth + 30);
+      page!.drawLine({
+        start: { x, y: H - y - 28 },
+        end: { x: x + signatureWidth, y: H - y - 28 },
+        thickness: 0.6,
+        color: muted,
+      });
+      draw(label, x, y + 33, 8, bold);
+      draw("Data: ____/____/________", x, y + 50, 8, regular, muted);
+    }
+    return finish();
   }
   if (data.type === "CATEGORY") {
     const color = data.direction === "EXPENSE" ? red : green;

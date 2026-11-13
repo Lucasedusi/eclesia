@@ -32,6 +32,20 @@ begin
   result := public.get_finance_daily_cash_flow(church,day);
   assert result->'summary' = '{"opening":200000,"income":10000,"expense":2500,"closing":207800}'::jsonb, 'consolidated totals';
   assert jsonb_array_length(result->'items')=5 and jsonb_array_length(result->'cashboxes')=2, 'only cathedral, one transfer';
+  result := public.get_finance_daily_cash_flow_report(church,'2026-10-02',null,false,true);
+  assert jsonb_array_length(result->'boxes')=2 and result->>'unitId'=hq::text, 'report only includes Cathedral accounts';
+  assert result->'payments'='[{"method":"Dinheiro","income":10000,"expense":2500}]'::jsonb, 'payments exclude internal movements';
+  assert (select sum((b->>'closing')::numeric) from jsonb_array_elements(result->'boxes') b)=207800, 'report reconciles all boxes';
+  result := public.get_finance_daily_cash_flow_report(church,'2026-10-02',cash);
+  assert result->'payments'='[]'::jsonb and (result#>>'{boxes,0,opening}')::numeric=200000, 'single account scope';
+  assert (select bool_and(c->'items'='[]'::jsonb and (c->>'count')::int=1) from jsonb_array_elements(result#>'{boxes,0,categories}') c), 'summary only returns aggregates';
+  assert (select sum((m->>'cents')::numeric) from jsonb_array_elements(result#>'{boxes,0,movements}') m)=-50200, 'cash transfer and adjustment';
+  result := public.get_finance_daily_cash_flow_report(church,'2026-10-02',bank,true,true);
+  assert (result#>>'{boxes,0,closing}')::numeric=50500 and jsonb_array_length(result#>'{boxes,0,movements}')=2, 'account opening and received transfer';
+  result := public.get_finance_daily_cash_flow_report(church,'2026-09-01',cash);
+  assert jsonb_array_length(result->'boxes')=1 and (result#>>'{boxes,0,closing}')::numeric=0, 'explicitly selected empty account';
+  assert public.get_finance_daily_cash_flow_report(church,'2026-09-01')->'boxes'='[]'::jsonb, 'empty report';
+  result := public.get_finance_daily_cash_flow(church,day);
   assert (select r->>'sign'='NEUTRAL' from jsonb_array_elements(result->'items') r where r->>'kind'='TRANSFER'), 'neutral consolidated transfer';
   result := public.get_finance_daily_cash_flow(church,day || jsonb_build_object('box',cash,'search','domingo','direction','INCOME','category',cat,'method',method,'department',dept));
   assert result->'summary'='{"opening":200000,"income":10000,"expense":2500,"closing":157300}'::jsonb and jsonb_array_length(result->'items')=1, 'list filters preserve cards';
@@ -42,12 +56,18 @@ begin
   perform public.execute_finance_command(church,jsonb_build_object('kind','CANCEL_TRANSACTION','operationKey',gen_random_uuid(),'congregationId',hq,'id',tx_id,'expectedRevision',1,'reason','Cancelar lançamento fictício'));
   result := public.get_finance_daily_cash_flow(church,day || jsonb_build_object('box',cash));
   assert (result#>>'{summary,closing}')::numeric=197300 and (result#>>'{summary,income}')::numeric=0 and jsonb_array_length(result->'items')=2, 'canceled movements reconciled';
+  result := public.get_finance_daily_cash_flow_report(church,'2026-10-02',cash,true,true);
+  assert (result#>>'{boxes,0,income}')::numeric=0 and (result#>>'{boxes,0,closing}')::numeric=197300 and jsonb_array_length(result#>'{boxes,0,movements}')=1, 'report excludes canceled entries and transfers';
   for i in 1..23 loop
     perform public.execute_finance_command(church,cmd || jsonb_build_object('operationKey',gen_random_uuid(),'date','2026-10-06'));
   end loop;
   result := public.get_finance_daily_cash_flow(church,'{"date":"2026-10-06","page":40}');
   assert (result->>'total')::int=23 and (result->>'page')::int=2 and jsonb_array_length(result->'items')=3, 'out-of-range page clamps to the last page';
   assert (result#>>'{summary,income}')::numeric=230000, 'totals cover all pages';
+  result := public.get_finance_daily_cash_flow_report(church,'2026-10-06',cash,true,false);
+  assert jsonb_array_length(result#>'{boxes,0,categories,0,items}')=23 and (result#>>'{boxes,0,categories,0,cents}')::numeric=230000, 'report includes every page';
+  assert result#>>'{boxes,0,categories,0,items,0,method}'='Dinheiro' and result#>>'{boxes,0,categories,0,items,0,department}'='Missões', 'detailed items carry their payment and department';
+  result := public.get_finance_daily_cash_flow(church,'{"date":"2026-10-06","page":40}');
   assert not exists(
     select a->>'id' from jsonb_array_elements(result->'items') a intersect
     select b->>'id' from jsonb_array_elements(public.get_finance_daily_cash_flow(church,'{"date":"2026-10-06"}')->'items') b
@@ -65,6 +85,20 @@ begin
     perform public.get_finance_daily_cash_flow(church,day);
     raise exception 'accepted non-admin with cathedral finance.view';
   exception when insufficient_privilege then null; end;
+  begin
+    perform public.get_finance_daily_cash_flow_report(church,'2026-10-02');
+    raise exception 'non-admin could export';
+  exception when insufficient_privilege then null; end;
+  perform set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000001',true);
+  begin
+    perform public.get_finance_daily_cash_flow_report(church,'2026-10-02',other_box);
+    raise exception 'accepted report from another unit';
+  exception when insufficient_privilege then null; end;
+  begin
+    perform public.get_finance_daily_cash_flow_report('20000000-0000-4000-8000-000000000002','2026-10-02');
+    raise exception 'accepted report from another church';
+  exception when insufficient_privilege then null; end;
+  assert not has_function_privilege('anon','public.get_finance_daily_cash_flow_report(uuid,date,uuid,boolean,boolean)','execute'), 'anonymous report grant';
   assert not has_function_privilege('anon','public.get_finance_daily_cash_flow(uuid,jsonb)','execute'), 'anonymous grant';
 end $$;
 rollback;

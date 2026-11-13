@@ -30,10 +30,10 @@ export const FinanceStyles = createGlobalStyle`
  }
  .finance .finance-daily-controls {
    display: grid;
-   grid-template-columns: auto repeat(2, minmax(0, 1fr));
+   grid-template-columns: auto repeat(2, minmax(0, 1fr)) auto;
    align-items: center;
    gap: 8px;
-   width: min(60%, 550px);
+   width: min(68%, 675px);
    flex-shrink: 0;
  }
  .finance .finance-daily-day-actions { display: inline-flex; align-items: center; }
@@ -53,6 +53,15 @@ export const FinanceStyles = createGlobalStyle`
    font-weight: 600;
    font-size: 13px;
  }
+ .finance .finance-daily-report-trigger{height:48px}
+ #finance-modal-root .finance-daily-report-fields,#finance-modal-root .finance-daily-report-types{border:0;margin:0;padding:0;min-width:0}
+ #finance-modal-root .finance-daily-report-types{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+ #finance-modal-root .finance-daily-report-types legend{font-size:13px;font-weight:600;margin-bottom:8px}
+ #finance-modal-root .finance-daily-report-types label{display:flex;align-items:center;gap:10px;padding:12px;border:1px solid #cfdbd3;border-radius:8px;cursor:pointer}
+ #finance-modal-root .finance-daily-report-types label:has(:checked){background:#eff8f2;border-color:#148361}
+ #finance-modal-root .finance-daily-report-types input{accent-color:#087c59}
+ #finance-modal-root .finance-report-link{display:inline-flex;align-items:center;min-height:44px;padding:0 12px;border-radius:8px;color:#096548;font-weight:600;text-decoration:underline}
+ #finance-modal-root .finance-daily-report-types small{display:block;font-weight:400}
  .finance .finance-daily-filters{margin:0;padding:0;border:0;min-width:0;display:grid;gap:12px;justify-items:start}
  .finance .finance-daily-filterbar,.finance .finance-daily-advanced{display:grid;grid-template-columns:minmax(160px,2fr) minmax(125px,1fr) auto auto;align-items:end;gap:12px;width:100%}
  .finance .finance-daily-advanced{grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -64,6 +73,7 @@ export const FinanceStyles = createGlobalStyle`
    .finance .finance-overview-titlebar:not(:has(.finance-daily-shortcut)){display:contents}
    .finance .finance-daily-heading{align-items:stretch;flex-direction:column;gap:8px}
    .finance .finance-daily-controls{width:100%;grid-template-columns:repeat(2,minmax(0,1fr))}
+   .finance .finance-daily-report-trigger{grid-column:1/-1;justify-self:end}
    .finance .finance-daily-day-actions{grid-column:1/-1;justify-self:start}
    .finance .finance-daily .finance-overview-summaries{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
    .finance .finance-daily-filterbar{grid-template-columns:repeat(2,minmax(0,1fr))}

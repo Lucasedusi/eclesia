@@ -9191,6 +9191,16 @@ export type Database = {
         Args: { p_church_id: string; p_filters: Json }
         Returns: Json
       }
+      get_finance_daily_cash_flow_report: {
+        Args: {
+          p_box?: string
+          p_church_id: string
+          p_day: string
+          p_detail?: boolean
+          p_payments?: boolean
+        }
+        Returns: Json
+      }
       get_finance_informative_report: {
         Args: { p_church_id: string; p_options: Json; p_unit: string }
         Returns: Json

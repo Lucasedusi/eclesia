@@ -92,3 +92,89 @@ test("a página compilada protege o acesso direto e mantém o saldo ao filtrar a
     await treasurer.dispose();
   }
 });
+
+test("emite os dois PDFs pelo modal sem herdar os filtros da listagem", async ({
+  page,
+}) => {
+  const fixture = JSON.parse(
+    readFileSync(process.env.E2E_FINANCE_FIXTURE!, "utf8"),
+  );
+  const box = fixture.boxes[fixture.headquartersId].cash;
+  await page.goto(
+    `/financeiro/fluxo-de-caixa?date=2026-10-01&box=${box}&search=inexistente`,
+  );
+  await page.getByRole("button", { name: "Relatórios", exact: true }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByText("01/10/2026")).toBeVisible();
+  await expect(dialog.getByLabel("Caixas e contas")).toHaveValue("");
+  await expect(dialog.getByRole("radio", { name: /Resumido/ })).toBeChecked();
+  const payments = dialog.getByLabel("Incluir resumo por forma de pagamento");
+  await expect(payments).not.toBeChecked();
+  await expect(dialog.getByText(/todas as movimentações do dia/)).toBeVisible();
+  for (const mode of ["resumido", "detalhado"]) {
+    if (mode === "detalhado") {
+      await dialog.getByRole("radio", { name: /Detalhado/ }).check();
+      await dialog.getByLabel("Caixas e contas").selectOption(box);
+      await payments.check();
+    }
+    const response = page.waitForResponse((r) =>
+      r.url().endsWith("/api/finance/reports/pdf"),
+    );
+    await dialog.getByRole("button", { name: "Gerar PDF" }).click();
+    const pdf = await response;
+    expect(pdf.status()).toBe(200);
+    expect(pdf.headers()["content-disposition"]).toContain(
+      `fluxo-diario-${mode}-2026-10-01.pdf`,
+    );
+    expect((await pdf.body()).subarray(0, 5).toString()).toBe("%PDF-");
+    await expect(
+      dialog.getByRole("link", { name: "Baixar PDF" }),
+    ).toBeVisible();
+  }
+});
+
+test("a API compilada gera ambos os PDFs e protege a emissão direta", async ({
+  request,
+  playwright,
+}) => {
+  const fixture = JSON.parse(
+    readFileSync(process.env.E2E_FINANCE_FIXTURE!, "utf8"),
+  );
+  const route = "/api/finance/reports/pdf";
+  const daily = {
+    type: "DAILY",
+    date: "2026-10-01",
+    presentation: "SUMMARY",
+    includePayments: false,
+  };
+  for (const options of [
+    daily,
+    {
+      ...daily,
+      presentation: "DETAIL",
+      includePayments: true,
+      box: fixture.boxes[fixture.headquartersId].cash,
+    },
+  ]) {
+    const pdf = await request.post(route, { data: options });
+    expect(pdf.status(), pdf.ok() ? undefined : await pdf.text()).toBe(200);
+    expect(pdf.headers()["cache-control"]).toContain("private, no-store");
+    expect((await pdf.body()).subarray(0, 5).toString()).toBe("%PDF-");
+  }
+  const denied = await request.post(route, {
+    data: { ...daily, box: fixture.boxes[fixture.unitId].cash },
+  });
+  expect(denied.status()).toBe(403);
+  const treasurer = await playwright.request.newContext({
+    baseURL: process.env.E2E_BASE_URL,
+    storageState: process.env.E2E_STORAGE_STATE!.replace(
+      "admin-session",
+      "treasurer-session",
+    ),
+  });
+  try {
+    expect((await treasurer.post(route, { data: daily })).status()).toBe(403);
+  } finally {
+    await treasurer.dispose();
+  }
+});

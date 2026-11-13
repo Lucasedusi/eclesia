@@ -24,7 +24,13 @@ import {
 } from "@/modules/events/utils/public-request";
 import { categoryReportOptionsSchema } from "@/modules/finance/validations/finance-category-report.schemas";
 import { getFinanceCategoryReport } from "@/modules/finance/services/finance-category-report.service";
+import {
+  dailyReportOptions,
+  dailyReportFilename,
+} from "@/modules/finance/validations/finance-daily-report.schemas";
+import { getDailyCashFlowReport } from "@/modules/finance/services/finance-daily-report.service";
 const schema = z.union([
+  dailyReportOptions,
   categoryReportOptionsSchema.safeExtend({ congregationId: z.uuid() }),
   rankingOptionsSchema.safeExtend({ congregationId: z.uuid().optional() }),
   deliveryOptionsSchema.extend({ congregationId: z.uuid().optional() }),
@@ -40,6 +46,7 @@ const headers = {
 const failure = (message: string, status: number) =>
   NextResponse.json({ message }, { status, headers });
 export async function POST(request: Request) {
+  let daily = false;
   try {
     const access = await resolveAccessContext();
     if (access.status !== "ready")
@@ -66,13 +73,19 @@ export async function POST(request: Request) {
         "Confira o tipo, período, categorias e caixa selecionados.",
         400,
       );
-    const { congregationId, ...options } = parsed.data;
+    const { congregationId, ...options } = {
+      congregationId: undefined,
+      ...parsed.data,
+    };
+    daily = options.type === "DAILY";
     const context = await requireFinanceContext({
       congregationId,
       permission: FINANCE_PERMISSIONS.view,
     });
     if (
-      ["INFORMATIVE", "RANKING", "DELIVERIES"].includes(options.type) &&
+      ["DAILY", "INFORMATIVE", "RANKING", "DELIVERIES"].includes(
+        options.type,
+      ) &&
       !canViewInformativeReport(context)
     )
       return failure(
@@ -80,26 +93,30 @@ export async function POST(request: Request) {
         403,
       );
     const report =
-      options.type === "CATEGORY"
-        ? await getFinanceCategoryReport(context, options)
-        : options.type === "RANKING"
-          ? await getFinanceRankingReport(context, options)
-          : options.type === "DELIVERIES"
-            ? await getFinanceDeliveryReport(context, options)
-            : options.type === "INFORMATIVE"
-              ? await getFinanceInformativeReport(context, options)
-              : await getFinanceReport(context, options);
+      options.type === "DAILY"
+        ? await getDailyCashFlowReport(context, options)
+        : options.type === "CATEGORY"
+          ? await getFinanceCategoryReport(context, options)
+          : options.type === "RANKING"
+            ? await getFinanceRankingReport(context, options)
+            : options.type === "DELIVERIES"
+              ? await getFinanceDeliveryReport(context, options)
+              : options.type === "INFORMATIVE"
+                ? await getFinanceInformativeReport(context, options)
+                : await getFinanceReport(context, options);
     const bytes = await createFinanceReportPdf(report);
     const name =
-      options.type === "CATEGORY"
-        ? `relatorio-categorias-${options.dateFrom}-a-${options.dateTo}.pdf`
-        : options.type === "RANKING"
-          ? `ranking-congregacoes-${options.startMonth}-a-${options.endMonth}.pdf`
-          : options.type === "DELIVERIES"
-            ? `entrega-relatorios-${options.month}-${options.filter.toLowerCase()}.pdf`
-            : options.type === "INFORMATIVE"
-              ? `relatorio-informativo-${options.startMonth}-a-${options.endMonth}.pdf`
-              : `relatorio-${options.type === "ANALYTIC" ? "analitico" : "sintetico"}-${options.month}.pdf`;
+      options.type === "DAILY"
+        ? dailyReportFilename(options.date, options.presentation)
+        : options.type === "CATEGORY"
+          ? `relatorio-categorias-${options.dateFrom}-a-${options.dateTo}.pdf`
+          : options.type === "RANKING"
+            ? `ranking-congregacoes-${options.startMonth}-a-${options.endMonth}.pdf`
+            : options.type === "DELIVERIES"
+              ? `entrega-relatorios-${options.month}-${options.filter.toLowerCase()}.pdf`
+              : options.type === "INFORMATIVE"
+                ? `relatorio-informativo-${options.startMonth}-a-${options.endMonth}.pdf`
+                : `relatorio-${options.type === "ANALYTIC" ? "analitico" : "sintetico"}-${options.month}.pdf`;
     return new NextResponse(Buffer.from(bytes), {
       headers: {
         ...headers,
@@ -122,7 +139,9 @@ export async function POST(request: Request) {
         );
       if (error.code === "REPORT_CONFIGURATION_REQUIRED")
         return failure(
-          "Configure o uso das categorias de Repasse e Prebenda selecionadas nos informativos e confira o cadastro da Catedral antes de emitir o relatório.",
+          daily
+            ? "Confira se há uma única Catedral ativa cadastrada para emitir o fluxo diário."
+            : "Configure o uso das categorias de Repasse e Prebenda selecionadas nos informativos e confira o cadastro da Catedral antes de emitir o relatório.",
           422,
         );
       if (error.code === "REPORT_RECONCILIATION_REQUIRED")

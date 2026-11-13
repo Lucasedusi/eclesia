@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { ChevronLeft, ChevronRight, SlidersHorizontal } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileText, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { FinanceDailyReportDialog } from "./finance-daily-report-dialog";
 import { FinanceSummaryCards } from "./finance-summary-cards";
 import { useFinanceNavigation } from "./finance-shell";
 import { FinanceEmpty } from "./finance-empty";
@@ -94,6 +95,7 @@ function MovementFilters({ data, filters, apply, busy }: {
 
 export function FinanceDailyCashFlow({ data, filters, today }: Props) {
   const { navigate, isPending } = useFinanceNavigation();
+  const [reportOpen, setReportOpen] = useState(false);
   const { summary } = data;
   function update(changes: Partial<DailyCashFlowQuery>) {
     const query = new URLSearchParams();
@@ -129,8 +131,10 @@ export function FinanceDailyCashFlow({ data, filters, today }: Props) {
           <option value="">Todos os caixas e contas</option>
           {data.cashboxes.map((box) => <option key={box.id} value={box.id}>{box.name}{box.status === "INACTIVE" ? " (inativo)" : ""}</option>)}
         </select>
+        <Button className="finance-daily-report-trigger" variant="outline" disabled={isPending} onClick={() => setReportOpen(true)}><FileText size={16} />Relatórios</Button>
       </div>
     </header>
+    {reportOpen && <FinanceDailyReportDialog date={filters.date} boxes={data.cashboxes} filtered={filtered || Boolean(filters.box)} onClose={() => setReportOpen(false)} />}
     <FinanceSummaryCards daily overview={{ openingCents: summary.opening, closingCents: summary.closing, incomeCents: summary.income, expenseCents: summary.expense }} />
     <section className="card stack">
       <h2>Movimentações do dia</h2>
