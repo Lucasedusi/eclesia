@@ -54,6 +54,11 @@ export const FinanceStyles = createGlobalStyle`
    font-size: 13px;
  }
  .finance .finance-daily-report-trigger{height:48px}
+ #finance-modal-root .finance-daily-report-dialog {
+   height: 540px;
+   display: grid;
+   grid-template-rows: auto minmax(0, 1fr) auto;
+ }
  #finance-modal-root .finance-daily-report-fields,#finance-modal-root .finance-daily-report-types{border:0;margin:0;padding:0;min-width:0}
  #finance-modal-root .finance-daily-report-types{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
  #finance-modal-root .finance-daily-report-types legend{font-size:13px;font-weight:600;margin-bottom:8px}

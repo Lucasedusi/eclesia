@@ -204,6 +204,8 @@ export async function createFinanceReportPdf(
     color?: ReturnType<typeof rgb>;
     keepAfter?: number;
     bodySize?: number;
+    lineHeight?: number;
+    verticalPadding?: number;
     columnColors?: Record<number, ReturnType<typeof rgb>>;
     rowStyles?: {
       indent?: number;
@@ -242,11 +244,11 @@ export async function createFinanceReportPdf(
       keepAfter = analytic ? 37 : 10,
       rowStyles = [],
       bodySize = 7.5,
+      lineHeight: leading = 10,
+      verticalPadding: padding = analytic ? 8 : 6,
       columnColors = {},
     } = options;
     const headerSize = 7;
-    const leading = 10;
-    const padding = analytic ? 8 : 6;
     function header(continued = false) {
       ensure(49);
       if (continued) {
@@ -343,7 +345,7 @@ export async function createFinanceReportPdf(
       }
       y += style?.gap ?? 0;
       while (offset < totalLines) {
-        if (BOTTOM - y < 30) {
+        if (BOTTOM - y < Math.max(30, leading + padding)) {
           newPage();
           continuation();
         }
@@ -674,6 +676,8 @@ export async function createFinanceReportPdf(
           widths: [CW - 125, 125],
           right: [1],
           bodySize: 9,
+          lineHeight: 16,
+          verticalPadding: 16,
         },
         data.accounts.map((account) => {
           const details = bankDescription(account);

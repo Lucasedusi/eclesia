@@ -42,6 +42,7 @@ export function FinanceDailyReportDialog({
   return (
     <Modal
       title="Relatório do fluxo diário"
+      className="finance-daily-report-dialog"
       onClose={onClose}
       busy={report.busy}
       footer={

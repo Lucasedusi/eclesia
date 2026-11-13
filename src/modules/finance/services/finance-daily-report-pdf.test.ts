@@ -472,6 +472,20 @@ it("prints the pastor's one-page cash balance with one indicator and account det
     expect(normalized).toContain("R$1.158,00");
     expect(texts.join(" ")).toContain("Agência 001");
     expect(texts.join(" ")).toContain("1.163,00");
+    const baseline = (text: string) =>
+      draw.mock.calls[texts.indexOf(text)][1]!.y!;
+    const details = texts.find((line) => line.includes("Agência 001"))!;
+    expect(
+      baseline("Caixa físico") - baseline(bank.name),
+    ).toBeGreaterThanOrEqual(28);
+    expect(baseline(bank.name) - baseline(details)).toBeGreaterThanOrEqual(15);
+    expect(
+      baseline(details) - baseline("Caixa de apoio"),
+    ).toBeGreaterThanOrEqual(28);
+    expect(baseline(bank.name)).toBe(
+      baseline(texts[normalized.indexOf("R$1.158,00")]),
+    );
+
     for (const other of [
       "Entradas",
       "Saídas",

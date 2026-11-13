@@ -147,6 +147,39 @@ test("emite os três PDFs pelo modal sem herdar os filtros da listagem", async (
   }
 });
 
+for (const viewport of [
+  { width: 1280, height: 800 },
+  { width: 390, height: 667 },
+]) {
+  test(`mantém as dimensões do modal de relatórios a ${viewport.width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport);
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto(
+      "/financeiro/fluxo-de-caixa?date=2026-10-01&search=inexistente",
+    );
+    await page.getByRole("button", { name: "Relatórios", exact: true }).click();
+    const dialog = page.getByRole("dialog");
+    const generate = dialog.getByRole("button", { name: "Gerar PDF" });
+    await expect(generate).toBeInViewport();
+    const frame = await dialog.boundingBox();
+    const button = await generate.boundingBox();
+    for (const choice of [/Resumo de caixa/, /Detalhado/, /Resumido/]) {
+      await dialog.getByRole("radio", { name: choice }).check();
+      expect(await dialog.boundingBox()).toEqual(frame);
+      expect(await generate.boundingBox()).toEqual(button);
+    }
+    await generate.click();
+    await expect(
+      dialog.getByRole("link", { name: "Baixar PDF" }),
+    ).toBeAttached();
+    expect(await dialog.boundingBox()).toEqual(frame);
+    expect(await generate.boundingBox()).toEqual(button);
+    await expect(generate).toBeInViewport();
+  });
+}
+
 test("a API compilada gera os três PDFs e protege a emissão direta", async ({
   request,
   playwright,
