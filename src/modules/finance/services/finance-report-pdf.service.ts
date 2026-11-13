@@ -52,7 +52,7 @@ export async function createFinanceReportPdf(
     bold = await doc.embedFont(b, { subset: true });
   const globalReport = data.type === "RANKING" || data.type === "DELIVERIES";
   const daily = data.type === "DAILY";
-  const dailySummary = daily && data.presentation === "SUMMARY";
+  const detailedDaily = daily && data.presentation === "DETAIL";
   const kind = daily
     ? `Fluxo de caixa diário — ${data.presentation === "SUMMARY" ? "Resumido" : "Detalhado"}`
     : data.type === "CATEGORY"
@@ -205,6 +205,25 @@ export async function createFinanceReportPdf(
     }[];
   };
   type Cell = string | { text: string; bold?: boolean }[];
+  function cellLines(
+    row: Cell[],
+    widths: number[],
+    bodySize: number,
+    indent = 0,
+  ) {
+    return row.map((v, i) =>
+      (typeof v === "string" ? [{ text: v }] : v).flatMap((part) => {
+        const font = "bold" in part && part.bold ? bold : regular;
+        return wrap(
+          part.text,
+          widths[i] - 12 - (i === 0 ? indent : 0),
+          bodySize,
+          font,
+        ).map((text) => ({ text, font }));
+      }),
+    );
+  }
+
   function table(options: TableOptions, rows: Cell[][]) {
     const {
       title,
@@ -259,22 +278,10 @@ export async function createFinanceReportPdf(
       y += hh;
     }
     header();
-    const cellLines = (row: Cell[], indent = 0) =>
-      row.map((v, i) =>
-        (typeof v === "string" ? [{ text: v }] : v).flatMap((part) => {
-          const font = "bold" in part && part.bold ? bold : regular;
-          return wrap(
-            part.text,
-            widths[i] - 12 - (i === 0 ? indent : 0),
-            bodySize,
-            font,
-          ).map((text) => ({ text, font }));
-        }),
-      );
     for (const [rowIndex, row] of rows.entries()) {
       const style = rowStyles[rowIndex];
       const indent = style?.indent ?? 0;
-      const cells = cellLines(row, indent);
+      const cells = cellLines(row, widths, bodySize, indent);
       const totalLines = Math.max(...cells.map((ls) => ls.length));
       let nextHeight = 0;
       for (
@@ -284,9 +291,12 @@ export async function createFinanceReportPdf(
       ) {
         nextHeight +=
           Math.max(
-            ...cellLines(rows[next], rowStyles[next]?.indent).map(
-              (ls) => ls.length,
-            ),
+            ...cellLines(
+              rows[next],
+              widths,
+              bodySize,
+              rowStyles[next]?.indent,
+            ).map((ls) => ls.length),
           ) *
             leading +
           padding +
@@ -329,10 +339,23 @@ export async function createFinanceReportPdf(
           newPage();
           continuation();
         }
-        const count = Math.min(
-          totalLines - offset,
-          Math.floor((BOTTOM - y - padding) / leading),
-        );
+        const remaining = totalLines - offset;
+        const available = BOTTOM - y - padding;
+        let count = Math.min(remaining, Math.floor(available / leading));
+        // Leave the final part of a split detail with its category and direction totals.
+        if (
+          detailedDaily &&
+          rowIndex === rows.length - 1 &&
+          count === remaining &&
+          count * leading + keepAfter > available
+        ) {
+          if (count === 1) {
+            newPage();
+            continuation();
+            continue;
+          }
+          count--;
+        }
         let x = M;
         cells.forEach((ls, i) => {
           ls.slice(offset, offset + count).forEach(({ text: l, font }, j) =>
@@ -354,16 +377,18 @@ export async function createFinanceReportPdf(
         offset += count;
         if (offset < totalLines) {
           newPage();
-          const cellText = (cell: Cell) =>
-            typeof cell === "string"
-              ? cell
-              : cell.map((p) => p.text).join("\n");
-          paragraph(
-            `Continuação: ${cellText(row[0])} · ${cellText(row[1] ?? "").split("\n")[0]}`,
-            8.5,
-            muted,
-            3,
-          );
+          if (!detailedDaily) {
+            const cellText = (cell: Cell) =>
+              typeof cell === "string"
+                ? cell
+                : cell.map((p) => p.text).join("\n");
+            paragraph(
+              `Continuação: ${cellText(row[0])} · ${cellText(row[1] ?? "").split("\n")[0]}`,
+              8.5,
+              muted,
+              3,
+            );
+          }
           continuation();
         }
       }
@@ -442,23 +467,27 @@ export async function createFinanceReportPdf(
     label: string,
     amount: number,
     color: ReturnType<typeof rgb>,
+    highlighted = false,
   ) {
     const value = formatMoney(amount);
-    const valueWidth = bold.widthOfTextAtSize(value, 8);
-    const lines = wrap(label, CW - valueWidth - 26, 8, bold);
+    const size = highlighted ? 9 : 8;
+    const valueWidth = bold.widthOfTextAtSize(value, size);
+    const lines = wrap(label, CW - valueWidth - 26, size, bold);
     const height = Math.max(22, lines.length * 11 + 10);
     ensure(height);
+    if (highlighted) roundedSurface(M, y, CW, height, pale);
+    const top = y + (highlighted ? 6 : 4);
     lines.forEach((l, i) =>
       draw(
         l,
-        W - M - 20 - valueWidth - bold.widthOfTextAtSize(l, 8),
-        y + 4 + i * 11,
-        8,
+        W - M - 20 - valueWidth - bold.widthOfTextAtSize(l, size),
+        top + i * 11,
+        size,
         bold,
-        muted,
+        highlighted ? ink : muted,
       ),
     );
-    draw(value, W - M - 6 - valueWidth, y + 4, 8, bold, color);
+    draw(value, W - M - 6 - valueWidth, top, size, bold, color);
     y += height;
   }
 
@@ -603,7 +632,7 @@ export async function createFinanceReportPdf(
       muted,
     );
     const scopeLines =
-      dailySummary && data.box ? wrap(data.boxes[0].name, 220, 8, bold) : [];
+      daily && data.box ? wrap(data.boxes[0].name, 220, 8, bold) : [];
     scopeLines.forEach((line, i) =>
       draw(
         line,
@@ -653,8 +682,6 @@ export async function createFinanceReportPdf(
       y += height + 8;
     }
 
-    if (!dailySummary)
-      paragraph(data.box ? data.boxes[0].name : "Todos os caixas e contas");
     heading("Resumo do dia");
     indicators(data.summary);
     if (data.includePayments) {
@@ -679,24 +706,29 @@ export async function createFinanceReportPdf(
         rows,
       );
     }
-    const amountColumnWidth = 105;
-    const labelColumnWidth = CW - amountColumnWidth;
-    // The table ends with an 8 pt gap. The bold subtotal below it occupies 22 pt.
+    const summaryWidths = [CW - 105, 105];
+    const detailWidths = [CW - 301, 102, 104, 95];
+    // After the table's 8 pt gap each total occupies 22 pt.
     const subtotalReserve = 30;
+    const sectionTotalHeight = 22;
 
     function tableStartHeight(
-      rows: readonly [string, string][],
+      rows: Cell[][],
+      widths: number[],
       keepAfter: number,
     ) {
-      // Match the two-column table's header, line height, padding and page-break checks.
+      // All daily table headers fit on one line. Reserve the first two rows
+      // using the same wrapping and minimum clearance as table().
       let height = 17;
       let required = 49;
       for (const [i, row] of rows.slice(0, 2).entries()) {
-        const lines = Math.max(
-          wrap(row[0], labelColumnWidth - 12, 7.5).length,
-          wrap(row[1], amountColumnWidth - 12, 7.5).length,
-        );
-        const rowHeight = lines * 10 + 6;
+        const lines = cellLines(row, widths, 7.5);
+        const rowHeight =
+          Math.max(...lines.map((cell) => cell.length)) * 10 + 6;
+        // The renderer splits oversized details. Reserve their opening lines, rather
+        // than pushing their account and category headings onto separate pages.
+        if (detailedDaily && rowHeight >= 620)
+          return Math.max(required, height + 30);
         required = Math.max(
           required,
           height +
@@ -707,137 +739,157 @@ export async function createFinanceReportPdf(
       return required;
     }
 
-    if (!dailySummary) heading("Resumo por Caixa", ink, 115);
     if (!data.boxes.length) paragraph("Sem movimentação no dia.");
     for (const box of data.boxes) {
-      const sections = (["INCOME", "EXPENSE"] as const)
-        .map((direction) => ({
-          direction,
-          categories: box.categories.filter((c) => c.direction === direction),
-        }))
-        .filter((section) => section.categories.length);
-      const categoryRows = (
-        categories: typeof box.categories,
-      ): [string, string][] =>
-        categories.map((c) => [c.name, formatMoney(c.cents)]);
-      const movementRows: [string, string][] = box.movements.map((m) => [
+      const sections = (["INCOME", "EXPENSE"] as const).flatMap((direction) => {
+        const categories = box.categories.filter(
+          (c) => c.direction === direction,
+        );
+        if (!categories.length) return [];
+        const incoming = direction === "INCOME";
+        const label = incoming ? "Entradas" : "Saídas";
+        const color = incoming ? green : red;
+        const groups =
+          data.presentation === "SUMMARY"
+            ? [
+                {
+                  category: null,
+                  rows: categories.map((c) => [c.name, formatMoney(c.cents)]),
+                  options: {
+                    title: label,
+                    headers: ["Categoria", "Valor"],
+                    widths: summaryWidths,
+                    right: [1],
+                    color,
+                    keepAfter: subtotalReserve,
+                  },
+                },
+              ]
+            : categories.map((category, index) => {
+                const rows: Cell[][] = category.items.map((item) => [
+                  [
+                    { text: item.identity, bold: true },
+                    ...(item.description && item.description !== item.identity
+                      ? [{ text: item.description }]
+                      : []),
+                  ],
+                  item.department,
+                  item.method,
+                  formatMoney(item.cents),
+                ]);
+                return {
+                  category,
+                  rows,
+                  options: {
+                    title: `${label} · ${category.name}`,
+                    headers: [
+                      incoming
+                        ? "Recebido de / Identificação"
+                        : "Pago a / Identificação",
+                      "Departamento",
+                      "Forma de pagamento",
+                      "Valor",
+                    ],
+                    widths: detailWidths,
+                    right: [3],
+                    color,
+                    keepAfter:
+                      subtotalReserve +
+                      (index === categories.length - 1
+                        ? sectionTotalHeight
+                        : 0),
+                  },
+                };
+              });
+        const tables = groups.map((group) => ({
+          ...group,
+          startHeight: tableStartHeight(
+            group.rows,
+            group.options.widths,
+            group.options.keepAfter,
+          ),
+        }));
+        const first = tables[0];
+        const startHeight = first.category
+          ? 2 +
+            wrap(first.category.name, CW, 9, bold).length * 13 +
+            8 +
+            first.startHeight
+          : first.startHeight;
+        return [
+          {
+            label,
+            color,
+            amount: incoming ? box.income : box.expense,
+            tables,
+            startHeight,
+          },
+        ];
+      });
+      const movementRows = box.movements.map((m) => [
         m.label,
         (m.cents > 0 ? "+" : "") + formatMoney(m.cents),
       ]);
       const bankDetails = bankDescription(box);
-      if (dailySummary) {
-        const names = wrap(box.name, CW - 20, 10, bold);
-        const details = bankDetails ? wrap(bankDetails, CW - 20, 8) : [];
-        const bandHeight = 14 + names.length * 13 + details.length * 11;
-        const gap = 23; // About 8 mm between accounts on the same sheet.
-        const firstSection = sections[0];
-        const firstContent = firstSection
-          ? 25 +
-            tableStartHeight(
-              categoryRows(firstSection.categories.slice(0, 3)),
-              subtotalReserve,
-            )
-          : box.movements.length
-            ? 31 + tableStartHeight(movementRows, 10)
-            : 18;
-        const openingHeight =
-          bandHeight + 8 + (data.box ? 0 : 44) + firstContent;
-        if (y + gap + openingHeight > BOTTOM) newPage();
-        else y += gap;
-
-        roundedSurface(M, y, CW, bandHeight, pale);
-        names.forEach((line, i) =>
-          draw(line, M + 10, y + 7 + i * 13, 10, bold, green),
-        );
-        details.forEach((line, i) =>
-          draw(
-            line,
-            M + 10,
-            y + 7 + names.length * 13 + i * 11,
-            8,
-            regular,
-            muted,
-          ),
-        );
-        y += bandHeight + 8;
-      }
-      // Set the continuation header after deciding where a new summary section begins.
+      const names = wrap(box.name, CW - 20, 10, bold);
+      const details = bankDetails ? wrap(bankDetails, CW - 20, 8) : [];
+      const bandHeight = 14 + names.length * 13 + details.length * 11;
+      const gap = 23; // About 8 mm between accounts on the same sheet.
+      const firstContent = sections.length
+        ? 25 + sections[0].startHeight
+        : movementRows.length
+          ? 31 + tableStartHeight(movementRows, summaryWidths, 10)
+          : 18;
+      const openingHeight = bandHeight + 8 + (data.box ? 0 : 44) + firstContent;
+      if (y + gap + openingHeight > BOTTOM) newPage();
+      else y += gap;
+      roundedSurface(M, y, CW, bandHeight, pale);
+      names.forEach((line, i) =>
+        draw(line, M + 10, y + 7 + i * 13, 10, bold, green),
+      );
+      details.forEach((line, i) =>
+        draw(
+          line,
+          M + 10,
+          y + 7 + names.length * 13 + i * 11,
+          8,
+          regular,
+          muted,
+        ),
+      );
+      y += bandHeight + 8;
+      // Only repeat the account identity after its section actually starts.
       activeCashboxName = box.name;
       activeBankDetails = bankDetails;
-      if (!dailySummary)
-        band("Caixa ou conta", green, undefined, box.name, bankDetails, 65);
       if (!data.box) indicators(box, true);
       if (!box.categories.length && !box.movements.length)
         paragraph("Sem movimentação no dia.");
-      for (const { direction, categories } of sections) {
-        const incoming = direction === "INCOME";
-        const label = incoming ? "Entradas" : "Saídas";
-        const color = incoming ? green : red;
-        if (dailySummary) {
-          const rows = categoryRows(categories);
-          groupHeading(label, 10, 3, tableStartHeight(rows, subtotalReserve));
-          table(
-            {
-              title: label,
-              color,
-              headers: ["Categoria", "Valor"],
-              widths: [labelColumnWidth, amountColumnWidth],
-              right: [1],
-              keepAfter: subtotalReserve,
-            },
-            rows,
-          );
-          subtotal(
-            `Total de ${label.toLocaleLowerCase("pt-BR")}`,
-            incoming ? box.income : box.expense,
-            color,
-          );
-        } else {
-          groupHeading(label, 10, 3);
-          for (const category of categories) {
-            groupHeading(category.name, 9, 2);
-            const rows: Cell[][] = category.items.map((item) => [
-              [
-                { text: item.identity, bold: true },
-                ...(item.description && item.description !== item.identity
-                  ? [{ text: item.description }]
-                  : []),
-              ],
-              item.department,
-              item.method,
-              formatMoney(item.cents),
-            ]);
-            rows.push([
-              [{ text: "Subtotal", bold: true }],
-              "",
-              "",
-              [{ text: formatMoney(category.cents), bold: true }],
-            ]);
-            table(
-              {
-                title: `${label} · ${category.name}`,
-                color,
-                headers: [
-                  incoming
-                    ? "Recebido de / Identificação"
-                    : "Pago a / Identificação",
-                  "Departamento",
-                  "Forma de pagamento",
-                  "Valor",
-                ],
-                widths: [CW - 301, 102, 104, 95],
-                right: [3],
-                rowStyles: rows.map((_, i) => ({
-                  keepNext: i === rows.length - 2,
-                })),
-              },
-              rows,
+      for (const section of sections) {
+        groupHeading(section.label, 10, 3, section.startHeight);
+        for (const group of section.tables) {
+          if (group.category)
+            groupHeading(group.category.name, 9, 2, group.startHeight);
+          table(group.options, group.rows);
+          if (group.category)
+            subtotal(
+              "Subtotal da categoria",
+              group.category.cents,
+              section.color,
             );
-          }
         }
+        subtotal(
+          `Total de ${section.label.toLocaleLowerCase("pt-BR")}`,
+          section.amount,
+          section.color,
+          data.presentation === "DETAIL",
+        );
       }
       if (box.movements.length) {
-        heading("Outras movimentações de saldo");
+        heading(
+          "Outras movimentações de saldo",
+          ink,
+          31 + tableStartHeight(movementRows, summaryWidths, 10),
+        );
         table(
           {
             title: "Outras movimentações de saldo",
