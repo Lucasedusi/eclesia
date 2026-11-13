@@ -2,13 +2,19 @@ import { z } from "zod";
 import { isLocalDate } from "../utils/finance-period";
 import type { FinanceReportDocument } from "../types/finance-report.types";
 
-export const dailyReportOptions = z.strictObject({
+const movementsOptions = z.strictObject({
   type: z.literal("DAILY"),
   date: z.string().refine(isLocalDate),
   box: z.uuid().optional(),
   presentation: z.enum(["SUMMARY", "DETAIL"]),
   includePayments: z.boolean(),
 });
+export const dailyReportOptions = z.discriminatedUnion("presentation", [
+  movementsOptions,
+  movementsOptions
+    .pick({ type: true, date: true })
+    .extend({ presentation: z.literal("BALANCES") }),
+]);
 const totals = z.object({
   opening: z.int(),
   income: z.int().nonnegative(),
@@ -59,14 +65,36 @@ export const dailyReportSnapshot = z.object({
 export type DailyReportOptions = z.infer<typeof dailyReportOptions>;
 export type DailyTotals = z.infer<typeof totals>;
 export type DailyReportDocument = z.infer<typeof dailyReportSnapshot> &
-  Pick<DailyReportOptions, "type" | "presentation" | "includePayments"> &
+  Pick<
+    z.infer<typeof movementsOptions>,
+    "type" | "presentation" | "includePayments"
+  > &
   Pick<
     FinanceReportDocument,
     "church" | "congregationName" | "congregationAddress" | "emissionId"
   > & { summary: DailyTotals };
+export type CashBalanceAccount = Pick<
+  z.infer<typeof box>,
+  "id" | "name" | "bankDetails" | "closing"
+> & { inactive: boolean };
+export type CashBalanceReportDocument = Pick<
+  DailyReportDocument,
+  | "type"
+  | "date"
+  | "generatedAt"
+  | "church"
+  | "congregationName"
+  | "congregationAddress"
+  | "emissionId"
+> & {
+  presentation: "BALANCES";
+  totalCents: number;
+  accounts: CashBalanceAccount[];
+};
 export function dailyReportFilename(
   date: string,
   presentation: DailyReportOptions["presentation"],
 ) {
+  if (presentation === "BALANCES") return `resumo-de-caixa-${date}.pdf`;
   return `fluxo-diario-${presentation === "SUMMARY" ? "resumido" : "detalhado"}-${date}.pdf`;
 }

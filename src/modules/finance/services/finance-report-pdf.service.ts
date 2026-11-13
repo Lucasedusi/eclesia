@@ -1,5 +1,9 @@
 import "server-only";
-import type { DailyReportDocument, DailyTotals } from "../validations/finance-daily-report.schemas";
+import type {
+  CashBalanceReportDocument,
+  DailyReportDocument,
+  DailyTotals,
+} from "../validations/finance-daily-report.schemas";
 import type { CategoryReportDocument } from "../types/finance-category-report.types";
 import type {
   RankingDocument,
@@ -43,7 +47,8 @@ export async function createFinanceReportPdf(
     | RankingDocument
     | DeliveryDocument
     | CategoryReportDocument
-    | DailyReportDocument,
+    | DailyReportDocument
+    | CashBalanceReportDocument,
 ): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   doc.registerFontkit(fontkit);
@@ -53,19 +58,22 @@ export async function createFinanceReportPdf(
   const globalReport = data.type === "RANKING" || data.type === "DELIVERIES";
   const daily = data.type === "DAILY";
   const detailedDaily = daily && data.presentation === "DETAIL";
-  const kind = daily
-    ? `Fluxo de caixa diário — ${data.presentation === "SUMMARY" ? "Resumido" : "Detalhado"}`
-    : data.type === "CATEGORY"
-      ? "Por categoria"
-      : data.type === "RANKING"
-        ? "Informativo geral"
-        : data.type === "DELIVERIES"
-          ? "Entrega de relatórios"
-          : data.type === "INFORMATIVE"
-            ? "Informativo"
-            : data.type === "ANALYTIC"
-              ? "Analítico"
-              : "Sintético";
+  const balanceOnly = daily && data.presentation === "BALANCES";
+  const kind = balanceOnly
+    ? "Resumo de caixa"
+    : daily
+      ? `Fluxo de caixa diário — ${data.presentation === "SUMMARY" ? "Resumido" : "Detalhado"}`
+      : data.type === "CATEGORY"
+        ? "Por categoria"
+        : data.type === "RANKING"
+          ? "Informativo geral"
+          : data.type === "DELIVERIES"
+            ? "Entrega de relatórios"
+            : data.type === "INFORMATIVE"
+              ? "Informativo"
+              : data.type === "ANALYTIC"
+                ? "Analítico"
+                : "Sintético";
   const analytic = data.type === "ANALYTIC";
   const month = daily
     ? data.date.split("-").reverse().join("/")
@@ -632,7 +640,9 @@ export async function createFinanceReportPdf(
       muted,
     );
     const scopeLines =
-      daily && data.box ? wrap(data.boxes[0].name, 220, 8, bold) : [];
+      daily && !balanceOnly && data.box
+        ? wrap(data.boxes[0].name, 220, 8, bold)
+        : [];
     scopeLines.forEach((line, i) =>
       draw(
         line,
@@ -647,6 +657,42 @@ export async function createFinanceReportPdf(
       titleLines.length * 13 + 10,
       unitLines.length * 12 + 23 + scopeLines.length * 11,
     );
+  }
+  if (data.type === "DAILY" && data.presentation === "BALANCES") {
+    const height = 64;
+    ensure(height + 15);
+    roundedSurface(M, y, CW, height, green);
+    const white = rgb(1, 1, 1);
+    draw("Saldo total geral", M + 14, y + 9, 10, regular, white);
+    draw(formatMoney(data.totalCents), M + 14, y + 26, 22, bold, white);
+    y += height + 15;
+    if (data.accounts.length) {
+      table(
+        {
+          title: "Caixas e contas",
+          headers: ["Caixa ou conta", "Saldo"],
+          widths: [CW - 125, 125],
+          right: [1],
+          bodySize: 9,
+        },
+        data.accounts.map((account) => {
+          const details = bankDescription(account);
+          return [
+            [
+              {
+                text: account.inactive
+                  ? `${account.name} (inativo)`
+                  : account.name,
+                bold: true,
+              },
+              ...(details ? [{ text: details }] : []),
+            ],
+            [{ text: formatMoney(account.closing), bold: true }],
+          ];
+        }),
+      );
+    } else paragraph("Nenhum caixa ou conta para exibir nesta data.");
+    return finish();
   }
   if (daily) {
     function indicators(totals: DailyTotals, compact = false) {

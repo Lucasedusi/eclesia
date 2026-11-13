@@ -26,14 +26,17 @@ export function FinanceDailyReportDialog({
   const [presentation, setPresentation] =
     useState<DailyReportOptions["presentation"]>("SUMMARY");
   const [includePayments, setIncludePayments] = useState(false);
+  const balances = presentation === "BALANCES";
   const report = useFinanceReportPdf(
-    {
-      type: "DAILY",
-      date,
-      box: box || undefined,
-      presentation,
-      includePayments,
-    },
+    balances
+      ? { type: "DAILY", date, presentation }
+      : {
+          type: "DAILY",
+          date,
+          box: box || undefined,
+          presentation,
+          includePayments,
+        },
     dailyReportFilename(date, presentation),
   );
   return (
@@ -62,18 +65,6 @@ export function FinanceDailyReportDialog({
           disabled={report.busy}
           onChange={report.invalidate}
         >
-          <label>
-            Caixas e contas
-            <select value={box} onChange={(e) => setBox(e.target.value)}>
-              <option value="">Todos os caixas e contas</option>
-              {boxes.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                  {b.status === "INACTIVE" ? " (inativo)" : ""}
-                </option>
-              ))}
-            </select>
-          </label>
           <fieldset className="finance-daily-report-types">
             <legend>Tipo de relatório</legend>
             <label>
@@ -100,17 +91,47 @@ export function FinanceDailyReportDialog({
                 <small>Lançamentos individuais</small>
               </span>
             </label>
+            <label>
+              <input
+                type="radio"
+                name="presentation"
+                checked={balances}
+                onChange={() => setPresentation("BALANCES")}
+              />
+              <span>
+                <strong>Resumo de caixa</strong>
+                <small>Saldo geral e saldo por caixa ou conta</small>
+              </span>
+            </label>
           </fieldset>
-          <label className="check">
-            <input
-              type="checkbox"
-              checked={includePayments}
-              onChange={(e) => setIncludePayments(e.target.checked)}
-            />
-            Incluir resumo por forma de pagamento
-          </label>
+          {balances ? (
+            <p>Inclui todos os caixas e contas da Catedral.</p>
+          ) : (
+            <>
+              <label>
+                Caixas e contas
+                <select value={box} onChange={(e) => setBox(e.target.value)}>
+                  <option value="">Todos os caixas e contas</option>
+                  {boxes.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.name}
+                      {b.status === "INACTIVE" ? " (inativo)" : ""}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="check">
+                <input
+                  type="checkbox"
+                  checked={includePayments}
+                  onChange={(e) => setIncludePayments(e.target.checked)}
+                />
+                Incluir resumo por forma de pagamento
+              </label>
+            </>
+          )}
         </fieldset>
-        {filtered && (
+        {filtered && !balances && (
           <p className="notice">
             O PDF inclui todas as movimentações do dia para os caixas
             selecionados.

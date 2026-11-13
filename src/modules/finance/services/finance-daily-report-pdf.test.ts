@@ -427,3 +427,65 @@ it("keeps the end of a multiline detail with both totals and never reprints its 
     draw.mockRestore();
   }
 });
+
+it("prints the pastor's one-page cash balance with one indicator and account details", async () => {
+  const draw = vi.spyOn(PDFPage.prototype, "drawText");
+  try {
+    const bytes = await createFinanceReportPdf({
+      ...data,
+      presentation: "BALANCES",
+      totalCents: 116300,
+      accounts: [
+        {
+          id: "cash",
+          name: "Caixa físico",
+          bankDetails: null,
+          closing: 500,
+          inactive: false,
+        },
+        {
+          id: "bank",
+          name: bank.name,
+          bankDetails: bank.bankDetails,
+          closing: 115800,
+          inactive: false,
+        },
+        {
+          id: "zero",
+          name: "Caixa de apoio",
+          bankDetails: null,
+          closing: 0,
+          inactive: false,
+        },
+      ],
+    });
+    const texts = draw.mock.calls.map(([s]) => s);
+    expect(texts).toContain("RESUMO DE CAIXA");
+    expect(texts).toContain("Saldo total geral");
+    expect(texts).toContain("Caixa ou conta");
+    expect(texts).toContain("Saldo");
+    expect(texts).toContain("02/10/2026");
+    expect(texts).toContain("Catedral");
+    expect(texts).toContain("Caixa de apoio");
+    const normalized = texts.map((line) => line.replace(/\s/g, ""));
+    expect(normalized).toContain("R$0,00");
+    expect(normalized).toContain("R$1.158,00");
+    expect(texts.join(" ")).toContain("Agência 001");
+    expect(texts.join(" ")).toContain("1.163,00");
+    for (const other of [
+      "Entradas",
+      "Saídas",
+      "Conferência e aprovação",
+      "Resumo por forma de pagamento",
+      "Ofertas",
+    ])
+      expect(texts).not.toContain(other);
+    expect((await PDFDocument.load(bytes)).getPageCount()).toBe(1);
+    if (process.env.REPORT_PDF_QA) {
+      await mkdir("tmp/reports", { recursive: true });
+      await writeFile("tmp/reports/resumo-de-caixa.pdf", bytes);
+    }
+  } finally {
+    draw.mockRestore();
+  }
+});

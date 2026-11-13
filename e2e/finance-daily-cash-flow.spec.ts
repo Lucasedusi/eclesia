@@ -93,7 +93,7 @@ test("a página compilada protege o acesso direto e mantém o saldo ao filtrar a
   }
 });
 
-test("emite os dois PDFs pelo modal sem herdar os filtros da listagem", async ({
+test("emite os três PDFs pelo modal sem herdar os filtros da listagem", async ({
   page,
 }) => {
   const fixture = JSON.parse(
@@ -111,11 +111,19 @@ test("emite os dois PDFs pelo modal sem herdar os filtros da listagem", async ({
   const payments = dialog.getByLabel("Incluir resumo por forma de pagamento");
   await expect(payments).not.toBeChecked();
   await expect(dialog.getByText(/todas as movimentações do dia/)).toBeVisible();
-  for (const mode of ["resumido", "detalhado"]) {
+  for (const mode of ["resumido", "detalhado", "resumo-de-caixa"]) {
     if (mode === "detalhado") {
       await dialog.getByRole("radio", { name: /Detalhado/ }).check();
       await dialog.getByLabel("Caixas e contas").selectOption(box);
       await payments.check();
+    }
+    if (mode === "resumo-de-caixa") {
+      await dialog.getByRole("radio", { name: /Resumo de caixa/ }).check();
+      await expect(dialog.getByRole("combobox")).toHaveCount(0);
+      await expect(payments).toHaveCount(0);
+      await expect(
+        dialog.getByText("Inclui todos os caixas e contas da Catedral."),
+      ).toBeVisible();
     }
     const response = page.waitForResponse((r) =>
       r.url().endsWith("/api/finance/reports/pdf"),
@@ -123,8 +131,14 @@ test("emite os dois PDFs pelo modal sem herdar os filtros da listagem", async ({
     await dialog.getByRole("button", { name: "Gerar PDF" }).click();
     const pdf = await response;
     expect(pdf.status()).toBe(200);
+    if (mode === "resumo-de-caixa")
+      expect(pdf.request().postDataJSON()).toEqual({
+        type: "DAILY",
+        date: "2026-10-01",
+        presentation: "BALANCES",
+      });
     expect(pdf.headers()["content-disposition"]).toContain(
-      `fluxo-diario-${mode}-2026-10-01.pdf`,
+      `${mode === "resumo-de-caixa" ? mode : "fluxo-diario-" + mode}-2026-10-01.pdf`,
     );
     expect((await pdf.body()).subarray(0, 5).toString()).toBe("%PDF-");
     await expect(
@@ -133,7 +147,7 @@ test("emite os dois PDFs pelo modal sem herdar os filtros da listagem", async ({
   }
 });
 
-test("a API compilada gera ambos os PDFs e protege a emissão direta", async ({
+test("a API compilada gera os três PDFs e protege a emissão direta", async ({
   request,
   playwright,
 }) => {
@@ -147,7 +161,13 @@ test("a API compilada gera ambos os PDFs e protege a emissão direta", async ({
     presentation: "SUMMARY",
     includePayments: false,
   };
+  const balances = {
+    type: "DAILY",
+    date: daily.date,
+    presentation: "BALANCES",
+  };
   for (const options of [
+    balances,
     daily,
     {
       ...daily,
@@ -173,7 +193,8 @@ test("a API compilada gera ambos os PDFs e protege a emissão direta", async ({
     ),
   });
   try {
-    expect((await treasurer.post(route, { data: daily })).status()).toBe(403);
+    for (const data of [daily, balances])
+      expect((await treasurer.post(route, { data })).status()).toBe(403);
   } finally {
     await treasurer.dispose();
   }

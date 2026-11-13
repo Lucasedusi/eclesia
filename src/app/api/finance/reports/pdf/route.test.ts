@@ -289,3 +289,30 @@ it("refuses unsupported date, congregation, pagination and list filters for dail
   }
   expect(m.daily).not.toHaveBeenCalled();
 });
+
+it("requires a whole-Cathedral balance report with no payment breakdown", async () => {
+  const options = {
+    type: "DAILY",
+    date: "2026-10-02",
+    presentation: "BALANCES",
+  };
+  m.context.mockResolvedValue({
+    capabilities: { view: true },
+    auth: {
+      profile: { status: "ACTIVE" },
+      access: { role: "ADMIN", scope: "CHURCH", status: "ACTIVE" },
+    },
+  });
+  for (const extra of [
+    { box: unit },
+    { includePayments: true },
+    { congregationId: unit },
+  ]) {
+    expect((await request({ ...options, ...extra })).status).toBe(400);
+  }
+  const response = await request(options);
+  expect(response.status).toBe(200);
+  expect(response.headers.get("Content-Disposition")).toContain(
+    "resumo-de-caixa-2026-10-02.pdf",
+  );
+});
