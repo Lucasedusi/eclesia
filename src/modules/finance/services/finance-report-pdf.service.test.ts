@@ -1,5 +1,5 @@
 import { expect, it, vi } from "vitest";
-import { PDFDocument, PDFPage } from "pdf-lib";
+import { PDFDocument, PDFPage, rgb } from "pdf-lib";
 import { mkdir, writeFile } from "node:fs/promises";
 import type { FinanceReportDocument } from "../types/finance-report.types";
 vi.mock("server-only", () => ({}));
@@ -360,6 +360,97 @@ it("repeats consolidated indicators at the end and separates the opening indicat
   }
 });
 
+it.each(["SYNTHETIC", "ANALYTIC"] as const)(
+  "highlights both closing balance cards according to the signed balance in %s",
+  async (type) => {
+    const text = vi.spyOn(PDFPage.prototype, "drawText");
+    const surfaces = vi.spyOn(PDFPage.prototype, "drawSvgPath");
+    try {
+      for (const count of [1, 10, 11]) {
+        text.mockClear();
+        surfaces.mockClear();
+        const input = fixture(count, type);
+        await createFinanceReportPdf(input);
+        const cards = text.mock.calls.flatMap(([label, o], i) =>
+          label === "Saldo final" && o?.size === 8.5 ? [i] : [],
+        );
+        expect(cards).toHaveLength(2);
+        for (const i of cards) {
+          const label = text.mock.calls[i][1]!;
+          const surface = surfaces.mock.calls.find(
+            ([, o], j) =>
+              surfaces.mock.instances[j] === text.mock.instances[i] &&
+              o?.x === label.x! - 8 &&
+              o.y! > label.y! &&
+              o.y! - label.y! < 20,
+          );
+          expect(surface?.[1]?.color).toEqual(
+            input.summary.closingCents < 0
+              ? rgb(0.6, 0.23, 0.26)
+              : rgb(0.02, 0.4, 0.28),
+          );
+          const [value, options] = text.mock.calls[i + 1];
+          expect(value.startsWith("-")).toBe(input.summary.closingCents < 0);
+          expect(label.color).toEqual(rgb(1, 1, 1));
+          expect(options?.color).toEqual(label.color);
+        }
+      }
+    } finally {
+      text.mockRestore();
+      surfaces.mockRestore();
+    }
+  },
+);
+
+it.each(["SYNTHETIC", "ANALYTIC"] as const)(
+  "leads with the account and aligns every subtotal and direction total with its amount in %s",
+  async (type) => {
+    const input = fixture(1, type);
+    input.cashboxes[0].bankDetails = {
+      bankName: "Banco Exemplo",
+      agency: "0001",
+      accountNumber: "12345-6",
+    };
+    const text = vi.spyOn(PDFPage.prototype, "drawText");
+    try {
+      await createFinanceReportPdf(input);
+      const calls = text.mock.calls;
+      for (const direction of ["ENTRADAS", "SAÍDAS"]) {
+        const i = calls.findIndex(([t]) => t === direction);
+        const name = calls
+          .slice(0, i)
+          .findLast(([t]) => t === "Caixa local")![1]!;
+        const details = calls
+          .slice(0, i)
+          .findLast(([t]) => t.startsWith("Banco Exemplo"))![1]!;
+        expect(name.x).toBeLessThan(80);
+        expect(details.x).toBe(name.x);
+        expect(details.y).toBeLessThan(name.y!);
+        expect(calls[i][1]!.x).toBeGreaterThan(480);
+      }
+      const totals = calls.flatMap(([t], i) =>
+        /^(Subtotal |TOTAL DE )/.test(t) ? [i] : [],
+      );
+      expect(totals).toHaveLength(3); // category/classification, income and empty expenses
+      for (const i of totals) {
+        const [label, o] = calls[i];
+        const [value, v] = calls[i + 1];
+        const gap =
+          v!.x! - (o!.x! + o!.font!.widthOfTextAtSize(label, o!.size!));
+        expect(gap).toBeGreaterThanOrEqual(6);
+        expect(gap).toBeLessThanOrEqual(16);
+        expect(v!.y).toBe(o!.y);
+        expect(v!.x! + v!.font!.widthOfTextAtSize(value, v!.size!)).toBeCloseTo(
+          555.26,
+          1,
+        );
+      }
+    } finally {
+      text.mockRestore();
+    }
+  },
+);
+
 it("prints bank identification below its name and in continuation headers", async () => {
   const input = fixture(49, "ANALYTIC");
   Object.assign(input.cashboxes[0], {
@@ -470,6 +561,7 @@ it("keeps same-named synthetic cashboxes separate without forcing a new page for
   input.summary.openingCents *= 2;
   input.summary.closingCents *= 2;
   const draw = vi.spyOn(PDFPage.prototype, "drawText");
+  const rules = vi.spyOn(PDFPage.prototype, "drawLine");
   try {
     const bytes = await createFinanceReportPdf(input);
     const entries = draw.mock.calls.flatMap(([text], i) =>
@@ -482,9 +574,24 @@ it("keeps same-named synthetic cashboxes separate without forcing a new page for
     expect(
       draw.mock.calls.filter(([text]) => text === "TOTAL DE ENTRADAS"),
     ).toHaveLength(2);
+    const lastTotal = draw.mock.calls.find(
+      ([t]) => t === "TOTAL DE SAÍDAS",
+    )![1]!;
+    const nextHeader = draw.mock.calls[entries[1]][1]!;
+    expect(
+      rules.mock.calls.some(
+        ([line], i) =>
+          rules.mock.instances[i] === draw.mock.instances[entries[1]] &&
+          line.start.x < 35 &&
+          line.end.x > 560 &&
+          lastTotal.y! - line.start.y >= 20 &&
+          line.start.y - nextHeader.y! >= 39,
+      ),
+    ).toBe(true);
     if (process.env.REPORT_PDF_QA)
       await writeFile("tmp/reports/sintetico-dois-caixas.pdf", bytes);
   } finally {
+    rules.mockRestore();
     draw.mockRestore();
   }
 });
