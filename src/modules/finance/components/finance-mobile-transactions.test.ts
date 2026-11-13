@@ -22,7 +22,7 @@ vi.mock("../actions/finance-digital-receipt.actions", () => ({
   createFinanceDigitalReceiptLinkAction: () => Promise.resolve({ ok: false }),
 }));
 
-function renderTransactions(activeFilter = false, unnamedExpense = false) {
+function renderTransactions(activeFilter = false, unnamedExpense = false, expenseStatus = "CANCELLED") {
   const items = [
     {
       id: "entry-1",
@@ -35,7 +35,7 @@ function renderTransactions(activeFilter = false, unnamedExpense = false) {
       beneficiaryName: null,
       categoryName: "Oferta",
       departmentName: "Tesouraria",
-      classificationName: null,
+      classificationName: "Membros",
       description: null,
       documentNumber: null,
       attendanceId: null,
@@ -47,7 +47,7 @@ function renderTransactions(activeFilter = false, unnamedExpense = false) {
       date: "2026-10-13",
       direction: "EXPENSE" as const,
       amountCents: 500,
-      status: "CANCELLED",
+      status: expenseStatus,
       revision: 2,
       personName: null,
       beneficiaryName: unnamedExpense ? null : "Fornecedor Exemplo",
@@ -80,8 +80,8 @@ function renderTransactions(activeFilter = false, unnamedExpense = false) {
           departments: [],
           categories: [],
           classifications: [],
-          paymentMethods: [],
-          cashboxes: [],
+          paymentMethods: [{ id: "cash", name: "Dinheiro", kind: "CASH", status: "ACTIVE" }],
+          cashboxes: [{ id: "box-1", name: "Caixa central", congregationId: "unit-1", kind: "CASH", status: "ACTIVE", openingDate: null, openingCents: 0, balanceCents: 0, paymentMethodIds: ["cash"], bankName: null, agency: null, accountNumber: null }],
         },
         filters: {
           month: "2026-10",
@@ -123,11 +123,26 @@ describe("mobile finance transactions", () => {
     expect(cards).toHaveLength(2);
     expect(cards[0]).toContain('<time dateTime="2026-10-14">14/10/2026</time>');
     expect(cards[1]).toContain('<time dateTime="2026-10-13">13/10/2026</time>');
+    expect(cards[0]).toContain("Membros");
+    expect(cards[1]).toContain("<s>");
+    expect(cards[0]).not.toContain("<s>");
+    expect(html).toContain("<th>Data</th><th>Lançamento</th><th>Departamento</th><th>Pagamento</th>");
+    expect(html).not.toContain("<th>Situação</th>");
     for (const card of cards) {
-      expect(card).not.toContain("Tesouraria");
-      expect(card).not.toContain("Classificação:");
+      expect(card).toContain("Tesouraria");
+      expect(card).toContain("Caixa central");
+      expect(card).toContain("Dinheiro");
     }
   });
+
+  it.each([["DRAFT", "Rascunho"], ["REVERSED", "Estornado"]])(
+    "strikes %s amounts and identifies the status in both layouts",
+    (status, label) => {
+      const html = renderTransactions(false, false, status);
+      expect(html.match(/<s>− R\$ 5,00<\/s>/g)).toHaveLength(2);
+      expect(html.split(`class="sr-only"> ${label}</span>`)).toHaveLength(3);
+    },
+  );
 
   it("shows immediate nature chips and the active advanced filter count", () => {
     const html = renderTransactions(true);

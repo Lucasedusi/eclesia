@@ -156,7 +156,7 @@ export function FinanceShell({
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
   }, []);
-  const isPayables = path === "/financeiro/contas-a-pagar";
+  const cathedralPage = path === "/financeiro/contas-a-pagar" || path === "/financeiro/fluxo-de-caixa";
   const links = [
     {
       label: "Visão geral",
@@ -218,10 +218,7 @@ export function FinanceShell({
                 <Leaf size={21} />
               </span>
               <b className="finance-nav-label">eclesias</b>{" "}
-              <small
-                className="finance-nav-label"
-                style={{ fontSize: 9, color: "#6D7F76", letterSpacing: 1 }}
-              >
+              <small className="finance-nav-label">
                 FIN
               </small>
             </div>
@@ -289,7 +286,7 @@ export function FinanceShell({
                 <ChevronLeft size={16} />
               )}
             </button>
-            {isPayables ? <div className="finance-context finance-payables-context"><span className="finance-single-unit">Administração · Catedral</span></div> : <FinanceContextBar
+            {cathedralPage ? <div className="finance-context finance-payables-context"><span className="finance-single-unit">Administração · Catedral</span></div> : <FinanceContextBar
               units={context.units}
               selectedUnitId={unit.id}
               month={month}

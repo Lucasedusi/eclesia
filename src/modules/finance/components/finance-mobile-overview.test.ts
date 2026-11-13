@@ -22,7 +22,7 @@ const capabilities: FinanceCapabilities = {
   lookupContributors: true,
 };
 
-function renderOverview(create: boolean) {
+function renderOverview(create: boolean, canViewDailyFlow = false) {
   const selected = { ...capabilities, create };
   return renderToStaticMarkup(
     createElement(
@@ -39,6 +39,7 @@ function renderOverview(create: boolean) {
         },
       } as Parameters<typeof FinanceShell>[0],
       createElement(FinanceOverview, {
+        canViewDailyFlow,
         overview: {
           openingCents: 10000,
           openingMovementCents: 0,
@@ -84,6 +85,11 @@ function renderOverview(create: boolean) {
 }
 
 describe("finance mobile overview", () => {
+  it("offers the daily cash flow shortcut only when authorized", () => {
+    expect(renderOverview(true, true)).toContain("/financeiro/fluxo-de-caixa");
+    expect(renderOverview(true)).not.toContain("/financeiro/fluxo-de-caixa");
+  });
+
   it("keeps recent entries and their scoped full-list link", () => {
     const html = renderOverview(true);
     expect(html).toContain("/financeiro/lancamentos?unidade=unit-1&amp;mes=2026-10");

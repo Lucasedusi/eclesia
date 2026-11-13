@@ -130,7 +130,7 @@ export const BankImportLayout = styled.div`
     display: flex;
     align-items: center;
     gap: 4px;
-    height: 42px;
+    height: var(--finance-field-height);
     min-width: 0;
     border: 1px dashed #b8cec1;
     border-radius: 8px;

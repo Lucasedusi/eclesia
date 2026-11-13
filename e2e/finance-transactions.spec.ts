@@ -66,5 +66,12 @@ test("continuous entry preserves defaults, then supports correction and cancella
     .fill("Registro de teste duplicado");
   await page.getByRole("button", { name: "Confirmar cancelamento" }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  await expect(page.getByRole("table").getByText("Cancelado", { exact: true })).toBeVisible();
+  const cancelled = page.getByRole("row").filter({ hasText: name });
+  await expect(cancelled.locator("s")).toContainText("100,00");
+  await cancelled.getByRole("button", { name: /Detalhes/ }).click();
+  const history = page.locator(".finance-transaction-history");
+  await history.locator("summary").click();
+  for (const action of ["Lançado", "Alterado", "Cancelado"]) {
+    await expect(history.getByText(new RegExp(action + " por .+"))).toBeVisible();
+  }
 });

@@ -1,6 +1,7 @@
 import "server-only";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { FinanceContext } from "../types/finance.types";
 import type {
   FinanceOverview,
@@ -60,7 +61,7 @@ export async function getFinanceTransaction(
   const { data: t, error } = await c
     .from("financial_transactions")
     .select(
-      "id,transaction_date,reference_month,reference_year,transaction_type,amount,status,revision,person_name,beneficiary_name,category_name,department_name,classification_name,description,document_number,attendance_id,cashbox_id,payment_method_id,member_id,contributor_kind,contributor_congregation_id,category_id,department_id,tithe_classification_id,notes,payment_reference",
+      "id,created_by,created_at,transaction_date,reference_month,reference_year,transaction_type,amount,status,revision,person_name,beneficiary_name,category_name,department_name,classification_name,description,document_number,attendance_id,cashbox_id,payment_method_id,member_id,contributor_kind,contributor_congregation_id,category_id,department_id,tithe_classification_id,notes,payment_reference",
     )
     .eq("church_id", context.churchId)
     .eq("congregation_id", context.congregationId)
@@ -90,7 +91,7 @@ export async function getFinanceTransaction(
       .is("deleted_at", null),
     c
       .from("financial_transaction_revisions")
-      .select("revision,reason,created_at,previous_values,new_values")
+      .select("revision,reason,created_by,created_at,previous_values,new_values")
       .eq("church_id", context.churchId)
       .eq("congregation_id", context.congregationId)
       .eq("transaction_id", id)
@@ -119,6 +120,46 @@ export async function getFinanceTransaction(
       return null;
     return decimalToCents(String(value.amount));
   };
+  const revisions = history.data ?? [];
+  const actorIds = [t.created_by, ...revisions.map((revision) => revision.created_by)];
+  const ids = [...new Set(actorIds.filter((actor) => actor !== null))];
+  const names = new Map<string, string>();
+  if (ids.length) {
+    // Finance readers may not browse profiles. Only resolve actors of this
+    // RLS-authorized transaction, including past memberships in its church.
+    const { data: authors, error: authorError } = await createAdminClient()
+      .from("profiles")
+      .select("id,full_name,display_name,user_church_access!user_church_access_profile_id_fkey!inner(church_id)")
+      .eq("user_church_access.church_id", context.churchId)
+      .in("id", ids);
+    if (authorError) throwFinanceDatabaseError(authorError);
+    for (const profile of authors ?? []) {
+      const name = profile.full_name?.trim() || profile.display_name?.trim();
+      if (name) names.set(profile.id, name);
+    }
+  }
+  const events: FinanceTransactionDetail["history"] = revisions.map((revision) => {
+    const snapshot = revision.new_values;
+    const cancelled = snapshot && typeof snapshot === "object" && "status" in snapshot && snapshot.status === "CANCELLED";
+    const actorId = revision.created_by ?? (revision.revision === 1 ? t.created_by : null);
+    return {
+      revision: revision.revision,
+      action: revision.revision === 1 ? "CREATED" : cancelled ? "CANCELLED" : "UPDATED",
+      actorName: actorId ? names.get(actorId) ?? null : null,
+      createdAt: revision.created_at,
+      reason: revision.reason,
+      beforeAmountCents: amount(revision.previous_values),
+      afterAmountCents: amount(snapshot),
+    };
+  });
+  if (!events.some((event) => event.revision === 1)) {
+    events.push({
+      revision: 1, action: "CREATED",
+      actorName: t.created_by ? names.get(t.created_by) ?? null : null,
+      createdAt: t.created_at, reason: null,
+      beforeAmountCents: null, afterAmountCents: null,
+    });
+  }
   return {
     id: t.id,
     date: t.transaction_date,
@@ -158,13 +199,7 @@ export async function getFinanceTransaction(
       id: d.id,
       name: d.file_name,
     })),
-    history: (history.data ?? []).map((h) => ({
-      revision: h.revision,
-      reason: h.reason,
-      createdAt: h.created_at,
-      beforeAmountCents: amount(h.previous_values),
-      afterAmountCents: amount(h.new_values),
-    })),
+    history: events,
   };
 }
 export async function listFinanceTransfers(

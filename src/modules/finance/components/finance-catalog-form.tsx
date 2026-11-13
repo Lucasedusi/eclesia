@@ -1,6 +1,7 @@
 "use client";
 import { formatFinanceMonth } from "../utils/finance-period";
-import { Banknote, CreditCard, QrCode, ReceiptText, Check, Save } from "lucide-react";
+import { FinancePaymentIcon } from "./finance-payment-icon";
+import { Check, Save } from "lucide-react";
 import { FinanceMoneyInput } from "./finance-money-input";
 import { useRef, useState } from "react";
 
@@ -394,15 +395,7 @@ export function FinanceCatalogForm({
                       value={v.id}
                       defaultChecked={box?.paymentMethodIds.includes(v.id)}
                     />
-                    {v.kind === "CASH" ? (
-                      <Banknote size={23} />
-                    ) : v.kind === "PIX" ? (
-                      <QrCode size={23} />
-                    ) : v.kind.includes("CARD") ? (
-                      <CreditCard size={23} />
-                    ) : (
-                      <ReceiptText size={23} />
-                    )}
+                    <FinancePaymentIcon kind={v.kind} size={23} />
                     <span>{v.name}</span>
                     <Check className="finance-payment-check" size={16} />
                   </label>

@@ -32,8 +32,8 @@ test("mobile transaction cards share filters, totals and details with the deskto
   await expect(page.getByText("Entradas filtradas")).toBeHidden();
   for (const card of await cards.getByRole("button").all()) {
     await expect(card.locator("time")).toHaveText(/\d{2}\/\d{2}\/\d{4}/);
-    await expect(card).not.toContainText("Tesouraria");
-    await expect(card).not.toContainText("Classificação:");
+    await expect(card.locator(".finance-transaction-payment")).toBeVisible();
+    await expect(card.locator(".finance-transaction-payment svg")).toBeVisible();
   }
 
   await cards.getByRole("button", { name: /Oferta de culto/ }).first().click();

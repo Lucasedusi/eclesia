@@ -1,15 +1,18 @@
 "use client";
 
 import type { FinanceTransactionRow } from "../types/finance-query.types";
-import { formatMoney } from "../utils/finance-money";
+import type { FinanceCatalogs } from "../types/finance-catalog.types";
+import { FinanceTransactionAmount, FinanceTransactionPayment } from "./finance-transaction-cells";
 import { Loader2 } from "lucide-react";
 
 export function FinanceMobileTransactionCards({
   items,
+  catalogs,
   onOpen,
   loadingId,
 }: {
   items: FinanceTransactionRow[];
+  catalogs: FinanceCatalogs;
   onOpen: (id: string) => void;
   loadingId?: string | null;
 }) {
@@ -26,6 +29,9 @@ export function FinanceMobileTransactionCards({
           >
             <span className="sr-only">Abrir lançamento: </span>
             <span className="finance-mobile-transaction-main">
+              <time dateTime={item.date}>
+                {item.date.split("-").reverse().join("/")}
+              </time>
               <strong>{item.categoryName || "Lançamento"}</strong>
               <span>
                 {item.personName ||
@@ -33,27 +39,10 @@ export function FinanceMobileTransactionCards({
                   item.description ||
                   (item.direction === "INCOME" ? "Contribuição coletiva" : "Não informado")}
               </span>
-              <time dateTime={item.date}>
-                {item.date.split("-").reverse().join("/")}
-              </time>
+              <span>{[item.departmentName, item.classificationName].filter(Boolean).join(" · ")}</span>
+              <FinanceTransactionPayment item={item} catalogs={catalogs} />
             </span>
-            <span className="finance-mobile-transaction-side">
-              <strong
-                className={
-                  item.status === "CANCELLED"
-                    ? "muted"
-                    : item.direction === "INCOME"
-                      ? "positive"
-                      : "negative"
-                }
-              >
-                {item.direction === "INCOME" ? "+" : "−"}{" "}
-                {formatMoney(item.amountCents)}
-              </strong>
-              <span className="badge">
-                {item.status === "CANCELLED" ? "Cancelado" : "Confirmado"}
-              </span>
-            </span>
+            <strong className="finance-mobile-transaction-side"><FinanceTransactionAmount item={item} /></strong>
             {loadingId === item.id && (
               <span className="finance-card-loading" role="status">
                 <Loader2 size={24} className="finance-spin" aria-hidden="true" />

@@ -55,7 +55,9 @@ export type FinanceTransactionDetail = FinanceTransactionRow & {
   documents: { id: string; name: string }[];
   history: {
     revision: number;
-    reason: string;
+    action: "CREATED" | "UPDATED" | "CANCELLED";
+    actorName: string | null;
+    reason: string | null;
     createdAt: string;
     beforeAmountCents: number | null;
     afterAmountCents: number | null;

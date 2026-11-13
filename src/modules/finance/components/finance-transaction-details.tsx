@@ -6,6 +6,7 @@ import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import type { FinanceCatalogs } from "../types/finance-catalog.types";
 import type { FinanceTransactionDetail } from "../types/finance-query.types";
+import { financeTransactionStatusLabel } from "../utils/finance-transaction-status";
 import { formatMoney } from "../utils/finance-money";
 import { financeLocation } from "../utils/finance-navigation";
 import { getFinanceDocumentUrlAction } from "../actions/finance-document.actions";
@@ -14,6 +15,8 @@ import { SHAREABLE_RECEIPT_STATUSES } from "../utils/finance-digital-receipt";
 import type { DigitalReceiptLink } from "../types/finance-digital-receipt.types";
 import { FinanceDigitalReceiptDialog } from "./finance-digital-receipt-dialog";
 import { ReceiptActions } from "./finance-digital-receipt.styles";
+const historyActions = { CREATED: "Lançado", UPDATED: "Alterado", CANCELLED: "Cancelado" };
+
 export function FinanceTransactionDetails({
   transaction: t,
   catalogs,
@@ -50,7 +53,7 @@ export function FinanceTransactionDetails({
             {t.direction === "INCOME" ? "Entrada" : "Saída"}
           </span>
           <span className="badge">
-            {t.status === "CANCELLED" ? "Cancelado" : "Confirmado"}
+            {financeTransactionStatusLabel(t.status)}
           </span>
           <span className="muted finance-desktop-only finance-detail-revision">Revisão {t.revision}</span>
         </div>
@@ -207,16 +210,16 @@ export function FinanceTransactionDetails({
           <div className="stack">
           {t.history.map((h) => (
             <div className="card" key={h.revision}>
-              <strong>Revisão {h.revision}</strong>
-              <p>{h.reason}</p>
-              {h.beforeAmountCents !== null && h.afterAmountCents !== null && (
+              <strong>{historyActions[h.action]}{h.actorName ? ` por ${h.actorName}` : " · Responsável não identificado"}</strong>
+              {h.reason && <p>{h.reason}</p>}
+              {h.beforeAmountCents !== null && h.afterAmountCents !== null && h.beforeAmountCents !== h.afterAmountCents && (
                 <p className="muted">
                   {formatMoney(h.beforeAmountCents)} →{" "}
                   {formatMoney(h.afterAmountCents)}
                 </p>
               )}
               <span className="muted">
-                {new Date(h.createdAt).toLocaleString("pt-BR", {
+                Revisão {h.revision} · {new Date(h.createdAt).toLocaleString("pt-BR", {
                   timeZone: "America/Sao_Paulo",
                 })}
               </span>

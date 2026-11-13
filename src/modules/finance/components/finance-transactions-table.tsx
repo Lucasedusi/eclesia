@@ -25,6 +25,8 @@ import { formatMoney } from "../utils/finance-money";
 import { getFinanceTransactionAction } from "../actions/finance-query.actions";
 import { FinanceTransactionDetails } from "./finance-transaction-details";
 import { FinanceMobileTransactionCards } from "./finance-mobile-transaction-cards";
+import { FinanceTransactionAmount, FinanceTransactionPayment } from "./finance-transaction-cells";
+
 export function FinanceTransactionsTable({
   result,
   catalogs,
@@ -297,6 +299,7 @@ export function FinanceTransactionsTable({
           <>
             <FinanceMobileTransactionCards
               items={result.items}
+              catalogs={catalogs}
               onOpen={openDetail}
               loadingId={loading}
             />
@@ -304,10 +307,10 @@ export function FinanceTransactionsTable({
             <table>
               <thead>
                 <tr>
+                  <th>Data</th>
                   <th>Lançamento</th>
                   <th>Departamento</th>
-                  <th>Data</th>
-                  <th>Situação</th>
+                  <th>Pagamento</th>
                   <th style={{ textAlign: "right" }}>Valor</th>
                   <th>
                     <span className="sr-only">Detalhes</span>
@@ -318,14 +321,11 @@ export function FinanceTransactionsTable({
                 {result.items.map((t) => (
                   <tr
                     key={t.id}
-                    className={
-                      t.status === "CANCELLED"
-                        ? "finance-row-cancelled"
-                        : t.direction === "INCOME"
-                          ? "finance-row-income"
-                          : "finance-row-expense"
-                    }
+                    className={t.direction === "INCOME" ? "finance-row-income" : "finance-row-expense"}
                   >
+                    <td style={{ whiteSpace: "nowrap" }}>
+                      <time dateTime={t.date}>{t.date.split("-").reverse().join("/")}</time>
+                    </td>
                     <td>
                       <strong>{t.categoryName || "Lançamento"}</strong>
                       <div className="muted">
@@ -343,24 +343,8 @@ export function FinanceTransactionsTable({
                         </div>
                       )}
                     </td>
-                    <td style={{ whiteSpace: "nowrap" }}>
-                      {t.date.split("-").reverse().join("/")}
-                    </td>
-                    <td>
-                      <span className="badge">
-                        {t.status === "CANCELLED" ? "Cancelado" : "Confirmado"}
-                      </span>
-                    </td>
-                    <td
-                      className={`money ${t.status === "CANCELLED" ? "muted" : t.direction === "INCOME" ? "positive" : "negative"}`}
-                      style={{
-                        textDecoration:
-                          t.status === "CANCELLED" ? "line-through" : undefined,
-                      }}
-                    >
-                      {t.direction === "INCOME" ? "+" : "−"}{" "}
-                      {formatMoney(t.amountCents)}
-                    </td>
+                    <td><FinanceTransactionPayment item={t} catalogs={catalogs} /></td>
+                    <td className="money"><FinanceTransactionAmount item={t} /></td>
                     <td>
                       <Button
                         variant="outline"

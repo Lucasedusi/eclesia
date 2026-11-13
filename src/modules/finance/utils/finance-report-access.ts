@@ -1,6 +1,6 @@
 import type { FinanceContext } from "../types/finance.types";
 
-export function canViewInformativeReport(context: FinanceContext) {
+export function hasFinanceAdminAccess(context: FinanceContext) {
   return (
     context.capabilities.view &&
     context.auth.profile.status === "ACTIVE" &&
@@ -9,3 +9,5 @@ export function canViewInformativeReport(context: FinanceContext) {
     context.auth.access.scope === "CHURCH"
   );
 }
+
+export { hasFinanceAdminAccess as canViewInformativeReport };

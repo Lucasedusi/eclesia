@@ -14,7 +14,7 @@ export const DigitalReceiptContent = styled.div`
   .digital-links a { display: inline-flex; align-items: center; gap: 6px; color: #176348; text-decoration: none; font-size: 12px; font-weight: 500; }
   .digital-links a:hover { text-decoration: underline; }
   .digital-phone { display: grid; gap: 8px; font-size: 12px; font-weight: 500; }
-  .digital-phone input { width: 100%; min-height: 46px; border: 1px solid ${({ theme }) => theme.colors.border.default}; border-radius: 10px; padding: 11px 13px; color: ${({ theme }) => theme.colors.text.title}; background: ${({ theme }) => theme.colors.surface.card}; font: inherit; font-size: 14px; }
+  .digital-phone input { width: 100%; min-height: var(--finance-field-height); border: 1px solid ${({ theme }) => theme.colors.border.default}; border-radius: 10px; padding: 11px 13px; color: ${({ theme }) => theme.colors.text.title}; background: ${({ theme }) => theme.colors.surface.card}; font: inherit; font-size: 14px; }
   .digital-phone input:focus-visible { outline: 2px solid #a3c8b2; outline-offset: 2px; }
   .digital-hint { color: ${({ theme }) => theme.colors.text.muted}; font-size: 11px; line-height: 1.6; margin: 8px 0 0; }
   .digital-note { display: flex; align-items: flex-start; gap: 8px; font-size: 11px; line-height: 1.65; color: ${({ theme }) => theme.colors.text.muted}; padding-top: 17px; border-top: 1px solid ${({ theme }) => theme.colors.border.soft}; }
