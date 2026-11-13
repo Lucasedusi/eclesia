@@ -124,7 +124,33 @@ it.each(["SUMMARY", "DETAIL"] as const)(
         expect(text).toContain("Boleto");
         expect(pdf.getPageCount()).toBeGreaterThan(2);
       } else {
-        expect(text).toContain("Quantidade");
+        expect(strings).not.toContain("Quantidade");
+        expect(strings).not.toContain("Todos os caixas e contas");
+        expect(strings).not.toContain("Resumo por Caixa");
+        expect(strings).not.toContain("CAIXA OU CONTA");
+        expect(strings).toContain("Valor");
+        const position = (label: string) =>
+          draw.mock.calls[strings.indexOf(label)][1]!;
+        expect(position("Conta principal").x).toBeLessThan(60);
+        expect(position("Banco Exemplo · Agência 001 · Conta 123-4").x).toBe(
+          position("Conta principal").x,
+        );
+        expect(position("Conta principal").y!).toBeGreaterThan(
+          position("Banco Exemplo · Agência 001 · Conta 123-4").y!,
+        );
+        for (const [category, total] of [
+          ["Ofertas", "Total de entradas"],
+          ["Material", "Total de saídas"],
+        ]) {
+          const [value, options] = draw.mock.calls[strings.indexOf(total) + 1];
+          expect(value).toContain("R$");
+          expect(options!.y).toBe(position(total).y);
+          expect(position(total).x! - position(category).x!).toBeGreaterThan(
+            200,
+          );
+          expect(options!.font).toBe(position(total).font);
+          expect(position(total).font).not.toBe(position(category).font);
+        }
         expect(text).toContain("Material");
       }
       for (const [s, options] of draw.mock.calls) {
@@ -159,6 +185,102 @@ it("prints a zero-movement day for a selected account without duplicating the op
     const strings = draw.mock.calls.map(([s]) => s);
     expect(strings.filter((s) => s === "Saldo inicial")).toHaveLength(1);
     expect(strings).toContain("Sem movimentação no dia.");
+    const date = strings.indexOf("02/10/2026");
+    const scope = strings.indexOf(bank.name);
+    expect(scope).toBe(date + 1);
+    const rightEdge = (idx: number) => {
+      const [s, o] = draw.mock.calls[idx];
+      return o!.x! + o!.font!.widthOfTextAtSize(s, o!.size!);
+    };
+    expect(rightEdge(scope)).toBeCloseTo(rightEdge(date));
+  } finally {
+    draw.mockRestore();
+  }
+});
+
+it("shares a page between short accounts and leaves room between their summaries", async () => {
+  const draw = vi.spyOn(PDFPage.prototype, "drawText");
+  try {
+    const boxes = ["Caixa um", "Caixa dois"].map((name, index) => ({
+      ...bank,
+      id: String(index),
+      name,
+      bankDetails: null,
+      movements: [],
+      categories: [{ ...bank.categories[0], name: `Categoria ${index}` }],
+    }));
+    await createFinanceReportPdf({ ...data, boxes });
+    const texts = draw.mock.calls.map(([s]) => s);
+    const first = texts.indexOf(boxes[0].name);
+    const second = texts.indexOf(boxes[1].name);
+    const subtotal = texts.indexOf("Total de entradas");
+    expect(first).toBeGreaterThan(texts.indexOf("Saldo final"));
+    expect(second).toBeGreaterThan(subtotal);
+    expect(draw.mock.instances[first]).toBe(draw.mock.instances[second]);
+    expect(
+      draw.mock.calls[subtotal][1]!.y! - draw.mock.calls[second][1]!.y!,
+    ).toBeGreaterThan(23);
+    expect(
+      draw.mock.calls[texts.indexOf("Saldo final")][1]!.y! -
+        draw.mock.calls[first][1]!.y!,
+    ).toBeGreaterThan(23);
+  } finally {
+    draw.mockRestore();
+  }
+});
+
+it("moves an account heading with its opening rows and keeps the last category and subtotal on the same sheet", async () => {
+  const draw = vi.spyOn(PDFPage.prototype, "drawText");
+  try {
+    // Vary the space left by the preceding account to exercise breaks at the heading, rows and subtotal.
+    let sawContinuation = false,
+      sawFreshStart = false;
+    for (const count of [16, 19, 22, 25, 28, 31, 34, 37, 40]) {
+      draw.mockClear();
+      const group = (prefix: string, n: number) =>
+        Array.from({ length: n }, (_, i) => ({
+          ...bank.categories[0],
+          name: `${prefix} ${i + 1}`,
+        }));
+      const boxes = [
+        { ...bank, categories: group("Oferta", count), movements: [] },
+        {
+          ...bank,
+          id: "cash",
+          name: "Segundo caixa",
+          categories: group("Missões", 3),
+          movements: [],
+        },
+      ];
+      await createFinanceReportPdf({ ...data, boxes });
+      const texts = draw.mock.calls.map(([s]) => s);
+      const pageOf = (text: string) => {
+        expect(texts).toContain(text);
+        return draw.mock.instances[texts.indexOf(text)];
+      };
+      const total = texts.flatMap((s, i) =>
+        s === "Total de entradas" ? [i] : [],
+      );
+      expect(total).toHaveLength(2);
+      expect(pageOf(`Oferta ${count}`)).toBe(draw.mock.instances[total[0]]);
+      expect(pageOf("Missões 3")).toBe(draw.mock.instances[total[1]]);
+      expect(pageOf("Segundo caixa")).toBe(pageOf("Missões 1"));
+      expect(pageOf("Segundo caixa")).toBe(pageOf("Missões 2"));
+      expect(texts.filter((s) => s === "Segundo caixa")).toHaveLength(1);
+      if (texts.includes("Entradas · continuação")) {
+        const page = pageOf("Entradas · continuação");
+        expect(
+          texts.some(
+            (s, i) => s === bank.name && draw.mock.instances[i] === page,
+          ),
+        ).toBe(true);
+        sawContinuation = true;
+      }
+      if (pageOf("Segundo caixa") !== draw.mock.instances[total[0]])
+        sawFreshStart = true;
+    }
+    expect(sawContinuation).toBe(true);
+    expect(sawFreshStart).toBe(true);
   } finally {
     draw.mockRestore();
   }
