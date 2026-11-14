@@ -45,6 +45,7 @@ test("thermal receipt preserves registration time and fits both paper widths", a
   for (const mm of [58, 80]) {
     await page.getByRole("combobox", { name: "Largura do papel" }).selectOption(String(mm));
     await page.emulateMedia({ media: "print" });
+    await expect(receipt).toHaveCSS("font-family", /^Arial(?:,|$)/);
     await page.evaluate(async () => {
       await document.fonts.ready;
       await Promise.all(Array.from(document.querySelectorAll(".financial-receipt img")).map((img) =>

@@ -70,6 +70,7 @@ export function FinanceReceipt({
             padding: 0 !important;
             /* Stay in the left printable strip if the driver reports a wider page (e.g. A4). */
             margin: 0 !important;
+            font-family: Arial, Roboto, sans-serif;
             font-size: 10px !important;
           }
           .financial-receipt h1 { font-size: 11px !important; }
