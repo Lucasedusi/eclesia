@@ -129,28 +129,3 @@ export function FinanceCongregationPicker({
     </div>
   );
 }
-
-export function FinanceCongregationFilter({
-  unit,
-  initial,
-}: {
-  unit: string;
-  initial: FinanceCongregationOption | null;
-}) {
-  const [value, setValue] = useState(initial);
-  return (
-    <div className="stack">
-      <span>Congregação que pagou ou recebeu</span>
-      <input
-        type="hidden"
-        name="contributorCongregationId"
-        value={value?.id ?? ""}
-      />
-      <FinanceCongregationPicker
-        unit={unit}
-        value={value}
-        onChange={setValue}
-      />
-    </div>
-  );
-}

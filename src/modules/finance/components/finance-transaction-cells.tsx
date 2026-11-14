@@ -13,7 +13,9 @@ export function FinanceTransactionPayment({ item, catalogs }: {
   return (
     <span className="finance-transaction-payment">
       <span>{cashbox?.name ?? "Caixa indisponível"}</span>
-      <span className="muted"><FinancePaymentIcon kind={method?.kind} />{method?.name ?? "Forma indisponível"}</span>
+      <span className="finance-payment-badge" data-method={method?.kind ?? "OTHER"}>
+        <FinancePaymentIcon kind={method?.kind} />{method?.name ?? "Forma indisponível"}
+      </span>
     </span>
   );
 }

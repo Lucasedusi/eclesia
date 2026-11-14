@@ -40,14 +40,14 @@ test("mobile transaction cards share filters, totals and details with the deskto
   await expect(page.getByRole("dialog", { name: "Detalhes do lançamento" })).toBeVisible();
   await page.getByRole("button", { name: "Fechar modal" }).click();
 
-  const nature = page.getByRole("group", { name: "Filtrar natureza" });
+  const nature = page.getByRole("group", { name: "Filtrar movimento" });
   await nature.getByRole("button", { name: "Saídas" }).click();
   await expect(page).toHaveURL(/direction=EXPENSE/);
   await expect(page).toHaveURL(new RegExp(`unidade=${headquartersId}`));
   await expect(page).toHaveURL(/mes=2026-10/);
-  await nature.getByRole("button", { name: "Todas" }).click();
+  await nature.getByRole("button", { name: "Todos" }).click();
 
-  await page.getByRole("button", { name: /Filtros avançados/ }).click();
+  await page.getByRole("button", { name: /Mais Filtros/ }).click();
   await page.getByRole("combobox", { name: "Situação" }).selectOption("CANCELLED");
   await expect(page.getByRole("button", { name: /1 filtro ativo/ })).toBeVisible();
   await page.getByRole("button", { name: "Limpar filtros" }).click();

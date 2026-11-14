@@ -33,7 +33,7 @@ for (const width of [320, 393, 430]) {
     expect(boxes[1].x).toBeLessThan(boxes[2].x);
     const input = page.getByRole('textbox', { name: 'Buscar' });
     const search = page.getByRole('button', { name: 'Buscar lançamentos', exact: true });
-    const filters = page.getByRole('button', { name: /Filtros avançados/ });
+    const filters = page.getByRole('button', { name: /Mais Filtros/ });
     const ib = (await input.boundingBox())!, sb = (await search.boundingBox())!, fb = (await filters.boundingBox())!;
     expect(sb.x).toBeGreaterThan(ib.x);
     expect(sb.x + sb.width).toBeLessThanOrEqual(ib.x + ib.width);

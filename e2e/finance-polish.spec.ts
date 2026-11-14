@@ -74,7 +74,7 @@ test("filter and detail loading have stable feedback and payment identification"
     await route.continue();
   });
   await page
-    .getByRole("button", { name: "Filtros avançados", exact: true })
+    .getByRole("button", { name: "Mais Filtros", exact: true })
     .click();
   const filterWidth = (await page
     .getByRole("button", { name: "Filtrar", exact: true })

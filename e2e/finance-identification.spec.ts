@@ -22,7 +22,7 @@ async function chooseCongregation(scope: Page | Locator) {
     .click();
 }
 
-test("manual income and expense share identity and retain congregation through correction and filtering", async ({
+test("manual income and expense share identity and retain congregation through correction and ignore obsolete list filters", async ({
   page,
 }) => {
   const f = fixture();
@@ -47,17 +47,10 @@ test("manual income and expense share identity and retain congregation through c
   await dialog.getByRole("button", { name: "Salvar", exact: true }).click();
   await expect(dialog).toHaveCount(0);
   await page
-    .getByRole("button", { name: "Filtros avançados", exact: true })
+    .getByRole("button", { name: "Mais Filtros", exact: true })
     .click();
-  await page.getByLabel("Nome da congregação").fill("Headquarters");
-  await page
-    .getByRole("button", { name: "Buscar congregação", exact: true })
-    .click();
-  await page.getByRole("button", { name: "Headquarters", exact: true }).click();
-  await page.getByRole("button", { name: "Filtrar", exact: true }).click();
-  await expect(page).toHaveURL(
-    new RegExp(`contributorCongregationId=${f.headquartersId}`),
-  );
+  await expect(page.getByLabel("Nome da congregação")).toHaveCount(0);
+  await page.goto(`/financeiro/lancamentos?unidade=${f.unitId}&mes=2026-10&contributorCongregationId=${randomUUID()}`);
   await page
     .getByRole("row")
     .filter({ hasText: "05/10/2026" })

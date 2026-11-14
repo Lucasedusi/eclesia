@@ -22,15 +22,16 @@ test("mobile resets only advanced filters, keeps nature/search and gives active 
   await page.getByRole('button', { name: 'Buscar lançamentos' }).click();
   await expect(page).toHaveURL(/search=Oferta/);
   await expect(clear).toBeHidden();
-  const advanced = page.getByRole('button', { name: /Filtros avançados/ });
+  const advanced = page.getByRole('button', { name: /Mais Filtros/ });
   await advanced.click();
   await expect(advanced).toHaveCSS('background-color', 'rgb(229, 244, 236)');
   await page.getByRole('combobox', { name: 'Situação' }).selectOption('CONFIRMED');
   await expect(page).toHaveURL(/status=CONFIRMED/);
   await advanced.click();
-  await expect(advanced).toHaveCSS('background-color', 'rgb(229, 244, 236)');
-  await expect(clear).toBeHidden();
-  await advanced.click();
+  await expect(advanced).toHaveAttribute('aria-expanded', 'false');
+  await expect(advanced).not.toHaveCSS('background-color', 'rgb(229, 244, 236)');
+  await expect(advanced).toHaveAccessibleName(/1 filtro ativo/);
+  await expect(clear).toBeVisible();
   await clear.click();
   await expect(page).not.toHaveURL(/status=/);
   await expect(page).toHaveURL(/search=Oferta/);
@@ -69,7 +70,7 @@ test("mobile card shows localized loading, recovers after failure and opens deta
   const history = dialog.locator('details').filter({ hasText: 'Histórico de alterações' });
   await expect(history).not.toHaveAttribute('open', '');
   await history.locator('summary').click();
-  await expect(history.getByText('Revisão 1', { exact: true })).toBeVisible();
+  await expect(history.getByText(/^Revisão 1 · /)).toBeVisible();
 });
 
 for (const width of [320, 1440]) {
@@ -78,6 +79,9 @@ for (const width of [320, 1440]) {
     await page.goto(location());
     await page.getByRole('button', { name: width < 761 ? 'Entrada' : 'Nova entrada', exact: true }).click();
     const dialog = page.getByRole('dialog');
+    const header = dialog.locator('[data-modal-header]');
+    await expect(header).toHaveCSS('background-color', 'rgb(240, 247, 243)');
+    await expect(header).toHaveCSS('border-bottom-width', '1px');
     await dialog.getByLabel('Valor (R$)').fill('1234');
     const review = dialog.getByRole('region', { name: 'Conferência do lançamento' });
     await expect(review.locator('.finance-entry-review-items')).not.toContainText('12,34');
@@ -101,10 +105,11 @@ for (const width of [320, 1440]) {
     await page.goto(location());
     if (width < 761) await page.locator('.finance-mobile-transaction-card').first().click();
     else await page.locator('.finance-desktop-transactions').getByRole('button').first().click();
+    await expect(header).toHaveCSS('background-color', 'rgb(240, 247, 243)');
     const history = page.getByRole('dialog').locator('details').filter({ hasText: 'Histórico de alterações' });
     await expect(history).not.toHaveAttribute('open', '');
     await history.locator('summary').click();
-    await expect(history.getByText('Revisão 1', { exact: true })).toBeVisible();
+    await expect(history.getByText(/^Revisão 1 · /)).toBeVisible();
   });
 }
 

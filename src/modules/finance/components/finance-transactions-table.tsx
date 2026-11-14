@@ -1,6 +1,5 @@
 "use client";
 import { FinanceEmpty } from "./finance-empty";
-import { FinanceCongregationFilter } from "./finance-congregation-picker";
 import { useFinanceNavigation } from "./finance-shell";
 import { FinanceSkeleton } from "./finance-skeleton";
 import { Loader2 } from "lucide-react";
@@ -63,10 +62,9 @@ export function FinanceTransactionsTable({
     filters.cashboxId,
     filters.paymentMethodId,
     filters.memberId,
-    filters.contributorCongregationId,
   ].filter(Boolean).length;
-  const hasActiveFilters =
-    advancedFilterCount > 0 || Boolean(filters.search) || filters.direction !== "ALL";
+  const desktopFilterCount = advancedFilterCount + Number(filters.direction !== "ALL");
+  const hasActiveFilters = desktopFilterCount > 0 || Boolean(filters.search);
   function filter(data: FormData) {
     const query = new URLSearchParams({ unidade: unit, mes: month });
     if (filters.dateFrom && filters.dateTo) {
@@ -101,6 +99,20 @@ export function FinanceTransactionsTable({
       if (request === sequence.current) setLoading(null);
     }
   }
+  const resetButtons = <>
+    <Button className="finance-desktop-only finance-filter-reset" variant="ghost" size="sm" onClick={() => filter(new FormData())}>
+      <X size={14} />Limpar filtros
+    </Button>
+    {advancedFilterCount > 0 && (
+      <Button className="finance-mobile-only finance-filter-reset" variant="ghost" size="sm" onClick={() => {
+        const data = new FormData(filterForm.current!);
+        for (const key of ["status", "titheClassificationId", "departmentId", "categoryId", "cashboxId", "paymentMethodId", "memberId"]) data.delete(key);
+        filter(data);
+      }}>
+        <X size={14} />Limpar filtros
+      </Button>
+    )}
+  </>;
   return (
     <div className="stack">
       <div className="row spread finance-transactions-heading">
@@ -144,26 +156,28 @@ export function FinanceTransactionsTable({
               type="button"
               variant="outline"
               className="finance-filter-toggle"
-              data-active={advanced || advancedFilterCount > 0}
-              aria-label={`Filtros avançados${advancedFilterCount > 0 ? `, ${advancedFilterCount} filtro${advancedFilterCount !== 1 ? "s" : ""} ativo${advancedFilterCount !== 1 ? "s" : ""}` : ""}`}
               aria-expanded={advanced}
               aria-controls="finance-advanced-filters"
               onClick={() => setAdvanced(!advanced)}
               style={{ alignSelf: "end" }}
             >
               <SlidersHorizontal size={16} />
-              <span className="finance-desktop-only">Filtros avançados</span>
+              <span className="finance-desktop-only">Mais Filtros</span>
+              <span className="finance-mobile-only"><span className="sr-only">Mais Filtros</span></span>
+              {desktopFilterCount > 0 && (
+                <span className="finance-desktop-only">{filterCountLabel(desktopFilterCount)}</span>
+              )}
               {advancedFilterCount > 0 && (
-                <span className="finance-active-filter-count">
-                  <span className="finance-desktop-only">{advancedFilterCount} filtro{advancedFilterCount !== 1 ? "s" : ""} ativo{advancedFilterCount !== 1 ? "s" : ""}</span>
-                  <span className="finance-mobile-only" aria-hidden="true">{advancedFilterCount}</span>
+                <span className="finance-mobile-only finance-active-filter-count">
+                  <span aria-hidden="true">{advancedFilterCount}</span>
+                  <span className="sr-only">{filterCountLabel(advancedFilterCount)}</span>
                 </span>
               )}
             </Button>
           </div>
-          <div className="finance-mobile-nature" role="group" aria-label="Filtrar natureza">
+          <div className="finance-mobile-nature" role="group" aria-label="Filtrar movimento">
             {[
-              { label: "Todas", value: "ALL" },
+              { label: "Todos", value: "ALL" },
               { label: "Entradas", value: "INCOME" },
               { label: "Saídas", value: "EXPENSE" },
             ].map((option) => (
@@ -182,15 +196,11 @@ export function FinanceTransactionsTable({
             ))}
           </div>
           <div id="finance-advanced-filters" hidden={!advanced}>
-            <FinanceCongregationFilter unit={unit} initial={filters.contributorCongregationId ? {
-              id: filters.contributorCongregationId,
-              name: result.items.find((item) => item.contributorCongregationId === filters.contributorCongregationId)?.personName ?? "Congregação selecionada",
-            } : null} />
-            <div className="grid" style={{ marginTop: 6 }}>
+            <div className="grid finance-transaction-filter-grid">
               <label className="finance-advanced-direction">
-                Natureza
+                Movimento
                 <select name="direction" defaultValue={filters.direction}>
-                  <option value="ALL">Todas</option>
+                  <option value="ALL">Todos</option>
                   <option value="INCOME">Entradas</option>
                   <option value="EXPENSE">Saídas</option>
                 </select>
@@ -246,33 +256,10 @@ export function FinanceTransactionsTable({
                   </select>
                 </label>
               ))}
+              {advanced && resetButtons}
             </div>
-            {advancedFilterCount > 0 && (
-              <div className="finance-mobile-only finance-advanced-reset">
-                <Button type="button" variant="ghost" size="sm" onClick={() => {
-                  const data = new FormData(filterForm.current!);
-                  for (const key of ["status", "titheClassificationId", "departmentId", "categoryId", "cashboxId", "paymentMethodId", "memberId", "contributorCongregationId"]) data.delete(key);
-                  filter(data);
-                }}><X size={14} />Limpar filtros</Button>
-              </div>
-            )}
           </div>
-          {(advanced || hasActiveFilters) && (
-            <div className="row finance-desktop-only" style={{ justifyContent: "flex-end" }}>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  filterForm.current?.reset();
-                  filter(new FormData());
-                }}
-              >
-                <X size={14} />
-                Limpar filtros
-              </Button>
-            </div>
-          )}
+          {!advanced && hasActiveFilters && resetButtons}
         </form>
         <div className="row spread notice finance-filter-totals">
           <span>
@@ -309,8 +296,8 @@ export function FinanceTransactionsTable({
                 <tr>
                   <th>Data</th>
                   <th>Lançamento</th>
-                  <th>Departamento</th>
                   <th>Pagamento</th>
+                  <th>Departamento</th>
                   <th style={{ textAlign: "right" }}>Valor</th>
                   <th>
                     <span className="sr-only">Detalhes</span>
@@ -335,6 +322,7 @@ export function FinanceTransactionsTable({
                           (t.direction === "INCOME" ? "Coletivo" : "Não informado")}
                       </div>
                     </td>
+                    <td><FinanceTransactionPayment item={t} catalogs={catalogs} /></td>
                     <td>
                       {t.departmentName}
                       {t.classificationName && (
@@ -343,7 +331,6 @@ export function FinanceTransactionsTable({
                         </div>
                       )}
                     </td>
-                    <td><FinanceTransactionPayment item={t} catalogs={catalogs} /></td>
                     <td className="money"><FinanceTransactionAmount item={t} /></td>
                     <td>
                       <Button
@@ -407,6 +394,10 @@ export function FinanceTransactionsTable({
       )}
     </div>
   );
+}
+
+function filterCountLabel(count: number) {
+  return count === 1 ? "1 filtro ativo" : `${count} filtros ativos`;
 }
 
 function TransactionSearch({ initialValue, busy, onClear }: {

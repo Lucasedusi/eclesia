@@ -13,10 +13,14 @@ test("select filters apply immediately and clear preserves the financial context
     `/financeiro/lancamentos?unidade=${f.headquartersId}&mes=2026-10`,
   );
   await page
-    .getByRole("button", { name: "Filtros avançados", exact: true })
+    .getByRole("button", { name: "Mais Filtros", exact: true })
     .click();
+  const lastSelect = await page.getByLabel("Forma de pagamento").boundingBox();
+  const reset = await page.getByRole("button", { name: "Limpar filtros" }).boundingBox();
+  expect(reset!.x).toBeGreaterThanOrEqual(lastSelect!.x + lastSelect!.width);
+  expect(Math.abs(reset!.y + reset!.height - lastSelect!.y - lastSelect!.height)).toBeLessThan(2);
   await page
-    .getByRole("combobox", { name: "Natureza", exact: true })
+    .getByRole("combobox", { name: "Movimento", exact: true })
     .selectOption("EXPENSE");
   await expect(page).toHaveURL(/direction=EXPENSE/);
   await page
@@ -32,7 +36,7 @@ test("select filters apply immediately and clear preserves the financial context
     new RegExp(`unidade=${f.headquartersId}&mes=2026-10$`),
   );
   await expect(
-    page.getByRole("combobox", { name: "Natureza", exact: true }),
+    page.getByRole("combobox", { name: "Movimento", exact: true }),
   ).toHaveValue("ALL");
 });
 test("sidebar keeps collapsed preference and cashbox cards have aligned balances", async ({

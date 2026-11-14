@@ -16,7 +16,6 @@ export function FinanceTransactionDrawer(
             : "Nova entrada"
       }
       description={<><span className="finance-desktop-only">A confirmação registra o lançamento e atualiza o caixa.</span><span className="finance-mobile-only">A confirmação registra o lançamento.</span></>}
-      headerShadowOnScroll
       className="finance-drawer finance-entry-drawer"
       busy={status.busy}
       onClose={() => {

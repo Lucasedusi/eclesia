@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { ChevronLeft, ChevronRight, FileText, SlidersHorizontal } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, FileText, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FinanceDailyReportDialog } from "./finance-daily-report-dialog";
 import { FinanceSummaryCards } from "./finance-summary-cards";
@@ -121,11 +121,14 @@ export function FinanceDailyCashFlow({ data, filters, today }: Props) {
           <Button variant="ghost" size="sm" disabled={isPending || !isLocalDate(previous)} aria-label="Dia anterior" onClick={() => update({ date: previous })}><ChevronLeft size={17} /></Button>
           <Button variant="ghost" size="sm" disabled={isPending || !isLocalDate(next)} aria-label="Próximo dia" onClick={() => update({ date: next })}><ChevronRight size={17} /></Button>
         </div>
-        <input className="finance-daily-control" aria-label="Data de movimento" type="date" min="2000-01-01" max="2099-12-31"
-          key={filters.date} defaultValue={filters.date} disabled={isPending} onInput={(event) => {
-            const date = event.currentTarget.value;
-            if (date !== filters.date && isLocalDate(date)) update({ date });
-          }} />
+        <div className="finance-daily-date">
+          <input className="finance-daily-control" aria-label="Data de movimento" type="date" min="2000-01-01" max="2099-12-31"
+            key={filters.date} defaultValue={filters.date} disabled={isPending} onInput={(event) => {
+              const date = event.currentTarget.value;
+              if (date !== filters.date && isLocalDate(date)) update({ date });
+            }} />
+          <CalendarDays size={16} aria-hidden="true" />
+        </div>
         <select className="finance-daily-control" aria-label="Caixa ou conta" value={filters.box ?? ""} disabled={isPending}
           onChange={(event) => update({ box: event.target.value || undefined })}>
           <option value="">Todos os caixas e contas</option>

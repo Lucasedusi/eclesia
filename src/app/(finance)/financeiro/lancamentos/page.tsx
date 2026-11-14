@@ -23,7 +23,7 @@ async function Content({
   const filters = financeFiltersSchema.parse(
     Object.fromEntries(
       Object.entries({ ...search, month }).filter(
-        ([key]) => key in financeFiltersSchema.shape,
+        ([key]) => key !== "contributorCongregationId" && key in financeFiltersSchema.shape,
       ),
     ),
   );

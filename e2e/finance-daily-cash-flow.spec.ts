@@ -11,7 +11,10 @@ for (const width of [390, 1280]) {
     const f = JSON.parse(readFileSync(process.env.E2E_FINANCE_FIXTURE!, "utf8"));
     await page.setViewportSize({ width, height: 900 });
     await page.goto(`/financeiro?unidade=${f.unitId}&mes=2026-10`);
-    await page.getByRole("link", { name: "Fluxo de caixa diário" }).click();
+    const shortcut = page.getByRole("link", { name: "Fluxo de caixa diário" });
+    await expect(shortcut).toHaveCSS("height", "48px");
+    await expect(shortcut).toHaveCSS("padding", "10px 14px");
+    await shortcut.click();
     const header = page.locator(".finance-daily-heading");
     const title = header.getByRole("heading", { name: "Fluxo de caixa diário" });
     const date = header.getByLabel("Data de movimento");
@@ -24,9 +27,17 @@ for (const width of [390, 1280]) {
     await expect(account).toBeVisible();
     const [dateBox, accountBox, titleBox] = await Promise.all([date.boundingBox(), account.boundingBox(), title.boundingBox()]);
     if (!dateBox || !accountBox || !titleBox) throw new Error("Cabeçalho do fluxo diário indisponível");
-    expect(dateBox.x + dateBox.width).toBeLessThanOrEqual(accountBox.x);
-    expect(Math.abs(dateBox.y - accountBox.y)).toBeLessThanOrEqual(1);
-    expect(Math.abs(dateBox.width - accountBox.width)).toBeLessThanOrEqual(1);
+    if (width >= 768) {
+      expect(dateBox.x + dateBox.width).toBeLessThanOrEqual(accountBox.x);
+      expect(Math.abs(dateBox.y - accountBox.y)).toBeLessThanOrEqual(1);
+      expect(accountBox.width).toBeGreaterThan(dateBox.width);
+    } else {
+      expect(accountBox.y).toBeGreaterThanOrEqual(dateBox.y + dateBox.height);
+    }
+    expect(accountBox.width).toBeGreaterThanOrEqual(215);
+    await expect(header.getByRole("button", { name: "Relatórios" })).toHaveCSS("padding", "10px 14px");
+    const calendar = await header.locator(".finance-daily-date svg").boundingBox();
+    expect(Math.abs(dateBox.x + dateBox.width - calendar!.x - calendar!.width - 14)).toBeLessThan(2);
     expect(dateBox.height).toBe(48);
     expect(accountBox.height).toBe(48);
     if (width >= 768) expect(titleBox.x + titleBox.width).toBeLessThan(dateBox.x);

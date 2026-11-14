@@ -39,8 +39,8 @@ export function FinanceMobileTransactionCards({
                   item.description ||
                   (item.direction === "INCOME" ? "Contribuição coletiva" : "Não informado")}
               </span>
-              <span>{[item.departmentName, item.classificationName].filter(Boolean).join(" · ")}</span>
               <FinanceTransactionPayment item={item} catalogs={catalogs} />
+              <span>{[item.departmentName, item.classificationName].filter(Boolean).join(" · ")}</span>
             </span>
             <strong className="finance-mobile-transaction-side"><FinanceTransactionAmount item={item} /></strong>
             {loadingId === item.id && (

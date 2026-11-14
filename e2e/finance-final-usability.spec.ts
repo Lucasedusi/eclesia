@@ -42,9 +42,9 @@ test("search can be cleared and advanced reset stays inside expanded filters", a
   await page.getByRole("button", { name: "Limpar busca" }).click();
   await expect(search).toHaveValue("");
   await expect(page).not.toHaveURL(/search=/);
-  await page.getByRole("button", { name: "Filtros avançados", exact: true }).click();
+  await page.getByRole("button", { name: "Mais Filtros", exact: true }).click();
   await expect(page.getByRole("button", { name: "Limpar filtros", exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Filtros avançados", exact: true }).click();
+  await page.getByRole("button", { name: "Mais Filtros", exact: true }).click();
   await expect(page.getByRole("button", { name: "Limpar filtros", exact: true })).toHaveCount(0);
   const rows = page.locator(".finance-row-income,.finance-row-expense");
   await expect(rows.first()).toBeVisible();
