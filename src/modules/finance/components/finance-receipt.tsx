@@ -15,7 +15,7 @@ export function FinanceReceipt({
   unit: string;
   autoPrint?: boolean;
 }) {
-  const [width, setWidth] = useState(80),
+  const [width, setWidth] = useState(58),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     started = useRef(false);
@@ -56,6 +56,8 @@ export function FinanceReceipt({
   return (
     <div className="stack finance-receipt-roll">
       <style>{`
+        .financial-receipt .receipt-details > strong { font-size: calc(0.9em + 1px); }
+        .financial-receipt .receipt-total { font-size: 16px; }
         @media print {
           /* Use the roll size selected in the printer driver; "58mm auto" is invalid CSS. */
           @page { size: auto; margin: 3mm 0; }
@@ -77,6 +79,13 @@ export function FinanceReceipt({
             font-size: 10px !important;
           }
           .financial-receipt h1 { font-size: 11px !important; }
+          .financial-receipt header > p,
+          .financial-receipt .receipt-details,
+          .financial-receipt .receipt-amount-row { font-size: 12px; }
+          .financial-receipt .receipt-details > strong { font-size: inherit; }
+          .financial-receipt .receipt-total { font-size: 18px; }
+          .financial-receipt footer > p,
+          .financial-receipt footer address { font-size: 11px; }
           ${width === 58 ? `
             .financial-receipt .receipt-amount-row { flex-wrap: wrap; gap: 4px 8px; }
             .financial-receipt .receipt-amount-row > span { margin-left: auto; white-space: nowrap; }
@@ -90,8 +99,8 @@ export function FinanceReceipt({
             value={width}
             onChange={(e) => setWidth(Number(e.target.value))}
           >
-            <option value={80}>80 mm</option>
             <option value={58}>58 mm</option>
+            <option value={80}>80 mm</option>
           </select>
         </label>
         <Button loading={busy} onClick={() => void requestPrint()}>
@@ -154,8 +163,8 @@ export function FinanceReceipt({
             {receipt.status === "CANCELLED" ? "CANCELADO" : "SUBSTITUÍDO"}
           </strong>
         )}
-        <div>
-          <strong style={{ display: "block", textAlign: "left", fontSize: "calc(0.9em + 1px)", marginBottom: 2 }}>
+        <div className="receipt-details">
+          <strong style={{ display: "block", textAlign: "left", marginBottom: 2 }}>
             {receipt.personName || (receipt.direction === "INCOME" ? "Contribuição coletiva" : "Não informado")}
           </strong>
           Data: <time dateTime={receipt.date}>{receipt.date.split("-").reverse().join("/")}</time>
@@ -197,12 +206,11 @@ export function FinanceReceipt({
           ))}
         </div>
         <div
-          className="receipt-amount-row"
+          className="receipt-amount-row receipt-total"
           style={{
             display: "flex",
             justifyContent: "space-between",
             fontWeight: 600,
-            fontSize: 16,
           }}
         >
           Total <span>{formatMoney(receipt.totalCents)}</span>

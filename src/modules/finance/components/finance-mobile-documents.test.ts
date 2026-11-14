@@ -41,8 +41,7 @@ describe("mobile finance documents", () => {
       },
     })));
     expect(html).toContain("finance-mobile-receipt-controls");
-    expect(html).toContain("58 mm");
-    expect(html).toContain("80 mm");
+    expect(html).toContain('<option value="58" selected="">58 mm</option><option value="80">80 mm</option>');
     expect(html).toContain("Imprimir comprovante");
     expect(html).toMatch(/@media print\s*\{[^<]*?\.financial-receipt\s*\{[^}]*font-family:\s*Helvetica,/);
     expect(html).toContain("Missões");
@@ -64,7 +63,7 @@ describe("mobile finance documents", () => {
     expect(footer).toContain("Eclesias");
     expect(footer).toContain("Obrigado por sua contribuição.");
     expect(html).not.toContain("Nome:");
-    expect(html).toContain('<strong style="display:block;text-align:left;font-size:calc(0.9em + 1px);margin-bottom:2px">Pessoa Teste</strong>');
+    expect(html).toMatch(/<div class="receipt-details"><strong[^>]*>Pessoa Teste<\/strong>/);
     expect(html.indexOf("Pessoa Teste")).toBeLessThan(html.indexOf("Data:"));
     expect(html).not.toContain("Pessoa:");
     expect(html).toContain("14/10/2026");

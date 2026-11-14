@@ -48,7 +48,22 @@ test("thermal receipt preserves registration time and fits both paper widths", a
     await page.getByRole("combobox", { name: "Largura do papel" }).selectOption(String(mm));
     await page.emulateMedia({ media: "print" });
     await expect(receipt).toHaveCSS("font-family", /^Helvetica,/);
-    await expect(contributor).toHaveCSS("font-size", "10px");
+    for (const field of [
+      receipt.getByText("Comprovante de contribuição", { exact: true }),
+      contributor,
+      receipt.locator("time").first(),
+      registered,
+      receipt.locator(".receipt-details"),
+      receipt.getByTestId("receipt-item").first().locator("strong"),
+      receipt.getByTestId("receipt-item").first().locator(".receipt-amount-row span"),
+    ]) {
+      await expect(field).toHaveCSS("font-size", "12px");
+    }
+    await expect(receipt.locator(".receipt-total span")).toHaveCSS("font-size", "18px");
+    for (const message of ["Obrigado por sua contribuição.", "Deus ama quem dá com alegria"]) {
+      await expect(receipt.getByText(message, { exact: true })).toHaveCSS("font-size", "11px");
+    }
+    if (f.receiptHeader) await expect(receipt.locator("address")).toHaveCSS("font-size", "11px");
     await page.evaluate(async () => {
       await document.fonts.ready;
       await Promise.all(Array.from(document.querySelectorAll(".financial-receipt img")).map((img) =>
