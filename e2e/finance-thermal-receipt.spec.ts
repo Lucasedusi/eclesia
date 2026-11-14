@@ -42,10 +42,13 @@ test("thermal receipt preserves registration time and fits both paper widths", a
     await expect(logo).toBeVisible();
     await expect(logo).toHaveCSS("filter", "grayscale(1) contrast(1.2)");
   }
+  const contributor = receipt.getByText("Maria Aparecida dos Santos Oliveira — pessoa fictícia", { exact: true });
+  const screenFont = await receipt.evaluate((el) => getComputedStyle(el).fontFamily);
   for (const mm of [58, 80]) {
     await page.getByRole("combobox", { name: "Largura do papel" }).selectOption(String(mm));
     await page.emulateMedia({ media: "print" });
-    await expect(receipt).toHaveCSS("font-family", /^Arial(?:,|$)/);
+    await expect(receipt).toHaveCSS("font-family", screenFont);
+    await expect(contributor).toHaveCSS("font-size", "10px");
     await page.evaluate(async () => {
       await document.fonts.ready;
       await Promise.all(Array.from(document.querySelectorAll(".financial-receipt img")).map((img) =>
@@ -56,9 +59,10 @@ test("thermal receipt preserves registration time and fits both paper widths", a
     await page.setViewportSize({ width: 794, height: 1123 });
     const bounds = (await receipt.boundingBox())!;
     const mainBounds = (await page.locator(".finance-main").boundingBox())!;
-    expect(Math.abs(bounds.x - mainBounds.x)).toBeLessThan(1);
-    // A 58 mm roll only has 48 mm of printable width on the tested printer.
-    expect(Math.abs(bounds.width - (mm === 58 ? 47 : 74) * 96 / 25.4)).toBeLessThan(1);
+    const pxPerMm = 96 / 25.4;
+    // On wide paper the roll stays on the left; the 48 mm head is centered within 58 mm.
+    expect(bounds.x - mainBounds.x).toBeCloseTo((mm === 58 ? 5 : 0) * pxPerMm, 0);
+    expect(bounds.width).toBeCloseTo((mm === 58 ? 48 : 80) * pxPerMm, 0);
     const sideMargins = await page.evaluate(() => {
       for (const sheet of Array.from(document.styleSheets)) {
         for (const rule of Array.from(sheet.cssRules)) {
@@ -72,7 +76,13 @@ test("thermal receipt preserves registration time and fits both paper widths", a
       }
       return [];
     });
-    expect(sideMargins).toEqual(mm === 58 ? ["5mm", "6mm"] : ["3mm", "3mm"]);
+    expect(sideMargins.map(parseFloat)).toEqual([0, 0]);
+    // Some drivers already remove the non-printable area from the page.
+    const driverWidth = Math.floor((mm === 58 ? 48 : 72) * pxPerMm);
+    await page.setViewportSize({ width: driverWidth, height: 1123 });
+    const driverBounds = (await receipt.boundingBox())!;
+    expect(driverBounds.x).toBeCloseTo(0, 0);
+    expect(driverBounds.width).toBeCloseTo(driverWidth, 0);
     const overflow = await receipt.evaluate((el) => {
       const bounds = el.getBoundingClientRect();
       return Array.from(el.querySelectorAll("*")).some((child) => {

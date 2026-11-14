@@ -63,7 +63,7 @@ describe("mobile finance documents", () => {
     expect(footer).toContain("Eclesias");
     expect(footer).toContain("Obrigado por sua contribuição.");
     expect(html).not.toContain("Nome:");
-    expect(html).toContain('<strong style="display:block;text-align:left;font-size:0.9em;margin-bottom:2px">Pessoa Teste</strong>');
+    expect(html).toContain('<strong style="display:block;text-align:left;font-size:calc(0.9em + 1px);margin-bottom:2px">Pessoa Teste</strong>');
     expect(html.indexOf("Pessoa Teste")).toBeLessThan(html.indexOf("Data:"));
     expect(html).not.toContain("Pessoa:");
     expect(html).toContain("14/10/2026");
