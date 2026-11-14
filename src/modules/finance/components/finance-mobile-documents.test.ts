@@ -44,6 +44,7 @@ describe("mobile finance documents", () => {
     expect(html).toContain("58 mm");
     expect(html).toContain("80 mm");
     expect(html).toContain("Imprimir comprovante");
+    expect(html).toMatch(/@media print\s*\{[^<]*?\.financial-receipt\s*\{[^}]*font-family:\s*Helvetica,/);
     expect(html).toContain("Missões");
     const header = html.match(/<header[^>]*>([\s\S]*?)<\/header>/)![1];
     const footer = html.match(/<footer[^>]*>([\s\S]*?)<\/footer>/)![1];

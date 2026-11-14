@@ -47,7 +47,7 @@ test("thermal receipt preserves registration time and fits both paper widths", a
   for (const mm of [58, 80]) {
     await page.getByRole("combobox", { name: "Largura do papel" }).selectOption(String(mm));
     await page.emulateMedia({ media: "print" });
-    await expect(receipt).toHaveCSS("font-family", screenFont);
+    await expect(receipt).toHaveCSS("font-family", /^Helvetica,/);
     await expect(contributor).toHaveCSS("font-size", "10px");
     await page.evaluate(async () => {
       await document.fonts.ready;
@@ -106,6 +106,7 @@ test("thermal receipt preserves registration time and fits both paper widths", a
       });
     }
     await page.emulateMedia({ media: "screen" });
+    await expect(receipt).toHaveCSS("font-family", screenFont);
     await page.setViewportSize({ width: 390, height: 844 });
   }
   await page.evaluate(() => { window.print = () => { document.body.dataset.printRequested = "true"; }; });

@@ -73,6 +73,7 @@ export function FinanceReceipt({
             border: 0 !important;
             padding: 0 !important;
             margin: 0 auto !important;
+            font-family: Helvetica, "Helvetica Neue", Arial, sans-serif;
             font-size: 10px !important;
           }
           .financial-receipt h1 { font-size: 11px !important; }
