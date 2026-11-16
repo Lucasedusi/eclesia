@@ -266,7 +266,6 @@ export function FinanceRuleEditor({
             )}
             <Button
               className="finance-rule-remove"
-              variant="outline"
               onClick={() => {
                 setItems((current) => current.filter((v) => v.key !== r.key));
                 setDirty(true);

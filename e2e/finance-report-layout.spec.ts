@@ -20,14 +20,20 @@ test("desktop groups delivery navigation with report choices and removes redunda
     .getByRole("link", { name: /Entrega de relatórios/ });
   await expect(delivery).toBeVisible();
   await expect(
-    page.locator(".finance-report-types > :last-child"),
+    page.locator(".finance-report-types:visible > :last-child"),
   ).toContainText("Entrega de relatórios");
-  await page
-    .getByRole("radio", {
-      name: "Informativo geral por congregação",
-      exact: true,
-    })
-    .check();
+  for (const title of [
+    "Comparativo individual por congregação",
+    "Informativo geral por congregação",
+  ]) {
+    await page.getByRole("radio", { name: title, exact: true }).check();
+    const month = await page.getByLabel("Mês final").boundingBox();
+    const generate = await page
+      .getByRole("button", { name: "Gerar relatório" })
+      .boundingBox();
+    expect(generate!.x).toBeGreaterThanOrEqual(month!.x + month!.width);
+    expect(Math.abs(generate!.y - month!.y)).toBeLessThan(2);
+  }
   await expect(page.getByLabel("Incluir congregações inativas")).toHaveCount(0);
   await page.getByRole("radio", { name: "Por categoria", exact: true }).check();
   await expect(
@@ -127,3 +133,38 @@ test("catalog columns stay fixed across tabs and edit actions start beneath the 
     });
   }
 });
+
+for (const width of [390, 1280]) {
+  test(`category filters keep the layout stable and the finance header stays visible at ${width}px`, async ({ page }) => {
+    const f = fixture();
+    await page.setViewportSize({ width, height: 700 });
+    await page.goto(`/financeiro/configuracoes?unidade=${f.unitId}&mes=2026-10`);
+    await page.getByRole("button", { name: "Categorias", exact: true }).click();
+    const card = page.locator(".finance-settings-catalog:visible");
+    const search = page.getByRole("searchbox", { name: "Buscar categoria" });
+    const cardBefore = await card.boundingBox();
+    const searchBefore = await search.boundingBox();
+    await search.fill("categoria-inexistente");
+    await expect(page.getByText("Nenhuma categoria corresponde aos filtros.")).toBeVisible();
+    expect((await card.boundingBox())!.height).toBeCloseTo(cardBefore!.height, 0);
+    expect((await search.boundingBox())!.width).toBeCloseTo(searchBefore!.width, 0);
+    const clear = page.getByRole("button", { name: "Limpar busca" });
+    await expect(clear).toBeVisible();
+    await expect(search).toHaveAttribute("type", "text");
+    await expect(clear).not.toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+    await clear.click();
+    await expect(search).toHaveValue("");
+    await expect(search).toBeFocused();
+
+    await page.getByRole("button", { name: "Regras do demonstrativo" }).click();
+    const item = page.getByRole("group", { name: "Item 1", exact: true });
+    const remove = item.getByRole("button", { name: "Remover item 1", exact: true });
+    await expect(remove).toHaveCSS("background-color", "rgb(8, 127, 91)");
+    await expect(remove).toHaveCSS("color", "rgb(255, 255, 255)");
+    const left = await item.getByLabel("Descrição do item").boundingBox();
+    expect(Math.abs((await remove.boundingBox())!.x - left!.x)).toBeLessThan(2);
+    await page.evaluate(() => window.scrollTo({ top: 500, behavior: "instant" }));
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(100);
+    expect((await page.getByRole("banner").boundingBox())!.y).toBeCloseTo(0, 0);
+  });
+}

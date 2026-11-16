@@ -113,6 +113,24 @@ function FinanceReportsContent({
         ? `relatorio-${ranking ? "ranking" : "informativo"}-${startMonth}-a-${endMonth}.pdf`
         : `relatorio-${type === "ANALYTIC" ? "analitico" : "sintetico"}-${month}.pdf`,
   );
+  const generateButton = (
+    <Button
+      onClick={() => void generate()}
+      disabled={
+        busy ||
+        isPending ||
+        (informative && !periodValidation.success) ||
+        (categoryReport && !categoryValidation.success)
+      }
+    >
+      {busy ? (
+        <span className="finance-spinner" aria-hidden="true" />
+      ) : (
+        <FileText size={17} />
+      )}
+      Gerar relatório
+    </Button>
+  );
   return (
     <div className="stack finance-reports">
       <header className="finance-page-header finance-mobile-page-heading">
@@ -237,7 +255,7 @@ function FinanceReportsContent({
             {categoryValidation.error.issues[0].message}
           </p>
         )}
-        {informative && (
+        {informative ? (
           <div className="stack finance-informative-options">
             <div className="finance-informative-period">
               <label>
@@ -266,6 +284,7 @@ function FinanceReportsContent({
                   }}
                 />
               </label>
+              {generateButton}
             </div>
             {!periodValidation.success && (
               <p role="alert" className="finance-report-error">
@@ -298,9 +317,8 @@ function FinanceReportsContent({
               </label>
             </fieldset>
           </div>
-        )}
-        <div className="finance-report-controls finance-mobile-report-controls">
-          {!informative && (
+        ) : (
+          <div className="finance-report-controls finance-mobile-report-controls">
             <label>
               Caixas e contas
               <select
@@ -319,24 +337,9 @@ function FinanceReportsContent({
                 ))}
               </select>
             </label>
-          )}
-          <Button
-            onClick={() => void generate()}
-            disabled={
-              busy ||
-              isPending ||
-              (informative && !periodValidation.success) ||
-              (categoryReport && !categoryValidation.success)
-            }
-          >
-            {busy ? (
-              <span className="finance-spinner" aria-hidden="true" />
-            ) : (
-              <FileText size={17} />
-            )}
-            Gerar relatório
-          </Button>
-        </div>
+            {generateButton}
+          </div>
+        )}
       </section>
       {error && (
         <div role="alert" className="notice finance-report-error">

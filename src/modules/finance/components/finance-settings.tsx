@@ -159,8 +159,8 @@ export function FinanceSettings({
             <div className="finance-category-filters">
               <label>Buscar categoria
                 <span className="finance-search-input">
-                  <input ref={searchInput} type="search" aria-label="Buscar categoria" value={search} maxLength={120} placeholder="Nome da categoria" onChange={(event) => setSearch(event.target.value)} />
-                  {search && <button type="button" className="finance-clear-search" aria-label="Limpar busca" onClick={() => {
+                  <input ref={searchInput} type="text" role="searchbox" aria-label="Buscar categoria" value={search} maxLength={120} placeholder="Nome da categoria" onChange={(event) => setSearch(event.target.value)} />
+                  {search && <button type="button" aria-label="Limpar busca" onClick={() => {
                     setSearch("");
                     searchInput.current?.focus();
                   }}><X size={16} /></button>}
@@ -173,21 +173,26 @@ export function FinanceSettings({
                   <option value="INACTIVE">Inativas</option>
                 </select>
               </label>
-              {filteringCategories && <Button variant="ghost" onClick={() => {
+              <Button disabled={!filteringCategories} variant="ghost" onClick={() => {
                 setSearch("");
                 setStatus("ALL");
                 searchInput.current?.focus();
-              }}><X size={16} />Limpar filtros</Button>}
+              }}><X size={16} />Limpar filtros</Button>
             </div>
           )}
-          {isPending ? (
-            <FinanceSkeleton table />
-          ) : rows.length === 0 ? (
-            <FinanceEmpty>
-              {filteringCategories ? "Nenhuma categoria corresponde aos filtros." : "Nenhum cadastro por aqui. Comece adicionando o primeiro."}
-            </FinanceEmpty>
-          ) : (
-            <div className="table-scroll">
+          <div
+            className={tab === "CATEGORY" ? "table-scroll finance-category-results" : "table-scroll"}
+            role={tab === "CATEGORY" ? "region" : undefined}
+            aria-label={tab === "CATEGORY" ? "Resultados de categorias" : undefined}
+            tabIndex={tab === "CATEGORY" ? 0 : undefined}
+          >
+            {isPending ? (
+              <FinanceSkeleton table />
+            ) : rows.length === 0 ? (
+              <FinanceEmpty>
+                {filteringCategories ? "Nenhuma categoria corresponde aos filtros." : "Nenhum cadastro por aqui. Comece adicionando o primeiro."}
+              </FinanceEmpty>
+            ) : (
               <table className="finance-mobile-card-table finance-settings-table">
                 <colgroup>
                   <col />
@@ -233,8 +238,8 @@ export function FinanceSettings({
                   ))}
                 </tbody>
               </table>
-            </div>
-          )}
+            )}
+          </div>
         </section>
       )}
       {editing && (

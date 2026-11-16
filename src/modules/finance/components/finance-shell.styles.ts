@@ -249,7 +249,7 @@ export const FinanceStyles = createGlobalStyle`
  :is(.finance,#finance-modal-root) .finance-payment-tile:has(input:checked) .finance-payment-check{opacity:1}
  .finance .finance-attendance-form{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:30px;align-items:start}
  .finance .finance-attendance-form>[role=status],.finance .finance-attendance-form>[role=alert],.finance .finance-attendance-form>.notice{grid-column:1/-1}
- .finance .finance-attendance-summary{position:sticky;top:20px;padding:22px;background:#F4F8F5;border:1px solid #E0EAE3;border-radius:14px}
+ .finance .finance-attendance-summary{position:sticky;top:128px;padding:22px;background:#F4F8F5;border:1px solid #E0EAE3;border-radius:14px}
  .finance .finance-attendance-summary>.row{display:grid;gap:10px}
  .finance .finance-attendance-summary button{width:100%}
  .finance .finance-attendance-total{gap:12px;padding-bottom:20px;border-bottom:1px solid #DCE7DF}
@@ -283,12 +283,19 @@ export const FinanceStyles = createGlobalStyle`
  .finance .finance-statement-featured .finance-summary-icon{background:#FFFFFF24;color:white}
  .finance .finance-statement-pastor{background:linear-gradient(120deg,#E5F2E7,#F6FAF4);color:#194B39}
  .finance .finance-rule-item legend{padding:5px 12px;background:#E4F1E9;color:#194B39;border-radius:8px;font-weight:700}
- .finance .finance-rule-remove{justify-self:start;color:#087F5B;border-color:#087F5B}
+ .finance .finance-rule-remove{justify-self:start;width:fit-content;margin-inline-end:auto}
  .finance .finance-category-filters,.finance .finance-deadline-controls{
    display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;
  }
  .finance .finance-category-filters label,.finance .finance-deadline-controls label{min-width:0;flex:1 1 180px}
  .finance .finance-category-filters .finance-search-input{display:block}
+ .finance .finance-category-filters>button:disabled{visibility:hidden}
+ @media screen {
+   .finance .finance-category-results{block-size:clamp(15rem,52svh,32rem);overflow:auto}
+ }
+ @media screen and (min-width:761px){
+   .finance .finance-category-results th{position:sticky;top:0;z-index:1}
+ }
  .finance .finance-category-period{display:grid;gap:16px;grid-template-columns:repeat(3,minmax(0,1fr)) minmax(220px,1.6fr)}
  .finance .finance-category-options{container-type:inline-size}
  @container(max-width:700px){.finance .finance-category-period{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -601,9 +608,11 @@ export const Workspace = styled.div`
     align-items: center;
   }
   .finance-topbar {
-    position: relative;
+    position: sticky;
+    top: 0;
+    z-index: 15;
     margin-left: 230px;
-    background: #ffffffd9;
+    background: #fff;
     border-bottom: 1px solid #e3eae6;
     padding: 18px 36px;
     display: flex;
@@ -1218,7 +1227,8 @@ export const Workspace = styled.div`
   .finance-deliveries input[type="checkbox"], .finance-informative-options input[type="checkbox"] { width: auto; }
   .finance-informative-period {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: end;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
     gap: 16px;
   }
   .finance-informative-columns {
@@ -1305,6 +1315,7 @@ export const Workspace = styled.div`
     min-width: 240px;
     flex: 1;
   }
+  .finance-informative-period button,
   .finance-report-controls button {
     height: 48px;
     min-height: 48px;
