@@ -20,8 +20,14 @@ export function FinanceSelect({
   children,
   hideLabel,
   fieldClassName,
+  popupWidth,
   ...props
-}: SelectHTMLAttributes<HTMLSelectElement> & { label: string; hideLabel?: boolean; fieldClassName?: string }) {
+}: SelectHTMLAttributes<HTMLSelectElement> & {
+  label: string;
+  hideLabel?: boolean;
+  fieldClassName?: string;
+  popupWidth?: number;
+}) {
   const id = useId();
   const select = useRef<HTMLSelectElement>(null);
   const [choices, setChoices] = useState<Choice[] | null>(null);
@@ -159,7 +165,7 @@ export function FinanceSelect({
         <ChevronDown size={17} aria-hidden="true" className={styles.chevron} />
       </div>
       {open && (
-        <FinanceFieldPopup anchor={select} onDismiss={() => setChoices(null)}>
+        <FinanceFieldPopup anchor={select} width={popupWidth} onDismiss={() => setChoices(null)}>
           <div onKeyDown={navigate}>
             {searchable && (
               <input

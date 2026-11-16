@@ -622,6 +622,12 @@ export const Workspace = styled.div`
     align-items: center;
     gap: 14px;
   }
+  .finance-context:has(> .finance-congregation-field) {
+    min-width: 0;
+  }
+  .finance-congregation-field {
+    width: clamp(240px, 28vw, 384px);
+  }
   .finance-context label {
     font-size: 10px;
     text-transform: uppercase;
@@ -1054,6 +1060,12 @@ export const Workspace = styled.div`
       display: grid;
       grid-template-columns: minmax(0, 1fr) minmax(150px, 1.1fr);
       gap: 12px;
+      width: 100%;
+    }
+    .finance-context:has(> .finance-congregation-field) {
+      grid-template-columns: minmax(0, 1fr) clamp(112px, 32vw, 170px);
+    }
+    .finance-congregation-field {
       width: 100%;
     }
     .finance-context label {

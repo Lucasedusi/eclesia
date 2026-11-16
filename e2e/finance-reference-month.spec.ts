@@ -114,7 +114,7 @@ test("bank draft preserves reference through reload, then posts using statement 
   sheet.addRow(["05/11/2026", name, "PIX RECEBIDO", "Referência de outubro", 17.45]);
   await page.goto(`/financeiro/lancamentos/importacoes?unidade=${f.unitId}&mes=2026-11`);
   await page.getByRole("combobox", { name: "Conta bancária", exact: true }).selectOption(f.boxes[f.unitId].bank);
-  await page.getByLabel("Extrato XLSX do Sicoob").setInputFiles({ name, mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", buffer: Buffer.from(await book.xlsx.writeBuffer()) });
+  await page.getByRole("button", { name: "Extrato XLSX do Sicoob", exact: true }).setInputFiles({ name, mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", buffer: Buffer.from(await book.xlsx.writeBuffer()) });
   await expect(page.getByRole("status").filter({ hasText: name })).toBeVisible();
   await page.getByRole("button", { name: "Preparar importação", exact: true }).click();
   await page.getByRole("button", { name: "Conferir linha 3", exact: true }).click();

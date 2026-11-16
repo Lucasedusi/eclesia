@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useId, useLayoutEffect, useRef, useState } from "react";
 import { CalendarDays } from "lucide-react";
 import { isLocalDate, isMonth } from "../utils/finance-period";
+import FinanceMonthPicker from "./finance-month-picker";
 import { FinanceFieldPopup } from "./finance-field-popup";
 import styles from "./finance-pickers.module.css";
 
@@ -14,8 +15,6 @@ export const FinanceCalendar = dynamic(() => import("./finance-calendar"), {
     </p>
   ),
 });
-
-const FinanceMonthPicker = dynamic(() => import("./finance-month-picker"));
 
 export function FinanceDateField({
   label,

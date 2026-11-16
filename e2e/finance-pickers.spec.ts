@@ -200,3 +200,50 @@ test("Escape during calendar loading returns to the entry", async ({
     release();
   }
 });
+
+for (const field of ["Período", "Mês de referência"]) {
+  test(`first opening of ${field} keeps the screen visible with pending scripts`, async ({ page }) => {
+    const { unitId } = JSON.parse(readFileSync(process.env.E2E_FINANCE_FIXTURE!, "utf8"));
+    const entry = field === "Mês de referência";
+    await page.goto(`/financeiro${entry ? "/lancamentos" : ""}?unidade=${unitId}&mes=2026-10`);
+    await page.reload();
+    if (entry) await page.getByRole("button", { name: "Nova entrada", exact: true }).click();
+    const container = entry ? page.getByRole("dialog", { name: "Nova entrada" }) : page.getByRole("banner");
+    const input = container.getByLabel(field, { exact: true });
+    const initial = await input.inputValue();
+    let release!: () => void;
+    const pending = new Promise<void>(resolve => { release = resolve; });
+    await page.route("**/_next/static/chunks/*.js*", async route => {
+      await pending;
+      await route.continue();
+    });
+    try {
+      await container.getByRole("button", { name: `Abrir calendário de ${field.toLowerCase()}` }).click();
+      await expect(input).toBeVisible();
+      await expect(container.getByRole("dialog", { name: "Escolher mês" }).getByRole("button", {name: "Ano anterior"})).toBeVisible();
+      await page.keyboard.press("Escape");
+      await expect(input).toHaveValue(initial);
+    } finally {
+      release();
+    }
+  });
+}
+
+for (const width of [320, 390, 1280]) {
+  test(`congregation options use the available space at ${width}px`, async ({page}) => {
+    const {unitId} = JSON.parse(readFileSync(process.env.E2E_FINANCE_FIXTURE!, "utf8"));
+    await page.setViewportSize({width, height: 844});
+    await page.goto(`/financeiro?unidade=${unitId}&mes=2026-10`);
+    const field = page.getByRole("banner").getByRole("combobox", {name: "Congregação"});
+    await field.click();
+    const list = page.getByRole("listbox", {name: "Congregação"});
+    await expect(list).toBeVisible();
+    const anchor = (await field.boundingBox())!;
+    const panel = (await list.boundingBox())!;
+    expect(anchor.width).toBeGreaterThanOrEqual(width === 1280 ? 320 : width * 0.48);
+    expect(panel.width).toBeGreaterThan(anchor.width);
+    expect(panel.x).toBeGreaterThanOrEqual(0);
+    expect(panel.x + panel.width).toBeLessThanOrEqual(width);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+  });
+}

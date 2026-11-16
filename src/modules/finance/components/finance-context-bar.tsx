@@ -47,6 +47,8 @@ export function FinanceContextBar({
       ) : (
         <FinanceSelect
           label="Congregação"
+          fieldClassName="finance-congregation-field"
+          popupWidth={480}
           value={selectedUnitId}
           onChange={(e) => onChange(e.target.value, month)}
         >
