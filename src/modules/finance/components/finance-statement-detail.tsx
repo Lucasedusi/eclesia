@@ -1,4 +1,4 @@
-import { ArrowDownLeft, Calculator, Layers3 } from "lucide-react";
+import { ArrowDownLeft, Calculator, Church, Layers3, ListTree, Wallet } from "lucide-react";
 import type { StatementVersionDTO } from "../types/finance-statement.types";
 import { formatMoney } from "../utils/finance-money";
 export function FinanceStatementDetail({
@@ -26,7 +26,7 @@ export function FinanceStatementDetail({
               {s.createdByName ? ` por ${s.createdByName}` : ""}
             </p>
           </div>
-          <span className="badge">
+          <span className="badge" data-tone={superseded ? "neutral" : s.stale ? "warning" : undefined}>
             {superseded
               ? "Substituído"
               : s.stale
@@ -47,12 +47,8 @@ export function FinanceStatementDetail({
           </p>
         )}
       </header>
-      <p className="muted finance-statement-note">
-        Este demonstrativo não registra pagamentos. Ele orienta os valores a
-        lançar como despesas e a entregar à Catedral.
-      </p>
       <div className="grid">
-        <section className="card finance-summary-card finance-income-card">
+        <section className="card finance-summary-card finance-statement-featured">
           <div className="row">
             <span className="finance-summary-icon">
               <ArrowDownLeft size={21} aria-hidden="true" />
@@ -81,7 +77,10 @@ export function FinanceStatementDetail({
         </section>
       </div>
       <section className="card stack">
-        <h2>Entradas por departamento</h2>
+        <h2 className="finance-statement-heading">
+          <span className="finance-summary-icon"><ListTree aria-hidden="true" size={20} /></span>
+          Entradas por departamento
+        </h2>
         <div className="table-scroll">
           <table className="finance-mobile-card-table">
             <thead>
@@ -96,9 +95,11 @@ export function FinanceStatementDetail({
                 <tr key={d.id}>
                   <td data-label="Departamento">{d.name}</td>
                   <td data-label="Participação">
-                    {d.participatesInBase ? "Incluído na base" : "Fora da base"}
+                    <span className="badge" data-tone={d.participatesInBase ? undefined : "warning"}>
+                      {d.participatesInBase ? "Incluído na base" : "Fora da base"}
+                    </span>
                   </td>
-                  <td className="money" data-label="Entradas">{formatMoney(d.incomeCents)}</td>
+                  <td className="money" data-label="Entradas"><strong>{formatMoney(d.incomeCents)}</strong></td>
                 </tr>
               ))}
             </tbody>
@@ -106,7 +107,10 @@ export function FinanceStatementDetail({
         </div>
       </section>
       <section className="card stack">
-        <h2>Memória de cálculo</h2>
+        <h2 className="finance-statement-heading">
+          <span className="finance-summary-icon"><Calculator aria-hidden="true" size={20} /></span>
+          Como os valores foram calculados
+        </h2>
         <div className="table-scroll">
           <table className="finance-mobile-card-table">
             <thead>
@@ -154,7 +158,7 @@ export function FinanceStatementDetail({
                       ? "Pastor · valor bruto"
                       : "Catedral"}
                   </td>
-                  <td className="money" data-label="Valor">{formatMoney(i.calculatedCents)}</td>
+                  <td className="money" data-label="Valor"><strong>{formatMoney(i.calculatedCents)}</strong></td>
                 </tr>
               ))}
             </tbody>
@@ -162,11 +166,11 @@ export function FinanceStatementDetail({
         </div>
       </section>
       <div className="grid">
-        <section
-          className="card stack"
-          style={{ background: "#0B3D32", color: "white" }}
-        >
-          <h2>Total a entregar à Catedral</h2>
+        <section className="card stack finance-statement-featured">
+          <h2 className="finance-statement-heading">
+            <span className="finance-summary-icon"><Church aria-hidden="true" size={20} /></span>
+            Total a entregar à Catedral
+          </h2>
           <div className="amount" data-testid="statement-cathedral-total">
             {formatMoney(s.cathedralTotalCents)}
           </div>
@@ -174,8 +178,11 @@ export function FinanceStatementDetail({
             Repasse, descontos da prebenda e demais itens destinados à Catedral.
           </span>
         </section>
-        <section className="card stack">
-          <h2>Prebenda líquida do pastor</h2>
+        <section className="card stack finance-statement-pastor">
+          <h2 className="finance-statement-heading">
+            <span className="finance-summary-icon"><Wallet aria-hidden="true" size={20} /></span>
+            Prebenda líquida do pastor
+          </h2>
           <div className="amount" data-testid="statement-pastor-net">
             {formatMoney(s.netPastorCents)}
           </div>

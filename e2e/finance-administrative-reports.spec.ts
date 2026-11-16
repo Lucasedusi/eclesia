@@ -168,8 +168,11 @@ test("deadline setting changes only current/future reference months", async ({
     .getByLabel("Aplicar a partir do mês de referência", { exact: true })
     .filter({ visible: true })
     .fill(current);
+  const saved = page.waitForResponse((r) => r.request().method() === "POST" && Boolean(r.request().headers()["next-action"]));
   await page.getByRole("button", { name: "Salvar prazo", exact: true }).click();
-  await expect(page.getByText(/: dia 12 do mês seguinte\./)).toBeVisible();
+  await saved;
+  await page.reload();
+  await expect(page.getByLabel("Dia limite de entrega")).toHaveValue("12");
   await page.goto(
     `/financeiro/relatorios/entregas?unidade=${f.headquartersId}&mes=2026-09`,
   );

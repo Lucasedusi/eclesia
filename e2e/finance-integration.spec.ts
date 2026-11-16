@@ -52,6 +52,7 @@ test("admin configures, restricted operator receives and monthly versions preser
     .getByRole("button", { name: "Nova saída", exact: true })
     .click();
   dialog = operator.getByRole("dialog");
+  await dialog.getByLabel("Data", { exact: true }).fill("2026-10-15");
   await dialog
     .getByRole("combobox", { name: "Caixa ou conta", exact: true })
     .selectOption(f.boxes[f.unitId].cash);
@@ -100,6 +101,7 @@ test("admin configures, restricted operator receives and monthly versions preser
     .getByRole("button", { name: "Transferir", exact: true })
     .click();
   dialog = operator.getByRole("dialog");
+  await dialog.getByLabel("Data", { exact: true }).fill("2026-10-15");
   await dialog
     .getByRole("combobox", { name: "Origem", exact: true })
     .selectOption(f.boxes[f.unitId].cash);
@@ -178,9 +180,7 @@ test("admin configures, restricted operator receives and monthly versions preser
     .first();
   const ruleValue = Number((await rule.inputValue()).replace(",", ".")) + 1;
   await rule.fill(ruleValue.toFixed(2).replace(".", ","));
-  await page
-    .getByLabel(/^Justificativa da alteração/)
-    .fill("Atualização de regra para conferência integrada");
+  await expect(page.getByLabel(/^Justificativa da alteração/)).toHaveCount(0);
   const rulesSaved = page.waitForResponse(
     (r) =>
       r.request().method() === "POST" &&

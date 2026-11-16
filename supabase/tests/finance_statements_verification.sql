@@ -65,7 +65,12 @@ begin
  perform pg_temp.assert_true((public.get_finance_statement(c,(november->>'id')::uuid)->>'stale')::boolean,'later movement marks old version stale');
  november:=public.generate_finance_statement(c,u,'2026-11',gen_random_uuid());
  perform pg_temp.assert_true((november->>'grossPrebendCents')::numeric=2 and (november->>'prebendDeductionCents')::numeric=0,'round per item, including deduction on rounded gross');
- begin perform public.save_finance_statement_rules(c,jsonb_build_object('congregationId',u,'effectiveMonth','2026-10','items',rules));raise exception 'expected revision reason';exception when invalid_parameter_value then null;end;
+ begin
+  perform public.copy_finance_statement_rules(c,u,hq,'2026-10','   ');
+  raise exception 'retroactive copy accepted a blank reason';
+ exception when invalid_parameter_value then
+  perform pg_temp.assert_true(sqlerrm='STATEMENT_REASON_REQUIRED','copy must request a reason');
+ end;
  perform public.copy_finance_statement_rules(c,u,hq,'2026-10','Cópia administrativa');
  perform public.save_finance_statement_rules(c,jsonb_build_object('congregationId',u,'effectiveMonth','2026-10','items',jsonb_set(rules,'{0,percentage}','"25"'),'retroactiveReason','Revisão administrativa'));
  perform pg_temp.assert_true((public.get_finance_statement(c,(statement->>'id')::uuid)->>'stale')::boolean,'retroactive rule change marks previous statement stale');
@@ -73,5 +78,21 @@ begin
  perform pg_temp.assert_true((select snapshot->>'cathedralTotalCents'='528600' from public.report_delivery_versions where id=(statement->>'id')::uuid),'historical values unchanged');
  perform public.save_finance_catalog(c,jsonb_build_object('entity','DEPARTMENT','id',missions,'congregationId',u,'name','Missões','effectiveMonth','2026-10','participatesInBase',true,'reason','Alteração administrativa'));
  retry:=public.generate_finance_statement(c,u,'2026-10',gen_random_uuid());perform pg_temp.assert_true((retry->>'eligibleIncomeCents')::numeric=1800000,'department policy changes base only in new version');
+ -- A future copy is free of justification until the destination has a statement.
+ perform public.copy_finance_statement_rules(c,u,hq,'2099-01');
+ perform public.generate_finance_statement(c,hq,'2099-01',gen_random_uuid());
+ begin
+  perform public.copy_finance_statement_rules(c,u,hq,'2099-01','abcd');
+  raise exception 'copy into an issued period accepted a short reason';
+ exception when invalid_parameter_value then
+  perform pg_temp.assert_true(sqlerrm='STATEMENT_REASON_REQUIRED','copy checks destination versions');
+ end;
+ perform public.copy_finance_statement_rules(c,u,hq,'2099-01','Conferência');
+ perform pg_temp.assert_true((select reason='Conferência' from public.report_delivery_rule_sets where church_id=c and congregation_id=hq and effective_month='2099-01-01' and revision=2),'copy retains the supplied reason');
+ begin
+  perform public.copy_finance_statement_rules(c,u,'30000000-0000-4000-8000-000000000003','2099-01','Conferência');
+  raise exception 'cross-church copy accepted';
+ exception when insufficient_privilege then null;
+ end;
 end $$;
 rollback;

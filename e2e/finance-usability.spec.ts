@@ -66,7 +66,7 @@ test("sidebar keeps collapsed preference and cashbox cards have aligned balances
   });
 });
 
-test("existing statements require a clear justification and keep their history accessible", async ({
+test("existing statements retain their history and only rule copies require a justification", async ({
   page,
 }) => {
   const f = fixture(),
@@ -109,22 +109,17 @@ test("existing statements require a clear justification and keep their history a
   const reason = page.getByRole("textbox", {
     name: /^Justificativa da alteração/,
   });
-  await expect(reason).toHaveAttribute("required", "");
+  await expect(reason).toHaveCount(0);
+  await expect(page.getByLabel(/^Justificativa da cópia/)).toHaveAttribute("required", "");
   const cap = page.getByRole("textbox", {
     name: /Teto mensal da prebenda bruta/,
   });
   await cap.fill("3210,55");
+  const saved = page.waitForResponse((r) => r.request().method() === "POST" && Boolean(r.request().headers()["next-action"]));
   await page
     .getByRole("button", { name: "Salvar regras", exact: true })
     .click();
-  await expect(reason).toBeFocused();
-  await expect(cap).toHaveValue("3.210,55");
-  await reason.fill("Ajuste do teto para conferência");
-  await page
-    .getByRole("button", { name: "Salvar regras", exact: true })
-    .click();
-  await expect(page.locator(".finance-progress")).toHaveCount(0);
-  await expect(reason).toHaveValue("");
+  await saved;
   await page.reload();
   await page
     .getByRole("button", { name: "Regras do demonstrativo", exact: true })

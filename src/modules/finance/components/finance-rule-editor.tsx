@@ -64,10 +64,6 @@ export function FinanceRuleEditor({
   const copyReasonRequired =
     copyMonth < currentMonth ||
     (latestStatementMonth !== null && copyMonth <= latestStatementMonth);
-  const [reasonError, setReasonError] = useState("");
-  const reasonRequired =
-    effectiveMonth < currentMonth ||
-    (latestStatementMonth !== null && effectiveMonth <= latestStatementMonth);
   const [items, setItems] = useState(initial),
     [dirty, setDirty] = useState(false),
     [busy, setBusy] = useState(false),
@@ -86,7 +82,6 @@ export function FinanceRuleEditor({
     if (busy || !form.current?.reportValidity()) return false;
     setBusy(true);
     setError("");
-    setReasonError("");
     setMessage("");
     try {
       const data = new FormData(form.current);
@@ -106,18 +101,8 @@ export function FinanceRuleEditor({
             ? { amountCents: parseMoneyInput(r.value) }
             : { percentage: r.value.replace(",", ".") }),
         })),
-        ...(data.get("reason")
-          ? { retroactiveReason: String(data.get("reason")) }
-          : {}),
       });
       if (!result.ok) {
-        if (result.code === "STATEMENT_REASON_REQUIRED") {
-          setReasonError(result.message);
-          form.current
-            ?.querySelector<HTMLTextAreaElement>('[name="reason"]')
-            ?.focus();
-          return false;
-        }
         setError(
           result.message +
             (result.fieldErrors
@@ -180,10 +165,7 @@ export function FinanceRuleEditor({
               name="month"
               type="month"
               value={effectiveMonth}
-              onChange={(e) => {
-                setEffectiveMonth(e.target.value);
-                setReasonError("");
-              }}
+              onChange={(e) => setEffectiveMonth(e.target.value)}
               required
             />
           </label>
@@ -283,6 +265,7 @@ export function FinanceRuleEditor({
               </p>
             )}
             <Button
+              className="finance-rule-remove"
               variant="outline"
               onClick={() => {
                 setItems((current) => current.filter((v) => v.key !== r.key));
@@ -314,32 +297,6 @@ export function FinanceRuleEditor({
           <Plus size={16} />
           Adicionar regra
         </Button>
-        <label>
-          Justificativa da alteração{" "}
-          {reasonRequired ? "(obrigatória)" : "(opcional)"}
-          <textarea
-            name="reason"
-            required={reasonRequired || !!reasonError}
-            minLength={5}
-            maxLength={1000}
-            aria-invalid={!!reasonError}
-            aria-describedby={
-              reasonError
-                ? "finance-rule-reason-error"
-                : "finance-rule-reason-help"
-            }
-            onChange={() => setReasonError("")}
-          />
-          {reasonError && (
-            <span id="finance-rule-reason-error" role="alert">
-              {reasonError}
-            </span>
-          )}
-        </label>
-        <p className="muted" id="finance-rule-reason-help">
-          Obrigatória ao alterar um período passado ou que já possui
-          demonstrativo. As versões anteriores permanecem disponíveis.
-        </p>
         <Button type="submit" loading={busy} disabled={items.length === 0}>
           Salvar regras
         </Button>

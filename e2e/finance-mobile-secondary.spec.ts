@@ -34,10 +34,10 @@ for (const width of [320, 390]) {
 
     await page.goto(`/financeiro/demonstrativos?unidade=${unit}&mes=2026-10`);
     await expect(page.getByRole("button", { name: /Gerar (demonstrativo|nova versão)/ })).toBeVisible();
-    if (!(await page.getByText("Este demonstrativo não registra pagamentos.", { exact: false }).isVisible())) {
+    if (!(await page.getByRole("heading", { name: "Como os valores foram calculados" }).isVisible())) {
       await page.getByRole("button", { name: /Gerar (demonstrativo|nova versão)/ }).click();
     }
-    await expect(page.getByText("Este demonstrativo não registra pagamentos.", { exact: false })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Como os valores foram calculados" })).toBeVisible();
     await expect(page.locator(".finance-mobile-card-table").first()).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
   });

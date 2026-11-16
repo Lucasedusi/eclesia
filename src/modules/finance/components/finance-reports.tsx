@@ -155,7 +155,7 @@ function FinanceReportsContent({
               ? [
                   {
                     value: "INFORMATIVE",
-                    title: "Informativo por congregação",
+                    title: "Comparativo individual por congregação",
                     description:
                       "Compare os meses, com prebenda e repasse opcionais.",
                     Icon: CalendarRange,
@@ -239,11 +239,6 @@ function FinanceReportsContent({
         )}
         {informative && (
           <div className="stack finance-informative-options">
-            <p className="muted">
-              {ranking
-                ? "Congregações ativas autorizadas, incluindo a catedral. Ordenação por maiores entradas no período."
-                : "Todos os caixas e contas da congregação selecionada no topo."}
-            </p>
             <div className="finance-informative-period">
               <label>
                 Mês inicial
@@ -302,12 +297,6 @@ function FinanceReportsContent({
                 Incluir repasse
               </label>
             </fieldset>
-            <p className="muted finance-informative-help">
-              A prebenda bruta soma as saídas registradas na congregação. O repasse
-              soma as entradas da Catedral identificadas com a congregação pagadora,
-              pela data do recebimento. Configure o uso das categorias nos informativos
-              em Configurações. Apenas lançamentos confirmados são contabilizados.
-            </p>
           </div>
         )}
         <div className="finance-report-controls finance-mobile-report-controls">

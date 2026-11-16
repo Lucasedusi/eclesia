@@ -15,7 +15,7 @@ test("administrator generates a period report without requiring a statement, sel
     `/financeiro/relatorios?unidade=${f.headquartersId}&mes=2026-10`,
   );
   await page
-    .getByRole("radio", { name: "Informativo por congregação", exact: true })
+    .getByRole("radio", { name: "Comparativo individual por congregação", exact: true })
     .check();
   await expect(page.getByLabel("Mês inicial", { exact: true })).toHaveValue(
     "2026-08",
@@ -97,7 +97,7 @@ test("mobile keeps only monthly reports and discards desktop filters on resize",
   const f = fixture();
   await page.goto(`/financeiro/relatorios?unidade=${f.unitId}&mes=2026-10`);
   await page
-    .getByRole("radio", { name: "Informativo por congregação", exact: true })
+    .getByRole("radio", { name: "Comparativo individual por congregação", exact: true })
     .check();
   await expect(page.getByLabel("Mês inicial", { exact: true })).toBeVisible();
   await page.setViewportSize({ width: 375, height: 812 });
@@ -149,7 +149,7 @@ test("non-administrators cannot see or generate the administrative report", asyn
     ).toBeVisible();
     await expect(
       page.getByRole("radio", {
-        name: "Informativo por congregação",
+        name: "Comparativo individual por congregação",
         exact: true,
       }),
     ).toHaveCount(0);

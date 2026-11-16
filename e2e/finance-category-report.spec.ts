@@ -45,6 +45,11 @@ test("administrator selects multiple income categories, exports both presentatio
     `/financeiro/relatorios?unidade=${f.headquartersId}&mes=2026-10`,
   );
   await page.getByRole("radio", { name: "Por categoria", exact: true }).check();
+  const controls = page.locator(".finance-category-period :is(input, select)");
+  const tops = await controls.evaluateAll((fields) => fields.map((field) => field.getBoundingClientRect().top));
+  expect(tops).toHaveLength(4);
+  expect(new Set(tops).size).toBe(1);
+  await expect(page.getByRole("button", { name: "Gerar relatório" })).toHaveCSS("height", "48px");
   await expect(
     page.getByRole("button", { name: "Gerar relatório", exact: true }),
   ).toBeDisabled();

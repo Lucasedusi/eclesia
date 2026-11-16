@@ -60,17 +60,13 @@ begin
  perform pg_temp.assert_true((select count(*)=ledger_count from public.financial_ledger_entries where church_id=c) and (select count(*)=tx_count from public.financial_transactions where church_id=c),'statement did not change money');
  retry:=public.generate_finance_statement(c,u,'2026-10',key);perform pg_temp.assert_true(retry->>'id'=statement->>'id','statement retry preserves version');
 
- begin
-  perform public.save_finance_statement_rules(c,jsonb_build_object('congregationId',u,'effectiveMonth','2026-10','items',rules));
-  raise exception 'expected justification requirement';
- exception when sqlstate '22023' then
-  perform pg_temp.assert_true(sqlerrm='STATEMENT_REASON_REQUIRED','existing statement requests specific justification');
- end;
+ retry:=public.save_finance_statement_rules(c,jsonb_build_object('congregationId',u,'effectiveMonth','2026-10','items',rules));
+ perform pg_temp.assert_true((select reason is null and created_by=auth.uid() and revision=2 from public.report_delivery_rule_sets where id=(retry->>'ruleSetId')::uuid),'edit without reason retains revision and author');
 
  -- Simulate a pre-migration rule set: old receipts stay readable/idempotent,
  -- while a NEW statement must wait for an explicitly configured cap.
  insert into public.report_delivery_rule_sets(church_id,congregation_id,effective_month,revision,reason,items,created_by)
- values(c,u,'2026-10-01',2,'Fixture legacy configuration',rules #- '{1,capCents}',auth.uid());
+ values(c,u,'2026-10-01',3,'Fixture legacy configuration',rules #- '{1,capCents}',auth.uid());
  retry:=public.generate_finance_statement(c,u,'2026-10',key);
  perform pg_temp.assert_true(retry->>'id'=statement->>'id' and retry->>'grossPrebendCents'='525000','legacy retry preserves saved amounts');
  begin
@@ -107,7 +103,12 @@ begin
  perform pg_temp.assert_true((public.get_finance_statement(c,(november->>'id')::uuid)->>'stale')::boolean,'later movement marks old version stale');
  november:=public.generate_finance_statement(c,u,'2026-11',gen_random_uuid());
  perform pg_temp.assert_true((november->>'grossPrebendCents')::numeric=2 and (november->>'prebendDeductionCents')::numeric=0,'round per item, including deduction on rounded gross');
- begin perform public.save_finance_statement_rules(c,jsonb_build_object('congregationId',u,'effectiveMonth','2026-10','items',rules));raise exception 'expected revision reason';exception when invalid_parameter_value then null;end;
+ begin
+  perform public.copy_finance_statement_rules(c,u,hq,'2026-10','   ');
+  raise exception 'retroactive copy accepted a blank reason';
+ exception when invalid_parameter_value then
+  perform pg_temp.assert_true(sqlerrm='STATEMENT_REASON_REQUIRED','copy must request a reason');
+ end;
  perform public.copy_finance_statement_rules(c,u,hq,'2026-10','Cópia administrativa');
  perform public.save_finance_statement_rules(c,jsonb_build_object('congregationId',u,'effectiveMonth','2026-10','items',jsonb_set(rules,'{0,percentage}','"25"'),'retroactiveReason','Revisão administrativa'));
  perform pg_temp.assert_true((public.get_finance_statement(c,(statement->>'id')::uuid)->>'stale')::boolean,'retroactive rule change marks previous statement stale');

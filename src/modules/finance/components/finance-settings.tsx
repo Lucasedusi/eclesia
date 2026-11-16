@@ -5,8 +5,9 @@ import { FinanceEmpty } from "./finance-empty";
 import { FinanceSkeleton } from "./finance-skeleton";
 import { useFinanceNavigation } from "./finance-shell";
 import { formatFinanceMonth } from "../utils/finance-period";
-import { useState } from "react";
-import { Plus, Pencil } from "lucide-react";
+import { normalizeCategoryName } from "../utils/finance-category-name";
+import { useRef, useState } from "react";
+import { Plus, Pencil, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type {
   FinanceCatalogs,
@@ -52,6 +53,11 @@ export function FinanceSettings({
       entity: CatalogEntity;
       id?: string;
     } | null>(null);
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("ALL");
+  const searchInput = useRef<HTMLInputElement>(null);
+  const query = normalizeCategoryName(search);
+  const filteringCategories = tab === "CATEGORY" && Boolean(query || status !== "ALL");
   const tabs = [
     { id: "DEPARTMENT", label: "Departamentos" },
     { id: "CATEGORY", label: "Categorias" },
@@ -64,7 +70,8 @@ export function FinanceSettings({
     tab === "DEPARTMENT"
       ? catalogs.departments
       : tab === "CATEGORY"
-        ? catalogs.categories
+        ? catalogs.categories.filter((category) =>
+            (status === "ALL" || category.status === status) && normalizeCategoryName(category.name).includes(query))
         : tab === "CLASSIFICATION"
           ? catalogs.classifications
           : tab === "PAYMENT_METHOD"
@@ -148,11 +155,36 @@ export function FinanceSettings({
               Novo cadastro
             </Button>
           </div>
+          {tab === "CATEGORY" && (
+            <div className="finance-category-filters">
+              <label>Buscar categoria
+                <span className="finance-search-input">
+                  <input ref={searchInput} type="search" aria-label="Buscar categoria" value={search} maxLength={120} placeholder="Nome da categoria" onChange={(event) => setSearch(event.target.value)} />
+                  {search && <button type="button" className="finance-clear-search" aria-label="Limpar busca" onClick={() => {
+                    setSearch("");
+                    searchInput.current?.focus();
+                  }}><X size={16} /></button>}
+                </span>
+              </label>
+              <label>Situação
+                <select value={status} onChange={(event) => setStatus(event.target.value)}>
+                  <option value="ALL">Todas</option>
+                  <option value="ACTIVE">Ativas</option>
+                  <option value="INACTIVE">Inativas</option>
+                </select>
+              </label>
+              {filteringCategories && <Button variant="ghost" onClick={() => {
+                setSearch("");
+                setStatus("ALL");
+                searchInput.current?.focus();
+              }}><X size={16} />Limpar filtros</Button>}
+            </div>
+          )}
           {isPending ? (
             <FinanceSkeleton table />
           ) : rows.length === 0 ? (
             <FinanceEmpty>
-              Nenhum cadastro por aqui. Comece adicionando o primeiro.
+              {filteringCategories ? "Nenhuma categoria corresponde aos filtros." : "Nenhum cadastro por aqui. Comece adicionando o primeiro."}
             </FinanceEmpty>
           ) : (
             <div className="table-scroll">
@@ -183,7 +215,7 @@ export function FinanceSettings({
                         {details(r.id)}
                       </td>
                       <td data-label="Situação">
-                        <span className="badge">
+                        <span className="badge" data-tone={tab === "DEPARTMENT" && r.status === "INACTIVE" ? "inactive" : undefined}>
                           {r.status === "ACTIVE" ? "Ativo" : "Inativo"}
                         </span>
                       </td>

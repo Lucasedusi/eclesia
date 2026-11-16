@@ -22,9 +22,6 @@ test("statement shows the approved distribution without treating it as payment",
   ).toBeVisible();
   await expect(page.getByText("Restante da distribuição", { exact: true })).toHaveCount(0);
   await expect(page.getByText("Total distribuído", { exact: true })).toHaveCount(0);
-  await expect(
-    page.getByText("Este demonstrativo não registra pagamentos.", {
-      exact: false,
-    }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Como os valores foram calculados" })).toBeVisible();
+  await expect(page.locator(".finance-statement-featured").first()).toHaveCSS("background-image", /linear-gradient/);
 });

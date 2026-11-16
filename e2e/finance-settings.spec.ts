@@ -7,10 +7,16 @@ test("admin creates categories and classifications", async ({ page }) => {
   await page.goto("/financeiro/configuracoes");
   await page.getByRole("button", { name: "Categorias", exact: true }).click();
   await page.getByRole("button", { name: "Novo cadastro" }).click();
-  const name = `Oferta teste ${Date.now()}`;
+  const name = `Doação teste ${Date.now()}`;
   await page.getByLabel("Nome", { exact: true }).fill(name);
   await page.getByRole("button", { name: "Salvar cadastro" }).click();
   await expect(page.getByText(name, { exact: true })).toBeVisible();
+  await page.getByRole("searchbox").fill(name.replace("Doação", "doacao"));
+  await expect(page.getByRole("button", { name: /^Editar / })).toHaveCount(1);
+  await page.getByRole("combobox", { name: "Situação", exact: true }).selectOption("INACTIVE");
+  await expect(page.getByText("Nenhuma categoria corresponde aos filtros.")).toBeVisible();
+  await page.getByRole("button", { name: "Limpar filtros" }).click();
+  await expect(page.getByRole("button", { name: `Editar ${name}` })).toBeVisible();
   await page
     .getByRole("button", { name: "Classificações", exact: true })
     .click();

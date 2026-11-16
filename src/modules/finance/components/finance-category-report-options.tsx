@@ -1,4 +1,5 @@
 "use client";
+import { normalizeCategoryName } from "../utils/finance-category-name";
 import { useState } from "react";
 import type {
   CategoryReportOptions,
@@ -15,24 +16,15 @@ export function FinanceCategoryReportOptions({
   onChange: (value: CategoryReportOptions) => void;
 }) {
   const [search, setSearch] = useState("");
-  const normalize = (value: string) =>
-    value
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLocaleLowerCase("pt-BR");
   const matching = categories.filter(
     (c) =>
       (c.direction === options.direction || c.direction === "BOTH") &&
-      normalize(c.name).includes(normalize(search.trim())),
+      normalizeCategoryName(c.name).includes(normalizeCategoryName(search)),
   );
   const selected = categories.filter((c) => options.categoryIds.includes(c.id));
   return (
     <div className="stack finance-category-options">
-      <p className="muted">
-        Movimentações da congregação selecionada no topo, pelas datas dos
-        lançamentos.
-      </p>
-      <div className="finance-informative-period">
+      <div className="finance-category-period">
         <label>
           Data inicial
           <input
@@ -53,8 +45,7 @@ export function FinanceCategoryReportOptions({
             onChange={(e) => onChange({ ...options, dateTo: e.target.value })}
           />
         </label>
-      </div>
-      <div className="finance-informative-period">
+
         <label>
           Movimentação
           <select

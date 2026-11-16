@@ -43,12 +43,21 @@ const statement: StatementVersionDTO = {
 describe("mobile secondary finance views", () => {
   it("keeps statement figures in one semantic table that can become labeled cards", () => {
     const html = renderToStaticMarkup(createElement(FinanceStatementDetail, { statement }));
-    expect(html).toContain("Este demonstrativo não registra pagamentos");
+    expect(html).not.toContain("Este demonstrativo não registra pagamentos");
+    expect(html).toContain("Como os valores foram calculados");
     expect(html).toContain('class="finance-mobile-card-table"');
     expect(html).toContain('data-label="Participação"');
     expect(html).toContain('data-label="Base utilizada"');
     expect(html).toContain("Missões");
     expect(html).toContain("Fora da base");
+  });
+
+  it("distinguishes a stale statement from one replaced by a later version", () => {
+    const stale = { ...statement, stale: true };
+    const current = renderToStaticMarkup(createElement(FinanceStatementDetail, { statement: stale }));
+    const historical = renderToStaticMarkup(createElement(FinanceStatementDetail, { statement: stale, superseded: true }));
+    expect(current).toContain('data-tone="warning">Desatualizado');
+    expect(historical).toContain('data-tone="neutral">Substituído');
   });
 
   it("shows cashbox balances but no edit actions when management is unavailable", () => {

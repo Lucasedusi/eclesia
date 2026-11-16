@@ -80,8 +80,10 @@ for (const width of [320, 1440]) {
     await page.getByRole('button', { name: width < 761 ? 'Entrada' : 'Nova entrada', exact: true }).click();
     const dialog = page.getByRole('dialog');
     const header = dialog.locator('[data-modal-header]');
-    await expect(header).toHaveCSS('background-color', 'rgb(240, 247, 243)');
-    await expect(header).toHaveCSS('border-bottom-width', '1px');
+    await expect(header).toHaveCSS('background-color', 'rgb(240, 247, 233)');
+    await expect(header).toHaveCSS('border-bottom-width', '0px');
+    await expect(header.locator('h2')).toHaveCSS('color', 'rgb(25, 75, 57)');
+    await expect(header.locator('p')).toHaveCSS('color', 'rgba(11, 61, 50, 0.8)');
     await dialog.getByLabel('Valor (R$)').fill('1234');
     const review = dialog.getByRole('region', { name: 'Conferência do lançamento' });
     await expect(review.locator('.finance-entry-review-items')).not.toContainText('12,34');
@@ -89,8 +91,8 @@ for (const width of [320, 1440]) {
     if (width < 761) {
       await expect(dialog.getByText('A confirmação registra o lançamento.', { exact: true })).toBeVisible();
       await review.scrollIntoViewIfNeeded();
-      await expect(dialog.locator('[data-modal-header]')).toHaveCSS('border-bottom-style', 'solid');
-      await expect(dialog.locator('[data-modal-header]')).toHaveCSS('border-bottom-width', '1px');
+      await expect(dialog.locator('[data-modal-header]')).toHaveCSS('border-bottom-style', 'none');
+      await expect(dialog.locator('[data-modal-header]')).toHaveCSS('border-bottom-width', '0px');
       for (const name of ['Salvar e continuar', 'Salvar e imprimir']) {
         const action = dialog.getByRole('button', { name, exact: true });
         await expect(action.locator('.finance-action-icon')).toHaveCSS('border-right-width', '1px');
@@ -105,7 +107,7 @@ for (const width of [320, 1440]) {
     await page.goto(location());
     if (width < 761) await page.locator('.finance-mobile-transaction-card').first().click();
     else await page.locator('.finance-desktop-transactions').getByRole('button').first().click();
-    await expect(header).toHaveCSS('background-color', 'rgb(240, 247, 243)');
+    await expect(header).toHaveCSS('background-color', 'rgb(240, 247, 233)');
     const history = page.getByRole('dialog').locator('details').filter({ hasText: 'Histórico de alterações' });
     await expect(history).not.toHaveAttribute('open', '');
     await history.locator('summary').click();
