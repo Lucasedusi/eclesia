@@ -144,7 +144,18 @@ for (const width of [390, 1280]) {
     const search = page.getByRole("searchbox", { name: "Buscar categoria" });
     const cardBefore = await card.boundingBox();
     const searchBefore = await search.boundingBox();
+    const results = await card.getByRole("region", { name: "Resultados de categorias" }).boundingBox();
+    const status = await card.getByRole("combobox", { name: "Situação" }).boundingBox();
+    expect(searchBefore!.x).toBeCloseTo(results!.x, 0);
+    expect(status!.x + status!.width).toBeCloseTo(results!.x + results!.width, 0);
+    if (width === 390) {
+      expect(searchBefore!.width).toBeCloseTo(results!.width, 0);
+      expect(status!.width).toBeCloseTo(results!.width, 0);
+    } else {
+      expect(status!.y).toBeCloseTo(searchBefore!.y, 0);
+    }
     await search.fill("categoria-inexistente");
+    await expect(card.getByRole("button", { name: "Limpar filtros" })).toHaveCount(0);
     await expect(page.getByText("Nenhuma categoria corresponde aos filtros.")).toBeVisible();
     expect((await card.boundingBox())!.height).toBeCloseTo(cardBefore!.height, 0);
     expect((await search.boundingBox())!.width).toBeCloseTo(searchBefore!.width, 0);
@@ -161,8 +172,9 @@ for (const width of [390, 1280]) {
     const remove = item.getByRole("button", { name: "Remover item 1", exact: true });
     await expect(remove).toHaveCSS("background-color", "rgb(8, 127, 91)");
     await expect(remove).toHaveCSS("color", "rgb(255, 255, 255)");
-    const left = await item.getByLabel("Descrição do item").boundingBox();
-    expect(Math.abs((await remove.boundingBox())!.x - left!.x)).toBeLessThan(2);
+    const fields = await item.locator(".grid").first().boundingBox();
+    const action = await remove.boundingBox();
+    expect(action!.x + action!.width).toBeCloseTo(fields!.x + fields!.width, 0);
     await page.evaluate(() => window.scrollTo({ top: 500, behavior: "instant" }));
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(100);
     expect((await page.getByRole("banner").boundingBox())!.y).toBeCloseTo(0, 0);

@@ -283,13 +283,12 @@ export const FinanceStyles = createGlobalStyle`
  .finance .finance-statement-featured .finance-summary-icon{background:#FFFFFF24;color:white}
  .finance .finance-statement-pastor{background:linear-gradient(120deg,#E5F2E7,#F6FAF4);color:#194B39}
  .finance .finance-rule-item legend{padding:5px 12px;background:#E4F1E9;color:#194B39;border-radius:8px;font-weight:700}
- .finance .finance-rule-remove{justify-self:start;width:fit-content;margin-inline-end:auto}
+ .finance .finance-rule-remove{justify-self:end;width:fit-content}
  .finance .finance-category-filters,.finance .finance-deadline-controls{
    display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;
  }
  .finance .finance-category-filters label,.finance .finance-deadline-controls label{min-width:0;flex:1 1 180px}
  .finance .finance-category-filters .finance-search-input{display:block}
- .finance .finance-category-filters>button:disabled{visibility:hidden}
  @media screen {
    .finance .finance-category-results{block-size:clamp(15rem,52svh,32rem);overflow:auto}
  }

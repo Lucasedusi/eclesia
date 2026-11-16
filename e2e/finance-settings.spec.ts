@@ -15,7 +15,9 @@ test("admin creates categories and classifications", async ({ page }) => {
   await expect(page.getByRole("button", { name: /^Editar / })).toHaveCount(1);
   await page.getByRole("combobox", { name: "Situação", exact: true }).selectOption("INACTIVE");
   await expect(page.getByText("Nenhuma categoria corresponde aos filtros.")).toBeVisible();
-  await page.getByRole("button", { name: "Limpar filtros" }).click();
+  await page.getByRole("button", { name: "Limpar busca" }).click();
+  await expect(page.getByRole("combobox", { name: "Situação", exact: true })).toHaveValue("INACTIVE");
+  await page.getByRole("combobox", { name: "Situação", exact: true }).selectOption("ALL");
   await expect(page.getByRole("button", { name: `Editar ${name}` })).toBeVisible();
   await page
     .getByRole("button", { name: "Classificações", exact: true })

@@ -173,11 +173,6 @@ export function FinanceSettings({
                   <option value="INACTIVE">Inativas</option>
                 </select>
               </label>
-              <Button disabled={!filteringCategories} variant="ghost" onClick={() => {
-                setSearch("");
-                setStatus("ALL");
-                searchInput.current?.focus();
-              }}><X size={16} />Limpar filtros</Button>
             </div>
           )}
           <div
