@@ -17,7 +17,7 @@ for (const width of [390, 1280]) {
     await shortcut.click();
     const header = page.locator(".finance-daily-heading");
     const title = header.getByRole("heading", { name: "Fluxo de caixa diário" });
-    const date = header.getByLabel("Data de movimento");
+    const date = header.getByLabel("Data de movimento", { exact: true });
     const account = header.getByLabel("Caixa ou conta", { exact: true });
     await expect(title).toBeVisible();
     await expect(header.getByText("Acompanhe as entradas, saídas e saldos da Catedral.")).toBeVisible();
@@ -36,14 +36,14 @@ for (const width of [390, 1280]) {
     }
     expect(accountBox.width).toBeGreaterThanOrEqual(215);
     await expect(header.getByRole("button", { name: "Relatórios" })).toHaveCSS("padding", "10px 14px");
-    const calendar = await header.locator(".finance-daily-date svg").boundingBox();
+    const calendar = await header.getByRole("button", { name: "Abrir calendário de data de movimento" }).locator("svg").boundingBox();
     expect(Math.abs(dateBox.x + dateBox.width - calendar!.x - calendar!.width - 14)).toBeLessThan(2);
     expect(dateBox.height).toBe(48);
     expect(accountBox.height).toBe(48);
     if (width >= 768) expect(titleBox.x + titleBox.width).toBeLessThan(dateBox.x);
     if (width >= 768) expect(titleBox.y).toBeLessThan(dateBox.y + dateBox.height);
     await expect(page.getByRole("button", { name: "Hoje", exact: true })).toBeDisabled();
-    await page.getByLabel("Data de movimento").fill("2026-10-01");
+    await page.getByLabel("Data de movimento", { exact: true }).fill("2026-10-01");
     await page.getByLabel("Caixa ou conta", { exact: true }).selectOption(f.boxes[f.headquartersId].cash);
     const summary = page.locator(".finance-overview-summaries");
     await expect(page).toHaveURL(url => url.searchParams.get("box") === f.boxes[f.headquartersId].cash);
@@ -55,9 +55,9 @@ for (const width of [390, 1280]) {
     expect(await summary.innerText()).toBe(before);
     await page.getByRole("button", { name: "Limpar filtros" }).click();
     await page.getByRole("button", { name: "Dia anterior" }).click();
-    await expect(page.getByLabel("Data de movimento")).toHaveValue("2026-09-30");
+    await expect(page.getByLabel("Data de movimento", { exact: true })).toHaveValue("30/09/2026");
     await page.getByRole("button", { name: "Próximo dia" }).click();
-    await expect(page.getByLabel("Data de movimento")).toHaveValue("2026-10-01");
+    await expect(page.getByLabel("Data de movimento", { exact: true })).toHaveValue("01/10/2026");
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
   });
 }
@@ -151,10 +151,13 @@ test("emite os três PDFs pelo modal sem herdar os filtros da listagem", async (
     expect(pdf.headers()["content-disposition"]).toContain(
       `${mode === "resumo-de-caixa" ? mode : "fluxo-diario-" + mode}-2026-10-01.pdf`,
     );
-    expect((await pdf.body()).subarray(0, 5).toString()).toBe("%PDF-");
-    await expect(
-      dialog.getByRole("link", { name: "Baixar PDF" }),
-    ).toBeVisible();
+    const download = dialog.getByRole("link", {name: "Baixar PDF"});
+    await expect(download).toBeVisible();
+    const signature = await download.evaluate(async (link) => {
+      const blob = await (await fetch((link as HTMLAnchorElement).href)).blob();
+      return blob.slice(0, 5).text();
+    });
+    expect(signature).toBe("%PDF-");
   }
 });
 

@@ -1,4 +1,5 @@
 "use client";
+import { FinanceSelect } from "./finance-select";
 import { useEffect, useRef, useState, useCallback } from "react";
 import Image from "next/image";
 import { Printer } from "lucide-react";
@@ -93,16 +94,13 @@ export function FinanceReceipt({
         }
       `}</style>
       <div className="no-print row finance-receipt-controls finance-mobile-receipt-controls">
-        <label>
-          Largura do papel
-          <select
-            value={width}
-            onChange={(e) => setWidth(Number(e.target.value))}
-          >
-            <option value={58}>58 mm</option>
-            <option value={80}>80 mm</option>
-          </select>
-        </label>
+        <FinanceSelect label="Largura do papel"
+          value={width}
+          onChange={(e) => setWidth(Number(e.target.value))}
+        >
+          <option value={58}>58 mm</option>
+          <option value={80}>80 mm</option>
+        </FinanceSelect>
         <Button loading={busy} onClick={() => void requestPrint()}>
           <Printer size={16} />
           Imprimir comprovante

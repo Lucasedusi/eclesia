@@ -1,8 +1,16 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import ExcelJS from "exceljs";
+
+async function selectStatementAccount(page: Page) {
+  const account = page.getByRole("combobox", {name: "Conta bancária", exact: true});
+  await account.click();
+  const accounts = page.getByRole("listbox", {name: "Conta bancária"});
+  await expect(accounts.getByRole("option", {name: "Conta bancária"})).toHaveAttribute("aria-selected", "true");
+  await accounts.getByRole("option", {name: "Conta bancária"}).click();
+}
 
 test("preserves an old split draft until the operator explicitly unifies it", async ({
   page,
@@ -24,12 +32,14 @@ test("preserves an old split draft until the operator explicitly unifies it", as
   await page.goto(
     `/financeiro/lancamentos/importacoes?unidade=${f.unitId}&mes=2026-10`,
   );
+  await selectStatementAccount(page);
   await page.getByLabel("Extrato XLSX do Sicoob").setInputFiles({
     name: "rascunho-antigo.xlsx",
     mimeType:
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     buffer: Buffer.from(await book.xlsx.writeBuffer()),
   });
+  await expect(page.getByRole("status").filter({hasText: "rascunho-antigo.xlsx"})).toBeVisible();
   await page
     .getByRole("button", { name: "Preparar importação", exact: true })
     .click();
@@ -159,9 +169,7 @@ test("statement review persists a draft, posts once, returns to the queue and re
   await expect(
     page.getByRole("heading", { name: "Importar extrato bancário" }),
   ).toBeVisible();
-  await page
-    .getByRole("combobox", { name: "Conta bancária", exact: true })
-    .selectOption(f.boxes[f.unitId].bank);
+  await selectStatementAccount(page);
   await page.getByLabel("Extrato XLSX do Sicoob").setInputFiles({
     name: "teste-banco.xlsx",
     mimeType:
@@ -232,9 +240,7 @@ test("statement review persists a draft, posts once, returns to the queue and re
     fullPage: true,
   });
   await page.goto(list);
-  await page
-    .getByRole("combobox", { name: "Conta bancária", exact: true })
-    .selectOption(f.boxes[f.unitId].bank);
+  await selectStatementAccount(page);
   await page.getByLabel("Extrato XLSX do Sicoob").setInputFiles({
     name: "mesmo-arquivo.xlsx",
     mimeType:
@@ -296,6 +302,7 @@ test("a lost confirmation response retries the same posting and retains invalid 
   await page.goto(
     `/financeiro/lancamentos/importacoes?unidade=${f.unitId}&mes=2026-10`,
   );
+  await selectStatementAccount(page);
   await page.getByLabel("Extrato XLSX do Sicoob").setInputFiles({
     name: "retentativa-ficticia.xlsx",
     mimeType:
@@ -411,6 +418,7 @@ test("links a manual expense, creates a transfer and recognizes an overlapping s
     await page.goto(
       `/financeiro/lancamentos/importacoes?unidade=${f.unitId}&mes=2026-10`,
     );
+    await selectStatementAccount(page);
     await page.getByLabel("Extrato XLSX do Sicoob").setInputFiles({
       name: `vinculos-${reference}.xlsx`,
       mimeType:
@@ -532,6 +540,7 @@ test("removes and recovers review rows, updates totals and removes an unused bat
   const list = `/financeiro/lancamentos/importacoes?unidade=${f.unitId}&mes=2026-10`;
   await page.goto(list);
   await expect(page.getByText("Selecionar ou arrastar extrato")).toBeVisible();
+  await selectStatementAccount(page);
   await page.getByLabel("Extrato XLSX do Sicoob").setInputFiles({
     name,
     mimeType:

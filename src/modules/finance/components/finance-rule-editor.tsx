@@ -1,4 +1,6 @@
 "use client";
+import { FinanceSelect } from "./finance-select";
+import { FinanceDateField } from "./finance-date-field";
 import { formatFinanceMonth } from "../utils/finance-period";
 import { FinanceMoneyInput } from "./finance-money-input";
 import { useState, useRef, useEffect } from "react";
@@ -159,16 +161,13 @@ export function FinanceRuleEditor({
                 : "Nenhuma regra cadastrada"}
             </p>
           </div>
-          <label>
-            Nova vigência
-            <input
-              name="month"
-              type="month"
-              value={effectiveMonth}
-              onChange={(e) => setEffectiveMonth(e.target.value)}
-              required
-            />
-          </label>
+          <FinanceDateField label="Nova vigência"
+            name="month"
+            withCalendar monthOnly
+            value={effectiveMonth}
+            onChange={iso => { setEffectiveMonth(iso); setDirty(true); }}
+            required
+          />
         </div>
         {error && <div role="alert">{error}</div>}
         {message && <p role="status">{message}</p>}
@@ -189,44 +188,38 @@ export function FinanceRuleEditor({
                   onChange={(e) => change(r.key, { name: e.target.value })}
                 />
               </label>
-              <label>
-                Finalidade
-                <select
-                  value={r.role}
-                  onChange={(e) =>
-                    change(r.key, { role: e.target.value as DraftRule["role"] })
-                  }
-                >
-                  <option value="DISTRIBUTION">Entrega à Catedral</option>
-                  <option value="GROSS_PREBEND">
-                    Prebenda bruta do pastor
-                  </option>
-                  <option value="PREBEND_DEDUCTION">
-                    Desconto da prebenda → Catedral
-                  </option>
-                </select>
-              </label>
+              <FinanceSelect label="Finalidade"
+                value={r.role}
+                onChange={(e) =>
+                  change(r.key, { role: e.target.value as DraftRule["role"] })
+                }
+              >
+                <option value="DISTRIBUTION">Entrega à Catedral</option>
+                <option value="GROSS_PREBEND">
+                  Prebenda bruta do pastor
+                </option>
+                <option value="PREBEND_DEDUCTION">
+                  Desconto da prebenda → Catedral
+                </option>
+              </FinanceSelect>
             </div>
             <div className="grid">
-              <label>
-                Cálculo
-                <select
-                  value={r.calculation}
-                  onChange={(e) =>
-                    change(r.key, {
-                      calculation: e.target.value as DraftRule["calculation"],
-                    })
-                  }
-                >
-                  <option value="ELIGIBLE_INCOME_PERCENT">
-                    Percentual das entradas da base
-                  </option>
-                  <option value="GROSS_PREBEND_PERCENT">
-                    Percentual da prebenda bruta
-                  </option>
-                  <option value="FIXED">Valor fixo</option>
-                </select>
-              </label>
+              <FinanceSelect label="Cálculo"
+                value={r.calculation}
+                onChange={(e) =>
+                  change(r.key, {
+                    calculation: e.target.value as DraftRule["calculation"],
+                  })
+                }
+              >
+                <option value="ELIGIBLE_INCOME_PERCENT">
+                  Percentual das entradas da base
+                </option>
+                <option value="GROSS_PREBEND_PERCENT">
+                  Percentual da prebenda bruta
+                </option>
+                <option value="FIXED">Valor fixo</option>
+              </FinanceSelect>
               <label>
                 {r.calculation === "FIXED" ? "Valor (R$)" : "Percentual (%)"}
                 {r.calculation === "FIXED" ? (
@@ -342,31 +335,25 @@ export function FinanceRuleEditor({
           regras.
         </p>
         <div className="grid">
-          <label>
-            Congregação de origem
-            <select name="from" required defaultValue="">
-              <option value="" disabled>
-                Selecione
-              </option>
-              {units
-                .filter((u) => u.id !== unit)
-                .map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.name}
-                  </option>
-                ))}
-            </select>
-          </label>
-          <label>
-            Vigência da cópia
-            <input
-              type="month"
-              name="month"
-              value={copyMonth}
-              onChange={(e) => setCopyMonth(e.target.value)}
-              required
-            />
-          </label>
+          <FinanceSelect label="Congregação de origem" name="from" required defaultValue="">
+            <option value="" disabled>
+              Selecione
+            </option>
+            {units
+              .filter((u) => u.id !== unit)
+              .map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name}
+                </option>
+              ))}
+          </FinanceSelect>
+          <FinanceDateField label="Vigência da cópia"
+            withCalendar monthOnly
+            name="month"
+            value={copyMonth}
+            onChange={iso => setCopyMonth(iso)}
+            required
+          />
         </div>
         <label>
           Justificativa da cópia{" "}

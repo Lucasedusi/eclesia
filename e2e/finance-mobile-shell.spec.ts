@@ -26,7 +26,7 @@ for (const width of [320, 390]) {
       await expect(mobile.getByText(label, { exact: true })).toBeVisible();
     await expect(page.locator(".finance-sidebar")).toHaveCount(1);
     await expect(page.locator(".finance-sidebar")).toBeHidden();
-    await expect(page.getByLabel("Período")).toBeVisible();
+    await expect(page.getByLabel("Período", { exact: true })).toBeVisible();
     await expect
       .poll(() => page.evaluate(() => document.documentElement.scrollWidth))
       .toBeLessThanOrEqual(width + 1);
@@ -59,7 +59,7 @@ test("changing month with unsaved attendance asks before navigation", async ({
   await page
     .getByRole("textbox", { name: "Nome da pessoa", exact: true })
     .fill("Pessoa em preenchimento");
-  await page.getByLabel("Período").fill("2026-09");
+  await page.getByLabel("Período", { exact: true }).fill("2026-09");
   await expect(
     page.getByRole("dialog", { name: "Há alterações não salvas" }),
   ).toBeVisible();

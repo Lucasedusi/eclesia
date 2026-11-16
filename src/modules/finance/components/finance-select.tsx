@@ -18,11 +18,14 @@ type Choice = { value: string; text: string };
 export function FinanceSelect({
   label,
   children,
+  hideLabel,
+  fieldClassName,
   ...props
-}: SelectHTMLAttributes<HTMLSelectElement> & { label: string }) {
+}: SelectHTMLAttributes<HTMLSelectElement> & { label: string; hideLabel?: boolean; fieldClassName?: string }) {
   const id = useId();
   const select = useRef<HTMLSelectElement>(null);
   const [choices, setChoices] = useState<Choice[] | null>(null);
+  const [selected, setSelected] = useState("");
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
   const handledTouch = useRef(false);
@@ -41,6 +44,7 @@ export function FinanceSelect({
     const options = Array.from(field.options)
       .filter((option) => !option.disabled)
       .map(({ value, text }) => ({ value, text }));
+    setSelected(field.value);
     setChoices(options);
     setQuery("");
     setActive(
@@ -115,10 +119,11 @@ export function FinanceSelect({
   }
   const activeId = visible[active] ? id + "-item-" + active : undefined;
   return (
-    <div className={styles.field}>
-      <label htmlFor={id}>{label}</label>
+    <div className={[styles.field, "finance-picker-field", fieldClassName].filter(Boolean).join(" ")}>
+      {!hideLabel && <label htmlFor={id}>{label}</label>}
       <div className={styles.control}>
         <select
+          aria-label={hideLabel ? label : undefined}
           {...props}
           ref={select}
           id={id}
@@ -168,6 +173,7 @@ export function FinanceSelect({
                 placeholder="Buscar opção"
                 value={query}
                 onChange={(event) => {
+                  event.stopPropagation();
                   setQuery(event.target.value);
                   setActive(0);
                 }}
@@ -187,7 +193,7 @@ export function FinanceSelect({
                   role="option"
                   id={id + "-item-" + i}
                   key={option.value}
-                  aria-selected={option.value === props.value}
+                  aria-selected={option.value === selected}
                   data-active={active === i}
                   className={styles.option}
                   onPointerMove={(event) => {
@@ -197,7 +203,7 @@ export function FinanceSelect({
                   onClick={() => choose(option)}
                 >
                   {option.text}
-                  {option.value === props.value && (
+                  {option.value === selected && (
                     <Check size={16} aria-hidden="true" />
                   )}
                 </div>

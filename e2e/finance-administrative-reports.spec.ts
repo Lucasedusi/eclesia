@@ -21,7 +21,7 @@ test("ranking uses all units and generates selected columns without the header u
     })
     .check();
   await expect(page.getByLabel("Mês inicial", { exact: true })).toHaveValue(
-    "2026-10",
+    "10/2026",
   );
   await expect(
     page.getByLabel("Incluir congregações inativas", { exact: true }),

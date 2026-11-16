@@ -30,13 +30,13 @@ for (const width of [1280, 1024]) {
     await page.goto(`/financeiro/contas-a-pagar?unidade=${f.unitId}&mes=2026-10`);
     await expect(page.getByRole("heading", { name: "Contas a pagar" })).toBeVisible();
     await expect(page.getByRole("combobox", { name: "Congregação", exact: true })).toHaveCount(0);
-    expect(await page.locator(".finance-payables-context .finance-single-unit").evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+    expect(await page.getByRole("banner").locator(".finance-payables-context .finance-single-unit").evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
     await create(page, name, f.expenseId, "2026-10-10");
     await search(page, name);
     await expect(page.getByText("Não informado", { exact: true }).filter({ visible: true })).toBeVisible();
     await page.getByRole("button", { name: `Pagar: ${name}`, exact: true }).filter({ visible: true }).click();
     const pay = page.getByRole("dialog", { name: "Confirmar pagamento" });
-    await pay.getByLabel("Data do pagamento").fill("2026-10-11");
+    await pay.getByLabel("Data do pagamento", { exact: true }).fill("2026-10-11");
     page.once("dialog", (dialog) => dialog.dismiss());
     await pay.getByRole("button", { name: "Cancelar", exact: true }).click();
     await expect(pay).toHaveCount(1);
@@ -93,7 +93,15 @@ test("category creation retains form; monthly copies clamp dates and skip duplic
   const copy = page.getByRole("dialog", { name: "Copiar para o próximo mês" });
   await copy.getByRole("checkbox", { name, exact: true }).check();
   await copy.getByRole("button", { name: "Conferir cópias", exact: true }).click();
-  await expect(copy.getByLabel(`Vencimento: ${name}`)).toHaveValue("2028-02-29");
+  const due = copy.getByLabel(`Vencimento: ${name}`, { exact: true });
+  await expect(due).toHaveValue("29/02/2028");
+  await due.fill("01/03/2028");
+  expect(await due.evaluate(input => (input as HTMLInputElement).checkValidity())).toBe(false);
+  await copy.getByRole("button", {name: /^Abrir calendário de vencimento/}).click();
+  const calendar = copy.getByRole("dialog", { name: "Escolher data" });
+  await expect(calendar.getByRole("button", {name: "Próximo mês"})).toBeDisabled();
+  await calendar.getByRole("button", {name: /29 de fevereiro de 2028/}).click();
+  await expect(due).toHaveValue("29/02/2028");
   await copy.getByRole("button", { name: "Salvar cópias", exact: true }).click();
   await expect(copy).toHaveCount(0);
   await page.getByRole("button", { name: "Copiar para o próximo mês", exact: true }).click();
@@ -209,8 +217,8 @@ test("monthly copy keeps selection across pages", async ({ page }) => {
   }
   await expect(copy.getByText("2 selecionada(s), até 100 por vez.")).toBeVisible();
   await copy.getByRole("button", { name: "Conferir cópias", exact: true }).click();
-  await expect(copy.getByLabel(`Vencimento: ${prefix} 1`, { exact: true })).toHaveValue("2032-04-01");
-  await expect(copy.getByLabel(`Vencimento: ${prefix} 21`, { exact: true })).toHaveValue("2032-04-21");
+  await expect(copy.getByLabel(`Vencimento: ${prefix} 1`, { exact: true })).toHaveValue("01/04/2032");
+  await expect(copy.getByLabel(`Vencimento: ${prefix} 21`, { exact: true })).toHaveValue("21/04/2032");
   await copy.getByRole("button", { name: "Salvar cópias", exact: true }).click();
   await expect(copy).toHaveCount(0);
   await expect(page.getByRole("status").filter({ hasText: "2 conta(s) copiada(s)." })).toBeVisible();

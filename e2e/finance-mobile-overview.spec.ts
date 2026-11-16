@@ -38,7 +38,7 @@ for (const width of [320, 393, 430]) {
     await expect(page.getByRole("main").getByText("Saldo inicial", { exact: false })).toBeHidden();
     await expect(page.getByRole("heading", { name: "Movimentação do mês" })).toBeHidden();
     await expect(page.getByRole("heading", { name: "Por categoria" })).toBeVisible();
-    await expect(page.getByLabel("Período")).toBeVisible();
+    await expect(page.getByLabel("Período", { exact: true })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
     await page.getByRole("link", { name: "Ver todos" }).click();
     await expect(page).toHaveURL(/\/financeiro\/lancamentos\?/);

@@ -53,17 +53,23 @@ test("administrator selects multiple income categories, exports both presentatio
   await expect(
     page.getByRole("button", { name: "Gerar relatório", exact: true }),
   ).toBeDisabled();
-  await page.getByLabel("Data inicial", { exact: true }).fill("2026-01-01");
-  await page.getByLabel("Data final", { exact: true }).fill("2026-12-31");
+  await page.getByRole("button", {name: "Abrir calendário de data inicial"}).click();
+  const dialog = page.getByRole("dialog", {name: "Período do relatório"});
+  await expect(dialog.getByRole("grid")).toHaveCount(2);
+  await dialog.getByLabel("Data inicial", {exact: true}).fill("01/01/2026");
+  await dialog.getByLabel("Data final", {exact: true}).fill("31/12/2026");
+  await dialog.getByRole("button", {name: "Aplicar"}).click();
   await page
     .getByRole("combobox", { name: "Movimentação", exact: true })
     .selectOption("INCOME");
+  await page.getByRole("button", {name: "Selecionar categorias"}).click();
   await page.getByLabel("Buscar categoria", { exact: true }).fill("oferta");
   const checkboxes = page.locator(
     ".finance-category-list input[type=checkbox]",
   );
   await expect(checkboxes).toHaveCount(2);
   for (const box of await checkboxes.all()) await box.check();
+  await page.keyboard.press("Escape");
   const options = await generate(page, "categorias-browser-resumido");
   expect(options).toMatchObject({
     type: "CATEGORY",
@@ -110,10 +116,12 @@ test("treasurer can generate only within their congregation on desktop", async (
     await page
       .getByRole("radio", { name: "Por categoria", exact: true })
       .check();
+    await page.getByRole("button", {name: "Selecionar categorias"}).click();
     await page
       .locator(".finance-category-list input[type=checkbox]")
       .first()
       .check();
+    await page.keyboard.press("Escape");
     const body = await generate(page, "categorias-tesoureiro-vazio");
     expect(body.congregationId).toBe(f.unitId);
     const denied = await page.request.post("/api/finance/reports/pdf", {

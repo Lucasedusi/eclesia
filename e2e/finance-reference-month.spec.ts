@@ -21,12 +21,12 @@ for (const direction of ["entrada", "saída"] as const) {
     await form.getByRole("combobox", { name: /Identificação/ }).selectOption("ORGANIZATION");
     await form.getByLabel("Nome ou identificação").fill(name);
     await form.getByLabel("Data", { exact: true }).fill("2026-11-05");
-    await expect(reference(form)).toHaveValue("2026-11");
+    await expect(reference(form)).toHaveValue("11/2026");
     await form.getByLabel("Data", { exact: true }).fill("2026-12-05");
-    await expect(reference(form)).toHaveValue("2026-12");
+    await expect(reference(form)).toHaveValue("12/2026");
     await reference(form).fill("2026-10");
     await form.getByLabel("Data", { exact: true }).fill("2026-11-05");
-    await expect(reference(form)).toHaveValue("2026-10");
+    await expect(reference(form)).toHaveValue("10/2026");
     await form.getByRole("combobox", { name: "Caixa ou conta", exact: true }).selectOption(f.boxes[f.unitId].cash);
     await form.getByRole("combobox", { name: "Categoria", exact: true }).selectOption(direction === "entrada" ? f.repasseId : f.prebendId);
     await form.getByLabel("Valor (R$)", { exact: true }).fill("113,00");
@@ -48,9 +48,9 @@ for (const direction of ["entrada", "saída"] as const) {
     await page.screenshot({ path: `tmp/reference-${direction}-mobile.png` });
     await page.setViewportSize({ width: 1280, height: 900 });
     await form.getByRole("button", { name: "Corrigir", exact: true }).click();
-    await expect(reference(form)).toHaveValue("2026-10");
+    await expect(reference(form)).toHaveValue("10/2026");
     await form.getByLabel("Data", { exact: true }).fill("2026-11-06");
-    await expect(reference(form)).toHaveValue("2026-10");
+    await expect(reference(form)).toHaveValue("10/2026");
     await reference(form).fill("2026-09");
     await form.getByLabel("Justificativa da correção").fill("Conferir mês ao qual o pagamento se refere");
     await form.getByRole("button", { name: "Salvar correção", exact: true }).click();
@@ -103,7 +103,7 @@ test("congregation lookup shows a spinner; attendance saves reference; month fil
   await page.getByLabel("Fechar modal").click();
   await page.setViewportSize({ width: 390, height: 844 });
   await page.getByRole("button", { name: /^Período:/ }).click();
-  await expect(page.getByLabel("Mês da movimentação", { exact: true })).toHaveValue("2026-11");
+  await expect(page.getByLabel("Mês da movimentação", { exact: true })).toHaveValue("11/2026");
 });
 
 test("bank draft preserves reference through reload, then posts using statement date", async ({ page }) => {
@@ -120,7 +120,7 @@ test("bank draft preserves reference through reload, then posts using statement 
   await page.getByRole("button", { name: "Conferir linha 3", exact: true }).click();
   const form = page.locator("form.finance-attendance-form");
   await expect(form.getByLabel("Data", { exact: true })).toBeDisabled();
-  await expect(reference(form)).toHaveValue("2026-11");
+  await expect(reference(form)).toHaveValue("11/2026");
   await reference(form).fill("2026-10");
   await form.getByRole("combobox", { name: /Identificação/ }).selectOption("ORGANIZATION");
   await form.getByLabel("Nome ou identificação").fill(name);
@@ -130,7 +130,7 @@ test("bank draft preserves reference through reload, then posts using statement 
   await expect(page.getByText("Rascunho salvo.", { exact: true })).toBeVisible();
   await page.reload();
   await page.getByRole("button", { name: "Conferir linha 3", exact: true }).click();
-  await expect(reference(form)).toHaveValue("2026-10");
+  await expect(reference(form)).toHaveValue("10/2026");
   await expect(form.getByLabel("Data", { exact: true })).toHaveValue("05/11/2026");
   await form.getByRole("button", { name: "Salvar", exact: true }).click();
   await expect(page.getByText("Lançamento salvo.", { exact: true })).toBeVisible();

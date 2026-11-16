@@ -1,4 +1,5 @@
 "use client";
+import { FinanceDateField } from "./finance-date-field";
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
@@ -61,7 +62,7 @@ export function FinancePayableConfirmation({ kind, item, onClose, onSaved }: { k
       <strong>{item.name}</strong><p>Vencimento em {payableDate(item.dueDate)} · {item.amountCents === null ? "Valor não informado" : formatMoney(item.amountCents)}</p>
       {mutation.error && <p role="alert">{mutation.error}</p>}
       <fieldset className="finance-payable-fields stack" disabled={mutation.busy || mutation.uncertain}>
-        {kind === "PAY" && <><label>Data do pagamento<input type="date" required min="2000-01-01" max={todayLocal()} value={paidDate} onChange={(e) => setPaidDate(e.target.value)} /></label><p className="notice">Esta confirmação não registra uma saída financeira.</p></>}
+        {kind === "PAY" && <><FinanceDateField label="Data do pagamento" withCalendar required min="2000-01-01" max={todayLocal()} value={paidDate} onChange={iso => { setPaidDate(iso); setDirty(true); }} /><p className="notice">Esta confirmação não registra uma saída financeira.</p></>}
         {kind === "REOPEN" && <label>Justificativa<textarea required minLength={5} maxLength={1000} value={reason} onChange={(e) => setReason(e.target.value)} /></label>}
         {kind === "DELETE" && <p>A conta será removida da lista. Seu histórico será preservado.</p>}
       </fieldset>

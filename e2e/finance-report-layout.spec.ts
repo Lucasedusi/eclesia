@@ -27,7 +27,7 @@ test("desktop groups delivery navigation with report choices and removes redunda
     "Informativo geral por congregação",
   ]) {
     await page.getByRole("radio", { name: title, exact: true }).check();
-    const month = await page.getByLabel("Mês final").boundingBox();
+    const month = await page.getByLabel("Mês final", { exact: true }).boundingBox();
     const generate = await page
       .getByRole("button", { name: "Gerar relatório" })
       .boundingBox();

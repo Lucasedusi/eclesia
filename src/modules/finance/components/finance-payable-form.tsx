@@ -1,4 +1,6 @@
 "use client";
+import { FinanceDateField } from "./finance-date-field";
+import { FinanceSelect } from "./finance-select";
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
@@ -37,9 +39,9 @@ export function FinancePayableForm({ item, catalogs, unit, month, canCreateCateg
         {mutation.error && <p role="alert">{mutation.error}</p>}
         <fieldset className="finance-payable-fields stack" disabled={mutation.busy || mutation.uncertain}>
           <label>Nome da conta<input required maxLength={120} value={name} onChange={(e) => setName(e.target.value)} autoFocus /></label>
-          <label>Categoria<select required value={categoryId} onChange={(e) => setCategoryId(e.target.value)}><option value="">Selecione</option>{categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
+          <FinanceSelect label="Categoria" required value={categoryId} onChange={(e) => setCategoryId(e.target.value)}><option value="">Selecione</option>{categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</FinanceSelect>
           {canCreateCategory && <Button variant="outline" onClick={() => setCategoryOpen(true)}>Nova categoria</Button>}
-          <div className="grid"><label>Vencimento<input required type="date" min="2000-01-01" max="2099-12-31" value={dueDate} onChange={(e) => setDueDate(e.target.value)} /></label>
+          <div className="grid"><FinanceDateField label="Vencimento" required withCalendar min="2000-01-01" max="2099-12-31" value={dueDate} onChange={iso => { setDueDate(iso); setDirty(true); }} />
           <label>Valor (R$)<FinanceMoneyInput value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Não informado" /></label></div>
           <label>Observação<textarea maxLength={1000} rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} /></label>
         </fieldset>

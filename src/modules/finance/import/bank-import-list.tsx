@@ -1,4 +1,5 @@
 "use client";
+import { FinanceSelect } from "../components/finance-select";
 import { useLayoutEffect, useRef, useState } from "react";
 import {
   Upload,
@@ -143,23 +144,20 @@ export function BankImportList({
             style={{ border: 0, padding: 0 }}
           >
             <div className="grid bank-import-upload-grid">
-              <label>
-                Conta bancária
-                <select
-                  name="cashboxId"
-                  required
-                  defaultValue={accounts.length === 1 ? accounts[0].id : ""}
-                >
-                  <option value="">Selecione a conta do extrato</option>
-                  {accounts.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.name}
-                      {b.bankName ? ` · ${b.bankName}` : ""}
-                      {b.accountNumber ? ` · ${b.accountNumber}` : ""}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <FinanceSelect label="Conta bancária"
+                name="cashboxId"
+                required
+                defaultValue={accounts.length === 1 ? accounts[0].id : ""}
+              >
+                <option value="">Selecione a conta do extrato</option>
+                {accounts.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name}
+                    {b.bankName ? ` · ${b.bankName}` : ""}
+                    {b.accountNumber ? ` · ${b.accountNumber}` : ""}
+                  </option>
+                ))}
+              </FinanceSelect>
               <div className="bank-import-upload-field">
                 <span className="bank-import-field-label">
                   Extrato XLSX do Sicoob

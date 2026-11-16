@@ -1,4 +1,5 @@
 "use client";
+import { FinanceDateField } from "./finance-date-field";
 import { useRef, useState } from "react";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
@@ -89,20 +90,17 @@ export function FinanceDeliveryForm({
         )}
         <fieldset disabled={busy} className="stack finance-delivery-fields">
           {!undo && (
-            <label>
-              Data da entrega
-              <input
-                type="date"
-                required
-                min={monthRange(month).end}
-                max={today}
-                value={date}
-                onChange={(e) => {
-                  setDate(e.target.value);
-                  key.current = null;
-                }}
-              />
-            </label>
+            <FinanceDateField label="Data da entrega"
+              withCalendar
+              required
+              min={monthRange(month).end}
+              max={today}
+              value={date}
+              onChange={iso => {
+                setDate(iso);
+                key.current = null;
+              }}
+            />
           )}
           {(row.deliveryDate || undo) && (
             <label>

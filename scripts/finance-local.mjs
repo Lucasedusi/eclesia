@@ -48,6 +48,7 @@ if (command === "setup") {
       email,
       password,
       email_confirm: true,
+      user_metadata: { full_name: "Finance fixture" },
     });
     if (r.error) throw r.error;
     map.set(`10000000-0000-4000-8000-00000000000${i}`, r.data.user.id);

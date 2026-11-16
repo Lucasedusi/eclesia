@@ -7,7 +7,7 @@ import { isLocalDate, todayLocal } from "../utils/finance-period";
 import styles from "./finance-pickers.module.css";
 
 type Props =
-  | { mode: "single"; value: string; onChange: (date: string) => void }
+  | { mode: "single"; value: string; min?: string; max?: string; onChange: (date: string) => void }
   | {
       mode: "range";
       initialMonth?: string;
@@ -33,15 +33,17 @@ export default function FinanceCalendar(props: Props) {
   const desktop = useFinanceDesktop();
   const today = asDate(todayLocal());
   const first = asDate(props.mode === "single" ? props.value : props.from);
+  const min = props.mode === "single" ? props.min ?? "2000-01-01" : "2000-01-01";
+  const max = props.mode === "single" ? props.max ?? "2099-12-31" : "2099-12-31";
+  const earliest = asDate(min)!;
+  const latest = asDate(max)!;
+  const initial = (props.mode === "range" && props.initialMonth ? asDate(props.initialMonth + "-01") : first) ?? today!;
   const options = {
     locale: ptBR,
     today,
-    defaultMonth:
-      (props.mode === "range" && props.initialMonth
-        ? asDate(props.initialMonth + "-01")
-        : first) ?? today,
-    startMonth: new Date(2000, 0),
-    endMonth: new Date(2099, 11),
+    defaultMonth: initial < earliest ? earliest : initial > latest ? latest : initial,
+    startMonth: earliest, endMonth: latest,
+    disabled: [{before: earliest}, {after: latest}],
     className: styles.calendar,
     labels: {
       labelPrevious: () => "Mês anterior",

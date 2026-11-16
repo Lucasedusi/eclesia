@@ -1,4 +1,5 @@
 "use client";
+import { FinanceSelect } from "./finance-select";
 import { FinanceDeliveryDeadline } from "./finance-delivery-deadline";
 import type { DeliveryRule } from "../types/finance-administrative.types";
 import { FinanceEmpty } from "./finance-empty";
@@ -166,13 +167,11 @@ export function FinanceSettings({
                   }}><X size={16} /></button>}
                 </span>
               </label>
-              <label>Situação
-                <select value={status} onChange={(event) => setStatus(event.target.value)}>
-                  <option value="ALL">Todas</option>
-                  <option value="ACTIVE">Ativas</option>
-                  <option value="INACTIVE">Inativas</option>
-                </select>
-              </label>
+              <FinanceSelect label="Situação" value={status} onChange={(event) => setStatus(event.target.value)}>
+                <option value="ALL">Todas</option>
+                <option value="ACTIVE">Ativas</option>
+                <option value="INACTIVE">Inativas</option>
+              </FinanceSelect>
             </div>
           )}
           <div

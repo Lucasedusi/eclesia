@@ -1,4 +1,6 @@
 "use client";
+import { FinanceSelect } from "./finance-select";
+import { FinanceDateField } from "./finance-date-field";
 import { useFinanceNavigation } from "./finance-shell";
 import { FinanceMoneyInput } from "./finance-money-input";
 import { useRef, useState } from "react";
@@ -124,15 +126,12 @@ export function FinanceTransferDialog({
             Movimenta recursos entre caixas desta congregação. Não conta como
             receita, despesa ou base do demonstrativo.
           </p>
-          <label>
-            Data
-            <input
-              name="date"
-              type="date"
-              defaultValue={existing?.date ?? date}
-              required
-            />
-          </label>
+          <FinanceDateField label="Data"
+            name="date"
+            withCalendar
+            defaultValue={existing?.date ?? date}
+            required
+          />
           <div className="grid">
             {[
               {
@@ -146,19 +145,16 @@ export function FinanceTransferDialog({
                 value: existing?.targetCashboxId,
               },
             ].map((f) => (
-              <label key={f.name}>
-                {f.label}
-                <select name={f.name} defaultValue={f.value ?? ""} required>
-                  <option value="">Selecione</option>
-                  {boxes
-                    .filter((b) => b.status === "ACTIVE")
-                    .map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {b.name}
-                      </option>
-                    ))}
-                </select>
-              </label>
+              <FinanceSelect label={f.label} key={f.name} name={f.name} defaultValue={f.value ?? ""} required>
+                <option value="">Selecione</option>
+                {boxes
+                  .filter((b) => b.status === "ACTIVE")
+                  .map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.name}
+                    </option>
+                  ))}
+              </FinanceSelect>
             ))}
           </div>
           <label>

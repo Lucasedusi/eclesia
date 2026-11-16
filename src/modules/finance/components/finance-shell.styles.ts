@@ -55,15 +55,7 @@ export const FinanceStyles = createGlobalStyle`
    font-size: 13px;
  }
  .finance .finance-daily-report-trigger{height:48px;padding:10px 14px}
- .finance .finance-daily-date{position:relative;min-width:0}
- .finance .finance-daily-date input.finance-daily-control{display:block;padding-right:44px;text-align:left}
- .finance .finance-daily-date input::-webkit-date-and-time-value{text-align:left}
- .finance .finance-daily-date input::-webkit-calendar-picker-indicator{position:absolute;right:0;top:0;width:44px;height:100%;margin:0;padding:0;opacity:0;cursor:pointer}
- .finance .finance-daily-date svg{position:absolute;right:14px;top:50%;transform:translateY(-50%);pointer-events:none;color:#096548}
- @supports (-moz-appearance:none){
-   .finance .finance-daily-date svg{display:none}
-   .finance .finance-daily-date input.finance-daily-control{padding-right:14px}
- }
+ .finance .finance-daily-heading .finance-picker-field .finance-daily-control{padding-inline-end:44px}
  @container (max-width:860px){
    .finance .finance-daily-heading{align-items:stretch;flex-direction:column}
    .finance .finance-daily-controls{width:100%}
@@ -115,7 +107,7 @@ export const FinanceStyles = createGlobalStyle`
  .finance .finance-payables-desktop-notice>svg{color:#087F5B}
  .finance .finance-payable-filters{display:grid;grid-template-columns:minmax(140px,1.8fr) minmax(140px,1.1fr) minmax(135px,1.4fr) minmax(115px,1fr) 42px;gap:14px;align-items:end}
  .finance .finance-payables-context .finance-single-unit{grid-column:1/-1}
- .finance .finance-payable-filters>label{min-width:0}
+ .finance .finance-payable-filters>:is(label,.finance-picker-field){min-width:0}
  .finance .finance-payable-filters input,.finance .finance-payable-filters select{min-width:0;max-width:100%}
  .finance .finance-payable-filters .finance-search-input{display:block}
  .finance .finance-payable-filter-reset{margin-top:12px}
@@ -162,7 +154,7 @@ export const FinanceStyles = createGlobalStyle`
  #finance-modal-root .finance-payable-detail-notes{grid-column:1/-1;white-space:pre-wrap}
  @media(max-width:1100px){
   .finance .finance-payable-filters{grid-template-columns:repeat(3,minmax(0,1fr)) 42px}
-  .finance .finance-payable-filters>label:first-child{grid-column:1/-1}
+  .finance .finance-payable-filters>:is(label,.finance-picker-field):first-child{grid-column:1/-1}
  }
  @media(max-width:767px){
   .finance .finance-payable-filters{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 12px}
@@ -178,8 +170,8 @@ export const FinanceStyles = createGlobalStyle`
  }
  @media(max-width:360px){
   .finance .finance-payable-filters{grid-template-columns:minmax(0,1fr) 42px}
-  .finance .finance-payable-filters>label{grid-column:1/-1}
-  .finance .finance-payable-filters>label:nth-child(4){grid-column:1}
+  .finance .finance-payable-filters>:is(label,.finance-picker-field){grid-column:1/-1}
+  .finance .finance-payable-filters>:is(label,.finance-picker-field):nth-child(4){grid-column:1}
   .finance .finance-payable-filters>button{grid-column:2}
   #finance-modal-root .finance-payable-detail-fields{grid-template-columns:minmax(0,1fr)}
  }
@@ -287,7 +279,7 @@ export const FinanceStyles = createGlobalStyle`
  .finance .finance-category-filters,.finance .finance-deadline-controls{
    display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;
  }
- .finance .finance-category-filters label,.finance .finance-deadline-controls label{min-width:0;flex:1 1 180px}
+ .finance .finance-category-filters>:is(label,.finance-picker-field),.finance .finance-deadline-controls>:is(label,.finance-picker-field){min-width:0;flex:1 1 180px}
  .finance .finance-category-filters .finance-search-input{display:block}
  @media screen {
    .finance .finance-category-results{block-size:clamp(15rem,52svh,32rem);overflow:auto}
@@ -641,6 +633,9 @@ export const Workspace = styled.div`
     padding: 7px 10px;
     letter-spacing: 0;
     text-transform: none;
+  }
+  .finance-topbar .finance-context .finance-picker-field :is(select, input[placeholder]) {
+    padding-inline-end: 44px;
   }
   .finance-user {
     width: 36px;
@@ -1311,12 +1306,12 @@ export const Workspace = styled.div`
     gap: 16px;
     flex-wrap: wrap;
   }
-  .finance-report-controls label {
+  .finance-report-controls > :is(label,.finance-picker-field) {
     min-width: 240px;
     flex: 1;
   }
-  .finance-informative-period button,
-  .finance-report-controls button {
+  .finance-informative-period > button,
+  .finance-report-controls > button {
     height: 48px;
     min-height: 48px;
     min-width: 180px;
@@ -1370,12 +1365,12 @@ export const Workspace = styled.div`
       grid-template-columns: minmax(0, 1fr);
       gap: 12px;
     }
-    .finance-report-controls label {
+    .finance-report-controls > :is(label,.finance-picker-field) {
       min-width: 0;
       width: 100%;
       flex-basis: 100%;
     }
-    .finance-report-controls button {
+    .finance-report-controls > button {
       width: 100%;
       min-width: 0;
       min-height: 48px;

@@ -18,10 +18,10 @@ test("administrator generates a period report without requiring a statement, sel
     .getByRole("radio", { name: "Comparativo individual por congregação", exact: true })
     .check();
   await expect(page.getByLabel("Mês inicial", { exact: true })).toHaveValue(
-    "2026-08",
+    "08/2026",
   );
   await expect(page.getByLabel("Mês final", { exact: true })).toHaveValue(
-    "2026-10",
+    "10/2026",
   );
   await expect(
     page.getByRole("combobox", { name: "Caixas e contas" }),

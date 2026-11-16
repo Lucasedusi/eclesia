@@ -51,7 +51,7 @@ for (const width of [390, 1280]) {
         ),
       ).toBe(false);
       await date.fill("28/02/2028");
-      await expect(form.getByLabel("Mês de referência")).toHaveValue("2028-02");
+      await expect(form.getByLabel("Mês de referência", { exact: true })).toHaveValue("02/2028");
       const trigger = form.getByRole("button", {
         name: "Abrir calendário de data",
       });
@@ -72,6 +72,23 @@ for (const width of [390, 1280]) {
         .press("Escape");
       await expect(calendar).toHaveCount(0);
       await expect(form).toBeVisible();
+    });
+
+    test("month picker changes the overview period and attendance keeps its original fields", async ({ page }) => {
+      const {unitId} = JSON.parse(readFileSync(process.env.E2E_FINANCE_FIXTURE!, "utf8"));
+      await page.goto(`/financeiro?unidade=${unitId}&mes=2026-10`);
+      const open = page.getByRole("button", {name: "Abrir calendário de período"});
+      if (width === 390) await open.tap(); else await open.click();
+      const months = page.getByRole("dialog", {name: "Escolher mês"});
+      await expect(months.getByRole("button", {name: "Outubro de 2026"})).toHaveAttribute("aria-pressed", "true");
+      await months.getByRole("button", {name: "Ano anterior"}).click();
+      await months.getByRole("button", {name: "Fevereiro de 2025"}).click();
+      await expect(page).toHaveURL(/mes=2025-02/);
+      await expect(page.getByLabel("Período", {exact: true})).toHaveValue("02/2025");
+      await page.goto(`/financeiro/atendimento?unidade=${unitId}&mes=2026-10`);
+      await expect(page.getByLabel("Período", {exact: true})).toHaveAttribute("type", "month");
+      await expect(page.getByLabel("Mês de referência", {exact: true})).toHaveAttribute("type", "month");
+      await expect(page.getByLabel("Congregação", {exact: true})).not.toHaveAttribute("aria-expanded");
     });
 
     test("period applies two calendar dates only after confirmation", async ({

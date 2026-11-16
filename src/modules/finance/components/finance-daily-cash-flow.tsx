@@ -1,7 +1,9 @@
 "use client";
+import { FinanceDateField } from "./finance-date-field";
+import { FinanceSelect } from "./finance-select";
 
 import { useState, type FormEvent } from "react";
-import { CalendarDays, ChevronLeft, ChevronRight, FileText, SlidersHorizontal } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileText, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FinanceDailyReportDialog } from "./finance-daily-report-dialog";
 import { FinanceSummaryCards } from "./finance-summary-cards";
@@ -67,9 +69,9 @@ function MovementFilters({ data, filters, apply, busy }: {
     <fieldset className="finance-daily-filters" disabled={busy}>
       <div className="finance-daily-filterbar">
         <label>Buscar<input type="search" name="search" placeholder="Nome ou descrição" maxLength={160} defaultValue={filters.search} /></label>
-        <label>Movimento<select name="direction" defaultValue={filters.direction} onChange={(event) => event.currentTarget.form?.requestSubmit()}>
+        <FinanceSelect label="Movimento" name="direction" defaultValue={filters.direction} onChange={(event) => event.currentTarget.form?.requestSubmit()}>
           <option value="ALL">Todos</option><option value="INCOME">Entradas</option><option value="EXPENSE">Saídas</option>
-        </select></label>
+        </FinanceSelect>
         <Button variant="outline" aria-controls="daily-advanced" aria-expanded={advanced} onClick={() => setAdvanced(!advanced)}>
           <SlidersHorizontal size={16} /> Mais filtros{advancedCount ? ` (${advancedCount})` : ""}
         </Button>
@@ -80,11 +82,9 @@ function MovementFilters({ data, filters, apply, busy }: {
           ["department", "Departamento", data.departments, "Todos"],
           ["category", "Categoria", data.categories, "Todas"],
           ["method", "Forma de pagamento", data.methods, "Todas"],
-        ] as const).map(([key, label, options, all]) => <label key={key}>{label}
-          <select name={key} defaultValue={filters[key] ?? ""}>
+        ] as const).map(([key, label, options, all]) => <FinanceSelect label={label} key={key} name={key} defaultValue={filters[key] ?? ""}>
             <option value="">{all}</option>{options.map((option) => <option key={option.id} value={option.id}>{option.name}</option>)}
-          </select>
-        </label>)}
+          </FinanceSelect>)}
       </div>
       {hasFilters && <Button variant="ghost" size="sm" onClick={() => apply({ search: "", direction: "ALL", department: undefined, category: undefined, method: undefined })}>
         Limpar filtros
@@ -121,19 +121,14 @@ export function FinanceDailyCashFlow({ data, filters, today }: Props) {
           <Button variant="ghost" size="sm" disabled={isPending || !isLocalDate(previous)} aria-label="Dia anterior" onClick={() => update({ date: previous })}><ChevronLeft size={17} /></Button>
           <Button variant="ghost" size="sm" disabled={isPending || !isLocalDate(next)} aria-label="Próximo dia" onClick={() => update({ date: next })}><ChevronRight size={17} /></Button>
         </div>
-        <div className="finance-daily-date">
-          <input className="finance-daily-control" aria-label="Data de movimento" type="date" min="2000-01-01" max="2099-12-31"
-            key={filters.date} defaultValue={filters.date} disabled={isPending} onInput={(event) => {
-              const date = event.currentTarget.value;
-              if (date !== filters.date && isLocalDate(date)) update({ date });
-            }} />
-          <CalendarDays size={16} aria-hidden="true" />
-        </div>
-        <select className="finance-daily-control" aria-label="Caixa ou conta" value={filters.box ?? ""} disabled={isPending}
+        <FinanceDateField label="Data de movimento" hideLabel withCalendar className="finance-daily-control"
+          key={filters.date} defaultValue={filters.date} disabled={isPending}
+          onChange={date => { if (date !== filters.date && isLocalDate(date)) update({ date }); }} />
+        <FinanceSelect label="Caixa ou conta" hideLabel className="finance-daily-control" value={filters.box ?? ""} disabled={isPending}
           onChange={(event) => update({ box: event.target.value || undefined })}>
           <option value="">Todos os caixas e contas</option>
           {data.cashboxes.map((box) => <option key={box.id} value={box.id}>{box.name}{box.status === "INACTIVE" ? " (inativo)" : ""}</option>)}
-        </select>
+        </FinanceSelect>
         <Button className="finance-daily-report-trigger" variant="outline" disabled={isPending} onClick={() => setReportOpen(true)}><FileText size={16} />Relatórios</Button>
       </div>
     </header>

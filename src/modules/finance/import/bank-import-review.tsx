@@ -1,4 +1,5 @@
 "use client";
+import { FinanceSelect } from "../components/finance-select";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -518,27 +519,24 @@ export function BankImportReview({
                     {item.amountCents! < 0 ? "a origem" : "o destino"}.
                     Pagamentos a terceiros devem ser classificados como saídas.
                   </p>
-                  <label>
-                    Outra conta ou caixa
-                    <select
-                      value={otherBox}
-                      required
-                      disabled={locked}
-                      onChange={(e) => setOtherBox(e.target.value)}
-                    >
-                      <option value="">Selecione</option>
-                      {catalogs.cashboxes
-                        .filter(
-                          (b) =>
-                            b.status === "ACTIVE" && b.id !== batch.cashboxId,
-                        )
-                        .map((b) => (
-                          <option value={b.id} key={b.id}>
-                            {b.name}
-                          </option>
-                        ))}
-                    </select>
-                  </label>
+                  <FinanceSelect label="Outra conta ou caixa"
+                    value={otherBox}
+                    required
+                    disabled={locked}
+                    onChange={(e) => setOtherBox(e.target.value)}
+                  >
+                    <option value="">Selecione</option>
+                    {catalogs.cashboxes
+                      .filter(
+                        (b) =>
+                          b.status === "ACTIVE" && b.id !== batch.cashboxId,
+                      )
+                      .map((b) => (
+                        <option value={b.id} key={b.id}>
+                          {b.name}
+                        </option>
+                      ))}
+                  </FinanceSelect>
                   <label>
                     Descrição da transferência
                     <input

@@ -287,6 +287,7 @@ export function FinanceShell({
               )}
             </button>
             {cathedralPage ? <div className="finance-context finance-payables-context"><span className="finance-single-unit">Administração · Catedral</span></div> : <FinanceContextBar
+              attendance={path === "/financeiro/atendimento"}
               units={context.units}
               selectedUnitId={unit.id}
               month={month}

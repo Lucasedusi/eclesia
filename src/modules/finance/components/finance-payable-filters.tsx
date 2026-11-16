@@ -1,4 +1,6 @@
 "use client";
+import { FinanceSelect } from "./finance-select";
+import { FinanceDateField } from "./finance-date-field";
 import { useRef, useState } from "react";
 import { Funnel, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -24,11 +26,11 @@ export function FinancePayableFilters({ query, categories, busy, onApply }: {
         <input ref={input} role="searchbox" aria-label="Buscar pelo nome" name="search" value={search} onChange={(e) => setSearch(e.target.value)} maxLength={120} placeholder="Nome da conta" />
         {busy ? <span className="finance-search-loading" role="status" aria-label="Buscando contas"><Loader2 size={16} className="finance-spin" aria-hidden="true" /></span> : search && <button type="button" className="finance-clear-search" aria-label="Limpar busca" onClick={() => { setSearch(""); onApply({ search: undefined }); input.current?.focus(); }}><X size={15} aria-hidden="true" /></button>}
       </span></label>
-      <label>Mês do vencimento<input type="month" min="2000-01" max="2099-12" value={query.month} onChange={(e) => { if (e.target.value) onApply({ mes: e.target.value, dateFrom: undefined, dateTo: undefined }); }} /></label>
-      <label>Categoria<select name="categoryId" defaultValue={query.categoryId ?? ""}><option value="">Todas as categorias</option>{categories.filter((c) => c.direction !== "INCOME").map((c) => <option key={c.id} value={c.id}>{c.name}{c.status !== "ACTIVE" ? " (inativa)" : ""}</option>)}</select></label>
-      <label>Situação<select name="dueStatus" disabled={busy || query.status === "PAID"} defaultValue={query.status === "PAID" ? "PAID" : query.dueStatus}>
+      <FinanceDateField label="Mês do vencimento" withCalendar monthOnly required={false} min="2000-01" max="2099-12" value={query.month} onChange={iso => { if (iso) onApply({ mes: iso, dateFrom: undefined, dateTo: undefined }); }} />
+      <FinanceSelect label="Categoria" name="categoryId" defaultValue={query.categoryId ?? ""}><option value="">Todas as categorias</option>{categories.filter((c) => c.direction !== "INCOME").map((c) => <option key={c.id} value={c.id}>{c.name}{c.status !== "ACTIVE" ? " (inativa)" : ""}</option>)}</FinanceSelect>
+      <FinanceSelect label="Situação" name="dueStatus" disabled={busy || query.status === "PAID"} defaultValue={query.status === "PAID" ? "PAID" : query.dueStatus}>
         {query.status === "PAID" ? <option value="PAID">Pagas</option> : <><option value="ALL">Todas</option><option value="OVERDUE">Em atraso</option><option value="TODAY">Vence hoje</option><option value="UPCOMING">A vencer</option></>}
-      </select></label>
+      </FinanceSelect>
       <Button type="submit" variant="outline" className="finance-icon-button" disabled={busy} aria-label="Filtrar" title="Filtrar"><Funnel size={18} aria-hidden="true" /></Button>
     </fieldset>
     {(query.search || query.categoryId || query.dueStatus !== "ALL" || query.dateFrom) && <div className="finance-payable-filter-reset"><Button variant="outline" disabled={busy} onClick={() => onApply({ search: undefined, categoryId: undefined, dueStatus: undefined, dateFrom: undefined, dateTo: undefined })}><X size={15} />Limpar filtros</Button></div>}

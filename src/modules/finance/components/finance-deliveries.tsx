@@ -1,4 +1,5 @@
 "use client";
+import { FinanceDateField } from "./finance-date-field";
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -137,19 +138,16 @@ function FinanceDeliveriesContent({
       </header>
       <section className="card stack">
         <div className="finance-informative-period">
-          <label>
-            Mês de referência
-            <input
-              type="month"
-              min="2000-01"
-              max="2099-12"
-              value={month}
-              onChange={(e) => {
-                setMonth(e.target.value);
-                void load(e.target.value);
-              }}
-            />
-          </label>
+          <FinanceDateField label="Mês de referência"
+            withCalendar monthOnly required={false}
+            min="2000-01"
+            max="2099-12"
+            value={month}
+            onChange={iso => {
+              setMonth(iso);
+              void load(iso);
+            }}
+          />
           <label>
             Buscar congregação
             <input

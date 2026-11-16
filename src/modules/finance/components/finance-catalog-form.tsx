@@ -1,4 +1,6 @@
 "use client";
+import { FinanceDateField } from "./finance-date-field";
+import { FinanceSelect } from "./finance-select";
 import { formatFinanceMonth } from "../utils/finance-period";
 import { FinancePaymentIcon } from "./finance-payment-icon";
 import { Check, Save } from "lucide-react";
@@ -190,13 +192,10 @@ export function FinanceCatalogForm({
             autoFocus
           />
         </label>
-        <label>
-          Situação
-          <select name="status" defaultValue={current?.status ?? "ACTIVE"}>
-            <option value="ACTIVE">Ativo</option>
-            <option value="INACTIVE">Inativo</option>
-          </select>
-        </label>
+        <FinanceSelect label="Situação" name="status" defaultValue={current?.status ?? "ACTIVE"}>
+          <option value="ACTIVE">Ativo</option>
+          <option value="INACTIVE">Inativo</option>
+        </FinanceSelect>
         {entity === "DEPARTMENT" && (
           <>
             <label className="check">
@@ -210,10 +209,7 @@ export function FinanceCatalogForm({
             <p className="muted">
               Departamentos fora da base continuam aparecendo no demonstrativo.
             </p>
-            <label>
-              Vigência a partir de
-              <input name="month" type="month" defaultValue={month} required />
-            </label>
+            <FinanceDateField label="Vigência a partir de" onChange={() => setDirty(true)} name="month" withCalendar monthOnly defaultValue={month} required />
             <label>
               Justificativa da revisão retroativa
               <textarea name="reason" minLength={5} maxLength={1000} />
@@ -234,52 +230,43 @@ export function FinanceCatalogForm({
         )}
         {entity === "CATEGORY" && (
           <>
-            <label>
-              Natureza
-              <select
-                name="direction"
-                defaultValue={category?.direction ?? defaultDirection ?? "INCOME"}
-              >
-                <option value="INCOME">Entrada</option>
-                <option value="EXPENSE">Saída</option>
-                <option value="BOTH">Entrada e saída</option>
-              </select>
-            </label>
-            <label>
-              Uso nos informativos
-              <select
-                name="informativeRole"
-                defaultValue={category?.informativeRole ?? "NONE"}
-              >
-                <option value="NONE">Nenhum</option>
-                <option value="TRANSFER">Repasse recebido pela Catedral</option>
-                <option value="PREBEND">Prebenda bruta paga pela congregação</option>
-              </select>
-            </label>
+            <FinanceSelect label="Natureza"
+              name="direction"
+              defaultValue={category?.direction ?? defaultDirection ?? "INCOME"}
+            >
+              <option value="INCOME">Entrada</option>
+              <option value="EXPENSE">Saída</option>
+              <option value="BOTH">Entrada e saída</option>
+            </FinanceSelect>
+            <FinanceSelect label="Uso nos informativos"
+              name="informativeRole"
+              defaultValue={category?.informativeRole ?? "NONE"}
+            >
+              <option value="NONE">Nenhum</option>
+              <option value="TRANSFER">Repasse recebido pela Catedral</option>
+              <option value="PREBEND">Prebenda bruta paga pela congregação</option>
+            </FinanceSelect>
             <p className="muted">
               Esta indicação também classifica lançamentos anteriores desta
               categoria nos informativos. Renomear ou inativar a categoria
               preserva essa classificação.
             </p>
-            <label>
-              Departamento sugerido
-              <select
-                name="department"
-                defaultValue={category?.departmentId ?? ""}
-              >
-                <option value="">Sem sugestão</option>
-                {catalogs.departments
-                  .filter(
-                    (v) =>
-                      v.status === "ACTIVE" || v.id === category?.departmentId,
-                  )
-                  .map((v) => (
-                    <option key={v.id} value={v.id}>
-                      {v.name}
-                    </option>
-                  ))}
-              </select>
-            </label>
+            <FinanceSelect label="Departamento sugerido"
+              name="department"
+              defaultValue={category?.departmentId ?? ""}
+            >
+              <option value="">Sem sugestão</option>
+              {catalogs.departments
+                .filter(
+                  (v) =>
+                    v.status === "ACTIVE" || v.id === category?.departmentId,
+                )
+                .map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {v.name}
+                  </option>
+                ))}
+            </FinanceSelect>
             <label className="check">
               <input
                 type="checkbox"
@@ -308,17 +295,14 @@ export function FinanceCatalogForm({
         )}
         {entity === "CLASSIFICATION" && (
           <>
-            <label>
-              Cargo para sugestão automática
-              <select name="role" defaultValue={classification?.roleId ?? ""}>
-                <option value="">Sem sugestão</option>
-                {roles.map((v) => (
-                  <option key={v.id} value={v.id}>
-                    {v.name}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <FinanceSelect label="Cargo para sugestão automática" name="role" defaultValue={classification?.roleId ?? ""}>
+              <option value="">Sem sugestão</option>
+              {roles.map((v) => (
+                <option key={v.id} value={v.id}>
+                  {v.name}
+                </option>
+              ))}
+            </FinanceSelect>
             <p className="muted">
               A classificação poderá ser ajustada no lançamento, sem alterar o
               cadastro do membro.
@@ -326,41 +310,32 @@ export function FinanceCatalogForm({
           </>
         )}
         {entity === "PAYMENT_METHOD" && (
-          <label>
-            Tipo
-            <select name="kind" defaultValue={method?.kind ?? "CASH"}>
-              {Object.entries(methodLabels).map(([v, label]) => (
-                <option key={v} value={v}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </label>
+          <FinanceSelect label="Tipo" name="kind" defaultValue={method?.kind ?? "CASH"}>
+            {Object.entries(methodLabels).map(([v, label]) => (
+              <option key={v} value={v}>
+                {label}
+              </option>
+            ))}
+          </FinanceSelect>
         )}
         {entity === "CASHBOX" && (
           <>
-            <label>
-              Tipo
-              <select
-                value={boxKind}
-                onChange={(e) => setBoxKind(e.target.value)}
-                disabled={Boolean(id)}
-              >
-                <option value="CASH">Caixa em dinheiro</option>
-                <option value="BANK_ACCOUNT">Conta bancária</option>
-              </select>
-            </label>
+            <FinanceSelect label="Tipo"
+              value={boxKind}
+              onChange={(e) => setBoxKind(e.target.value)}
+              disabled={Boolean(id)}
+            >
+              <option value="CASH">Caixa em dinheiro</option>
+              <option value="BANK_ACCOUNT">Conta bancária</option>
+            </FinanceSelect>
             {!id ? (
               <div className="grid">
-                <label>
-                  Data de abertura
-                  <input
-                    name="date"
-                    type="date"
-                    required
-                    defaultValue={`${month}-01`}
-                  />
-                </label>
+                <FinanceDateField label="Data de abertura" onChange={() => setDirty(true)}
+                  name="date"
+                  withCalendar
+                  required
+                  defaultValue={`${month}-01`}
+                />
                 <label>
                   Saldo de abertura (R$)
                   <FinanceMoneyInput

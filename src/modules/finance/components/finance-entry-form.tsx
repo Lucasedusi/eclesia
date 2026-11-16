@@ -483,9 +483,9 @@ export function FinanceEntryForm({
           {direction === "EXPENSE" ? "Pagamento" : "Recebimento"}
         </h3>
         <div className="grid finance-entry-dates">
-          <FinanceDateField label="Data" value={state.date} withCalendar
+          <FinanceDateField label="Data" value={state.date} withCalendar entryFocus
             disabled={groupCorrection || Boolean(bankImport)} onChange={date => change({ date })} />
-          <label>
+          {mode === "ATTENDANCE" && !bankImport ? <label>
             Mês de referência
             <input
               type="month"
@@ -495,7 +495,8 @@ export function FinanceEntryForm({
               value={state.referenceMonth}
               onChange={(e) => change({ referenceMonth: e.target.value })}
             />
-          </label>
+          </label> : <FinanceDateField label="Mês de referência" monthOnly withCalendar value={state.referenceMonth}
+            onChange={iso => change({ referenceMonth: iso })} />}
         </div>
         <div className="grid">
           <FinanceSelect label="Caixa ou conta"

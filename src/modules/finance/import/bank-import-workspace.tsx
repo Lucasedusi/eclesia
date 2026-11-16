@@ -1,4 +1,5 @@
 "use client";
+import { FinanceSelect } from "../components/finance-select";
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -197,24 +198,18 @@ export function BankImportWorkspace({
                 );
               }}
             >
-              <label>
-                Situação
-                <select name="status" defaultValue={filters.status}>
-                  <option value="PENDING">Pendentes</option>
-                  <option value="COMPLETED">Concluídos</option>
-                  <option value="IGNORED">Ignorados</option>
-                  <option value="ALL">Todos</option>
-                  <option value="DELETED">Excluídos</option>
-                </select>
-              </label>
-              <label>
-                Direção
-                <select name="direction" defaultValue={filters.direction}>
-                  <option value="ALL">Entradas e saídas</option>
-                  <option value="INCOME">Entradas</option>
-                  <option value="EXPENSE">Saídas</option>
-                </select>
-              </label>
+              <FinanceSelect label="Situação" name="status" defaultValue={filters.status}>
+                <option value="PENDING">Pendentes</option>
+                <option value="COMPLETED">Concluídos</option>
+                <option value="IGNORED">Ignorados</option>
+                <option value="ALL">Todos</option>
+                <option value="DELETED">Excluídos</option>
+              </FinanceSelect>
+              <FinanceSelect label="Direção" name="direction" defaultValue={filters.direction}>
+                <option value="ALL">Entradas e saídas</option>
+                <option value="INCOME">Entradas</option>
+                <option value="EXPENSE">Saídas</option>
+              </FinanceSelect>
               <label>
                 Buscar no extrato
                 <input

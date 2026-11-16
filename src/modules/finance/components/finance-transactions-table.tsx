@@ -1,4 +1,5 @@
 "use client";
+import { FinanceSelect } from "./finance-select";
 import { FinanceEmpty } from "./finance-empty";
 import { useFinanceNavigation } from "./finance-shell";
 import { FinanceSkeleton } from "./finance-skeleton";
@@ -197,22 +198,16 @@ export function FinanceTransactionsTable({
           </div>
           <div id="finance-advanced-filters" hidden={!advanced}>
             <div className="grid finance-transaction-filter-grid">
-              <label className="finance-advanced-direction">
-                Movimento
-                <select name="direction" defaultValue={filters.direction}>
-                  <option value="ALL">Todos</option>
-                  <option value="INCOME">Entradas</option>
-                  <option value="EXPENSE">Saídas</option>
-                </select>
-              </label>
-              <label>
-                Situação
-                <select name="status" defaultValue={filters.status}>
-                  <option value="ALL">Todas</option>
-                  <option value="CONFIRMED">Confirmados</option>
-                  <option value="CANCELLED">Cancelados</option>
-                </select>
-              </label>
+              <FinanceSelect label="Movimento" fieldClassName="finance-advanced-direction" name="direction" defaultValue={filters.direction}>
+                <option value="ALL">Todos</option>
+                <option value="INCOME">Entradas</option>
+                <option value="EXPENSE">Saídas</option>
+              </FinanceSelect>
+              <FinanceSelect label="Situação" name="status" defaultValue={filters.status}>
+                <option value="ALL">Todas</option>
+                <option value="CONFIRMED">Confirmados</option>
+                <option value="CANCELLED">Cancelados</option>
+              </FinanceSelect>
               {[
                 {
                   name: "titheClassificationId",
@@ -240,21 +235,18 @@ export function FinanceTransactionsTable({
                   items: catalogs.paymentMethods,
                 },
               ].map((f) => (
-                <label key={f.name}>
-                  {f.label}
-                  <select
-                    name={f.name}
-                    defaultValue={filters[f.name as keyof FinanceFilters] ?? ""}
-                  >
-                    <option value="">Todos</option>
-                    {f.items.map((v) => (
-                      <option key={v.id} value={v.id}>
-                        {v.name}
-                        {v.status === "INACTIVE" ? " (inativo)" : ""}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <FinanceSelect label={f.label} key={f.name}
+                  name={f.name}
+                  defaultValue={filters[f.name as keyof FinanceFilters] ?? ""}
+                >
+                  <option value="">Todos</option>
+                  {f.items.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.name}
+                      {v.status === "INACTIVE" ? " (inativo)" : ""}
+                    </option>
+                  ))}
+                </FinanceSelect>
               ))}
               {advanced && resetButtons}
             </div>

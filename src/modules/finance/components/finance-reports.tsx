@@ -1,4 +1,6 @@
 "use client";
+import { FinanceSelect } from "./finance-select";
+import { FinanceDateField } from "./finance-date-field";
 import { useState } from "react";
 import { useFinanceDesktop } from "../hooks/use-finance-desktop";
 import { FinanceCategoryReportOptions } from "./finance-category-report-options";
@@ -258,32 +260,26 @@ function FinanceReportsContent({
         {informative ? (
           <div className="stack finance-informative-options">
             <div className="finance-informative-period">
-              <label>
-                Mês inicial
-                <input
-                  type="month"
-                  min="2000-01"
-                  max="2099-12"
-                  value={startMonth}
-                  onChange={(e) => {
-                    invalidate();
-                    setStartMonth(e.target.value);
-                  }}
-                />
-              </label>
-              <label>
-                Mês final
-                <input
-                  type="month"
-                  min="2000-01"
-                  max="2099-12"
-                  value={endMonth}
-                  onChange={(e) => {
-                    invalidate();
-                    setEndMonth(e.target.value);
-                  }}
-                />
-              </label>
+              <FinanceDateField label="Mês inicial"
+                withCalendar monthOnly required={false}
+                min="2000-01"
+                max="2099-12"
+                value={startMonth}
+                onChange={iso => {
+                  invalidate();
+                  setStartMonth(iso);
+                }}
+              />
+              <FinanceDateField label="Mês final"
+                withCalendar monthOnly required={false}
+                min="2000-01"
+                max="2099-12"
+                value={endMonth}
+                onChange={iso => {
+                  invalidate();
+                  setEndMonth(iso);
+                }}
+              />
               {generateButton}
             </div>
             {!periodValidation.success && (
@@ -319,24 +315,21 @@ function FinanceReportsContent({
           </div>
         ) : (
           <div className="finance-report-controls finance-mobile-report-controls">
-            <label>
-              Caixas e contas
-              <select
-                value={box}
-                onChange={(e) => {
-                  invalidate();
-                  setBox(e.target.value);
-                }}
-              >
-                <option value="">Todos os caixas e contas</option>
-                {cashboxes.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name}
-                    {b.status !== "ACTIVE" ? " · Inativo" : ""}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <FinanceSelect label="Caixas e contas"
+              value={box}
+              onChange={(e) => {
+                invalidate();
+                setBox(e.target.value);
+              }}
+            >
+              <option value="">Todos os caixas e contas</option>
+              {cashboxes.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                  {b.status !== "ACTIVE" ? " · Inativo" : ""}
+                </option>
+              ))}
+            </FinanceSelect>
             {generateButton}
           </div>
         )}

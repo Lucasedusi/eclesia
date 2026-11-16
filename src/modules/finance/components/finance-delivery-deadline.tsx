@@ -1,4 +1,5 @@
 "use client";
+import { FinanceDateField } from "./finance-date-field";
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -83,20 +84,17 @@ export function FinanceDeliveryDeadline({
               }}
             />
           </label>
-          <label>
-            Aplicar a partir do mês de referência
-            <input
-              type="month"
-              min={currentMonth}
-              max="2099-12"
-              required
-              value={effective}
-              onChange={(e) => {
-                setEffective(e.target.value);
-                dirty();
-              }}
-            />
-          </label>
+          <FinanceDateField label="Aplicar a partir do mês de referência"
+            withCalendar monthOnly
+            min={currentMonth}
+            max="2099-12"
+            required
+            value={effective}
+            onChange={iso => {
+              setEffective(iso);
+              dirty();
+            }}
+          />
           <Button type="submit" loading={busy}>
             Salvar prazo
           </Button>

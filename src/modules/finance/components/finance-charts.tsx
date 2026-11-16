@@ -1,4 +1,5 @@
 "use client";
+import { FinanceSelect } from "./finance-select";
 import { FinanceEmpty } from "./finance-empty";
 import { useState } from "react";
 import type { FinanceOverview } from "../types/finance-query.types";
@@ -124,15 +125,14 @@ export function FinanceCharts({ overview }: { overview: FinanceOverview }) {
       <section className="card stack">
         <div className="row spread">
           <h2>Por categoria</h2>
-          <select
-            aria-label="Natureza do gráfico"
+          <FinanceSelect hideLabel label="Natureza do gráfico"
             value={direction}
             onChange={(e) => setDirection(e.target.value)}
             style={{ width: 120 }}
           >
             <option value="INCOME">Entradas</option>
             <option value="EXPENSE">Saídas</option>
-          </select>
+          </FinanceSelect>
         </div>
         {categories.length === 0 ? (
           <FinanceEmpty>Sem movimento nesta natureza.</FinanceEmpty>

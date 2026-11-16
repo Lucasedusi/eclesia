@@ -1,4 +1,5 @@
 "use client";
+import { FinanceSelect } from "./finance-select";
 
 import { useState } from "react";
 import { FileText } from "lucide-react";
@@ -109,18 +110,15 @@ export function FinanceDailyReportDialog({
             <p>Inclui todos os caixas e contas da Catedral.</p>
           ) : (
             <>
-              <label>
-                Caixas e contas
-                <select value={box} onChange={(e) => setBox(e.target.value)}>
-                  <option value="">Todos os caixas e contas</option>
-                  {boxes.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.name}
-                      {b.status === "INACTIVE" ? " (inativo)" : ""}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <FinanceSelect label="Caixas e contas" value={box} onChange={(e) => setBox(e.target.value)}>
+                <option value="">Todos os caixas e contas</option>
+                {boxes.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name}
+                    {b.status === "INACTIVE" ? " (inativo)" : ""}
+                  </option>
+                ))}
+              </FinanceSelect>
               <label className="check">
                 <input
                   type="checkbox"

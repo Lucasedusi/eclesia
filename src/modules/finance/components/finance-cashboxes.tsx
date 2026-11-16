@@ -1,4 +1,5 @@
 "use client";
+import { FinanceDateField } from "./finance-date-field";
 import { useFinanceNavigation } from "./finance-shell";
 import { FinanceMoneyInput } from "./finance-money-input";
 import { useRef, useState } from "react";
@@ -97,15 +98,12 @@ function Adjustment({
             Saldo atual: {formatMoney(box.balanceCents)}. O ajuste fica no
             histórico e não conta como entrada ou despesa.
           </p>
-          <label>
-            Data do ajuste
-            <input
-              name="date"
-              type="date"
-              defaultValue={`${month}-01`}
-              required
-            />
-          </label>
+          <FinanceDateField label="Data do ajuste"
+            name="date"
+            withCalendar
+            defaultValue={`${month}-01`}
+            required
+          />
           <label>
             Valor a acrescentar ou retirar (R$)
             <FinanceMoneyInput

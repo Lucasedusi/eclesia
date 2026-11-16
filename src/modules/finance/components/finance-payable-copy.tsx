@@ -1,4 +1,6 @@
 "use client";
+import { FinanceSelect } from "./finance-select";
+import { FinanceDateField } from "./finance-date-field";
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
@@ -60,12 +62,12 @@ export function FinancePayableCopy({ initial, month, categories, onClose, onSave
       </div><nav className="finance-payable-copy-pagination" aria-label="Páginas das contas para copiar"><Button size="sm" variant="outline" disabled={loading || data.page <= 1} onClick={() => void page(data.page - 1)}>Anterior</Button><span>Página {data.page} de {Math.max(1, Math.ceil(data.count / 20))}</span><Button size="sm" variant="outline" disabled={loading || data.page * 20 >= data.count} onClick={() => void page(data.page + 1)}>Próxima</Button></nav></> :
       <form ref={form} className="stack" onSubmit={(e) => { e.preventDefault(); void save(); }}><fieldset className="finance-payable-fields stack" disabled={mutation.busy || mutation.uncertain}>
         {drafts.map((draft) => <article className="card stack" key={draft.item.id}><strong>{draft.item.name}</strong>
-          <div className="grid"><label>Vencimento<input aria-label={`Vencimento: ${draft.item.name}`} type="date" min={`${target}-01`} max={shiftPayableDate(monthRange(target).end, -1)} value={draft.dueDate} required onChange={(e) => update(draft.item.id, { dueDate: e.target.value })} /></label>
+          <div className="grid"><FinanceDateField label="Vencimento" aria-label={`Vencimento: ${draft.item.name}`} withCalendar min={`${target}-01`} max={shiftPayableDate(monthRange(target).end, -1)} value={draft.dueDate} required onChange={iso => update(draft.item.id, { dueDate: iso })} />
           <label>Valor (R$)<FinanceMoneyInput aria-label={`Valor: ${draft.item.name}`} value={draft.amount} onChange={(e) => update(draft.item.id, { amount: e.target.value })} placeholder="Não informado" /></label></div>
           {draft.item.dueDate.slice(8) !== nextPayableDate(draft.item.dueDate).slice(8) && <small className="muted">Vencimento ajustado para o último dia do mês.</small>}
-          <label>Categoria<select aria-label={`Categoria: ${draft.item.name}`} value={draft.categoryId} required onChange={(e) => update(draft.item.id, { categoryId: e.target.value })}>
+          <FinanceSelect label="Categoria" aria-label={`Categoria: ${draft.item.name}`} value={draft.categoryId} required onChange={(e) => update(draft.item.id, { categoryId: e.target.value })}>
             <option value="">Selecione uma categoria ativa</option>{categories.filter((c) => c.status === "ACTIVE" && c.direction !== "INCOME").map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select></label>
+          </FinanceSelect>
         </article>)}
       </fieldset></form>}
     </div>
