@@ -113,7 +113,9 @@ test("bank draft preserves reference through reload, then posts using statement 
   sheet.addRow(["DATA", "DOCUMENTO", "HISTÓRICO", "INFORMAÇÕES COMPLEMENTARES", "VALOR"]);
   sheet.addRow(["05/11/2026", name, "PIX RECEBIDO", "Referência de outubro", 17.45]);
   await page.goto(`/financeiro/lancamentos/importacoes?unidade=${f.unitId}&mes=2026-11`);
+  await page.getByRole("combobox", { name: "Conta bancária", exact: true }).selectOption(f.boxes[f.unitId].bank);
   await page.getByLabel("Extrato XLSX do Sicoob").setInputFiles({ name, mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", buffer: Buffer.from(await book.xlsx.writeBuffer()) });
+  await expect(page.getByRole("status").filter({ hasText: name })).toBeVisible();
   await page.getByRole("button", { name: "Preparar importação", exact: true }).click();
   await page.getByRole("button", { name: "Conferir linha 3", exact: true }).click();
   const form = page.locator("form.finance-attendance-form");
@@ -129,7 +131,7 @@ test("bank draft preserves reference through reload, then posts using statement 
   await page.reload();
   await page.getByRole("button", { name: "Conferir linha 3", exact: true }).click();
   await expect(reference(form)).toHaveValue("2026-10");
-  await expect(form.getByLabel("Data", { exact: true })).toHaveValue("2026-11-05");
+  await expect(form.getByLabel("Data", { exact: true })).toHaveValue("05/11/2026");
   await form.getByRole("button", { name: "Salvar", exact: true }).click();
   await expect(page.getByText("Lançamento salvo.", { exact: true })).toBeVisible();
   await page.goto(`/financeiro/lancamentos?unidade=${f.unitId}&mes=2026-11&search=${encodeURIComponent(name)}`);

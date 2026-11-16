@@ -155,7 +155,7 @@ test("mobile period applies inclusive cross-month dates and preserves them throu
   await page.getByRole('button', { name: /^Período:/ }).click();
   dialog = page.getByRole('dialog', { name: 'Período dos lançamentos' });
   await dialog.getByRole('button', { name: 'Mês', exact: true }).click();
-  await dialog.getByLabel('Mês de referência').fill('2026-10');
+  await dialog.getByLabel('Mês da movimentação').fill('2026-10');
   await dialog.getByRole('button', { name: 'Aplicar', exact: true }).click();
   await expect(page).not.toHaveURL(/dateFrom=|dateTo=/);
 });

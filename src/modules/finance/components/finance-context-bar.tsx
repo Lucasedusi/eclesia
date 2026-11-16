@@ -36,7 +36,7 @@ export function FinanceContextBar({
           </select>
         )}
       </label>
-      <label className={transactionPeriod ? "finance-desktop-only" : undefined}>
+      {transactionPeriod ?? <label>
         Período
         <input
           aria-label="Período"
@@ -48,8 +48,7 @@ export function FinanceContextBar({
             if (e.target.value) onChange(selectedUnitId, e.target.value);
           }}
         />
-      </label>
-      {transactionPeriod}
+      </label>}
     </div>
   );
 }

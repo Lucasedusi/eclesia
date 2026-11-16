@@ -1,4 +1,6 @@
 "use client";
+import { FinanceDateField } from "./finance-date-field";
+import { FinanceSelect } from "./finance-select";
 import { FinanceMoneyInput } from "./finance-money-input";
 import Link from "next/link";
 import {
@@ -481,17 +483,8 @@ export function FinanceEntryForm({
           {direction === "EXPENSE" ? "Pagamento" : "Recebimento"}
         </h3>
         <div className="grid finance-entry-dates">
-          <label>
-            Data
-            <input
-              data-entry-focus
-              type="date"
-              value={state.date}
-              required
-              disabled={groupCorrection || Boolean(bankImport)}
-              onChange={(e) => change({ date: e.target.value })}
-            />
-          </label>
+          <FinanceDateField label="Data" value={state.date} withCalendar
+            disabled={groupCorrection || Boolean(bankImport)} onChange={date => change({ date })} />
           <label>
             Mês de referência
             <input
@@ -505,51 +498,45 @@ export function FinanceEntryForm({
           </label>
         </div>
         <div className="grid">
-          <label>
-            Caixa ou conta
-            <select
-              value={state.cashboxId}
-              required
-              disabled={groupCorrection || Boolean(bankImport)}
-              onChange={(e) => {
-                const b = boxes.find((v) => v.id === e.target.value),
-                  available = catalogs.paymentMethods.filter(
-                    (m) =>
-                      m.status === "ACTIVE" &&
-                      b?.paymentMethodIds.includes(m.id),
-                  );
-                change({
-                  cashboxId: e.target.value,
-                  paymentMethodId:
-                    available.length === 1 ? available[0].id : "",
-                });
-              }}
-            >
-              <option value="">Selecione</option>
-              {boxes.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                  {b.status !== "ACTIVE" ? " (inativo)" : ""}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Forma de pagamento
-            <select
-              value={state.paymentMethodId}
-              required
-              disabled={groupCorrection}
-              onChange={(e) => change({ paymentMethodId: e.target.value })}
-            >
-              <option value="">Selecione</option>
-              {methods.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name}
-                </option>
-              ))}
-            </select>
-          </label>
+          <FinanceSelect label="Caixa ou conta"
+            value={state.cashboxId}
+            required
+            disabled={groupCorrection || Boolean(bankImport)}
+            onChange={(e) => {
+              const b = boxes.find((v) => v.id === e.target.value),
+                available = catalogs.paymentMethods.filter(
+                  (m) =>
+                    m.status === "ACTIVE" &&
+                    b?.paymentMethodIds.includes(m.id),
+                );
+              change({
+                cashboxId: e.target.value,
+                paymentMethodId:
+                  available.length === 1 ? available[0].id : "",
+              });
+            }}
+          >
+            <option value="">Selecione</option>
+            {boxes.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+                {b.status !== "ACTIVE" ? " (inativo)" : ""}
+              </option>
+            ))}
+          </FinanceSelect>
+          <FinanceSelect label="Forma de pagamento"
+            value={state.paymentMethodId}
+            required
+            disabled={groupCorrection}
+            onChange={(e) => change({ paymentMethodId: e.target.value })}
+          >
+            <option value="">Selecione</option>
+            {methods.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+              </option>
+            ))}
+          </FinanceSelect>
         </div>
         {bankImport && extra.length > 0 && (
           <div className="bank-import-warning">
@@ -616,48 +603,42 @@ export function FinanceEntryForm({
                 </label>
               )}
               <div className="grid">
-                <label>
-                  Categoria
-                  <select
-                    value={line.categoryId}
-                    required
-                    onChange={(e) => {
-                      const c = categories.find((v) => v.id === e.target.value);
-                      changeLine(index, {
-                        categoryId: e.target.value,
-                        ...(c?.departmentId
-                          ? { departmentId: c.departmentId }
-                          : {}),
-                      });
-                    }}
-                  >
-                    <option value="">Selecione</option>
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
+                <FinanceSelect label="Categoria"
+                  value={line.categoryId}
+                  required
+                  onChange={(e) => {
+                    const c = categories.find((v) => v.id === e.target.value);
+                    changeLine(index, {
+                      categoryId: e.target.value,
+                      ...(c?.departmentId
+                        ? { departmentId: c.departmentId }
+                        : {}),
+                    });
+                  }}
+                >
+                  <option value="">Selecione</option>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </FinanceSelect>
+                <FinanceSelect label="Departamento"
+                  value={line.departmentId}
+                  required
+                  onChange={(e) =>
+                    changeLine(index, { departmentId: e.target.value })
+                  }
+                >
+                  <option value="">Selecione</option>
+                  {catalogs.departments
+                    .filter((d) => d.status === "ACTIVE")
+                    .map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.name}
                       </option>
                     ))}
-                  </select>
-                </label>
-                <label>
-                  Departamento
-                  <select
-                    value={line.departmentId}
-                    required
-                    onChange={(e) =>
-                      changeLine(index, { departmentId: e.target.value })
-                    }
-                  >
-                    <option value="">Selecione</option>
-                    {catalogs.departments
-                      .filter((d) => d.status === "ACTIVE")
-                      .map((d) => (
-                        <option key={d.id} value={d.id}>
-                          {d.name}
-                        </option>
-                      ))}
-                  </select>
-                </label>
+                </FinanceSelect>
               </div>
               <div className="grid">
                 <label>
@@ -674,27 +655,24 @@ export function FinanceEntryForm({
                   />
                 </label>
                 {category?.isTithe && (
-                  <label>
-                    Classificação do dízimo
-                    <select
-                      value={line.titheClassificationId ?? ""}
-                      required
-                      onChange={(e) =>
-                        changeLine(index, {
-                          titheClassificationId: e.target.value || null,
-                        })
-                      }
-                    >
-                      <option value="">Selecione</option>
-                      {catalogs.classifications
-                        .filter((c) => c.status === "ACTIVE")
-                        .map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.name}
-                          </option>
-                        ))}
-                    </select>
-                  </label>
+                  <FinanceSelect label="Classificação do dízimo"
+                    value={line.titheClassificationId ?? ""}
+                    required
+                    onChange={(e) =>
+                      changeLine(index, {
+                        titheClassificationId: e.target.value || null,
+                      })
+                    }
+                  >
+                    <option value="">Selecione</option>
+                    {catalogs.classifications
+                      .filter((c) => c.status === "ACTIVE")
+                      .map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                  </FinanceSelect>
                 )}
               </div>
               {mode === "ATTENDANCE" && !bankImport && index > 0 && (

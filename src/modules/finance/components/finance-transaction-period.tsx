@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { CalendarDays, Check } from "lucide-react";
+import { FinanceCalendar, FinanceDateField } from "./finance-date-field";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { financeFiltersSchema } from "../validations/finance-query.schemas";
@@ -20,6 +21,7 @@ export function FinanceTransactionPeriod({ month, dateFrom, dateTo, onApply }: {
   const [mode, setMode] = useState<PeriodMode>("MONTH");
   const [selectedMonth, setSelectedMonth] = useState(month);
   const [range, setRange] = useState<Range>({ dateFrom: "", dateTo: "" });
+  const [typedMonth, setTypedMonth] = useState("");
   const label = dateFrom && dateTo ? formatFinanceDateRange(dateFrom, dateTo) : formatFinanceMonth(month, true);
   const valid = financeFiltersSchema.safeParse({ month: selectedMonth, ...(mode === "MONTH" ? {} : range) }).success;
 
@@ -30,10 +32,11 @@ export function FinanceTransactionPeriod({ month, dateFrom, dateTo, onApply }: {
 
   return (
     <>
-      <div className="finance-mobile-only finance-transaction-period">
+      <div className="finance-transaction-period">
         <span className="finance-period-label">Período</span>
         <button type="button" className="finance-period-trigger" aria-label={`Período: ${label}`} onClick={() => {
           setSelectedMonth(month);
+          setTypedMonth("");
           setRange({ dateFrom: dateFrom ?? todayLocal(), dateTo: dateTo ?? todayLocal() });
           setMode(dateFrom && dateTo ? "CUSTOM" : "MONTH");
           setOpen(true);
@@ -42,7 +45,7 @@ export function FinanceTransactionPeriod({ month, dateFrom, dateTo, onApply }: {
         </button>
       </div>
       {open && (
-        <Modal title="Período dos lançamentos" className="finance-period-dialog" onClose={() => setOpen(false)}
+        <Modal size={mode === "CUSTOM" ? "lg" : "md"} title="Período dos lançamentos" className="finance-period-dialog" onClose={() => setOpen(false)}
           footer={<Button disabled={!valid} onClick={() => {
             if (!valid) return;
             onApply(selectedMonth, mode === "MONTH" ? undefined : range);
@@ -56,11 +59,23 @@ export function FinanceTransactionPeriod({ month, dateFrom, dateTo, onApply }: {
             </div>
             {mode === "MONTH" ? <label>Mês da movimentação<input type="month" min="2000-01" max="2099-12" value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} /></label> : (
               <>
-                {mode === "CUSTOM" && <div className="finance-period-dates">
-                  <label>Data inicial<input type="date" min="2000-01-01" max="2099-12-31" value={range.dateFrom} onChange={e => setRange({ ...range, dateFrom: e.target.value })} /></label>
-                  <label>Data final<input type="date" min={range.dateFrom || "2000-01-01"} max="2099-12-31" value={range.dateTo} onChange={e => setRange({ ...range, dateTo: e.target.value })} /></label>
-                </div>}
-                {valid ? <p className="notice">{formatFinanceDateRange(range.dateFrom, range.dateTo)} · incluindo as duas datas.</p> : <p role="alert">Informe as duas datas, com o fim igual ou posterior ao início.</p>}
+                {mode === "CUSTOM" && <>
+                  <div className="finance-period-dates">
+                    <FinanceDateField label="Data inicial" value={range.dateFrom}
+                      onChange={dateFrom => {
+                        setRange({ ...range, dateFrom });
+                        if (dateFrom) setTypedMonth(dateFrom.slice(0, 7));
+                      }} />
+                    <FinanceDateField label="Data final" value={range.dateTo}
+                      onChange={dateTo => {
+                        setRange({ ...range, dateTo });
+                        if (dateTo) setTypedMonth(dateTo.slice(0, 7));
+                      }} />
+                  </div>
+                  <FinanceCalendar key={typedMonth} initialMonth={typedMonth} mode="range" from={range.dateFrom} to={range.dateTo}
+                    onChange={(dateFrom, dateTo) => setRange({ dateFrom, dateTo })} />
+                </>}
+                {valid ? <p className="notice">{formatFinanceDateRange(range.dateFrom, range.dateTo)} · incluindo as duas datas.</p> : mode === "CUSTOM" && range.dateFrom && !range.dateTo ? <p role="status">Escolha a data final do período.</p> : <p role="alert">Informe as duas datas, com o fim igual ou posterior ao início.</p>}
               </>
             )}
           </div>

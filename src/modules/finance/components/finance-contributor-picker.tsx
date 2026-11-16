@@ -1,4 +1,5 @@
 "use client";
+import { FinanceSelect } from "./finance-select";
 import { useRef, useState, useId } from "react";
 import { Search, UserCheck, QrCode, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -67,42 +68,39 @@ export function FinanceContributorPicker({
   }
   return (
     <div className="stack">
-      <label>
-        {direction === "INCOME" ? "Recebido de" : "Pago a"}
-        <select
-          aria-label={`${direction === "INCOME" ? "Recebido de" : "Pago a"} — Identificação`}
-          value={kind}
-          onChange={(e) => {
-            ++sequence.current;
-            setBusy(false);
-            const next = e.target.value as typeof kind;
-            setKind(next);
-            setCamera(false);
-            setResults([]);
-            setQuery("");
-            setError("");
-            onChange(
-              next === "COLLECTIVE"
-                ? { kind: "COLLECTIVE" }
-                : next === "UNREGISTERED" || next === "ORGANIZATION"
-                  ? { kind: next, name: "" }
-                  : null,
-              "",
-            );
-          }}
-        >
-          {canLookup && <option value="MEMBER">Pessoa cadastrada</option>}
-          <option value="UNREGISTERED">Pessoa não cadastrada</option>
-          <option value="CONGREGATION">Congregação</option>
-          <option value="ORGANIZATION">Empresa, instituição ou outros</option>
-          {direction === "EXPENSE" && (
-            <option value="COLLECTIVE">Sem identificação</option>
-          )}
-          {allowCollective && direction === "INCOME" && (
-            <option value="COLLECTIVE">Contribuição coletiva</option>
-          )}
-        </select>
-      </label>
+      <FinanceSelect label={direction === "INCOME" ? "Recebido de" : "Pago a"}
+        aria-label={`${direction === "INCOME" ? "Recebido de" : "Pago a"} — Identificação`}
+        value={kind}
+        onChange={(e) => {
+          ++sequence.current;
+          setBusy(false);
+          const next = e.target.value as typeof kind;
+          setKind(next);
+          setCamera(false);
+          setResults([]);
+          setQuery("");
+          setError("");
+          onChange(
+            next === "COLLECTIVE"
+              ? { kind: "COLLECTIVE" }
+              : next === "UNREGISTERED" || next === "ORGANIZATION"
+                ? { kind: next, name: "" }
+                : null,
+            "",
+          );
+        }}
+      >
+        {canLookup && <option value="MEMBER">Pessoa cadastrada</option>}
+        <option value="UNREGISTERED">Pessoa não cadastrada</option>
+        <option value="CONGREGATION">Congregação</option>
+        <option value="ORGANIZATION">Empresa, instituição ou outros</option>
+        {direction === "EXPENSE" && (
+          <option value="COLLECTIVE">Sem identificação</option>
+        )}
+        {allowCollective && direction === "INCOME" && (
+          <option value="COLLECTIVE">Contribuição coletiva</option>
+        )}
+      </FinanceSelect>
       {(kind === "UNREGISTERED" || kind === "ORGANIZATION") && (
         <label>
           {kind === "ORGANIZATION" ? "Nome ou identificação" : "Nome da pessoa"}
@@ -160,24 +158,21 @@ export function FinanceContributorPicker({
         kind === "MEMBER" && (
           <>
             <div className="finance-person-search">
-              <label>
-                Buscar por
-                <select
-                  value={searchKind}
-                  onChange={(e) => {
-                    ++sequence.current;
-                    setBusy(false);
-                    setSearchKind(e.target.value as ContributorSearch["kind"]);
-                    setQuery("");
-                    setResults([]);
-                  }}
-                >
-                  <option value="NAME">Nome</option>
-                  <option value="CPF">CPF</option>
-                  <option value="MEMBER_CODE">Matrícula</option>
-                  <option value="CREDENTIAL">QR da credencial</option>
-                </select>
-              </label>
+              <FinanceSelect label="Buscar por"
+                value={searchKind}
+                onChange={(e) => {
+                  ++sequence.current;
+                  setBusy(false);
+                  setSearchKind(e.target.value as ContributorSearch["kind"]);
+                  setQuery("");
+                  setResults([]);
+                }}
+              >
+                <option value="NAME">Nome</option>
+                <option value="CPF">CPF</option>
+                <option value="MEMBER_CODE">Matrícula</option>
+                <option value="CREDENTIAL">QR da credencial</option>
+              </FinanceSelect>
               <div className="finance-person-query">
                 <label htmlFor={inputId}>
                   {searchKind === "CPF"
