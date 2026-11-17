@@ -10,6 +10,20 @@ test.beforeEach(() =>
 );
 const fixture = () =>
   JSON.parse(readFileSync(process.env.E2E_FINANCE_FIXTURE!, "utf8"));
+for (const [width, minimumGap] of [[390, 24], [1280, 32]]) {
+  test(`report filters are separated from the cards at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(`/financeiro/relatorios?unidade=${fixture().unitId}&mes=2026-10`);
+    const options = page.getByRole("region", { name: "Opções do relatório" });
+    const choices = await options.getByRole("group", { name: "Tipo de relatório" }).boundingBox();
+    const filters = await options.locator(".finance-report-controls").boundingBox();
+    const panel = await options.boundingBox();
+    const result = await page.locator(".finance-report-empty:visible").boundingBox();
+    expect(filters!.y - choices!.y - choices!.height).toBeGreaterThanOrEqual(minimumGap);
+    expect(result!.y - panel!.y - panel!.height).toBeGreaterThanOrEqual(minimumGap);
+  });
+}
+
 test("desktop groups delivery navigation with report choices and removes redundant filters", async ({
   page,
 }) => {

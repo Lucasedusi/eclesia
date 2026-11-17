@@ -144,7 +144,7 @@ function FinanceReportsContent({
           </p>
         </div>
       </header>
-      <section className="card stack" aria-label="Opções do relatório">
+      <section className="card stack finance-report-options" aria-label="Opções do relatório">
         <fieldset
           className="finance-report-types"
           data-administrative={canViewInformative || undefined}

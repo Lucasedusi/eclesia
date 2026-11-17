@@ -1172,6 +1172,10 @@ export const Workspace = styled.div`
   .finance-category-list input[type="checkbox"] { width:18px; height:18px; flex-shrink:0; accent-color:#087f5b; }
   .finance-category-list span, .finance-category-selected { overflow-wrap:anywhere; }
   @media(max-width:700px){.finance-category-list { grid-template-columns:1fr; }}
+  .finance-reports.stack,
+  .finance-reports > .finance-report-options {
+    row-gap: clamp(24px, 3vw, 32px);
+  }
   .finance-report-types {
     border: 0;
     padding: 0;
