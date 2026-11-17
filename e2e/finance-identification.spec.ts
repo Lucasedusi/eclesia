@@ -198,11 +198,11 @@ test("bank import saves congregation draft and returns focus and scroll to queue
   ).toHaveCount(0);
 });
 
-test("attendance accepts congregation and prints its identity; mobile expense accepts other organizations", async ({
+test("entry accepts congregation and prints its identity; mobile expense accepts other organizations", async ({
   page,
 }) => {
   const f = fixture();
-  await page.goto(`/financeiro/atendimento?unidade=${f.unitId}&mes=2026-10`);
+  await page.goto(`/financeiro/lancamentos?novo=entrada&unidade=${f.unitId}&mes=2026-10`);
   await chooseCongregation(page);
   await page
     .getByLabel("Data", { exact: true })
@@ -216,14 +216,14 @@ test("attendance accepts congregation and prints its identity; mobile expense ac
     .selectOption(f.offeringId);
   await page.getByLabel("Valor (R$)", { exact: true }).fill("41,00");
   await page.screenshot({
-    path: "tmp/identity-attendance.png",
+    path: "tmp/identity-entry.png",
     fullPage: true,
   });
   await page
-    .getByRole("button", { name: "Confirmar atendimento", exact: true })
+    .getByRole("button", { name: "Salvar e continuar", exact: true })
     .click();
   await expect(
-    page.getByText("Atendimento confirmado.", { exact: false }),
+    page.getByText("Lançamento confirmado.", { exact: false }),
   ).toBeVisible();
   const href = await page
     .getByRole("link", { name: "Comprovante", exact: true })

@@ -38,13 +38,13 @@ test("blocked mobile popup leaves full width PDF open and download actions", asy
 test("thermal receipt keeps width and print controls within the phone", async ({ page }) => {
   const f = fixture();
   await page.setViewportSize({ width: 390, height: 780 });
-  await page.goto(`/financeiro/atendimento?unidade=${f.unitId}&mes=2026-10`);
+  await page.goto(`/financeiro/lancamentos?novo=entrada&unidade=${f.unitId}&mes=2026-10`);
   await page.getByRole("combobox", { name: "Caixa ou conta" }).selectOption(f.boxes[f.unitId].cash);
   await page.getByRole("combobox", { name: "Identificação" }).selectOption("UNREGISTERED");
   await page.getByRole("textbox", { name: "Nome da pessoa" }).fill("Comprovante mobile teste");
   await page.getByRole("combobox", { name: "Categoria" }).selectOption(f.offeringId);
   await page.getByLabel("Valor (R$)").fill("1234");
-  await page.getByRole("button", { name: "Salvar", exact: true }).click();
+  await page.getByRole("button", { name: "Salvar e continuar", exact: true }).click();
   const href = await page.getByRole("link", { name: "Comprovante", exact: true }).getAttribute("href");
   await page.goto(href!);
   const width = page.getByRole("combobox", { name: "Largura do papel" });

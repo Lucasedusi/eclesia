@@ -539,7 +539,7 @@ test("removes and recovers review rows, updates totals and removes an unused bat
   sheet.addRow(["22/10/2026", "PIX", "PIX ENVIADO", name, -25]);
   const list = `/financeiro/lancamentos/importacoes?unidade=${f.unitId}&mes=2026-10`;
   await page.goto(list);
-  await expect(page.getByText("Selecionar ou arrastar extrato")).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: "Selecionar ou arrastar extrato" })).toBeVisible();
   await selectStatementAccount(page);
   await page.getByLabel("Extrato XLSX do Sicoob").setInputFiles({
     name,

@@ -129,3 +129,8 @@ export const financeCommandSchema = z.discriminatedUnion("kind", [
     })
     .strict(),
 ]);
+
+export const manualFinanceCommandSchema = financeCommandSchema.refine(
+  (command) => command.kind !== "RECORD" || command.mode === "SINGLE",
+  { message: "Registre uma contribuição por lançamento." },
+);

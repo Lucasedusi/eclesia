@@ -64,15 +64,15 @@ for (const direction of ["entrada", "saída"] as const) {
   });
 }
 
-test("congregation lookup shows a spinner; attendance saves reference; month filter describes movements", async ({ page }) => {
+test("congregation lookup shows a spinner; entry saves reference; month filter describes movements", async ({ page }) => {
   const f = fixture();
-  await page.goto(`/financeiro/atendimento?unidade=${f.unitId}&mes=2026-11`);
-  const form = page.locator("form.finance-attendance-form");
+  await page.goto(`/financeiro/lancamentos?novo=entrada&unidade=${f.unitId}&mes=2026-11`);
+  const form = page.getByRole("dialog", {name: "Nova entrada"});
   await form.getByRole("combobox", { name: /Identificação/ }).selectOption("CONGREGATION");
   await form.getByLabel("Nome da congregação").fill("Headquarters");
   let release!: () => void;
   const gate = new Promise<void>(resolve => { release = resolve; });
-  await page.route("**/financeiro/atendimento**", async route => {
+  await page.route("**/financeiro/lancamentos**", async route => {
     if (route.request().method() === "POST") await gate;
     await route.continue();
   });
@@ -83,7 +83,7 @@ test("congregation lookup shows a spinner; attendance saves reference; month fil
     await expect(search.locator(".finance-spin")).toBeVisible();
   } finally { release(); }
   await form.getByRole("button", { name: "Headquarters", exact: true }).click();
-  await page.unroute("**/financeiro/atendimento**");
+  await page.unroute("**/financeiro/lancamentos**");
   await expect(search).toHaveCount(0);
   await form.getByLabel("Data", { exact: true }).fill("2026-11-07");
   await reference(form).fill("2026-10");
@@ -94,9 +94,9 @@ test("congregation lookup shows a spinner; attendance saves reference; month fil
   await form.getByRole("combobox", { name: "Caixa ou conta", exact: true }).selectOption(f.boxes[f.unitId].cash);
   await form.getByRole("combobox", { name: "Categoria", exact: true }).selectOption(f.offeringId);
   await form.getByLabel("Valor (R$)", { exact: true }).fill("41,23");
-  await page.screenshot({ path: "tmp/reference-attendance.png", fullPage: true });
-  await form.getByRole("button", { name: "Confirmar atendimento", exact: true }).click();
-  await expect(page.getByText("Atendimento confirmado.", { exact: false })).toBeVisible();
+  await page.screenshot({ path: "tmp/reference-entry.png", fullPage: true });
+  await form.getByRole("button", { name: "Salvar e continuar", exact: true }).click();
+  await expect(page.getByText("Lançamento confirmado.", { exact: false })).toBeVisible();
   await page.goto(`/financeiro/lancamentos?unidade=${f.unitId}&mes=2026-11&search=Headquarters`);
   await page.getByRole("row").filter({ hasText: "41,23" }).getByRole("button", { name: /Detalhes/ }).click();
   await expect(page.getByRole("dialog")).toContainText("10/2026");

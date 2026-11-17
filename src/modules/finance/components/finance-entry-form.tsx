@@ -11,7 +11,7 @@ import {
   type Ref,
 } from "react";
 
-import { Plus, Printer, Save, Trash2, ArrowRight } from "lucide-react";
+import { Printer, Save, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { FinanceCatalogs } from "../types/finance-catalog.types";
 import type { FinanceCapabilities } from "../types/finance.types";
@@ -92,7 +92,6 @@ export function FinanceEntryForm({
   date,
   catalogs,
   capabilities,
-  mode = "SINGLE",
   direction = "INCOME",
   initialTransaction,
   onConfirmed,
@@ -105,7 +104,6 @@ export function FinanceEntryForm({
   date: string;
   catalogs: FinanceCatalogs;
   capabilities: FinanceCapabilities;
-  mode?: "SINGLE" | "ATTENDANCE";
   direction?: "INCOME" | "EXPENSE";
   initialTransaction?: FinanceTransactionDetail;
   onConfirmed?: (result: FinanceMutationResult) => void;
@@ -248,7 +246,7 @@ export function FinanceEntryForm({
               kind: "RECORD",
               operationKey: operationKey.current,
               congregationId: unit,
-              mode,
+              mode: bankImport && direction === "INCOME" ? "ATTENDANCE" : "SINGLE",
               direction,
               ...payment,
               items,
@@ -301,7 +299,7 @@ export function FinanceEntryForm({
           ) + "&imprimir=1";
         if (popup) popup.location.href = url;
       } else popup?.close();
-      if (initialTransaction || (action === "SAVE" && mode === "SINGLE")) {
+      if (initialTransaction || action === "SAVE") {
         onClose?.();
       } else {
         setState(nextEntryDefaults(state, "", direction));
@@ -379,18 +377,18 @@ export function FinanceEntryForm({
       ref={form}
       key={identityVersion}
       className={
-        mode === "ATTENDANCE" || bankImport
+        bankImport
           ? "finance-attendance-form"
           : "stack"
       }
       onSubmit={(e) => {
         e.preventDefault();
-        void save(!bankImport && mode === "ATTENDANCE" ? "CONTINUE" : "SAVE");
+        void save();
       }}
     >
       {confirmation && (
         <div className="notice" role="status">
-          {mode === "ATTENDANCE" ? "Atendimento" : "Lançamento"} confirmado.
+          Lançamento confirmado.
           {confirmation.receiptId && (
             <>
               {" "}
@@ -428,7 +426,7 @@ export function FinanceEntryForm({
             <p className="notice">
               A identificação e o recebimento pertencem ao atendimento inteiro.
               Você pode corrigir a contribuição abaixo. Para alterar os dados
-              comuns, cancele o atendimento e registre novamente.
+              comuns, cancele o atendimento e registre cada contribuição separadamente.
             </p>
           ) : (
             <FinanceContributorPicker
@@ -485,18 +483,8 @@ export function FinanceEntryForm({
         <div className="grid finance-entry-dates">
           <FinanceDateField label="Data" value={state.date} withCalendar entryFocus
             disabled={groupCorrection || Boolean(bankImport)} onChange={date => change({ date })} />
-          {mode === "ATTENDANCE" && !bankImport ? <label>
-            Mês de referência
-            <input
-              type="month"
-              min="2000-01"
-              max="2099-12"
-              required
-              value={state.referenceMonth}
-              onChange={(e) => change({ referenceMonth: e.target.value })}
-            />
-          </label> : <FinanceDateField label="Mês de referência" monthOnly withCalendar value={state.referenceMonth}
-            onChange={iso => change({ referenceMonth: iso })} />}
+          <FinanceDateField label="Mês de referência" monthOnly withCalendar value={state.referenceMonth}
+            onChange={iso => change({ referenceMonth: iso })} />
         </div>
         <div className="grid">
           <FinanceSelect label="Caixa ou conta"
@@ -579,14 +567,12 @@ export function FinanceEntryForm({
               key={index}
               style={{
                 minWidth: 0,
-                border: mode === "ATTENDANCE" ? undefined : 0,
-                padding: mode === "ATTENDANCE" ? 18 : 0,
+                border: bankImport && direction === "INCOME" ? undefined : 0,
+                padding: bankImport && direction === "INCOME" ? 18 : 0,
               }}
             >
               <legend>
-                {mode === "ATTENDANCE" && !bankImport
-                  ? `Contribuição ${index + 1}`
-                  : direction === "EXPENSE"
+                {direction === "EXPENSE"
                     ? "Dados da saída"
                     : "Dados da entrada"}
               </legend>
@@ -676,48 +662,9 @@ export function FinanceEntryForm({
                   </FinanceSelect>
                 )}
               </div>
-              {mode === "ATTENDANCE" && !bankImport && index > 0 && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setExtra((current) =>
-                      current.filter((_, i) => i !== index - 1),
-                    );
-                    setDirty(true);
-                  }}
-                >
-                  <Trash2 size={14} />
-                  Remover contribuição
-                </Button>
-              )}
             </fieldset>
           );
         })}
-        {mode === "ATTENDANCE" && !bankImport && (
-          <Button
-            variant="outline"
-            onClick={() => {
-              setExtra((current) => [
-                ...current,
-                {
-                  categoryId: state.categoryId,
-                  departmentId: state.departmentId,
-                  amount: "",
-                  titheClassificationId: state.titheClassificationId,
-                  description: "",
-                  notes: "",
-                  documentNumber: "",
-                },
-              ]);
-              setDirty(true);
-            }}
-            disabled={lines.length >= 50}
-          >
-            <Plus size={16} />
-            Adicionar contribuição
-          </Button>
-        )}
         <details
           open={state.detailsOpen}
           onToggle={(e) => {
@@ -813,18 +760,14 @@ export function FinanceEntryForm({
       </fieldset>
       <aside
         className={
-          mode === "ATTENDANCE" || bankImport
+          bankImport
             ? "finance-attendance-summary finance-entry-summary stack"
             : "finance-entry-summary stack"
         }
       >
         <section
           className="finance-entry-review stack"
-          aria-label={
-            mode === "ATTENDANCE"
-              ? "Conferência do atendimento"
-              : "Conferência do lançamento"
-          }
+          aria-label="Conferência do lançamento"
         >
           <h3>Conferir antes de confirmar</h3>
           <dl>
@@ -900,7 +843,7 @@ export function FinanceEntryForm({
                     </small>
                   )}
                 </span>
-                {mode === "ATTENDANCE" && (
+                {bankImport && direction === "INCOME" && (
                   <strong>
                     {line.amount ? `R$ ${line.amount}` : "Sem valor"}
                   </strong>
@@ -909,18 +852,8 @@ export function FinanceEntryForm({
             ))}
           </div>
           <div className="finance-entry-review-total row spread">
-            <span>
-              {mode === "ATTENDANCE" && !bankImport
-                ? "Total do atendimento"
-                : "Total do lançamento"}
-            </span>
-            <strong
-              data-testid={
-                mode === "ATTENDANCE" ? "attendance-total" : undefined
-              }
-            >
-              {formatMoney(total)}
-            </strong>
+            <span>Total do lançamento</span>
+            <strong>{formatMoney(total)}</strong>
           </div>
         </section>
         <div className="finance-entry-actions">
@@ -931,11 +864,6 @@ export function FinanceEntryForm({
             <Button
               type="submit"
               variant={direction === "EXPENSE" ? "danger" : "primary"}
-              className={
-                mode === "ATTENDANCE" && !bankImport
-                  ? "finance-attendance-action"
-                  : undefined
-              }
               aria-busy={busy}
               disabled={busy || uploading}
             >
@@ -952,9 +880,7 @@ export function FinanceEntryForm({
                     ? "Salvar"
                     : initialTransaction
                       ? "Salvar correção"
-                      : mode === "ATTENDANCE"
-                        ? "Confirmar atendimento"
-                        : "Salvar"}
+                      : "Salvar"}
                 </span>
                 <span className="finance-mobile-only">Salvar</span>
               </span>
@@ -965,11 +891,6 @@ export function FinanceEntryForm({
               <Button
                 variant="outline"
                 disabled={busy || uploading}
-                className={
-                  mode === "ATTENDANCE"
-                    ? "finance-attendance-action"
-                    : undefined
-                }
                 onClick={() => void save("CONTINUE")}
               >
                 <span className="finance-action-icon">
@@ -980,11 +901,6 @@ export function FinanceEntryForm({
               <Button
                 variant="outline"
                 disabled={busy || uploading}
-                className={
-                  mode === "ATTENDANCE"
-                    ? "finance-attendance-action"
-                    : undefined
-                }
                 onClick={() => void save("PRINT")}
               >
                 <span className="finance-action-icon">

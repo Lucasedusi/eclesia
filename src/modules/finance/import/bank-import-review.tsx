@@ -730,7 +730,7 @@ export function BankImportReview({
             catalogs={catalogs}
             capabilities={capabilities}
             direction={item.amountCents! > 0 ? "INCOME" : "EXPENSE"}
-            mode={item.amountCents! > 0 ? "ATTENDANCE" : "SINGLE"}
+
             onStatusChange={handleStatus}
             onClose={onClose}
             bankImport={{

@@ -9,7 +9,7 @@ function unitId() {
   return JSON.parse(readFileSync(process.env.E2E_FINANCE_FIXTURE!, "utf8")).unitId as string;
 }
 
-test("a waiting update preserves a dirty attendance form until it is discarded", async ({ page }) => {
+test("a waiting update preserves a dirty rules form until it is discarded", async ({ page }) => {
   await page.addInitScript(() => {
     const handlers = new Map<string, Set<() => void>>();
     const events = {
@@ -32,13 +32,13 @@ test("a waiting update preserves a dirty attendance form until it is discarded",
     });
   });
   await page.setViewportSize({ width: 390, height: 780 });
-  await page.goto(`/financeiro/atendimento?unidade=${unitId()}&mes=2026-10`);
+  await page.goto(`/financeiro/configuracoes?unidade=${unitId()}&mes=2026-10`);
   await expect(page.getByText("Uma atualização está pronta.")).toBeVisible();
-  await page.getByRole("combobox", { name: "Identificação" }).selectOption("UNREGISTERED");
-  await page.getByRole("textbox", { name: "Nome da pessoa" }).fill("Rascunho protegido");
+  await page.getByRole("button", {name: "Regras do demonstrativo"}).click();
+  await page.getByLabel("Descrição do item", {exact:true}).first().fill("Rascunho protegido");
   await page.getByRole("button", { name: "Atualizar agora" }).click();
   await expect(page.getByText("Salve ou descarte o preenchimento antes de atualizar o aplicativo.")).toBeVisible();
-  await expect(page.getByRole("textbox", { name: "Nome da pessoa" })).toHaveValue("Rascunho protegido");
+  await expect(page.getByLabel("Descrição do item", {exact:true}).first()).toHaveValue("Rascunho protegido");
   expect(await page.evaluate(() => (window as Window & { __financePosted?: unknown[] }).__financePosted)).toEqual([]);
 
   await page.getByRole("link", { name: "Lançamentos", exact: true }).last().click();
@@ -47,11 +47,12 @@ test("a waiting update preserves a dirty attendance form until it is discarded",
   await page.getByRole("button", { name: "Atualizar agora" }).click();
   expect(await page.evaluate(() => (window as Window & { __financePosted?: unknown[] }).__financePosted)).toEqual([{ type: "SKIP_WAITING" }]);
 
-  await page.getByRole("link", { name: "Atendimento", exact: true }).last().click();
-  await page.getByRole("combobox", { name: "Identificação" }).selectOption("UNREGISTERED");
-  await page.getByRole("textbox", { name: "Nome da pessoa" }).fill("Rascunho durante atualização");
+  await page.getByRole("button", {name:"Mais",exact:true}).click();
+  await page.getByRole("link", {name:"Configurações",exact:true}).last().click();
+  await page.getByRole("button", {name: "Regras do demonstrativo"}).click();
+  await page.getByLabel("Descrição do item", {exact:true}).first().fill("Rascunho durante atualização");
   await page.evaluate(() => (window as Window & { __financeControllerChange?: () => void }).__financeControllerChange?.());
-  await expect(page.getByRole("textbox", { name: "Nome da pessoa" })).toHaveValue("Rascunho durante atualização");
+  await expect(page.getByLabel("Descrição do item", {exact:true}).first()).toHaveValue("Rascunho durante atualização");
   await expect(page.getByText("Salve ou descarte o preenchimento antes de atualizar o aplicativo.")).toBeVisible();
   await page.getByRole("link", { name: "Lançamentos", exact: true }).last().click();
   await page.getByRole("dialog", { name: "Há alterações não salvas" }).getByRole("button", { name: "Descartar" }).click();

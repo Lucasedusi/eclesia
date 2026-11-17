@@ -1,5 +1,5 @@
 import { it, expect } from "vitest";
-import { financeCommandSchema } from "./finance-command.schemas";
+import { financeCommandSchema, manualFinanceCommandSchema } from "./finance-command.schemas";
 const id = "30000000-0000-4000-8000-000000000001";
 const record = {
   kind: "RECORD",
@@ -82,4 +82,12 @@ it("rejects forged identity labels, missing congregation and blank organization"
     expect(
       financeCommandSchema.safeParse({ ...record, contributor }).success,
     ).toBe(false);
+});
+
+
+it("rejects grouped manual entries while retaining the bank import command format", () => {
+  const group = { ...record, mode: "ATTENDANCE", items: [...record.items, ...record.items] };
+  expect(manualFinanceCommandSchema.safeParse(record).success).toBe(true);
+  expect(manualFinanceCommandSchema.safeParse(group).success).toBe(false);
+  expect(financeCommandSchema.safeParse(group).success).toBe(true);
 });

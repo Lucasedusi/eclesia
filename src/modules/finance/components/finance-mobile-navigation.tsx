@@ -23,7 +23,7 @@ export function FinanceMobileNavigation({
 }) {
   const [moreOpen, setMoreOpen] = useState(false);
   const primary = items.filter((item) =>
-    ["/financeiro", "/financeiro/lancamentos", "/financeiro/atendimento"].includes(
+    ["/financeiro", "/financeiro/lancamentos", "/financeiro/relatorios"].includes(
       item.path,
     ),
   );

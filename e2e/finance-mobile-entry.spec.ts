@@ -44,29 +44,6 @@ for (const width of [320, 393, 430]) {
   });
 }
 
-test("mobile attendance keeps two contributions and one receipt", async ({
-  page,
-}) => {
-  const f = fixture();
-  await page.setViewportSize({ width: 390, height: 780 });
-  await page.goto(`/financeiro/atendimento?unidade=${f.unitId}&mes=2026-10`);
-  await page.getByRole("combobox", { name: "Caixa ou conta" }).selectOption(f.boxes[f.unitId].cash);
-  await page.getByRole("combobox", { name: "Identificação" }).selectOption("UNREGISTERED");
-  await page.getByRole("textbox", { name: "Nome da pessoa" }).fill("Pessoa Mobile Teste");
-  await page.getByRole("combobox", { name: "Categoria" }).selectOption(f.titheId);
-  await page.getByLabel("Valor (R$)").fill("1234");
-  await page.getByRole("combobox", { name: "Classificação do dízimo" }).selectOption(f.classificationId);
-  await page.getByRole("button", { name: "Adicionar contribuição" }).click();
-  await page.getByRole("combobox", { name: "Categoria" }).nth(1).selectOption(f.offeringId);
-  await page.getByLabel("Valor (R$)").nth(1).fill("500");
-  await expect(page.getByTestId("attendance-total")).toHaveText("R$ 17,34");
-  await expect(page.getByText("Conferir antes de confirmar")).toBeVisible();
-  await expect(page.getByText("2 contribuições")).toBeVisible();
-  await page.getByRole("button", { name: "Salvar", exact: true }).click();
-  await expect(page.getByText("Atendimento confirmado.", { exact: false })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Comprovante", exact: true })).toBeVisible();
-});
-
 test("uncertain mobile save preserves the filled form", async ({ page }) => {
   const f = fixture();
   await page.setViewportSize({ width: 390, height: 780 });

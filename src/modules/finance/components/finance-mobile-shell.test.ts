@@ -53,7 +53,8 @@ describe("finance mobile shell", () => {
     expect(html).toContain('aria-label="Navegação financeira mobile"');
     expect(html).toContain("Início");
     expect(html).toContain("Mais");
-    expect(html).toContain("/financeiro/atendimento?unidade=unit-1&amp;mes=2026-10");
+    expect(html).not.toContain("Atendimento");
+    expect(html).toContain("/financeiro/relatorios?unidade=unit-1&amp;mes=2026-10");
   });
 
   it("hides attendance when the selected unit cannot create entries", () => {

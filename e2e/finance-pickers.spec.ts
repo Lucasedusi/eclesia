@@ -74,7 +74,7 @@ for (const width of [390, 1280]) {
       await expect(form).toBeVisible();
     });
 
-    test("month picker changes the overview period and attendance keeps its original fields", async ({ page }) => {
+    test("month picker changes the overview period", async ({ page }) => {
       const {unitId} = JSON.parse(readFileSync(process.env.E2E_FINANCE_FIXTURE!, "utf8"));
       await page.goto(`/financeiro?unidade=${unitId}&mes=2026-10`);
       const open = page.getByRole("button", {name: "Abrir calendário de período"});
@@ -85,10 +85,6 @@ for (const width of [390, 1280]) {
       await months.getByRole("button", {name: "Fevereiro de 2025"}).click();
       await expect(page).toHaveURL(/mes=2025-02/);
       await expect(page.getByLabel("Período", {exact: true})).toHaveValue("02/2025");
-      await page.goto(`/financeiro/atendimento?unidade=${unitId}&mes=2026-10`);
-      await expect(page.getByLabel("Período", {exact: true})).toHaveAttribute("type", "month");
-      await expect(page.getByLabel("Mês de referência", {exact: true})).toHaveAttribute("type", "month");
-      await expect(page.getByLabel("Congregação", {exact: true})).not.toHaveAttribute("aria-expanded");
     });
 
     test("period applies two calendar dates only after confirmation", async ({
@@ -138,7 +134,7 @@ test("long category lists support accent-insensitive local search and selection"
     readFileSync(process.env.E2E_FINANCE_FIXTURE!, "utf8"),
   );
   const context = `?unidade=${unitId}&mes=2026-10`;
-  await page.goto("/financeiro/atendimento" + context);
+  await page.goto("/financeiro/lancamentos" + context + "&novo=entrada");
   const category = page.getByRole("combobox", {
     name: "Categoria",
     exact: true,
@@ -155,7 +151,7 @@ test("long category lists support accent-insensitive local search and selection"
     await form.getByRole("button", { name: "Salvar cadastro" }).click();
     await expect(form).toHaveCount(0);
   }
-  await page.goto("/financeiro/atendimento" + context);
+  await page.goto("/financeiro/lancamentos" + context + "&novo=entrada");
   await category.click();
   const search = page.getByRole("combobox", { name: "Buscar em Categoria" });
   await search.fill("sem correspondência");

@@ -94,7 +94,7 @@ test("admin configures, restricted operator receives and monthly versions preser
       .locator("script")
       .filter({ hasText: `Fornecedor <script> ${suffix}` }),
   ).toHaveCount(0);
-  await operator
+  await operator.getByRole("dialog").last()
     .getByRole("button", { name: "Fechar modal", exact: true })
     .click();
   await operator
@@ -132,7 +132,7 @@ test("admin configures, restricted operator receives and monthly versions preser
     operator.getByText(`Transferência ${suffix}`, { exact: true }),
   ).toBeVisible();
   await operator.goto(
-    `/financeiro/atendimento?unidade=${f.unitId}&mes=2026-10`,
+    `/financeiro/lancamentos?novo=entrada&unidade=${f.unitId}&mes=2026-10`,
   );
   await operator.evaluate(() =>
     Object.defineProperty(navigator.mediaDevices, "getUserMedia", {
@@ -146,7 +146,7 @@ test("admin configures, restricted operator receives and monthly versions preser
   await expect(operator.getByRole("dialog").getByRole("alert")).toContainText(
     /câmera/i,
   );
-  await operator
+  await operator.getByRole("dialog").last()
     .getByRole("button", { name: "Fechar modal", exact: true })
     .click();
   await expect(

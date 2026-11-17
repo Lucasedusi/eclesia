@@ -8,13 +8,11 @@ export function FinanceContextBar({
   month,
   onChange,
   transactionPeriod,
-  attendance = false,
 }: {
   units: FinanceUnit[];
   selectedUnitId: string;
   month: string;
   onChange: (unit: string, month: string) => void;
-  attendance?: boolean;
   transactionPeriod?: React.ReactNode;
 }) {
   const options = units.map((unit) => (
@@ -33,17 +31,6 @@ export function FinanceContextBar({
             {units[0].isHeadquarters ? " · Sede" : ""}
           </span>
         </label>
-      ) : attendance ? (
-        <label>
-          Congregação
-          <select
-            aria-label="Congregação"
-            value={selectedUnitId}
-            onChange={(e) => onChange(e.target.value, month)}
-          >
-            {options}
-          </select>
-        </label>
       ) : (
         <FinanceSelect
           label="Congregação"
@@ -55,32 +42,17 @@ export function FinanceContextBar({
           {options}
         </FinanceSelect>
       )}
-      {transactionPeriod ??
-        (attendance ? (
-          <label>
-            Período
-            <input
-              aria-label="Período"
-              type="month"
-              min="2000-01"
-              max="2099-12"
-              value={month}
-              onChange={(e) => {
-                if (e.target.value) onChange(selectedUnitId, e.target.value);
-              }}
-            />
-          </label>
-        ) : (
-          <FinanceDateField
-            label="Período"
-            withCalendar
-            monthOnly
-            value={month}
-            onChange={(iso) => {
-              if (iso && iso !== month) onChange(selectedUnitId, iso);
-            }}
-          />
-        ))}
+      {transactionPeriod ?? (
+        <FinanceDateField
+          label="Período"
+          withCalendar
+          monthOnly
+          value={month}
+          onChange={(iso) => {
+            if (iso && iso !== month) onChange(selectedUnitId, iso);
+          }}
+        />
+      )}
     </div>
   );
 }

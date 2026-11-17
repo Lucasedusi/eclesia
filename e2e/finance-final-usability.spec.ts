@@ -5,11 +5,11 @@ test.beforeEach(() => test.skip(!process.env.E2E_FINANCE_FIXTURE, "Local fixture
 
 test("automatic cents support real keystrokes, editing, clearing and formatted paste", async ({ page, context }) => {
   const f = fixture();
-  await page.goto(`/financeiro/atendimento?unidade=${f.unitId}&mes=2026-10`);
+  await page.goto(`/financeiro/lancamentos?novo=entrada&unidade=${f.unitId}&mes=2026-10`);
   const money = page.getByRole("textbox", { name: "Valor (R$)", exact: true });
   await money.pressSequentially("1234");
   await expect(money).toHaveValue("12,34");
-  await expect(page.getByTestId("attendance-total")).toContainText("12,34");
+  await expect(page.locator(".finance-entry-review-total")).toContainText("12,34");
   await money.press("Backspace");
   await expect(money).toHaveValue("1,23");
   await money.evaluate((el: HTMLInputElement) => el.setSelectionRange(2, 2));
@@ -24,10 +24,7 @@ test("automatic cents support real keystrokes, editing, clearing and formatted p
   await expect(money).toHaveValue("1.234,50");
   await money.blur();
   await expect(money).toHaveValue("1.234,50");
-  const buttons = page.locator(".finance-attendance-action");
-  const icons = await buttons.locator(".finance-action-icon").evaluateAll(nodes => nodes.map(node => node.getBoundingClientRect().x));
-  expect(new Set(icons).size).toBe(1);
-  await page.screenshot({ path: "tmp/finance-final-attendance.png", fullPage: true });
+
 });
 
 test("search can be cleared and advanced reset stays inside expanded filters", async ({ page }) => {
@@ -59,15 +56,15 @@ test("overview and report controls are compact and adapt to mobile", async ({ pa
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto(`/financeiro?unidade=${f.unitId}&mes=2040-01`);
   await expect(page.getByRole("link", { name: "Nova entrada" })).toHaveCount(0);
-  await expect(page.locator(".finance-logo b")).toHaveCSS("font-weight", "600");
+  await expect(page.getByRole("complementary").locator(".finance-logo b")).toHaveCSS("font-weight", "600");
   await expect(page.getByRole("heading", { name: "Visão geral", exact: true })).toBeVisible();
   await expect(page.getByRole("complementary")).toBeVisible();
   const sidebar = (await page.getByRole("complementary").boundingBox())!;
   const toggle = (await page.getByRole("button", { name: "Recolher menu" }).boundingBox())!;
   expect(Math.abs(toggle.x - sidebar.x - sidebar.width)).toBeLessThan(2);
-  await expect(page.locator(".empty > svg").last()).toBeVisible();
+  await expect(page.locator(".empty:visible > svg").last()).toBeVisible();
   await page.goto(`/financeiro/relatorios?unidade=${f.unitId}&mes=2026-10`);
-  const controls = page.locator(".finance-report-controls");
+  const controls = page.locator(".finance-report-controls:visible");
   const area = (await controls.boundingBox())!;
   const button = (await controls.getByRole("button").boundingBox())!;
   expect(Math.abs(area.x + area.width - button.x - button.width)).toBeLessThan(2);

@@ -19,7 +19,6 @@ import {
   Wallet,
   ReceiptText,
   ListChecks,
-  HandCoins,
   SlidersHorizontal,
   Landmark,
   Leaf,
@@ -171,12 +170,6 @@ export function FinanceShell({
       show: true,
     },
     {
-      label: "Atendimento",
-      path: "/financeiro/atendimento",
-      icon: HandCoins,
-      show: unit.capabilities?.create,
-    },
-    {
       label: "Caixas e contas",
       path: "/financeiro/caixas",
       icon: Wallet,
@@ -287,7 +280,6 @@ export function FinanceShell({
               )}
             </button>
             {cathedralPage ? <div className="finance-context finance-payables-context"><span className="finance-single-unit">Administração · Catedral</span></div> : <FinanceContextBar
-              attendance={path === "/financeiro/atendimento"}
               units={context.units}
               selectedUnitId={unit.id}
               month={month}

@@ -22,7 +22,7 @@ for (const width of [320, 390]) {
       name: "Navegação financeira mobile",
     });
     await expect(mobile).toBeVisible();
-    for (const label of ["Início", "Lançamentos", "Atendimento", "Mais"])
+    for (const label of ["Início", "Lançamentos", "Relatórios", "Mais"])
       await expect(mobile.getByText(label, { exact: true })).toBeVisible();
     await expect(page.locator(".finance-sidebar")).toHaveCount(1);
     await expect(page.locator(".finance-sidebar")).toBeHidden();
@@ -33,7 +33,9 @@ for (const width of [320, 390]) {
 
     await mobile.getByRole("button", { name: "Mais" }).click();
     await expect(page.getByRole("link", { name: "Caixas e contas" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Relatórios" })).toBeVisible();
+    await expect(mobile.getByRole("group", { name: "Mais opções" }).getByRole("link", { name: "Relatórios" })).toHaveCount(0);
+    await mobile.getByRole("link", { name: "Relatórios" }).click();
+    await expect(page).toHaveURL(new RegExp("/financeiro/relatorios\\?unidade=" + unitId + "&mes=2026-10"));
   });
 }
 
@@ -45,28 +47,6 @@ test("desktop keeps the financial sidebar", async ({ page }) => {
   await expect(
     page.getByRole("navigation", { name: "Navegação financeira mobile" }),
   ).toBeHidden();
-});
-
-test("changing month with unsaved attendance asks before navigation", async ({
-  page,
-}) => {
-  const { unitId } = fixture();
-  await page.setViewportSize({ width: 390, height: 800 });
-  await page.goto(`/financeiro/atendimento?unidade=${unitId}&mes=2026-10`);
-  await page
-    .getByRole("combobox", { name: /Identificação/ })
-    .selectOption("UNREGISTERED");
-  await page
-    .getByRole("textbox", { name: "Nome da pessoa", exact: true })
-    .fill("Pessoa em preenchimento");
-  await page.getByLabel("Período", { exact: true }).fill("2026-09");
-  await expect(
-    page.getByRole("dialog", { name: "Há alterações não salvas" }),
-  ).toBeVisible();
-  await page.getByRole("button", { name: "Editar", exact: true }).click();
-  await expect(
-    page.getByRole("textbox", { name: "Nome da pessoa", exact: true }),
-  ).toHaveValue("Pessoa em preenchimento");
 });
 
 test.describe("read only congregation", () => {

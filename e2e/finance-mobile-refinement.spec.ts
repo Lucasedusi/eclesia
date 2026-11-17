@@ -1,3 +1,4 @@
+import { seedLegacyGroup } from "./finance-legacy-group";
 import { expect, test, type Page } from "@playwright/test";
 import { readFileSync } from "node:fs";
 
@@ -60,17 +61,7 @@ for (const wholeAttendance of [false, true]) {
     const f = fixture();
     const name = `Cancelamento mobile ${wholeAttendance} ${Date.now()}`;
     await page.setViewportSize({ width: 320, height: 700 });
-    await page.goto(`/financeiro/atendimento?unidade=${f.unitId}&mes=2026-10`);
-    await page.getByRole('combobox', { name: 'Caixa ou conta' }).selectOption(f.boxes[f.unitId].cash);
-    await page.getByRole('combobox', { name: 'Identificação' }).selectOption('UNREGISTERED');
-    await page.getByRole('textbox', { name: 'Nome da pessoa' }).fill(name);
-    await page.getByRole('combobox', { name: 'Categoria' }).selectOption(f.offeringId);
-    await page.getByLabel('Valor (R$)').fill('100');
-    await page.getByRole('button', { name: 'Adicionar contribuição' }).click();
-    await page.getByRole('combobox', { name: 'Categoria' }).nth(1).selectOption(f.offeringId);
-    await page.getByLabel('Valor (R$)').nth(1).fill('200');
-    await page.getByRole('button', { name: 'Salvar', exact: true }).click();
-    await expect(page.getByText('Atendimento confirmado.', { exact: false })).toBeVisible();
+    await seedLegacyGroup(name, "2026-10-01");
     await page.goto(`/financeiro/lancamentos?unidade=${f.unitId}&mes=2026-10&search=${encodeURIComponent(name)}`);
     const cards = page.getByRole('list', { name: 'Lançamentos em cartões' });
     await expect(cards.getByRole('button')).toHaveCount(2);
@@ -104,7 +95,7 @@ for (const wholeAttendance of [false, true]) {
     }
     await expect(dialog).toHaveCount(0);
     await expect(cards.getByText('Cancelado', { exact: true })).toHaveCount(wholeAttendance ? 2 : 1);
-    await expect(cards.getByText('Confirmado', { exact: true })).toHaveCount(wholeAttendance ? 0 : 1);
+    await expect(cards.getByRole('button')).toHaveCount(2);
   });
 }
 

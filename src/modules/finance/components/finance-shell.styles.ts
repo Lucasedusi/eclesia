@@ -244,9 +244,6 @@ export const FinanceStyles = createGlobalStyle`
  .finance .finance-attendance-summary{position:sticky;top:128px;padding:22px;background:#F4F8F5;border:1px solid #E0EAE3;border-radius:14px}
  .finance .finance-attendance-summary>.row{display:grid;gap:10px}
  .finance .finance-attendance-summary button{width:100%}
- .finance .finance-attendance-total{gap:12px;padding-bottom:20px;border-bottom:1px solid #DCE7DF}
- .finance .finance-attendance-total p{margin:0;overflow-wrap:anywhere}
- .finance .finance-attendance-total strong{font-variant-numeric:tabular-nums;color:#087F5B}
  .finance .finance-cashbox-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,330px),1fr));gap:20px;align-items:stretch}
  .finance .finance-cashbox{display:flex;flex-direction:column;gap:18px;border-top:3px solid #D7E8DE}
  .finance .finance-bank-card{border-top-color:#87B6A0}
@@ -322,9 +319,6 @@ export const FinanceStyles = createGlobalStyle`
  .finance .finance-receipt-controls{align-items:end}
  .finance .finance-receipt-controls button{height:42px;min-height:42px;padding:8px 18px}
  .finance .finance-receipt-controls>.muted{align-self:center}
- .finance .finance-attendance-summary button.finance-attendance-action{display:grid;grid-template-columns:50px minmax(0,1fr);gap:12px;text-align:left;justify-content:stretch;min-height:44px}
- .finance .finance-attendance-action>.finance-action-icon{display:flex;align-items:center;justify-content:flex-start;border-right:1px solid currentColor;min-height:22px}
- .finance .finance-attendance-action>.finance-action-label{line-height:1.4}
  :is(.finance,#finance-modal-root) .finance-entry-review{gap:12px}
  #finance-modal-root .finance-entry-drawer .finance-entry-review{background:#F4F8F5;border:1px solid #E0EAE3;border-radius:14px;padding:16px}
  #finance-modal-root .finance-unsaved-actions{display:contents}
@@ -494,10 +488,7 @@ export const FinanceStyles = createGlobalStyle`
   :is(.finance,#finance-modal-root) .finance-entry-primary-total{display:grid;gap:2px;font-size:11px;color:#6D7F76;min-width:0}
   :is(.finance,#finance-modal-root) .finance-entry-primary-total strong{font-size:16px;color:#087F5B;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
   :is(.finance,#finance-modal-root) .finance-entry-primary-action button{min-height:48px;width:100%;min-width:0;padding:10px 12px;font-size:14px;white-space:nowrap;gap:8px}
-  .finance .finance-entry-primary-action button.finance-attendance-action{display:flex;justify-content:center;gap:8px;padding:10px}
-  .finance .finance-entry-primary-action button.finance-attendance-action .finance-action-icon{border:0}
   .finance .finance-attendance-form{padding-bottom:82px}
-  .finance .finance-attendance-card{padding:16px}
   #finance-modal-root .finance-entry-drawer{inset:0;width:100vw;max-width:100vw;height:100dvh;max-height:100dvh;border-radius:0;padding:16px}
   #finance-modal-root .finance-entry-drawer form{padding-bottom:calc(96px + env(safe-area-inset-bottom))}
   #finance-modal-root .finance-entry-drawer button[aria-label="Fechar modal"]{min-width:44px;min-height:44px}

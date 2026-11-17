@@ -5,7 +5,7 @@ import { FinanceShell } from "./finance-shell";
 import { FinanceEntryForm } from "./finance-entry-form";
 
 vi.mock("next/navigation", () => ({
-  usePathname: () => "/financeiro/atendimento",
+  usePathname: () => "/financeiro/lancamentos",
   useSearchParams: () => new URLSearchParams("unidade=unit-1&mes=2026-10"),
   useRouter: () => ({ push: () => {}, refresh: () => {} }),
 }));
@@ -31,7 +31,7 @@ const capabilities = {
   lookupContributors: true,
 };
 
-function renderEntry(mode: "SINGLE" | "ATTENDANCE") {
+function renderEntry() {
   return renderToStaticMarkup(
     createElement(
       FinanceShell,
@@ -50,7 +50,6 @@ function renderEntry(mode: "SINGLE" | "ATTENDANCE") {
         unit: "unit-1",
         month: "2026-10",
         date: "2026-10-14",
-        mode,
         catalogs: {
           departments: [],
           categories: [],
@@ -65,18 +64,16 @@ function renderEntry(mode: "SINGLE" | "ATTENDANCE") {
 }
 
 describe("finance entry review", () => {
-  it("shows essential attendance data and total before the primary action", () => {
-    const html = renderEntry("ATTENDANCE");
+  it("shows the single-entry review without manual grouping", () => {
+    const html = renderEntry();
     expect(html).toContain("Conferir antes de confirmar");
     expect(html).toContain("14/10/2026");
     expect(html).toContain("finance-entry-primary-action");
-    expect(html.indexOf("Conferir antes de confirmar")).toBeLessThan(
-      html.indexOf("Confirmar atendimento"),
-    );
+    expect(html).not.toContain("Adicionar contribuição");
   });
 
   it("shows the same review and total for a single entry", () => {
-    const html = renderEntry("SINGLE");
+    const html = renderEntry();
     expect(html).toContain("Conferir antes de confirmar");
     expect(html).toContain("Total do lançamento");
     expect(html).toContain("Salvar e continuar");

@@ -9,14 +9,14 @@ test.beforeEach(() => {
 test("thermal receipt preserves registration time and fits both paper widths", async ({ page }) => {
   const f = JSON.parse(readFileSync(process.env.E2E_FINANCE_FIXTURE!, "utf8"));
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto(`/financeiro/atendimento?unidade=${f.unitId}&mes=2026-10`);
+  await page.goto(`/financeiro/lancamentos?novo=entrada&unidade=${f.unitId}&mes=2026-10`);
   await page.getByRole("combobox", { name: "Caixa ou conta" }).selectOption(f.boxes[f.unitId].cash);
   await page.getByRole("combobox", { name: "Identificação" }).selectOption("UNREGISTERED");
   await page.getByRole("textbox", { name: "Nome da pessoa" }).fill("Maria Aparecida dos Santos Oliveira — pessoa fictícia");
   await page.getByLabel("Data", { exact: true }).fill("2026-10-15");
   await page.getByRole("combobox", { name: "Categoria" }).selectOption(f.offeringId);
   await page.getByLabel("Valor (R$)").fill("123456");
-  await page.getByRole("button", { name: "Salvar", exact: true }).click();
+  await page.getByRole("button", { name: "Salvar e continuar", exact: true }).click();
   const link = page.getByRole("link", { name: "Comprovante", exact: true });
   await expect(link).toBeVisible();
   await page.goto((await link.getAttribute("href"))!);

@@ -1,3 +1,4 @@
+import { seedLegacyGroup } from "./finance-legacy-group";
 import { expect, test, type Page } from "@playwright/test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { PDFDocument } from "pdf-lib";
@@ -120,19 +121,7 @@ test("correction and cancellation invalidate previously shared links", async ({ 
 test("grouped attendance keeps all contributions in the shared document", async ({ page, playwright }) => {
   const f = JSON.parse(readFileSync(process.env.E2E_FINANCE_FIXTURE!, "utf8"));
   const name = `Atendimento Digital ${Date.now()}`;
-  await page.goto(`/financeiro/atendimento?unidade=${f.unitId}&mes=2026-11`);
-  await expect(page.getByRole("button", { name: "Comprovante digital", exact: true })).toHaveCount(0);
-  await page.getByRole("combobox", { name: "Caixa ou conta" }).selectOption(f.boxes[f.unitId].cash);
-  await page.getByRole("combobox", { name: "Identificação" }).selectOption("UNREGISTERED");
-  await page.getByLabel("Nome da pessoa", { exact: true }).fill(name);
-  await page.getByLabel("Data", { exact: true }).fill("2026-11-02");
-  await page.getByRole("combobox", { name: "Categoria", exact: true }).selectOption(f.offeringId);
-  await page.getByLabel("Valor (R$)", { exact: true }).fill("200,00");
-  await page.getByRole("button", { name: "Adicionar contribuição" }).click();
-  await page.getByRole("combobox", { name: "Categoria", exact: true }).nth(1).selectOption(f.missionsOfferingId);
-  await page.getByLabel("Valor (R$)", { exact: true }).nth(1).fill("50,00");
-  await page.getByRole("button", { name: "Confirmar atendimento" }).click();
-  await expect(page.getByRole("link", { name: "Comprovante", exact: true })).toBeVisible();
+  await seedLegacyGroup(name, "2026-11-02");
   await page.goto(`/financeiro/lancamentos?unidade=${f.unitId}&mes=2026-11`);
   await details(page, name);
   await page.getByRole("button", { name: "Comprovante digital", exact: true }).click();

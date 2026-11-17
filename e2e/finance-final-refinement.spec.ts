@@ -17,10 +17,10 @@ async function within(container: Locator, element: Locator) {
   expect(child.x + child.width).toBeLessThanOrEqual(parent.x + parent.width + 1);
 }
 
-async function dirtyAttendance(page: Page) {
-  await page.goto(location("atendimento"));
-  await page.getByRole("combobox", { name: /Identificação/ }).selectOption("UNREGISTERED");
-  await page.getByRole("textbox", { name: "Nome da pessoa", exact: true }).fill("Conferência final fictícia");
+async function dirtyRules(page: Page) {
+  await page.goto(location("configuracoes"));
+  await page.getByRole("button", {name: "Regras do demonstrativo"}).click();
+  await page.getByLabel("Descrição do item", {exact:true}).first().fill("");
 }
 
 for (const width of [320, 390]) {
@@ -28,7 +28,7 @@ for (const width of [320, 390]) {
     test.use({ viewport: { width, height: 844 }, isMobile: true, hasTouch: true });
 
     test("unsaved actions fit, preserve editing, validate saving and allow discard", async ({ page }) => {
-      await dirtyAttendance(page);
+      await dirtyRules(page);
       const nav = page.getByRole("navigation", { name: "Navegação financeira mobile" });
       await nav.getByRole("link", { name: "Lançamentos", exact: true }).click();
       const dialog = page.getByRole("dialog", { name: "Há alterações não salvas" });
@@ -44,11 +44,11 @@ for (const width of [320, 390]) {
       }
       await dialog.screenshot({ path: test.info().outputPath("unsaved-actions.png") });
       await dialog.getByRole("button", { name: "Editar", exact: true }).click();
-      await expect(page.getByRole("textbox", { name: "Nome da pessoa", exact: true })).toHaveValue("Conferência final fictícia");
+      await expect(page.getByLabel("Descrição do item", {exact:true}).first()).toHaveValue("");
       await nav.getByRole("link", { name: "Lançamentos", exact: true }).click();
       await dialog.getByRole("button", { name: "Salvar", exact: true }).click();
       await expect(dialog).toBeVisible();
-      await expect(page).toHaveURL(/\/atendimento/);
+      await expect(page).toHaveURL(/\/configuracoes/);
       await dialog.getByRole("button", { name: "Descartar", exact: true }).click();
       await expect(page).toHaveURL(/\/lancamentos/);
       await expect(dialog).toBeHidden();
@@ -84,7 +84,7 @@ for (const width of [320, 390]) {
   });
 }
 
-test("desktop review panels are highlighted and attendance actions align", async ({ page }) => {
+test("desktop review panels are highlighted and unsaved rules prompt before changing month", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto(location("lancamentos"));
   for (const direction of ["entrada", "saída"]) {
@@ -95,11 +95,7 @@ test("desktop review panels are highlighted and attendance actions align", async
       .screenshot({ path: test.info().outputPath(`review-${direction}.png`) });
     await dialog.getByRole("button", { name: "Fechar modal" }).click();
   }
-  await dirtyAttendance(page);
-  const primary = page.getByRole("button", { name: "Confirmar atendimento", exact: true });
-  const secondary = page.getByRole("button", { name: "Salvar e continuar", exact: true });
-  expect(Math.abs((await primary.boundingBox())!.width - (await secondary.boundingBox())!.width)).toBeLessThan(2);
-  await page.locator(".finance-attendance-summary").screenshot({ path: test.info().outputPath("attendance-review.png") });
+  await dirtyRules(page);
   await page.getByLabel("Período", { exact: true }).fill("2026-09");
   const dialog = page.getByRole("dialog", { name: "Há alterações não salvas" });
   await expect(dialog.getByRole("button", { name: "Continuar editando", exact: true })).toBeVisible();
@@ -108,13 +104,9 @@ test("desktop review panels are highlighted and attendance actions align", async
 
 test("mobile saves the draft before navigating and shows a compact update status", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 844 });
-  await dirtyAttendance(page);
-  const f = fixture();
-  const name = `Teste final ${Date.now()}`;
-  await page.getByRole("textbox", { name: "Nome da pessoa", exact: true }).fill(name);
-  await page.getByRole("combobox", { name: "Caixa ou conta", exact: true }).selectOption(f.boxes[f.headquartersId].cash);
-  await page.getByRole("combobox", { name: "Categoria", exact: true }).selectOption(f.offeringId);
-  await page.getByLabel("Valor (R$)", { exact: true }).fill("1234");
+  await dirtyRules(page);
+  const name = `Regra de teste ${Date.now()}`;
+  await page.getByLabel("Descrição do item", {exact:true}).first().fill(name);
   let release!: () => void;
   const held = new Promise<void>((resolve) => { release = resolve; });
   await page.route("**/financeiro/lancamentos?**", async (route) => {
@@ -138,5 +130,7 @@ test("mobile saves the draft before navigating and shows a compact update status
     release();
   }
   await expect(page).toHaveURL(/\/lancamentos/);
-  await expect(page.getByRole("button", { name: `Abrir lançamento: Oferta de culto ${name}`, exact: false })).toBeVisible();
+  await page.goto(location("configuracoes"));
+  await page.getByRole("button", {name: "Regras do demonstrativo"}).click();
+  await expect(page.getByLabel("Descrição do item", {exact:true}).first()).toHaveValue(name);
 });

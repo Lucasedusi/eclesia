@@ -5,13 +5,13 @@ import type {
   FinanceCommand,
   FinanceMutationResult,
 } from "../types/finance-command.types";
-import { financeCommandSchema } from "../validations/finance-command.schemas";
+import { manualFinanceCommandSchema } from "../validations/finance-command.schemas";
 import { throwFinanceDatabaseError } from "../utils/finance-errors";
 export async function executeFinanceCommand(
   context: FinanceContext,
   input: FinanceCommand,
 ): Promise<FinanceMutationResult> {
-  const command = financeCommandSchema.parse(input);
+  const command = manualFinanceCommandSchema.parse(input);
   if (command.congregationId !== context.congregationId)
     throw new Error("FORBIDDEN");
   const c = await createClient();

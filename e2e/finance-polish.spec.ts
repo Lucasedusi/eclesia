@@ -9,12 +9,12 @@ function fixture() {
   return JSON.parse(readFileSync(process.env.E2E_FINANCE_FIXTURE!, "utf8"));
 }
 
-test("attendance identifies first, masks currency and resets native validation", async ({
+test("entry identifies first, masks currency and resets native validation", async ({
   page,
 }) => {
   const f = fixture();
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.goto(`/financeiro/atendimento?unidade=${f.unitId}&mes=2026-10`);
+  await page.goto(`/financeiro/lancamentos?novo=entrada&unidade=${f.unitId}&mes=2026-10`);
   const name = page.getByRole("textbox", {
     name: "Nome para busca",
     exact: true,
@@ -46,14 +46,14 @@ test("attendance identifies first, masks currency and resets native validation",
     .getByRole("button", { name: "Salvar e continuar", exact: true })
     .click();
   await expect(
-    page.getByText("Atendimento confirmado.", { exact: false }),
+    page.getByText("Lançamento confirmado.", { exact: false }),
   ).toBeVisible();
   await expect(name).toHaveValue("");
   await expect(name).toBeFocused();
   await expect(page.locator("form :user-invalid")).toHaveCount(0);
   await expect(money).toHaveValue("");
   await page.screenshot({
-    path: "tmp/finance-polish-attendance.png",
+    path: "tmp/finance-polish-entry.png",
     fullPage: true,
   });
 });

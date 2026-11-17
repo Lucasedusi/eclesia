@@ -16,6 +16,9 @@ const nextConfig: NextConfig = {
     },
   },
   serverExternalPackages: ["exceljs", "@resvg/resvg-js"],
+  async redirects() {
+    return [{ source: "/financeiro/atendimento", destination: "/financeiro/lancamentos", permanent: true }];
+  },
   async headers() {
     const confidential = [
       { key: "Cache-Control", value: "private, no-store, max-age=0" },
