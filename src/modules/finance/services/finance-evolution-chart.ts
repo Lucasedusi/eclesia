@@ -2,6 +2,7 @@ import "server-only";
 import { rgb, type PDFFont, type PDFPage } from "pdf-lib";
 import type { FinanceInformativeReportDocument } from "../types/finance-informative-report.types";
 import { formatFinanceMonth } from "../utils/finance-period";
+import { formatMoney } from "../utils/finance-money";
 
 const green = rgb(0.02, 0.4, 0.28);
 const red = rgb(0.6, 0.23, 0.26);
@@ -35,39 +36,22 @@ export function drawFinanceEvolutionChart({
     {
       label: "Entradas",
       color: green,
-      values: block.map(({ summary }) => summary.incomeCents / 100),
+      values: block.map(({ summary }) => summary.incomeCents),
     },
     {
       label: "Saídas",
       color: orange,
-      values: block.map(({ summary }) => summary.expenseCents / 100),
+      values: block.map(({ summary }) => summary.expenseCents),
     },
   ];
 
   // Every block uses the full period's scale so heights can be compared across pages.
   const values = months.flatMap(({ summary }) => [
-    summary.incomeCents / 100,
-    summary.expenseCents / 100,
+    summary.incomeCents,
+    summary.expenseCents,
   ]);
   const min = Math.min(0, ...values);
   const max = Math.max(0, ...values);
-  const largest = Math.max(Math.abs(min), max);
-  const units = [
-    { divisor: 1e12, label: "Valores em trilhões de reais" },
-    { divisor: 1e9, label: "Valores em bilhões de reais" },
-    { divisor: 1e6, label: "Valores em milhões de reais" },
-    { divisor: 1e3, label: "Valores em milhares de reais" },
-    { divisor: 1, label: "Valores em reais" },
-  ];
-  const unit =
-    units.find(({ divisor }) => largest >= divisor) ?? units[units.length - 1];
-  const number = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 });
-  const labelFor = (value: number) => {
-    const scaled = value / unit.divisor;
-    if (scaled !== 0 && Math.abs(scaled) < 0.01)
-      return scaled < 0 ? "> -0,01" : "< 0,01";
-    return number.format(scaled);
-  };
 
   page.drawText("Evolução financeira mensal", {
     x,
@@ -77,7 +61,7 @@ export function drawFinanceEvolutionChart({
     color: green,
   });
   page.drawText(
-    `${formatFinanceMonth(block[0].month)} a ${formatFinanceMonth(block.at(-1)!.month)} · ${unit.label}`,
+    `${formatFinanceMonth(block[0].month)} a ${formatFinanceMonth(block.at(-1)!.month)} · Valores em reais`,
     { x, y: top - 30, size: 9, font: regular, color: muted },
   );
   let legendX = x;
@@ -100,27 +84,26 @@ export function drawFinanceEvolutionChart({
   }
 
   // Include zero and choose readable grid intervals, including all-zero periods.
-  const target = (max - min || 1) / 4;
+  const target = (max - min || 100) / 4;
   const magnitude = 10 ** Math.floor(Math.log10(target));
   const step = Math.max(
-    0.01,
+    1,
     [1, 2, 5, 10].find((factor) => factor * magnitude >= target)! * magnitude,
   );
   const lower = Math.floor(min / step) * step;
-  const upper = Math.ceil((max || (min === 0 ? 1 : 0)) / step) * step;
+  const upper = Math.ceil((max || (min === 0 ? 100 : 0)) / step) * step;
   const tickCount = Math.round((upper - lower) / step);
-  const ticks = Array.from(
-    { length: tickCount + 1 },
-    (_, index) => Math.round((lower + step * index) * 100) / 100,
+  const ticks = Array.from({ length: tickCount + 1 }, (_, index) =>
+    Math.round(lower + step * index),
   );
-  const tickLabels = ticks.map(labelFor);
+  const tickLabels = ticks.map(formatMoney);
   const labelWidth = Math.max(
     ...tickLabels.map((label) => regular.widthOfTextAtSize(label, 8)),
   );
   const plotLeft = x + labelWidth + 14;
   const plotRight = x + width - 8;
   const plotTop = top - 90;
-  const plotBottom = top - height + 35;
+  const plotBottom = top - height + 45;
   const pointY = (value: number) =>
     plotBottom + ((value - lower) * (plotTop - plotBottom)) / (upper - lower);
   const zeroY = pointY(0);
@@ -149,7 +132,7 @@ export function drawFinanceEvolutionChart({
     const month = formatFinanceMonth(block[index].month);
     page.drawText(month, {
       x: center - regular.widthOfTextAtSize(month, 8) / 2,
-      y: plotBottom - 27,
+      y: plotBottom - 36,
       size: 8,
       font: regular,
       color: muted,
@@ -167,14 +150,20 @@ export function drawFinanceEvolutionChart({
         color,
         opacity: 0.9,
       });
-      const label = labelFor(value);
+      const label = formatMoney(value);
       const size = Math.min(
         8,
-        (barWidth + 1) / regular.widthOfTextAtSize(label, 1),
+        (groupWidth - 6) / regular.widthOfTextAtSize(label, 1),
       );
+      // Stack the full currency labels within each month to prevent overlap.
+      const pair = series.map((entry) => entry.values[index]);
+      const labelY =
+        value < 0
+          ? pointY(Math.min(0, ...pair)) - size - 3 - seriesIndex * 11
+          : pointY(Math.max(0, ...pair)) + 4 + (1 - seriesIndex) * 11;
       page.drawText(label, {
-        x: left + (barWidth - regular.widthOfTextAtSize(label, size)) / 2,
-        y: value < 0 ? endY - size - 3 : endY + 4,
+        x: center - regular.widthOfTextAtSize(label, size) / 2,
+        y: labelY,
         size,
         font: regular,
         color,

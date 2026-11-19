@@ -3,6 +3,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { PDFDocument, PDFPage } from "pdf-lib";
 import type { FinanceInformativeReportDocument } from "../types/finance-informative-report.types";
 import { formatFinanceMonth } from "../utils/finance-period";
+import { formatMoney } from "../utils/finance-money";
 vi.mock("server-only", () => ({}));
 import { createFinanceReportPdf } from "./finance-report-pdf.service";
 function fixture(n = 3): FinanceInformativeReportDocument {
@@ -136,8 +137,8 @@ it.each([1, 2, 3, 12, 13, 60])(
       row.summary = {
         ...row.summary,
         incomeCents:
-          count === 3 ? 0 : count === 2 ? -150000 : 150000 + index * 12000,
-        expenseCents: count === 3 ? 0 : 90000,
+          count === 3 ? 0 : count === 2 ? -150037 : 150037 + index * 12000,
+        expenseCents: count === 3 ? 0 : 90001,
       };
     });
     const draw = vi.spyOn(PDFPage.prototype, "drawText");
@@ -179,6 +180,8 @@ it.each([1, 2, 3, 12, 13, 60])(
       }
       const text = draw.mock.calls.map(([value]) => value).join(" ");
       for (const row of input.months) {
+        expect(text).toContain(formatMoney(row.summary.incomeCents));
+        expect(text).toContain(formatMoney(row.summary.expenseCents));
         expect(
           draw.mock.calls.filter(
             ([value]) => value === formatFinanceMonth(row.month),
@@ -186,6 +189,7 @@ it.each([1, 2, 3, 12, 13, 60])(
         ).toHaveLength(2);
       }
       expect(text).not.toContain("Resultado do mês");
+      expect(text).not.toContain("milhares de reais");
       expect(text).toContain("Entradas");
       expect(text).toContain("Saídas");
       const document = await PDFDocument.load(bytes);
