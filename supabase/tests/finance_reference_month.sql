@@ -82,6 +82,8 @@ begin
  batch:=(r->>'id')::uuid;select id into line from public.finance_bank_import_items where batch_id=batch;
  r:=public.finance_bank_import_item(c,hq,line,1,gen_random_uuid(),'POST',jsonb_build_object('command',p||jsonb_build_object('cashboxId',bank,'paymentMethodId',pix)));
  perform pg_temp.assert_true((select reference_month=10 and transaction_date='2026-11-05' and source_type='IMPORT' from public.financial_transactions where id=(r#>>'{result,transactionIds,0}')::uuid),'Bank import preserves reference and original date');
+ perform pg_temp.assert_true((select x->>'source'='TRANSFER' and exists (select from jsonb_array_elements(x->'transferHistory') e where e->>'id'=r#>>'{result,transactionIds,0}' and (e->>'included')::boolean)
+   from jsonb_array_elements(public.list_finance_deliveries_with_transfers(c,'2026-10',false)->'rows') x where x->>'id'=u::text),'Imported repasse participates in delivery alongside other receipts');
  -- Existing permission/tenant/scope boundaries remain effective.
  begin perform public.execute_finance_command('20000000-0000-4000-8000-000000000002',p||jsonb_build_object('operationKey',gen_random_uuid())); raise exception 'Tenant leak'; exception when insufficient_privilege then null; end;
  perform set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000002',true);

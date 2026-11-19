@@ -8,6 +8,7 @@ import {
 } from "@/modules/finance/services/finance-page.service";
 import { listFinanceCatalogs } from "@/modules/finance/services/finance-catalog.service";
 import {
+  getFinanceTransaction,
   listFinanceTransactions,
   listFinanceTransfers,
 } from "@/modules/finance/services/finance-query.service";
@@ -27,13 +28,14 @@ async function Content({
       ),
     ),
   );
-  const [catalogs, result, transfers] = await Promise.all([
+  const [catalogs, result, transfers, detail] = await Promise.all([
     listFinanceCatalogs(context),
     listFinanceTransactions(context, filters).catch((error: unknown) => {
       if (error instanceof Error && error.message === "FINANCE_DATE_RANGE_UNAVAILABLE") return null;
       throw error;
     }),
     listFinanceTransfers(context, month, Number(search.transferPage ?? 1), filters),
+    typeof search.detalhe === "string" ? getFinanceTransaction(context, search.detalhe) : null,
   ]);
   if (!result) return <section className="card stack" role="alert">
     <p>A consulta por intervalo precisa de uma atualização do financeiro neste ambiente. A consulta por mês continua disponível.</p>
@@ -41,6 +43,8 @@ async function Content({
   </section>;
   return (
     <FinanceTransactionsWorkspace
+      key={detail?.id}
+      initialDetail={detail}
       catalogs={catalogs}
       result={result}
       transfers={transfers}

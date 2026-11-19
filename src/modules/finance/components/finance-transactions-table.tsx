@@ -29,6 +29,7 @@ import { FinanceTransactionAmount, FinanceTransactionPayment } from "./finance-t
 
 export function FinanceTransactionsTable({
   result,
+  initialDetail,
   catalogs,
   unit,
   month,
@@ -37,6 +38,7 @@ export function FinanceTransactionsTable({
   detailActions,
 }: {
   result: FinanceTransactionPage;
+  initialDetail?: FinanceTransactionDetail | null;
   catalogs: FinanceCatalogs;
   unit: string;
   month: string;
@@ -50,7 +52,7 @@ export function FinanceTransactionsTable({
   const { navigate, isPending } = useFinanceNavigation(),
     path = usePathname(),
     sequence = useRef(0),
-    [detail, setDetail] = useState<FinanceTransactionDetail | null>(null),
+    [detail, setDetail] = useState<FinanceTransactionDetail | null>(initialDetail ?? null),
     [error, setError] = useState(""),
     [loading, setLoading] = useState<string | null>(null);
   const [advanced, setAdvanced] = useState(false);

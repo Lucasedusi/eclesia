@@ -1,4 +1,7 @@
 import { FinanceReportError } from "../types/finance-report.types";
+export function deliverySourceLabel(source: "MANUAL" | "TRANSFER" | null) {
+  return source === "MANUAL" ? "Manual" : source === "TRANSFER" ? "Automática por repasse" : "—";
+}
 export function deliveryTimeliness(
   date: string | null,
   due: string,

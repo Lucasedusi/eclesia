@@ -9281,6 +9281,14 @@ export type Database = {
         }
         Returns: Json
       }
+      list_finance_deliveries_with_transfers: {
+        Args: {
+          p_church_id: string
+          p_include_inactive: boolean
+          p_month: string
+        }
+        Returns: Json
+      }
       list_finance_operators: {
         Args: { p_church_id: string; p_unit: string }
         Returns: Json

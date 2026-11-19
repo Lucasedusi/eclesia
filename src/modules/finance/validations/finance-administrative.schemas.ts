@@ -72,12 +72,18 @@ export const deliveryRuleSchema = z.object({
   day: z.number().int().min(1).max(31),
   revision: z.number().int().positive(),
 });
+const transferSourceSchema = z.object({ id: z.uuid(), unit: z.uuid(), date: civilDate });
 export const deliveryRowSchema = z.object({
   id: z.uuid(),
   name: z.string(),
   status: z.string(),
   deliveryDate: civilDate.nullable(),
   revision: z.number().int().nonnegative(),
+  source: z.enum(["MANUAL", "TRANSFER"]).nullable(),
+  transfer: transferSourceSchema.nullable(),
+  transferHistory: z.array(transferSourceSchema.extend({
+    eventId: z.string(), included: z.boolean(), actor: z.string(), createdAt: z.iso.datetime({ offset: true }),
+  })),
   history: z.array(
     z.object({
       action: z.enum(["RECEIVE", "CORRECT", "UNDO"]),

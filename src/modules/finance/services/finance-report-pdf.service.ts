@@ -9,7 +9,7 @@ import type {
   RankingDocument,
   DeliveryDocument,
 } from "../types/finance-administrative.types";
-import { deliveryTimeliness } from "../utils/finance-administrative";
+import { deliverySourceLabel, deliveryTimeliness } from "../utils/finance-administrative";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import fontkit from "@pdf-lib/fontkit";
@@ -1192,13 +1192,14 @@ export async function createFinanceReportPdf(
     table(
       {
         title: "Entrega de relatórios",
-        headers: ["Congregação", "Situação", "Data da entrega", "Prazo"],
-        widths: [220, 95, 105, CW - 420],
+        headers: ["Congregação", "Situação", "Data da entrega", "Origem", "Prazo"],
+        widths: [CW - 330, 65, 88, 107, 70],
       },
       data.rows.map((row) => [
         `${row.name}${row.status !== "ACTIVE" ? " · Inativa" : ""}`,
         row.deliveryDate ? "Entregue" : "Não entregue",
         row.deliveryDate ? date(row.deliveryDate) : "—",
+        deliverySourceLabel(row.source),
         deliveryTimeliness(row.deliveryDate, data.dueDate, data.today),
       ]),
     );

@@ -26,11 +26,12 @@ export function FinanceDeliveryForm({
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const key = useRef<string | null>(null);
+  const manual = row.source === "MANUAL";
   const title = undo
     ? "Desfazer entrega"
-    : row.deliveryDate
+    : manual
       ? "Corrigir entrega"
-      : "Registrar entrega";
+      : row.transfer ? "Registrar data manual" : "Registrar entrega";
   return (
     <Modal
       title={title}
@@ -50,7 +51,7 @@ export function FinanceDeliveryForm({
             deliveryDate: undo ? null : date,
             action: undo
               ? ("UNDO" as const)
-              : row.deliveryDate
+              : manual
                 ? ("CORRECT" as const)
                 : ("RECEIVE" as const),
             reason,
@@ -102,7 +103,7 @@ export function FinanceDeliveryForm({
               }}
             />
           )}
-          {(row.deliveryDate || undo) && (
+          {manual && (
             <label>
               Motivo da alteração
               <textarea
@@ -119,8 +120,9 @@ export function FinanceDeliveryForm({
           )}
           {undo && (
             <p className="muted">
-              A congregação voltará à lista de não entregues. O registro
-              anterior ficará no histórico.
+              {row.transfer
+                ? "Ao desfazer o registro manual, valerá a data do primeiro repasse válido."
+                : "A entrega voltará a constar como pendente."}
             </p>
           )}
           <div className="row finance-delivery-actions">
@@ -131,7 +133,7 @@ export function FinanceDeliveryForm({
               Cancelar
             </Button>
           </div>
-          {row.deliveryDate && (
+          {manual && (
             <button
               type="button"
               className="finance-delivery-undo"

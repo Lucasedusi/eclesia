@@ -10,7 +10,7 @@ import type {
   DeliveryRow,
   DeliveryOptions,
 } from "../types/finance-administrative.types";
-import { deliveryTimeliness } from "../utils/finance-administrative";
+import { deliverySourceLabel, deliveryTimeliness } from "../utils/finance-administrative";
 import { isMonth } from "../utils/finance-period";
 import { financeLocation } from "../utils/finance-navigation";
 import { useFinanceReportPdf } from "../hooks/use-finance-report-pdf";
@@ -19,6 +19,10 @@ import { FinanceEmpty } from "./finance-empty";
 import { Monitor } from "lucide-react";
 import { FinanceDeliveryForm } from "./finance-delivery-form";
 const date = (v: string) => v.split("-").reverse().join("/");
+function transferLink(transfer: NonNullable<DeliveryRow["transfer"]>) {
+  return <Link className="finance-secondary-link" href={financeLocation("/financeiro/lancamentos",
+    transfer.unit, transfer.date.slice(0, 7), { detalhe: transfer.id })}>Ver lançamento</Link>;
+}
 const labels = {
   ALL: "Todas",
   DELIVERED: "Entregues",
@@ -227,6 +231,7 @@ function FinanceDeliveriesContent({
                   <tr>
                     <th>Congregação</th>
                     <th>Situação</th>
+                    <th>Origem</th>
                     <th>Data da entrega</th>
                     <th>Prazo</th>
                     <th>Ações</th>
@@ -248,6 +253,10 @@ function FinanceDeliveriesContent({
                           {row.deliveryDate ? "Entregue" : "Não entregue"}
                         </span>
                       </td>
+                      <td data-label="Origem">
+                        {deliverySourceLabel(row.source)}
+                        {row.source === "TRANSFER" && row.transfer && <div>{transferLink(row.transfer)}</div>}
+                      </td>
                       <td data-label="Data da entrega">
                         {row.deliveryDate ? date(row.deliveryDate) : "—"}
                       </td>
@@ -268,11 +277,12 @@ function FinanceDeliveriesContent({
                             variant="outline"
                             onClick={() => setEditing(row)}
                           >
-                            {row.deliveryDate
+                            {row.source === "MANUAL"
                               ? "Corrigir"
+                              : row.transfer ? "Registrar data manual"
                               : "Registrar entrega"}
                           </Button>
-                          {row.history.length > 0 && (
+                          {(row.history.length > 0 || row.transferHistory.length > 0) && (
                             <Button
                               variant="outline"
                               onClick={() => setHistory(row)}
@@ -360,6 +370,16 @@ function FinanceDeliveriesContent({
         >
           <div className="stack">
             <h3>{history.name}</h3>
+            {history.transferHistory.length > 0 && <h4>Repasses da Catedral</h4>}
+            {history.transferHistory.map(event => (
+              <div className="card stack" key={event.eventId}>
+                <strong>{event.included ? "Repasse considerado" : "Repasse deixou de contar"}</strong>
+                <span>Data do lançamento: {date(event.date)}</span>
+                {transferLink(event)}
+                <small className="muted">{event.actor} · {new Date(event.createdAt).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}</small>
+              </div>
+            ))}
+            {history.history.length > 0 && <h4>Registros manuais</h4>}
             {history.history.map((event) => (
               <div className="card stack" key={event.revision}>
                 <strong>

@@ -123,7 +123,7 @@ export async function listFinanceDeliveries(
   assertAdministrativeReports(context);
   const query = deliveryQuerySchema.parse(input),
     client = await createClient();
-  const { data, error } = await client.rpc("list_finance_deliveries", {
+  const { data, error } = await client.rpc("list_finance_deliveries_with_transfers", {
     p_church_id: context.churchId,
     p_month: query.month,
     p_include_inactive: query.includeInactive,

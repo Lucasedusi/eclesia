@@ -59,6 +59,7 @@ type Guard = {
   discard: () => void | boolean;
 };
 type Navigation = {
+  headquartersId?: string;
   navigate: (url: string) => void;
   refresh: () => void;
   isPending: boolean;
@@ -198,7 +199,7 @@ export function FinanceShell({
   return (
     <FinanceThemeProvider>
       <NavigationContext.Provider
-        value={{ navigate, register, refresh, isPending }}
+        value={{ navigate, register, refresh, isPending, headquartersId: context.units.find(u => u.isHeadquarters)?.id }}
       >
         <Workspace
           className="finance"

@@ -152,6 +152,9 @@ export function FinanceEntryForm({
       c.status === "ACTIVE" &&
       (c.direction === direction || c.direction === "BOTH"),
   );
+  const deliveryTransfer = !initialTransaction && direction === "INCOME" && financeNavigation.headquartersId === unit &&
+    state.contributor?.kind === "CONGREGATION" && state.contributor.congregationId !== unit &&
+    lines.some(line => categories.some(category => category.id === line.categoryId && category.informativeRole === "TRANSFER"));
   const total = lines.reduce((sum, l) => {
     try {
       return sum + parseMoneyInput(l.amount);
@@ -486,6 +489,11 @@ export function FinanceEntryForm({
           <FinanceDateField label="Mês de referência" monthOnly withCalendar value={state.referenceMonth}
             onChange={iso => change({ referenceMonth: iso })} />
         </div>
+        {deliveryTransfer && <p className="muted" role="status">
+          {state.referenceMonth && state.date.slice(0, 7) > state.referenceMonth
+            ? `Este repasse conta para a entrega do relatório de ${state.referenceMonth.split("-").reverse().join("/")}.`
+            : "Para registrar a entrega pelo repasse, escolha um mês de referência anterior à data do lançamento."}
+        </p>}
         <div className="grid">
           <FinanceSelect label="Caixa ou conta"
             value={state.cashboxId}

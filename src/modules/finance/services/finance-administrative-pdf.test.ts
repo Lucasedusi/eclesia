@@ -123,6 +123,9 @@ it("renders delivered and pending rows with date, deadline and count across page
       id: String(i),
       name: `Congregação Jardim Esperança ${i + 1}`,
       status: "ACTIVE",
+      source: i % 2 ? null : "TRANSFER",
+      transfer: null,
+      transferHistory: [],
       deliveryDate: i % 2 ? null : "2026-10-10",
       revision: 0,
       history: [],
@@ -132,6 +135,7 @@ it("renders delivered and pending rows with date, deadline and count across page
   try {
     const bytes = await createFinanceReportPdf(data);
     const text = draw.mock.calls.map(([s]) => s).join(" ");
+    expect(text).toContain("Automática por repasse");
     expect(text).toContain("Com atraso");
     expect(text).toContain("Em atraso");
     expect(text).toContain("90");

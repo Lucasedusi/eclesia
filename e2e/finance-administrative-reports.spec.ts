@@ -240,3 +240,49 @@ async function readPdf(page: Page) {
   expect(bytes.subarray(0, 4).toString()).toBe("%PDF");
   return bytes;
 }
+
+test("a cathedral repasse delivers the payer's report and allows a manual date", async ({ page }) => {
+  const f = fixture();
+  const deliveries = `/financeiro/relatorios/entregas?unidade=${f.headquartersId}&mes=2026-08`;
+  await page.goto(`/financeiro/lancamentos?novo=entrada&unidade=${f.headquartersId}&mes=2026-10`);
+  const form = page.getByRole("dialog", { name: "Nova entrada" });
+  await form.getByRole("combobox", { name: /Identificação/ }).selectOption("CONGREGATION");
+  await form.getByLabel("Nome da congregação").fill("Unit A");
+  await form.getByRole("button", { name: "Buscar congregação" }).click();
+  await form.getByRole("button", { name: "Unit A", exact: true }).click();
+  await form.getByLabel("Data", { exact: true }).fill("05/10/2026");
+  await form.getByLabel("Caixa ou conta", { exact: true }).selectOption(f.boxes[f.headquartersId].cash);
+  await form.getByLabel("Categoria", { exact: true }).selectOption(f.repasseId);
+  await expect(form.getByText(/escolha um mês de referência anterior/)).toBeVisible();
+  await form.getByLabel("Mês de referência", { exact: true }).fill("08/2026");
+  await expect(form.getByText(/conta para a entrega do relatório de 08\/2026/)).toBeVisible();
+  await form.getByLabel("Valor (R$)", { exact: true }).fill("123,45");
+  await form.getByRole("button", { name: "Salvar", exact: true }).click();
+  await expect(form).toHaveCount(0);
+
+  await page.goto(deliveries);
+  const row = page.getByRole("row").filter({ hasText: "Unit A" });
+  await expect(row).toContainText("Automática por repasse");
+  await expect(row).toContainText("05/10/2026");
+  await row.getByRole("link", { name: "Ver lançamento" }).click();
+  const details = page.getByRole("dialog", { name: "Detalhes do lançamento" });
+  await expect(details).toContainText("123,45");
+  await expect(details).toContainText("08/2026");
+  await page.goto(deliveries);
+  await row.getByRole("button", { name: "Registrar data manual" }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Data da entrega", { exact: true }).fill("07/09/2026");
+  await dialog.getByRole("button", { name: "Registrar data manual" }).click();
+  await expect(row.getByRole("cell", { name: "Manual", exact: true })).toBeVisible();
+  await expect(row).toContainText("No prazo");
+  await row.getByRole("button", { name: "Histórico" }).click();
+  await expect(dialog).toContainText("Repasse considerado");
+  await expect(dialog).toContainText("Entrega registrada");
+  await dialog.getByRole("button", { name: /Fechar/ }).click();
+  await row.getByRole("button", { name: "Corrigir" }).click();
+  await dialog.getByRole("button", { name: "Desfazer registro de entrega" }).click();
+  await dialog.getByLabel("Motivo da alteração").fill("Conferido o repasse de origem");
+  await dialog.getByRole("button", { name: "Desfazer entrega", exact: true }).click();
+  await expect(row).toContainText("Automática por repasse");
+  await expect(row).toContainText("05/10/2026");
+});

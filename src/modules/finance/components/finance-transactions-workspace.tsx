@@ -24,6 +24,7 @@ export function FinanceTransactionsWorkspace({
   unit,
   month,
   date,
+  initialDetail,
   catalogs,
   capabilities,
   result,
@@ -34,6 +35,7 @@ export function FinanceTransactionsWorkspace({
   unit: string;
   month: string;
   date: string;
+  initialDetail?: FinanceTransactionDetail | null;
   catalogs: FinanceCatalogs;
   capabilities: FinanceCapabilities;
   result: FinanceTransactionPage;
@@ -88,6 +90,7 @@ export function FinanceTransactionsWorkspace({
   return (
     <div className="stack">
       <FinanceTransactionsTable
+        initialDetail={initialDetail}
         unit={unit}
         month={month}
         catalogs={catalogs}
