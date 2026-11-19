@@ -100,10 +100,10 @@ it("uses historical balances and includes active zeros and inactive nonzero bala
     catalogRow(14, "INACTIVE"),
   ]);
   const result = await getDailyCashFlowReport(context, request);
-  expect(db.rpc).toHaveBeenCalledWith("get_finance_daily_cash_flow_report", {
+  expect(db.rpc).toHaveBeenCalledWith("get_finance_daily_report_for_boxes", {
     p_church_id: context.churchId,
     p_day: request.date,
-    p_box: undefined,
+    p_boxes: undefined,
     p_detail: false,
     p_payments: false,
   });

@@ -687,7 +687,8 @@ export async function createFinanceReportPdf(
     const scopeLines =
       daily && !balanceOnly && data.box
         ? wrap(data.boxes[0].name, 220, 8, bold)
-        : [];
+        : daily && !balanceOnly && data.selectedCount
+          ? [`${data.selectedCount} caixas selecionados`] : [];
     scopeLines.forEach((line, i) =>
       draw(
         line,

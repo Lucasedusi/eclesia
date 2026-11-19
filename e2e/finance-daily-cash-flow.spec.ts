@@ -117,7 +117,7 @@ test("emite os três PDFs pelo modal sem herdar os filtros da listagem", async (
   await page.getByRole("button", { name: "Relatórios", exact: true }).click();
   const dialog = page.getByRole("dialog");
   await expect(dialog.getByText("01/10/2026")).toBeVisible();
-  await expect(dialog.getByLabel("Caixas e contas")).toHaveValue("");
+  await expect(dialog.getByLabel("Caixas e contas", {exact:true})).toHaveText("Todos os caixas e contas");
   await expect(dialog.getByRole("radio", { name: /Resumido/ })).toBeChecked();
   const payments = dialog.getByLabel("Incluir resumo por forma de pagamento");
   await expect(payments).not.toBeChecked();
@@ -125,7 +125,14 @@ test("emite os três PDFs pelo modal sem herdar os filtros da listagem", async (
   for (const mode of ["resumido", "detalhado", "resumo-de-caixa"]) {
     if (mode === "detalhado") {
       await dialog.getByRole("radio", { name: /Detalhado/ }).check();
-      await dialog.getByLabel("Caixas e contas").selectOption(box);
+      const picker = dialog.getByLabel("Caixas e contas", { exact: true });
+      await picker.click();
+      await dialog.getByLabel("Todos os caixas e contas", { exact: true }).uncheck();
+      await expect(dialog.getByRole("button", { name: "Gerar PDF" })).toBeDisabled();
+      await dialog.getByLabel("Caixa principal", { exact: true }).check();
+      await dialog.getByLabel("Conta bancária", { exact: true }).check();
+      await expect(picker).toHaveText("2 caixas selecionados");
+      await page.keyboard.press("Escape");
       await payments.check();
     }
     if (mode === "resumo-de-caixa") {
@@ -142,6 +149,7 @@ test("emite os três PDFs pelo modal sem herdar os filtros da listagem", async (
     await dialog.getByRole("button", { name: "Gerar PDF" }).click();
     const pdf = await response;
     expect(pdf.status()).toBe(200);
+    if (mode === "detalhado") expect(pdf.request().postDataJSON().boxIds).toEqual([box, fixture.boxes[fixture.headquartersId].bank]);
     if (mode === "resumo-de-caixa")
       expect(pdf.request().postDataJSON()).toEqual({
         type: "DAILY",

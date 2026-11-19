@@ -9201,6 +9201,16 @@ export type Database = {
         }
         Returns: Json
       }
+      get_finance_daily_report_for_boxes: {
+        Args: {
+          p_boxes?: string[]
+          p_church_id: string
+          p_day: string
+          p_detail?: boolean
+          p_payments?: boolean
+        }
+        Returns: Json
+      }
       get_finance_informative_report: {
         Args: { p_church_id: string; p_options: Json; p_unit: string }
         Returns: Json

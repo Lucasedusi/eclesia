@@ -1,8 +1,9 @@
 "use client";
-import { FinanceSelect } from "./finance-select";
+import { FinanceFieldPopup } from "./finance-field-popup";
+import styles from "./finance-pickers.module.css";
 
-import { useState } from "react";
-import { FileText } from "lucide-react";
+import { useId, useRef, useState } from "react";
+import { ChevronDown, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { useFinanceReportPdf } from "../hooks/use-finance-report-pdf";
@@ -23,7 +24,7 @@ export function FinanceDailyReportDialog({
   filtered: boolean;
   onClose: () => void;
 }) {
-  const [box, setBox] = useState("");
+  const [boxIds, setBoxIds] = useState<string[] | null>(null);
   const [presentation, setPresentation] =
     useState<DailyReportOptions["presentation"]>("SUMMARY");
   const [includePayments, setIncludePayments] = useState(false);
@@ -34,7 +35,7 @@ export function FinanceDailyReportDialog({
       : {
           type: "DAILY",
           date,
-          box: box || undefined,
+          boxIds: boxIds ?? undefined,
           presentation,
           includePayments,
         },
@@ -50,7 +51,7 @@ export function FinanceDailyReportDialog({
         <Button
           onClick={report.generate}
           loading={report.busy}
-          disabled={report.busy || report.isPending}
+          disabled={report.busy || report.isPending || (!balances && boxIds?.length === 0)}
         >
           <FileText size={16} />
           Gerar PDF
@@ -110,15 +111,7 @@ export function FinanceDailyReportDialog({
             <p>Inclui todos os caixas e contas da Catedral.</p>
           ) : (
             <>
-              <FinanceSelect label="Caixas e contas" value={box} onChange={(e) => setBox(e.target.value)}>
-                <option value="">Todos os caixas e contas</option>
-                {boxes.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name}
-                    {b.status === "INACTIVE" ? " (inativo)" : ""}
-                  </option>
-                ))}
-              </FinanceSelect>
+              <ReportBoxPicker boxes={boxes} selected={boxIds} onChange={setBoxIds} />
               <label className="check">
                 <input
                   type="checkbox"
@@ -158,5 +151,39 @@ export function FinanceDailyReportDialog({
         )}
       </div>
     </Modal>
+  );
+}
+
+function ReportBoxPicker({ boxes, selected, onChange }: {
+  boxes: DailyCashFlowPage["cashboxes"];
+  selected: string[] | null;
+  onChange: (ids: string[] | null) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const anchor = useRef<HTMLButtonElement>(null);
+  const id = useId();
+  const all = "Todos os caixas e contas";
+  const label = selected === null ? all : selected.length === 0 ? "Selecione os caixas"
+    : selected.length === 1 ? boxes.find(box => box.id === selected[0])?.name
+    : `${selected.length} caixas selecionados`;
+  return (
+    <div className={styles.field}>
+      <label htmlFor={id}>Caixas e contas</label>
+      <button type="button" id={id} ref={anchor} className={styles.multiTrigger}
+        aria-expanded={open} aria-controls={open ? id + "-options" : undefined}
+        onClick={() => setOpen(!open)}>{label}<ChevronDown size={16} aria-hidden="true" /></button>
+      {open && <FinanceFieldPopup anchor={anchor} onDismiss={() => setOpen(false)}>
+        <div id={id + "-options"} role="group" aria-label="Selecionar caixas e contas" className={styles.multiOptions}>
+          <label><input type="checkbox" checked={selected === null}
+            onChange={() => onChange(selected === null ? [] : null)} />{all}</label>
+          {boxes.map(box => <label key={box.id}>
+            <input type="checkbox" checked={selected?.includes(box.id) ?? false}
+              onChange={event => onChange(event.target.checked ? [...(selected ?? []), box.id]
+                : (selected ?? []).filter(id => id !== box.id))} />
+            {box.name}{box.status === "INACTIVE" ? " (inativo)" : ""}
+          </label>)}
+        </div>
+      </FinanceFieldPopup>}
+    </div>
   );
 }

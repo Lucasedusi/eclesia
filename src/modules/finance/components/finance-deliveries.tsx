@@ -16,12 +16,16 @@ import { financeLocation } from "../utils/finance-navigation";
 import { useFinanceReportPdf } from "../hooks/use-finance-report-pdf";
 import { useFinanceDesktop } from "../hooks/use-finance-desktop";
 import { FinanceEmpty } from "./finance-empty";
-import { Monitor } from "lucide-react";
+import { Eye, FileText, History, Monitor, Pencil, Plus } from "lucide-react";
 import { FinanceDeliveryForm } from "./finance-delivery-form";
 const date = (v: string) => v.split("-").reverse().join("/");
 function transferLink(transfer: NonNullable<DeliveryRow["transfer"]>) {
   return <Link className="finance-secondary-link" href={financeLocation("/financeiro/lancamentos",
-    transfer.unit, transfer.date.slice(0, 7), { detalhe: transfer.id })}>Ver lançamento</Link>;
+    transfer.unit, transfer.date.slice(0, 7), { detalhe: transfer.id })} aria-label="Ver lançamento" title="Ver lançamento"><Eye size={16} aria-hidden="true" /> Ver</Link>;
+}
+function deliveryActionLabel(row: DeliveryRow) {
+  if (row.source === "MANUAL") return "Corrigir";
+  return row.transfer ? "Registrar data manual" : "Registrar entrega";
 }
 const labels = {
   ALL: "Todas",
@@ -31,7 +35,6 @@ const labels = {
 type FinanceDeliveriesProps = {
   initial: DeliveryProjection;
   unit: string;
-  canConfigure: boolean;
 };
 export function FinanceDeliveries(props: FinanceDeliveriesProps) {
   const desktop = useFinanceDesktop();
@@ -60,7 +63,6 @@ export function FinanceDeliveries(props: FinanceDeliveriesProps) {
 function FinanceDeliveriesContent({
   initial,
   unit,
-  canConfigure,
 }: FinanceDeliveriesProps) {
   const [data, setData] = useState(initial),
     [month, setMonth] = useState(initial.month),
@@ -172,17 +174,7 @@ function FinanceDeliveriesContent({
               ? `Entrega até ${date(data.dueDate)}`
               : "Consultando período…"}
           </p>
-          {canConfigure && (
-            <Link
-              className="finance-report-link"
-              href={
-                financeLocation("/financeiro/configuracoes", unit, month) +
-                "&area=entregas"
-              }
-            >
-              Configurar prazo
-            </Link>
-          )}
+
         </div>
         <div
           className="tabs finance-delivery-tabs"
@@ -221,7 +213,7 @@ function FinanceDeliveriesContent({
               onClick={() => void pdf.generate()}
               loading={pdf.busy}
             >
-              Gerar PDF
+              <FileText size={16} aria-hidden="true" /> Gerar PDF
             </Button>
           </div>
           {rows.length ? (
@@ -254,8 +246,8 @@ function FinanceDeliveriesContent({
                         </span>
                       </td>
                       <td data-label="Origem">
-                        {deliverySourceLabel(row.source)}
-                        {row.source === "TRANSFER" && row.transfer && <div>{transferLink(row.transfer)}</div>}
+                        <span className="finance-delivery-origin">{deliverySourceLabel(row.source)}
+                        {row.source === "TRANSFER" && row.transfer && transferLink(row.transfer)}</span>
                       </td>
                       <td data-label="Data da entrega">
                         {row.deliveryDate ? date(row.deliveryDate) : "—"}
@@ -273,21 +265,18 @@ function FinanceDeliveriesContent({
                       </td>
                       <td data-label="Ações">
                         <div className="row finance-delivery-actions">
-                          <Button
-                            variant="outline"
-                            onClick={() => setEditing(row)}
-                          >
-                            {row.source === "MANUAL"
-                              ? "Corrigir"
-                              : row.transfer ? "Registrar data manual"
-                              : "Registrar entrega"}
+                          <Button variant="outline" size="sm" className="finance-icon-button"
+                            title={deliveryActionLabel(row)} aria-label={deliveryActionLabel(row)}
+                            onClick={() => setEditing(row)}>
+                            {row.source === "MANUAL" ? <Pencil size={16} /> : <Plus size={16} />}
                           </Button>
                           {(row.history.length > 0 || row.transferHistory.length > 0) && (
                             <Button
                               variant="outline"
+                              className="finance-icon-button" size="sm" title="Histórico" aria-label="Histórico"
                               onClick={() => setHistory(row)}
                             >
-                              Histórico
+                              <History size={16} aria-hidden="true" />
                             </Button>
                           )}
                         </div>

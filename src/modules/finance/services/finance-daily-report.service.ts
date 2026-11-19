@@ -23,14 +23,15 @@ export async function getDailyCashFlowReport(
     throw new FinanceReportError("FORBIDDEN");
   const options = dailyReportOptions.parse(input);
   const balanceOnly = options.presentation === "BALANCES";
-  const boxId = balanceOnly ? undefined : options.box;
+  const ids = balanceOnly ? undefined : options.boxIds ?? (options.box ? [options.box] : undefined);
+  const boxId = ids?.length === 1 ? ids[0] : undefined;
   const client = await createClient();
   const { data, error } = await client.rpc(
-    "get_finance_daily_cash_flow_report",
+    "get_finance_daily_report_for_boxes",
     {
       p_church_id: context.churchId,
       p_day: options.date,
-      p_box: boxId,
+      p_boxes: ids,
       p_detail: options.presentation === "DETAIL",
       p_payments: !balanceOnly && options.includePayments,
     },
@@ -54,7 +55,8 @@ export async function getDailyCashFlowReport(
   )
     throw new FinanceReportError("UNAVAILABLE");
   const snapshot = parsed.data;
-  if (boxId && (snapshot.boxes.length !== 1 || snapshot.boxes[0].id !== boxId))
+  const returned = new Set(snapshot.boxes.map(box => box.id));
+  if (ids && (snapshot.boxes.length !== ids.length || ids.some(id => !returned.has(id))))
     throw new FinanceReportError("UNAVAILABLE");
   // The report RPC resolves and authorizes the Cathedral even when another unit is selected.
   const unitContext = { ...context, congregationId: snapshot.unitId };
@@ -90,6 +92,7 @@ export async function getDailyCashFlowReport(
     presentation: options.presentation,
     includePayments: options.includePayments,
     summary,
+    selectedCount: ids?.length,
     emissionId: randomUUID(),
   };
 }

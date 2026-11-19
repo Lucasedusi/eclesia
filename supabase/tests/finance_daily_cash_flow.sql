@@ -36,6 +36,16 @@ begin
   assert jsonb_array_length(result->'boxes')=2 and result->>'unitId'=hq::text, 'report only includes Cathedral accounts';
   assert result->'payments'='[{"method":"Dinheiro","income":10000,"expense":2500}]'::jsonb, 'payments exclude internal movements';
   assert (select sum((b->>'closing')::numeric) from jsonb_array_elements(result->'boxes') b)=207800, 'report reconciles all boxes';
+  assert public.get_finance_daily_report_for_boxes(church,'2026-10-02',array[cash,bank],false,true)=result,
+    'both sides of the transfer reconcile including payments';
+  begin
+    perform public.get_finance_daily_report_for_boxes(church,'2026-10-02',array[cash,other_box]);
+    raise exception 'Mixed-scope selection accepted';
+  exception when insufficient_privilege then null; end;
+  begin
+    perform public.get_finance_daily_report_for_boxes(church,'2026-10-02',array[]::uuid[]);
+    raise exception 'Empty selection accepted';
+  exception when invalid_parameter_value then null; end;
   result := public.get_finance_daily_cash_flow_report(church,'2026-10-02',cash);
   assert result->'payments'='[]'::jsonb and (result#>>'{boxes,0,opening}')::numeric=200000, 'single account scope';
   assert (select bool_and(c->'items'='[]'::jsonb and (c->>'count')::int=1) from jsonb_array_elements(result#>'{boxes,0,categories}') c), 'summary only returns aggregates';
@@ -98,6 +108,16 @@ begin
     perform public.get_finance_daily_cash_flow_report('20000000-0000-4000-8000-000000000002','2026-10-02');
     raise exception 'accepted report from another church';
   exception when insufficient_privilege then null; end;
+  -- Choose two of three Cathedral accounts, one empty. The omitted cash
+  -- transactions must not contribute categories, payments or closing balance.
+  other_box := (public.save_finance_catalog(church,jsonb_build_object('entity','CASHBOX','kind','CASH',
+    'congregationId',hq,'name','Reserva sem movimento','openingDate','2026-10-01',
+    'openingCents',0,'paymentMethodIds',jsonb_build_array(method)))->>'id')::uuid;
+  result := public.get_finance_daily_report_for_boxes(church,'2026-10-06',array[bank,other_box],true,true);
+  assert jsonb_array_length(result->'boxes')=2 and result->'payments'='[]'::jsonb;
+  assert not exists(select from jsonb_array_elements(result->'boxes') b where (b->>'id')::uuid=cash);
+  assert (select sum((b->>'closing')::numeric) from jsonb_array_elements(result->'boxes') b)=500;
+  assert not has_function_privilege('anon','public.get_finance_daily_report_for_boxes(uuid,date,uuid[],boolean,boolean)','execute');
   assert not has_function_privilege('anon','public.get_finance_daily_cash_flow_report(uuid,date,uuid,boolean,boolean)','execute'), 'anonymous report grant';
   assert not has_function_privilege('anon','public.get_finance_daily_cash_flow(uuid,jsonb)','execute'), 'anonymous grant';
 end $$;

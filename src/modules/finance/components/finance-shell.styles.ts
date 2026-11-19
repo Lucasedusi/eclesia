@@ -1203,8 +1203,10 @@ export const Workspace = styled.div`
   .finance-delivery-badge.is-late { background: #fce6e8; color: #a62f3d; }
   .finance-delivery-table th:last-child { text-align: right; }
   .finance-delivery-table th:last-child, .finance-delivery-table td:last-child { padding-right: 0; }
-  .finance-delivery-table td:last-child { width: 240px; }
-  .finance-delivery-table td:last-child .finance-delivery-actions { justify-content: flex-end; }
+  .finance-delivery-table td:last-child { width: 100px; }
+  .finance-delivery-origin, .finance-delivery-origin a { display: inline-flex; align-items: center; gap: 6px; }
+  .finance-delivery-origin a { white-space: nowrap; }
+  .finance-delivery-table td:last-child .finance-delivery-actions { display: flex; flex-flow: row nowrap; justify-content: flex-end; gap: 6px; }
   .finance-deliveries .empty h3 { color: #52695e; }
   .finance-deliveries .empty p { margin: 8px 0 0; }
   .finance-delivery-desktop-notice > svg { color: #087f5b; }

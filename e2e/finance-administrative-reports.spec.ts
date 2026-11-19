@@ -264,7 +264,17 @@ test("a cathedral repasse delivers the payer's report and allows a manual date",
   const row = page.getByRole("row").filter({ hasText: "Unit A" });
   await expect(row).toContainText("Automática por repasse");
   await expect(row).toContainText("05/10/2026");
-  await row.getByRole("link", { name: "Ver lançamento" }).click();
+  const view = row.getByRole("link", { name: "Ver lançamento" });
+  await expect(view).toHaveText("Ver");
+  const register = row.getByRole("button", { name: "Registrar data manual" });
+  const history = row.getByRole("button", { name: "Histórico" });
+  await expect(register).toHaveText("");
+  await expect(history).toHaveText("");
+  const [left, right] = await Promise.all([register.boundingBox(), history.boundingBox()]);
+  expect(left!.y).toBeCloseTo(right!.y, 0);
+  expect(right!.x).toBeGreaterThan(left!.x);
+  await expect(page.getByRole("link", { name: "Configurar prazo" })).toHaveCount(0);
+  await view.click();
   const details = page.getByRole("dialog", { name: "Detalhes do lançamento" });
   await expect(details).toContainText("123,45");
   await expect(details).toContainText("08/2026");

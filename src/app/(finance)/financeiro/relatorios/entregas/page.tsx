@@ -24,7 +24,6 @@ async function Content({
       key={`${context.congregationId}-${month}`}
       initial={data}
       unit={context.congregationId}
-      canConfigure={context.capabilities.manageSettings}
     />
   );
 }
