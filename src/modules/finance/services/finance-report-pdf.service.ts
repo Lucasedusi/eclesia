@@ -21,7 +21,7 @@ import type { FinanceReportDocument } from "../types/finance-report.types";
 import { wrapReportText } from "../utils/finance-report-layout";
 import { formatMoney } from "../utils/finance-money";
 import { groupReportClassifications } from "../utils/finance-report-groups";
-import { drawFinanceEvolutionChart } from "./finance-evolution-chart";
+import { drawFinanceEvolutionChart, FINANCE_CHART_MONTHS } from "./finance-evolution-chart";
 const M = 34.02;
 const ink = rgb(0.09, 0.19, 0.16),
   muted = rgb(0.34, 0.4, 0.38),
@@ -1293,19 +1293,22 @@ export async function createFinanceReportPdf(
     );
     if (data.includeChart) {
       const chartHeight = 286;
-      ensure(chartHeight + 12);
-      y += 12;
-      drawFinanceEvolutionChart({
-        page: page!,
-        months: data.months,
-        x: M,
-        top: H - y,
-        width: CW,
-        height: chartHeight,
-        regular,
-        bold,
-      });
-      y += chartHeight;
+      for (let startIndex = 0; startIndex < data.months.length; startIndex += FINANCE_CHART_MONTHS) {
+        ensure(chartHeight + 12);
+        y += 12;
+        drawFinanceEvolutionChart({
+          page: page!,
+          months: data.months,
+          startIndex,
+          x: M,
+          top: H - y,
+          width: CW,
+          height: chartHeight,
+          regular,
+          bold,
+        });
+        y += chartHeight;
+      }
     }
     return finish();
   }

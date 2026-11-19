@@ -2,6 +2,7 @@ import { expect, it, vi } from "vitest";
 import { mkdir, writeFile } from "node:fs/promises";
 import { PDFDocument, PDFPage } from "pdf-lib";
 import type { FinanceInformativeReportDocument } from "../types/finance-informative-report.types";
+import { formatFinanceMonth } from "../utils/finance-period";
 vi.mock("server-only", () => ({}));
 import { createFinanceReportPdf } from "./finance-report-pdf.service";
 function fixture(n = 3): FinanceInformativeReportDocument {
@@ -127,53 +128,66 @@ it("paginates long ranges and keeps large negative amounts inside the printable 
   }
 });
 
-it.each([1, 3, 12, 60])(
-  "draws an optional monthly chart for %s months including losses and zero months",
+it.each([1, 2, 3, 12, 13, 60])(
+  "draws two bars per month in blocks of at most 12 months (%s months)",
   async (count) => {
     const input = { ...fixture(count), includeChart: true };
     input.months.forEach((row, index) => {
       row.summary = {
         ...row.summary,
         incomeCents:
-          count === 3 || index % 3 === 0 ? 0 : 150000 + index * 12000,
-        expenseCents: count === 3 ? 0 : index % 3 === 1 ? 90000 : 120000,
+          count === 3 ? 0 : count === 2 ? -150000 : 150000 + index * 12000,
+        expenseCents: count === 3 ? 0 : 90000,
       };
     });
     const draw = vi.spyOn(PDFPage.prototype, "drawText");
+    const rectangles = vi.spyOn(PDFPage.prototype, "drawRectangle");
     const points = vi.spyOn(PDFPage.prototype, "drawCircle");
     try {
       const bytes = await createFinanceReportPdf(input);
-      expect(points).toHaveBeenCalledTimes(count * 3);
-      for (const [point] of points.mock.calls) {
-        expect(point!.x).toBeGreaterThan(34);
-        expect(point!.x).toBeLessThan(808);
-        expect(point!.y).toBeGreaterThan(49);
-        expect(point!.y).toBeLessThan(540);
+      const headings = draw.mock.calls.filter(
+        ([value]) => value === "Evolução financeira mensal",
+      );
+      expect(headings).toHaveLength(Math.ceil(count / 12));
+      expect(points).not.toHaveBeenCalled();
+      const bars = rectangles.mock.calls.filter(
+        ([options]) => options!.opacity === 0.9,
+      );
+      expect(bars).toHaveLength(count * 2);
+      if (count === 2) {
+        expect(
+          bars.filter(
+            ([bar]) => bar?.color?.type === "RGB" && bar.color.red === 0.6,
+          ),
+        ).toHaveLength(2);
+      }
+      for (const [bar] of bars) {
+        expect(bar!.x).toBeGreaterThan(34);
+        expect(bar!.x! + bar!.width!).toBeLessThan(808);
+        expect(bar!.y).toBeGreaterThan(49);
+        expect(bar!.y! + bar!.height!).toBeLessThan(540);
+      }
+      if (count !== 3) {
+        // Identical monthly expenses retain identical heights across every block.
+        const expenseBars = bars.filter(
+          ([bar]) => bar?.color?.type === "RGB" && bar.color.red === 0.7,
+        );
+        expect(expenseBars).toHaveLength(count);
+        expenseBars.forEach(([bar]) =>
+          expect(bar!.height).toBeCloseTo(expenseBars[0][0]!.height!),
+        );
       }
       const text = draw.mock.calls.map(([value]) => value).join(" ");
-      const zeroLabel = draw.mock.calls.find(([value]) =>
-        /^R\$\s0,00$/.test(value),
-      );
-      const zeroY = zeroLabel![1]!.y! + 3;
-      for (let index = 0; index < count; index++) {
-        const income = points.mock.calls[index][0]!;
-        const expense = points.mock.calls[count + index][0]!;
-        const result = points.mock.calls[count * 2 + index][0]!;
-        expect(result.y).toBeCloseTo(income.y! - expense.y! + zeroY);
-        if (
-          input.months[index].summary.incomeCents <
-          input.months[index].summary.expenseCents
-        )
-          expect(result.color).toEqual({
-            type: "RGB",
-            red: 0.6,
-            green: 0.23,
-            blue: 0.26,
-          });
+      for (const row of input.months) {
+        expect(
+          draw.mock.calls.filter(
+            ([value]) => value === formatFinanceMonth(row.month),
+          ),
+        ).toHaveLength(2);
       }
-      expect(text).toContain("Evolução financeira mensal");
-      expect(text).toContain("Resultado do mês");
-      expect(text).toContain("Entradas menos saídas");
+      expect(text).not.toContain("Resultado do mês");
+      expect(text).toContain("Entradas");
+      expect(text).toContain("Saídas");
       const document = await PDFDocument.load(bytes);
       for (const page of document.getPages())
         expect(page.getWidth()).toBeCloseTo(841.89);
@@ -186,10 +200,11 @@ it.each([1, 3, 12, 60])(
       }
       if (process.env.REPORT_PDF_QA) {
         await mkdir("tmp/reports", { recursive: true });
-        await writeFile(`tmp/reports/evolucao-${count}.pdf`, bytes);
+        await writeFile(`tmp/reports/barras-${count}.pdf`, bytes);
       }
     } finally {
       draw.mockRestore();
+      rectangles.mockRestore();
       points.mockRestore();
     }
   },

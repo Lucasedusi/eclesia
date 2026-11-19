@@ -1,18 +1,18 @@
 import "server-only";
-import { rgb, type PDFFont, type PDFPage, type RGB } from "pdf-lib";
+import { rgb, type PDFFont, type PDFPage } from "pdf-lib";
 import type { FinanceInformativeReportDocument } from "../types/finance-informative-report.types";
 import { formatFinanceMonth } from "../utils/finance-period";
-import { formatMoney } from "../utils/finance-money";
 
 const green = rgb(0.02, 0.4, 0.28);
 const red = rgb(0.6, 0.23, 0.26);
 const orange = rgb(0.7, 0.36, 0.08);
-const blue = rgb(0.16, 0.34, 0.63);
 const muted = rgb(0.34, 0.4, 0.38);
+export const FINANCE_CHART_MONTHS = 12;
 
 export function drawFinanceEvolutionChart({
   page,
   months,
+  startIndex,
   x,
   top,
   width,
@@ -22,6 +22,7 @@ export function drawFinanceEvolutionChart({
 }: {
   page: PDFPage;
   months: FinanceInformativeReportDocument["months"];
+  startIndex: number;
   x: number;
   top: number;
   width: number;
@@ -29,28 +30,45 @@ export function drawFinanceEvolutionChart({
   regular: PDFFont;
   bold: PDFFont;
 }) {
+  const block = months.slice(startIndex, startIndex + FINANCE_CHART_MONTHS);
   const series = [
     {
       label: "Entradas",
       color: green,
-      dash: [],
-      values: months.map(({ summary }) => summary.incomeCents / 100),
+      values: block.map(({ summary }) => summary.incomeCents / 100),
     },
     {
       label: "Saídas",
       color: orange,
-      dash: [5, 3],
-      values: months.map(({ summary }) => summary.expenseCents / 100),
-    },
-    {
-      label: "Resultado do mês",
-      color: blue,
-      dash: [2, 2],
-      values: months.map(
-        ({ summary }) => (summary.incomeCents - summary.expenseCents) / 100,
-      ),
+      values: block.map(({ summary }) => summary.expenseCents / 100),
     },
   ];
+
+  // Every block uses the full period's scale so heights can be compared across pages.
+  const values = months.flatMap(({ summary }) => [
+    summary.incomeCents / 100,
+    summary.expenseCents / 100,
+  ]);
+  const min = Math.min(0, ...values);
+  const max = Math.max(0, ...values);
+  const largest = Math.max(Math.abs(min), max);
+  const units = [
+    { divisor: 1e12, label: "Valores em trilhões de reais" },
+    { divisor: 1e9, label: "Valores em bilhões de reais" },
+    { divisor: 1e6, label: "Valores em milhões de reais" },
+    { divisor: 1e3, label: "Valores em milhares de reais" },
+    { divisor: 1, label: "Valores em reais" },
+  ];
+  const unit =
+    units.find(({ divisor }) => largest >= divisor) ?? units[units.length - 1];
+  const number = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 });
+  const labelFor = (value: number) => {
+    const scaled = value / unit.divisor;
+    if (scaled !== 0 && Math.abs(scaled) < 0.01)
+      return scaled < 0 ? "> -0,01" : "< 0,01";
+    return number.format(scaled);
+  };
+
   page.drawText("Evolução financeira mensal", {
     x,
     y: top - 13,
@@ -58,61 +76,54 @@ export function drawFinanceEvolutionChart({
     font: bold,
     color: green,
   });
-  page.drawText("Resultado do mês = Entradas menos saídas", {
-    x,
-    y: top - 30,
-    size: 9,
-    font: regular,
-    color: muted,
-  });
+  page.drawText(
+    `${formatFinanceMonth(block[0].month)} a ${formatFinanceMonth(block.at(-1)!.month)} · ${unit.label}`,
+    { x, y: top - 30, size: 9, font: regular, color: muted },
+  );
   let legendX = x;
   for (const item of series) {
-    page.drawLine({
-      start: { x: legendX, y: top - 49 },
-      end: { x: legendX + 23, y: top - 49 },
-      thickness: 1.8,
+    page.drawRectangle({
+      x: legendX,
+      y: top - 53,
+      width: 10,
+      height: 10,
       color: item.color,
-      dashArray: item.dash,
     });
     page.drawText(item.label, {
-      x: legendX + 29,
+      x: legendX + 16,
       y: top - 52,
       size: 9,
       font: regular,
       color: muted,
     });
-    legendX += regular.widthOfTextAtSize(item.label, 9) + 54;
+    legendX += regular.widthOfTextAtSize(item.label, 9) + 44;
   }
 
-  // Keep zero in the scale and use readable intervals, including all-zero periods.
-  const values = series.flatMap((item) => item.values);
-  const min = Math.min(0, ...values);
-  const max = Math.max(0, ...values);
+  // Include zero and choose readable grid intervals, including all-zero periods.
   const target = (max - min || 1) / 4;
   const magnitude = 10 ** Math.floor(Math.log10(target));
-  const step =
-    [1, 2, 5, 10].find((factor) => factor * magnitude >= target)! * magnitude;
+  const step = Math.max(
+    0.01,
+    [1, 2, 5, 10].find((factor) => factor * magnitude >= target)! * magnitude,
+  );
   const lower = Math.floor(min / step) * step;
   const upper = Math.ceil((max || (min === 0 ? 1 : 0)) / step) * step;
   const tickCount = Math.round((upper - lower) / step);
   const ticks = Array.from(
     { length: tickCount + 1 },
-    (_, index) => lower + step * index,
+    (_, index) => Math.round((lower + step * index) * 100) / 100,
   );
-  const tickLabels = ticks.map((value) => formatMoney(Math.round(value * 100)));
+  const tickLabels = ticks.map(labelFor);
   const labelWidth = Math.max(
     ...tickLabels.map((label) => regular.widthOfTextAtSize(label, 8)),
   );
   const plotLeft = x + labelWidth + 14;
-  const plotRight = x + width - 30;
-  const plotTop = top - 74;
-  const plotBottom = top - height + 28;
-  const pointX = (index: number) =>
-    months.length === 1
-      ? (plotLeft + plotRight) / 2
-      : plotLeft + (index * (plotRight - plotLeft)) / (months.length - 1);
+  const plotRight = x + width - 8;
+  const plotTop = top - 90;
+  const plotBottom = top - height + 35;
   const pointY = (value: number) =>
     plotBottom + ((value - lower) * (plotTop - plotBottom)) / (upper - lower);
+  const zeroY = pointY(0);
 
   ticks.forEach((value, index) => {
     const y = pointY(value);
@@ -131,66 +142,43 @@ export function drawFinanceEvolutionChart({
     });
   });
 
-  // Thin the labels, not the monthly data. Always label the first and last month.
-  const monthLabelWidth = Math.max(
-    ...months.map(({ month }) =>
-      regular.widthOfTextAtSize(formatFinanceMonth(month), 8),
-    ),
-  );
-  const labelIntervals = Math.min(
-    months.length - 1,
-    Math.floor((plotRight - plotLeft) / (monthLabelWidth + 20)),
-  );
-  const labelIndices =
-    labelIntervals === 0
-      ? [0]
-      : Array.from({ length: labelIntervals + 1 }, (_, index) =>
-          Math.round((index * (months.length - 1)) / labelIntervals),
-        );
-  for (const index of labelIndices) {
-    const label = formatFinanceMonth(months[index].month);
-    page.drawText(label, {
-      x: pointX(index) - regular.widthOfTextAtSize(label, 8) / 2,
-      y: plotBottom - 17,
+  const groupWidth = (plotRight - plotLeft) / block.length;
+  const barWidth = Math.min(32, (groupWidth - 12) / 2);
+  for (let index = 0; index < block.length; index++) {
+    const center = plotLeft + groupWidth * (index + 0.5);
+    const month = formatFinanceMonth(block[index].month);
+    page.drawText(month, {
+      x: center - regular.widthOfTextAtSize(month, 8) / 2,
+      y: plotBottom - 27,
       size: 8,
       font: regular,
       color: muted,
     });
-  }
-  for (const item of series) {
-    for (let index = 0; index < item.values.length; index++) {
+    series.forEach((item, seriesIndex) => {
       const value = item.values[index];
-      const point = { x: pointX(index), y: pointY(value) };
-      if (index > 0) {
-        const previous = item.values[index - 1];
-        const start = { x: pointX(index - 1), y: pointY(previous) };
-        const segment = (from: typeof start, to: typeof point, color: RGB) =>
-          page.drawLine({
-            start: from,
-            end: to,
-            thickness: 1.7,
-            color,
-            dashArray: item.dash,
-          });
-        if ((previous < 0 && value > 0) || (previous > 0 && value < 0)) {
-          const zero = {
-            x: start.x + (point.x - start.x) * (-previous / (value - previous)),
-            y: pointY(0),
-          };
-          segment(start, zero, previous < 0 ? red : item.color);
-          segment(zero, point, value < 0 ? red : item.color);
-        } else {
-          segment(start, point, previous < 0 || value < 0 ? red : item.color);
-        }
-      }
-      page.drawCircle({
-        x: point.x,
-        y: point.y,
-        size: 2.2,
-        color: value < 0 ? red : item.color,
-        borderColor: rgb(1, 1, 1),
-        borderWidth: 0.6,
+      const endY = pointY(value);
+      const left = center + (seriesIndex - 1) * (barWidth + 2) + 1;
+      const color = value < 0 ? red : item.color;
+      page.drawRectangle({
+        x: left,
+        y: Math.min(zeroY, endY),
+        width: barWidth,
+        height: Math.abs(endY - zeroY),
+        color,
+        opacity: 0.9,
       });
-    }
+      const label = labelFor(value);
+      const size = Math.min(
+        8,
+        (barWidth + 1) / regular.widthOfTextAtSize(label, 1),
+      );
+      page.drawText(label, {
+        x: left + (barWidth - regular.widthOfTextAtSize(label, size)) / 2,
+        y: value < 0 ? endY - size - 3 : endY + 4,
+        size,
+        font: regular,
+        color,
+      });
+    });
   }
 }
