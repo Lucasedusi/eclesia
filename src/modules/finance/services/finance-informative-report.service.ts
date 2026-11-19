@@ -21,7 +21,8 @@ export async function getFinanceInformativeReport(
 ): Promise<FinanceInformativeReportDocument> {
   if (!canViewInformativeReport(context))
     throw new FinanceReportError("FORBIDDEN");
-  const options = financeInformativeReportOptionsSchema.parse(input);
+  const { includeChart = false, ...options } =
+    financeInformativeReportOptionsSchema.parse(input);
   const client = await createClient();
   const { data, error } = await client.rpc("get_finance_informative_report", {
     p_church_id: context.churchId,
@@ -56,6 +57,7 @@ export async function getFinanceInformativeReport(
   const summary = summarizeInformativeProjection(projection);
   return {
     ...projection,
+    includeChart,
     summary,
     emissionId: randomUUID(),
     ...(await loadFinanceReportIdentity(context)),

@@ -212,3 +212,16 @@ it("returns a safe configuration error instead of zero", async () => {
     "REPORT_CONFIGURATION_REQUIRED",
   );
 });
+
+it("keeps the chart preference in the document and excludes it from database options", async () => {
+  const report = await getFinanceInformativeReport(context, {
+    ...options,
+    includeChart: true,
+  });
+  expect(report.includeChart).toBe(true);
+  expect(m.rpc).toHaveBeenCalledWith("get_finance_informative_report", {
+    p_church_id: context.churchId,
+    p_unit: context.congregationId,
+    p_options: options,
+  });
+});

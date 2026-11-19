@@ -15,10 +15,22 @@ it.each([
   { endMonth: "2026-10" },
   { startMonth: "2000-01", endMonth: "2099-12" },
   { includePrebend: "false" },
+  { includeChart: "true" },
   { cashboxId: "30000000-0000-4000-8000-000000000001" },
 ])("rejects invalid, excessive or cashbox-filtered ranges: %j", (change) => {
   expect(
     financeInformativeReportOptionsSchema.safeParse({ ...options, ...change })
       .success,
   ).toBe(false);
+});
+
+it("accepts the chart independently from the optional columns", () => {
+  expect(
+    financeInformativeReportOptionsSchema.parse({
+      ...options,
+      includePrebend: false,
+      includeTransfer: false,
+      includeChart: true,
+    }).includeChart,
+  ).toBe(true);
 });

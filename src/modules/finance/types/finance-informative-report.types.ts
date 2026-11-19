@@ -16,4 +16,4 @@ export type FinanceInformativeReportDocument = z.infer<
   Pick<
     FinanceReportDocument,
     "church" | "congregationName" | "congregationAddress" | "emissionId"
-  > & { summary: FinanceReportSummary };
+  > & { summary: FinanceReportSummary; includeChart?: boolean };

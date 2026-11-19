@@ -18,6 +18,7 @@ export const financeInformativeReportOptionsSchema = z
     endMonth: monthSchema,
     includePrebend: z.boolean(),
     includeTransfer: z.boolean(),
+    includeChart: z.boolean().optional(),
   })
   .refine((v) => v.startMonth <= v.endMonth, {
     message: "O mês final deve ser igual ou posterior ao mês inicial.",

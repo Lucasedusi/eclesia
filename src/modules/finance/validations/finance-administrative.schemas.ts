@@ -14,6 +14,7 @@ export const rankingOptionsSchema = z
     type: z.literal("RANKING"),
     includeInactive: z.boolean(),
   })
+  .omit({ includeChart: true })
   .superRefine((v, ctx) => {
     const parsed = financeInformativeReportOptionsSchema.safeParse({
       type: "INFORMATIVE",

@@ -22,7 +22,7 @@ const identity = {
 const amounts = {
   incomeCents: 2000000,
   expenseCents: 500000,
-  closingCents: 8000000,
+  closingCents: -8000000,
   grossPrebendCents: 300000,
   transferCents: 700000,
 };
@@ -67,7 +67,7 @@ it.each([
       totals: {
         incomeCents: 4000000,
         expenseCents: 1000000,
-        closingCents: 16000000,
+        closingCents: -16000000,
         grossPrebendCents: 600000,
         transferCents: 700000,
       },
@@ -85,9 +85,21 @@ it.each([
       if (includeTransfer) {
         expect(text).toContain("Sem congregação identificada");
         expect(text).toContain("Congregações fora da seleção");
-        expect(text).toContain("7.300,00");
+        expect(text).not.toContain("Total recebido pela Catedral");
       }
-      expect((await PDFDocument.load(bytes)).getPageCount()).toBe(1);
+      const document = await PDFDocument.load(bytes);
+      expect(document.getPageCount()).toBe(1);
+      expect(document.getPage(0).getWidth()).toBeCloseTo(841.89);
+      expect(text).not.toContain("Prebenda bruta:");
+      for (const [value, options] of draw.mock.calls) {
+        if (value.startsWith("-"))
+          expect(options!.color).toEqual({
+            type: "RGB",
+            red: 0.6,
+            green: 0.23,
+            blue: 0.26,
+          });
+      }
       if (process.env.REPORT_PDF_QA) {
         await mkdir("tmp/reports", { recursive: true });
         await writeFile(`tmp/reports/ranking-${includePrebend}.pdf`, bytes);
@@ -134,6 +146,60 @@ it("renders delivered and pending rows with date, deadline and count across page
     if (process.env.REPORT_PDF_QA) {
       await mkdir("tmp/reports", { recursive: true });
       await writeFile("tmp/reports/entregas.pdf", bytes);
+    }
+  } finally {
+    draw.mockRestore();
+  }
+});
+
+it("paginates landscape ranking with long names and large negative totals", async () => {
+  const data: RankingDocument = {
+    ...identity,
+    type: "RANKING",
+    startMonth: "2026-01",
+    endMonth: "2026-12",
+    includeInactive: false,
+    includePrebend: true,
+    includeTransfer: true,
+    transferReview: null,
+    rows: Array.from({ length: 70 }, (_, index) => ({
+      ...amounts,
+      id: String(index),
+      name: `Congregação Jardim Esperança com nome extenso ${index + 1}`,
+      status: "ACTIVE",
+      isHeadquarters: false,
+      closingCents: -999999999999,
+    })),
+    totals: { ...amounts, closingCents: -69999999999930 },
+  };
+  const draw = vi.spyOn(PDFPage.prototype, "drawText");
+  try {
+    const bytes = await createFinanceReportPdf(data);
+    const document = await PDFDocument.load(bytes);
+    expect(document.getPageCount()).toBeGreaterThan(1);
+    const total = draw.mock.calls.findIndex(([text]) => text === "Total geral");
+    const lastUnit = draw.mock.calls.findIndex(([text]) => text === "extenso 70");
+    expect(lastUnit).toBeGreaterThan(-1);
+    expect(draw.mock.contexts[total]).toBe(draw.mock.contexts[lastUnit]);
+    expect(draw.mock.calls.some(([text]) => text === "-699.999.999.999,30")).toBe(true);
+    for (const page of document.getPages())
+      expect(page.getWidth()).toBeCloseTo(841.89);
+    for (const [text, options] of draw.mock.calls) {
+      expect(options!.y).toBeGreaterThanOrEqual(20);
+      expect(
+        options!.x! + options!.font!.widthOfTextAtSize(text, options!.size!),
+      ).toBeLessThanOrEqual(808);
+      if (text.startsWith("-"))
+        expect(options!.color).toEqual({
+          type: "RGB",
+          red: 0.6,
+          green: 0.23,
+          blue: 0.26,
+        });
+    }
+    if (process.env.REPORT_PDF_QA) {
+      await mkdir("tmp/reports", { recursive: true });
+      await writeFile("tmp/reports/ranking-paginado.pdf", bytes);
     }
   } finally {
     draw.mockRestore();

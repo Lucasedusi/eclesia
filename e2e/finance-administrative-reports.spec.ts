@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { PDFDocument } from "pdf-lib";
 import { readFileSync, mkdirSync, writeFileSync } from "node:fs";
 test.use({ channel: "chromium", serviceWorkers: "block" });
 test.beforeEach(() =>
@@ -15,11 +16,16 @@ test("ranking uses all units and generates selected columns without the header u
   const f = fixture();
   await page.goto(`/financeiro/relatorios?unidade=${f.unitId}&mes=2026-10`);
   await page
+    .getByRole("radio", { name: "Comparativo individual por congregação", exact: true })
+    .check();
+  await page.getByLabel("Incluir gráfico de evolução financeira", { exact: true }).check();
+  await page
     .getByRole("radio", {
       name: "Informativo geral por congregação",
       exact: true,
     })
     .check();
+  await expect(page.getByLabel("Incluir gráfico de evolução financeira", { exact: true })).toHaveCount(0);
   await expect(page.getByLabel("Mês inicial", { exact: true })).toHaveValue(
     "10/2026",
   );
@@ -42,8 +48,12 @@ test("ranking uses all units and generates selected columns without the header u
     includeInactive: false,
   });
   expect(res.request().postDataJSON().congregationId).toBeUndefined();
+  expect(res.request().postDataJSON().includeChart).toBeUndefined();
   mkdirSync("tmp/reports", { recursive: true });
-  writeFileSync("tmp/reports/ranking-browser.pdf", await readPdf(page));
+  const bytes = await readPdf(page);
+  const document = await PDFDocument.load(bytes);
+  expect(document.getPage(0).getWidth()).toBeCloseTo(841.89);
+  writeFileSync("tmp/reports/ranking-browser.pdf", bytes);
   await (await popup).close();
   await page.getByLabel("Incluir repasse", { exact: true }).uncheck();
   await expect(

@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { PDFDocument } from "pdf-lib";
 import { readFileSync, mkdirSync, writeFileSync } from "node:fs";
 test.use({ channel: "chromium", serviceWorkers: "block" });
 test.beforeEach(() =>
@@ -31,18 +32,22 @@ test("administrator generates a period report without requiring a statement, sel
     page.getByRole("button", { name: "Gerar relatório", exact: true }),
   ).toBeDisabled();
   await page.getByLabel("Mês final", { exact: true }).fill("2026-10");
-  for (const [prebend, transfer] of [
-    [true, true],
-    [false, true],
-    [true, false],
-    [false, false],
+  const chart = page.getByLabel("Incluir gráfico de evolução financeira", { exact: true });
+  await expect(chart).not.toBeChecked();
+  for (const [prebend, transfer, includeChart] of [
+    [true, true, false],
+    [false, true, true],
+    [true, false, true],
+    [false, false, false],
   ]) {
+    await chart.setChecked(includeChart);
     await page
       .getByLabel("Incluir prebenda bruta", { exact: true })
       .setChecked(prebend);
     await page
       .getByLabel("Incluir repasse", { exact: true })
       .setChecked(transfer);
+    await expect(page.getByRole("link", { name: "Abrir PDF", exact: true })).toHaveCount(0);
     const responseEvent = page.waitForResponse(
       (r) =>
         r.url().endsWith("/api/finance/reports/pdf") &&
@@ -62,6 +67,7 @@ test("administrator generates a period report without requiring a statement, sel
       endMonth: "2026-10",
       includePrebend: prebend,
       includeTransfer: transfer,
+      includeChart,
     });
     const link = page.getByRole("link", { name: "Abrir PDF", exact: true });
     await expect(link).toBeVisible();
@@ -75,6 +81,11 @@ test("administrator generates a period report without requiring a statement, sel
       ),
     );
     expect(bytes.subarray(0, 4).toString()).toBe("%PDF");
+    const pdf = await PDFDocument.load(bytes);
+    for (const sheet of pdf.getPages()) {
+      expect(sheet.getWidth()).toBeCloseTo(841.89);
+      expect(sheet.getHeight()).toBeCloseTo(595.28);
+    }
     writeFileSync(
       `tmp/reports/informativo-browser-${prebend}-${transfer}.pdf`,
       bytes,

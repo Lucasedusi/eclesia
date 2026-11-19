@@ -21,11 +21,8 @@ import type { FinanceReportDocument } from "../types/finance-report.types";
 import { wrapReportText } from "../utils/finance-report-layout";
 import { formatMoney } from "../utils/finance-money";
 import { groupReportClassifications } from "../utils/finance-report-groups";
-const W = 595.28,
-  H = 841.89,
-  M = 34.02,
-  CW = W - M * 2,
-  BOTTOM = H - 49;
+import { drawFinanceEvolutionChart } from "./finance-evolution-chart";
+const M = 34.02;
 const ink = rgb(0.09, 0.19, 0.16),
   muted = rgb(0.34, 0.4, 0.38),
   green = rgb(0.02, 0.4, 0.28),
@@ -50,6 +47,11 @@ export async function createFinanceReportPdf(
     | DailyReportDocument
     | CashBalanceReportDocument,
 ): Promise<Uint8Array> {
+  const landscape = data.type === "INFORMATIVE" || data.type === "RANKING";
+  const W = landscape ? 841.89 : 595.28;
+  const H = landscape ? 595.28 : 841.89;
+  const CW = W - M * 2;
+  const BOTTOM = H - 49;
   const doc = await PDFDocument.create();
   doc.registerFontkit(fontkit);
   const [r, b] = await fonts();
@@ -70,7 +72,7 @@ export async function createFinanceReportPdf(
           : data.type === "DELIVERIES"
             ? "Entrega de relatórios"
             : data.type === "INFORMATIVE"
-              ? "Informativo"
+              ? "Comparativo individual por congregação"
               : data.type === "ANALYTIC"
                 ? "Analítico"
                 : "Sintético";
@@ -215,7 +217,19 @@ export async function createFinanceReportPdf(
       subtotal?: boolean;
     }[];
   };
-  type Cell = string | { text: string; bold?: boolean }[];
+  type Cell =
+    | string
+    | { text: string; bold?: boolean; color?: ReturnType<typeof rgb>; fitWidth?: boolean }[];
+  function monetaryCell(value: number, bold = false): Cell {
+    return [
+      {
+        text: formatMoney(value).replace(/R\$\s*/, ""),
+        bold,
+        fitWidth: true,
+        color: value < 0 ? red : undefined,
+      },
+    ];
+  }
   function cellLines(
     row: Cell[],
     widths: number[],
@@ -225,12 +239,21 @@ export async function createFinanceReportPdf(
     return row.map((v, i) =>
       (typeof v === "string" ? [{ text: v }] : v).flatMap((part) => {
         const font = "bold" in part && part.bold ? bold : regular;
+        const availableWidth = widths[i] - 12 - (i === 0 ? indent : 0);
+        const size = "fitWidth" in part && part.fitWidth
+          ? Math.min(bodySize, availableWidth / font.widthOfTextAtSize(part.text, 1))
+          : bodySize;
         return wrap(
           part.text,
-          widths[i] - 12 - (i === 0 ? indent : 0),
-          bodySize,
+          availableWidth,
+          size,
           font,
-        ).map((text) => ({ text, font }));
+        ).map((text) => ({
+          text,
+          font,
+          size,
+          color: "color" in part ? part.color : undefined,
+        }));
       }),
     );
   }
@@ -249,7 +272,7 @@ export async function createFinanceReportPdf(
       verticalPadding: padding = analytic ? 8 : 6,
       columnColors = {},
     } = options;
-    const headerSize = 7;
+    const headerSize = landscape ? 9 : 7;
     function header(continued = false) {
       ensure(49);
       if (continued) {
@@ -373,18 +396,18 @@ export async function createFinanceReportPdf(
         }
         let x = M;
         cells.forEach((ls, i) => {
-          ls.slice(offset, offset + count).forEach(({ text: l, font }, j) =>
+          ls.slice(offset, offset + count).forEach(({ text: l, font, size, color: cellColor }, j) =>
             draw(
               l,
               i === 0 && subtotalLabelEnd !== undefined
-                ? subtotalLabelEnd - font.widthOfTextAtSize(l, bodySize)
+                ? subtotalLabelEnd - font.widthOfTextAtSize(l, size)
                 : right.includes(i)
-                  ? x + widths[i] - 6 - font.widthOfTextAtSize(l, bodySize)
+                  ? x + widths[i] - 6 - font.widthOfTextAtSize(l, size)
                   : x + 6 + (i === 0 ? indent : 0),
               y + padding / 2 + j * leading,
-              bodySize,
+              size,
               font,
-              columnColors[i] ?? (i === row.length - 1 ? color : ink),
+              cellColor ?? columnColors[i] ?? (i === row.length - 1 ? color : ink),
             ),
           );
           x += widths[i];
@@ -1086,7 +1109,6 @@ export async function createFinanceReportPdf(
     return finish();
   }
   if (data.type === "RANKING") {
-    const money = (value: number) => formatMoney(value).replace(/R\$\s*/, "");
     const headers = [
       "Congregação",
       "Entradas",
@@ -1101,32 +1123,39 @@ export async function createFinanceReportPdf(
         title: "Ranking por entradas",
         headers,
         widths: [
-          165,
-          ...Array(headers.length - 1).fill((CW - 165) / (headers.length - 1)),
+          220,
+          ...Array(headers.length - 1).fill((CW - 220) / (headers.length - 1)),
         ],
         right: headers.map((_, i) => i).slice(1),
-        bodySize: headers.length === 6 ? 7 : 7.5,
+        bodySize: 9.5,
+        lineHeight: 13,
+        verticalPadding: 8,
         columnColors: { 1: green, 2: red },
+        rowStyles: data.rows.map((_, index) => ({
+          keepNext: index === data.rows.length - 1,
+        })),
       },
       [
         ...data.rows.map((row) => [
           `${row.name}${row.status !== "ACTIVE" ? " · Inativa" : ""}`,
-          money(row.incomeCents),
-          money(row.expenseCents),
-          money(row.closingCents),
-          ...(data.includeTransfer ? [money(row.transferCents)] : []),
-          ...(data.includePrebend ? [money(row.grossPrebendCents)] : []),
+          monetaryCell(row.incomeCents),
+          monetaryCell(row.expenseCents),
+          monetaryCell(row.closingCents),
+          ...(data.includeTransfer ? [monetaryCell(row.transferCents)] : []),
+          ...(data.includePrebend ? [monetaryCell(row.grossPrebendCents)] : []),
         ]),
         [
-          "Total geral",
-          money(data.totals.incomeCents),
-          money(data.totals.expenseCents),
-          money(data.totals.closingCents),
-          ...(data.includeTransfer ? [money(data.totals.transferCents)] : []),
-          ...(data.includePrebend
-            ? [money(data.totals.grossPrebendCents)]
+          [{ text: "Total geral", bold: true }],
+          monetaryCell(data.totals.incomeCents, true),
+          monetaryCell(data.totals.expenseCents, true),
+          monetaryCell(data.totals.closingCents, true),
+          ...(data.includeTransfer
+            ? [monetaryCell(data.totals.transferCents, true)]
             : []),
-        ].map((text) => [{ text, bold: true }]),
+          ...(data.includePrebend
+            ? [monetaryCell(data.totals.grossPrebendCents, true)]
+            : []),
+        ],
       ],
     );
     if (!data.rows.length)
@@ -1134,20 +1163,7 @@ export async function createFinanceReportPdf(
         "Nenhuma congregação encontrada para os filtros selecionados.",
         8,
       );
-    if (data.includePrebend)
-      paragraph(
-        "Prebenda bruta: saídas confirmadas na própria congregação, sem dedução do dízimo do pastor.",
-        8,
-      );
     if (data.includeTransfer && data.transferReview) {
-      paragraph(
-        "Repasse: entradas confirmadas na Catedral, atribuídas à congregação pagadora pela data do recebimento. Valores informativos já considerados nos saldos de origem.",
-        8,
-      );
-      paragraph(
-        `Total recebido pela Catedral em repasses: ${formatMoney(data.transferReview.receivedCents)}.`,
-        8,
-      );
       if (data.transferReview.unidentifiedCents)
         paragraph(
           `Sem congregação identificada: ${formatMoney(data.transferReview.unidentifiedCents)}. Confira a identificação dos recebimentos na Catedral.`,
@@ -1246,55 +1262,51 @@ export async function createFinanceReportPdf(
       ...(data.includeTransfer ? ["Repasse"] : []),
       "Saldo final",
     ];
-    const money = (value: number) => formatMoney(value).replace(/R\$\s*/, "");
     band("Evolução Mensal", green);
     table(
       {
         title: "Evolução mensal",
         headers,
         widths: [
-          58,
-          ...Array(headers.length - 1).fill((CW - 58) / (headers.length - 1)),
+          94,
+          ...Array(headers.length - 1).fill((CW - 94) / (headers.length - 1)),
         ],
         right: headers.map((_, i) => i).slice(1),
-        bodySize: headers.length === 7 ? 7 : 7.5,
+        bodySize: 9.5,
+        lineHeight: 13,
+        verticalPadding: 8,
         columnColors: { 2: green, 3: red },
       },
       data.months.map((row) => [
         formatFinanceMonth(row.month),
-        money(row.summary.openingCents),
-        money(row.summary.incomeCents),
-        money(row.summary.expenseCents),
+        monetaryCell(row.summary.openingCents),
+        monetaryCell(row.summary.incomeCents),
+        monetaryCell(row.summary.expenseCents),
         ...(data.includePrebend
-          ? [money(row.recorded.grossPrebendCents ?? 0)]
+          ? [monetaryCell(row.recorded.grossPrebendCents ?? 0)]
           : []),
         ...(data.includeTransfer
-          ? [money(row.recorded.transferCents ?? 0)]
+          ? [monetaryCell(row.recorded.transferCents ?? 0)]
           : []),
-        money(row.summary.closingCents),
+        monetaryCell(row.summary.closingCents),
       ]),
     );
-    if (data.includePrebend)
-      paragraph(
-        "Prebenda bruta: saídas confirmadas na congregação, sem dedução do dízimo do pastor.",
-        8,
-        muted,
-        5,
-      );
-    if (data.includeTransfer)
-      paragraph(
-        "Repasse: entradas confirmadas na Catedral e vinculadas a esta congregação, pela data do recebimento. Recebimentos sem identificação aparecem no informativo geral. A Catedral não recebe atribuição nesta coluna.",
-        8,
-        muted,
-        5,
-      );
-    if (data.includePrebend || data.includeTransfer)
-      paragraph(
-        "As colunas informativas detalham lançamentos já registrados e não alteram os saldos.",
-        8,
-        muted,
-        5,
-      );
+    if (data.includeChart) {
+      const chartHeight = 286;
+      ensure(chartHeight + 12);
+      y += 12;
+      drawFinanceEvolutionChart({
+        page: page!,
+        months: data.months,
+        x: M,
+        top: H - y,
+        width: CW,
+        height: chartHeight,
+        regular,
+        bold,
+      });
+      y += chartHeight;
+    }
     return finish();
   }
   indicators();

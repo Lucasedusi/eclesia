@@ -63,6 +63,7 @@ function FinanceReportsContent({
   const [endMonth, setEndMonth] = useState(month);
   const [includePrebend, setIncludePrebend] = useState(true);
   const [includeTransfer, setIncludeTransfer] = useState(true);
+  const [includeChart, setIncludeChart] = useState(false);
   const [categoryOptions, setCategoryOptions] = useState<CategoryReportOptions>(
     () => ({
       type: "CATEGORY",
@@ -106,7 +107,7 @@ function FinanceReportsContent({
           ...(categoryReport
             ? { ...categoryOptions, ...(box ? { cashboxId: box } : {}) }
             : informative
-              ? informativeOptions
+              ? { ...informativeOptions, includeChart }
               : { type, month, ...(box ? { cashboxId: box } : {}) }),
         },
     categoryReport
@@ -288,7 +289,7 @@ function FinanceReportsContent({
               </p>
             )}
             <fieldset className="finance-informative-columns">
-              <legend>Colunas opcionais</legend>
+              <legend>Opções adicionais</legend>
               <label>
                 <input
                   type="checkbox"
@@ -311,6 +312,19 @@ function FinanceReportsContent({
                 />
                 Incluir repasse
               </label>
+              {!ranking && (
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={includeChart}
+                    onChange={(e) => {
+                      invalidate();
+                      setIncludeChart(e.target.checked);
+                    }}
+                  />
+                  Incluir gráfico de evolução financeira
+                </label>
+              )}
             </fieldset>
           </div>
         ) : (
