@@ -9,6 +9,7 @@ import { FinanceDailyReportDialog } from "./finance-daily-report-dialog";
 import { FinanceSummaryCards } from "./finance-summary-cards";
 import { useFinanceNavigation } from "./finance-shell";
 import { FinanceEmpty } from "./finance-empty";
+import { FinanceListResults } from "./finance-list-results";
 import { formatMoney } from "../utils/finance-money";
 import { isLocalDate, shiftCivilDate } from "../utils/finance-period";
 import type { DailyCashFlowPage, DailyCashFlowQuery } from "../validations/finance-daily-cash-flow.schemas";
@@ -137,8 +138,10 @@ export function FinanceDailyCashFlow({ data, filters, today }: Props) {
     <section className="card stack">
       <h2>Movimentações do dia</h2>
       <MovementFilters key={JSON.stringify(filters)} data={data} filters={filters} apply={update} busy={isPending} />
-      {data.items.length ? <MovementList items={data.items} date={filters.date} /> :
-        <FinanceEmpty>{filtered ? "Nenhuma movimentação corresponde aos filtros." : "Nenhuma movimentação nesta data."}</FinanceEmpty>}
+      <FinanceListResults busy={isPending}>
+        {data.items.length ? <MovementList items={data.items} date={filters.date} /> :
+          <FinanceEmpty>{filtered ? "Nenhuma movimentação corresponde aos filtros." : "Nenhuma movimentação nesta data."}</FinanceEmpty>}
+      </FinanceListResults>
       {pages > 1 && <div className="row spread">
         <span className="muted">Página {data.page} de {pages} · {data.total} movimentos</span>
         <div className="row">

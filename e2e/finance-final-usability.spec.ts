@@ -32,13 +32,22 @@ test("search can be cleared and advanced reset stays inside expanded filters", a
   await page.goto(`/financeiro/lancamentos?unidade=${f.headquartersId}&mes=2026-10`);
   await expect(page.getByRole("button", { name: "Limpar filtros", exact: true })).toHaveCount(0);
   const search = page.getByRole("textbox", { name: "Buscar", exact: true });
-  const height = (await page.locator(".finance-list-results").boundingBox())!.height;
+  const results = page.locator(".finance-list-results");
+  // Exercise tall rows even with the small local fixture.
+  const tallRows = await page.addStyleTag({ content: ".finance-list-results tbody tr { height: 320px }" });
+  const table = results.locator("table");
+  await expect(table).toBeVisible();
+  const height = (await table.boundingBox())!.height;
+  expect((await results.boundingBox())!.height).toBe(height);
   await search.fill("Busca inexistente teste");
   await page.getByRole("button", { name: "Filtrar", exact: true }).click();
   await expect(page.locator(".empty")).toContainText("Nenhum lançamento encontrado");
   await expect(page.locator(".empty > svg")).toBeVisible();
   await expect(page.getByRole("button", { name: "Limpar filtros", exact: true })).toHaveCount(0);
-  expect((await page.locator(".finance-list-results").boundingBox())!.height).toBe(height);
+  expect((await results.boundingBox())!.height).toBeLessThan(height);
+  await expect(results).toHaveCSS("overflow-y", "visible");
+  expect(await results.evaluate(el => el.getBoundingClientRect().height + 1 >= parseFloat(getComputedStyle(el).minBlockSize))).toBe(true);
+  await tallRows.evaluate(style => { style.parentNode?.removeChild(style); });
   await page.getByRole("button", { name: "Limpar busca" }).click();
   await expect(search).toHaveValue("");
   await expect(page).not.toHaveURL(/search=/);

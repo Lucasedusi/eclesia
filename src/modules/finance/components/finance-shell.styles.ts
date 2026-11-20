@@ -306,9 +306,8 @@ export const FinanceStyles = createGlobalStyle`
  .finance .finance-transaction-filter-grid{align-items:end;grid-template-columns:repeat(4,minmax(0,1fr))}
  .finance .finance-chart-direction{flex:0 0 min(100%, 10rem);max-width:100%}
  .finance .finance-transactions-list{container-type:inline-size}
- .finance .finance-list-results{block-size:clamp(17.5rem,52svh,34rem);min-width:0;overflow:auto;scrollbar-gutter:stable}
- .finance .finance-list-results .table-scroll{overflow:visible}
- .finance .finance-list-results th{position:sticky;top:0;z-index:1;background:white}
+ .finance .finance-list-results{min-block-size:clamp(10rem,22svh,14rem);min-width:0}
+ .finance .finance-list-results[aria-busy=true]{overflow:clip}
  @container (max-width:780px){
    .finance .finance-transaction-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
  }

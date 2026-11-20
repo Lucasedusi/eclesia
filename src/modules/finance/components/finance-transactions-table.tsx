@@ -1,6 +1,7 @@
 "use client";
 import { FinanceSelect } from "./finance-select";
 import { FinanceEmpty } from "./finance-empty";
+import { FinanceListResults } from "./finance-list-results";
 import { useFinanceNavigation } from "./finance-shell";
 import { Loader2 } from "lucide-react";
 import { useRef, useState } from "react";
@@ -268,7 +269,7 @@ export function FinanceTransactionsTable({
           </span>
         </div>
         {error && <div role="alert">{error}</div>}
-        <div className="finance-list-results" aria-busy={isPending}>
+        <FinanceListResults busy={isPending}>
           {result.items.length === 0 ? (
             <FinanceEmpty>
               Nenhum lançamento encontrado. Confira o mês e os filtros
@@ -348,7 +349,7 @@ export function FinanceTransactionsTable({
               </div>
             </>
           )}
-        </div>
+        </FinanceListResults>
         <div className="row spread finance-pagination">
           <span className="muted">
             Página {result.page} de {result.pageCount}<span className="finance-desktop-only"> · até 20 por página</span>

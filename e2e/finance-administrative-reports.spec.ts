@@ -85,11 +85,14 @@ test("administrator records, corrects, filters, exports and undoes a receipt wit
   await page.getByRole("dialog").getByRole("button", { name: "Cancelar" }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   const region = page.locator(".finance-list-results");
+  const tallRows = await page.addStyleTag({ content: ".finance-delivery-table tbody tr { height: 650px }" });
   const height = (await region.boundingBox())!.height;
+  expect(height).toBe((await region.locator("table").boundingBox())!.height);
   const search = page.getByLabel("Buscar congregação");
   await search.fill("Sem correspondência");
   await expect(region).toContainText("Nenhuma congregação encontrada.");
-  expect((await region.boundingBox())!.height).toBe(height);
+  expect((await region.boundingBox())!.height).toBeLessThan(height);
+  await expect(region).toHaveCSS("overflow-y", "visible");
   await search.fill("");
   expect(actions).toHaveLength(0);
   await page.route("**/financeiro/relatorios/entregas?**", async route => {
@@ -101,6 +104,8 @@ test("administrator records, corrects, filters, exports and undoes a receipt wit
   await expect(region.getByRole("status", { name: "Carregando entregas" })).toBeVisible();
   expect((await region.boundingBox())!.height).toBe(height);
   await expect(region.getByRole("status")).toHaveCount(0);
+  await tallRows.evaluate(style => { style.parentNode?.removeChild(style); });
+  await expect.poll(async () => (await region.boundingBox())!.height).toBeLessThan(height);
   await month.fill("09/2026");
   await page.unroute("**/financeiro/relatorios/entregas?**");
   await page.getByRole("button", { name: "Registrar entrega", exact: true }).click();

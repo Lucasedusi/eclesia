@@ -17,6 +17,7 @@ import { useFinanceReportPdf } from "../hooks/use-finance-report-pdf";
 import { useFinanceDesktop } from "../hooks/use-finance-desktop";
 import { FinanceSkeleton } from "./finance-skeleton";
 import { FinanceEmpty } from "./finance-empty";
+import { FinanceListResults } from "./finance-list-results";
 import { Eye, FileText, History, Monitor, Pencil, Plus } from "lucide-react";
 import { FinanceDeliveryForm } from "./finance-delivery-form";
 const date = (v: string) => v.split("-").reverse().join("/");
@@ -190,7 +191,7 @@ function FinanceDeliveriesContent({
             <FileText size={16} aria-hidden="true" /> Gerar PDF
           </Button>
         </div>
-        <div className="finance-list-results">
+        <FinanceListResults busy={loading || pdf.isPending}>
           {loading || pdf.isPending ? <FinanceSkeleton table label="Carregando entregas" /> : !ready ? null : rows.length ? (
             <div className="table-scroll">
               <table className="finance-delivery-table">
@@ -283,7 +284,7 @@ function FinanceDeliveriesContent({
               </p>
             </FinanceEmpty>
           )}
-        </div>
+        </FinanceListResults>
         <p className="muted">{ready ? `${rows.length} congregações na listagem.` : "\u00a0"}</p>
       </section>
       {pdf.error && (

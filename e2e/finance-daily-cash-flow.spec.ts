@@ -49,9 +49,16 @@ for (const width of [390, 1280]) {
     await expect(page).toHaveURL(url => url.searchParams.get("box") === f.boxes[f.headquartersId].cash);
     const before = await summary.innerText();
     await expect(page.locator(".finance-daily").getByText("Oferta de culto", { exact: true }).first()).toBeAttached();
+    const results = page.locator(".finance-list-results");
+    await page.addStyleTag({ content: ".finance-daily-table tbody tr, .finance-daily-mobile-list li { height: 320px }" });
+    const list = results.locator(width >= 768 ? ".finance-daily-table" : ".finance-daily-mobile-list");
+    const height = (await list.boundingBox())!.height;
+    expect((await results.boundingBox())!.height).toBe(height);
+    await expect(results).toHaveCSS("overflow-y", "visible");
     await page.getByRole("searchbox").fill("sem-correspondencia-e2e");
     await page.getByRole("button", { name: "Filtrar", exact: true }).click();
     await expect(page.getByText("Nenhuma movimentação corresponde aos filtros.")).toBeVisible();
+    expect((await results.boundingBox())!.height).toBeLessThan(height);
     expect(await summary.innerText()).toBe(before);
     await page.getByRole("button", { name: "Limpar filtros" }).click();
     await page.getByRole("button", { name: "Dia anterior" }).click();
