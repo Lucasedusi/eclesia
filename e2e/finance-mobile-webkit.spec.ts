@@ -19,6 +19,17 @@ test("mantém o período em uma linha e restringe os links diretos", async ({ pa
       expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
     }
   }
+  await page.setViewportSize({ width: 320, height: 740 });
+  await page.locator(".finance-period-trigger").click();
+  const dialog = page.getByRole("dialog", { name: "Período dos lançamentos" });
+  for (const mode of ["Mês", "Personalizado"]) {
+    await dialog.getByRole("button", { name: mode, exact: true }).click();
+    const apply = dialog.getByRole("button", { name: "Aplicar", exact: true });
+    const button = (await apply.boundingBox())!;
+    const footer = (await apply.locator("..").boundingBox())!;
+    expect(button.x).toBeCloseTo(footer.x, 0);
+    expect(button.width).toBeCloseTo(footer.width, 0);
+  }
   await page.goto("/financeiro" + query);
   const month = page.getByLabel("Período", { exact: true });
   await expect(month).toHaveCSS("height", "48px");

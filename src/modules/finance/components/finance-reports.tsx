@@ -395,14 +395,14 @@ function FinanceReportsContent({
             </div>
           </div>
         </section>
-      ) : (
-        <section className="card finance-report-empty">
+      ) : desktop ? (
+        <section className="card finance-report-empty finance-desktop-only">
           <FileText size={34} aria-hidden="true" />
           <h2>Uma visão clara das finanças</h2>
           {categoryReport && <p>Selecione o período, a movimentação e as categorias desejadas para gerar o relatório.</p>}
           {informative && <p>Confira o período e as colunas desejadas para gerar o informativo da congregação.</p>}
         </section>
-      )}
+      ) : null}
     </div>
   );
 }

@@ -173,23 +173,16 @@ export function FinanceTransactionsTable({
             <Button
               type="button"
               variant="outline"
-              className="finance-filter-toggle"
+              className="finance-filter-toggle finance-desktop-only"
               aria-expanded={advanced}
               aria-controls="finance-advanced-filters"
               onClick={() => setAdvanced(!advanced)}
               style={{ alignSelf: "end" }}
             >
               <SlidersHorizontal size={16} />
-              <span className="finance-desktop-only">Mais Filtros</span>
-              <span className="finance-mobile-only"><span className="sr-only">Mais Filtros</span></span>
+              <span>Mais Filtros</span>
               {desktopFilterCount > 0 && (
-                <span className="finance-desktop-only">{filterCountLabel(desktopFilterCount)}</span>
-              )}
-              {advancedFilterCount > 0 && (
-                <>
-                  <span className="finance-mobile-only finance-active-filter-count" aria-hidden="true">{advancedFilterCount}</span>
-                  <span className="finance-mobile-only"><span className="sr-only">{filterCountLabel(advancedFilterCount)}</span></span>
-                </>
+                <span>{filterCountLabel(desktopFilterCount)}</span>
               )}
             </Button>
           </div>
@@ -212,6 +205,21 @@ export function FinanceTransactionsTable({
                 {option.label}
               </button>
             ))}
+            <button
+              type="button"
+              className="finance-filter-toggle"
+              aria-expanded={advanced}
+              aria-controls="finance-advanced-filters"
+              onClick={() => setAdvanced(!advanced)}
+            >
+              Filtros
+              {advancedFilterCount > 0 && (
+                <>
+                  <span className="finance-active-filter-count" aria-hidden="true">{advancedFilterCount}</span>
+                  <span className="sr-only"> {filterCountLabel(advancedFilterCount)}</span>
+                </>
+              )}
+            </button>
           </div>
           <div id="finance-advanced-filters" hidden={!advanced}>
             <div className="grid finance-transaction-filter-grid">

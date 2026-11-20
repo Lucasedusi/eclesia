@@ -44,7 +44,7 @@ export function FinanceTransactionPeriod({ month, dateFrom, dateTo, onApply }: {
       </div>
       {open && (
         <Modal size={mode === "CUSTOM" ? "lg" : "md"} title="Período dos lançamentos" className="finance-period-dialog" onClose={() => setOpen(false)}
-          footer={<Button disabled={!valid} onClick={() => {
+          footer={<Button className="finance-period-apply" disabled={!valid} onClick={() => {
             if (!valid) return;
             onApply(selectedMonth, mode === "MONTH" ? undefined : range);
             setOpen(false);

@@ -34,11 +34,33 @@ for (const width of [320, 393, 430]) {
     expect(boxes[1].x).toBeLessThan(boxes[2].x);
     const input = page.getByRole('textbox', { name: 'Buscar' });
     const search = page.getByRole('button', { name: 'Buscar lançamentos', exact: true });
-    const filters = page.getByRole('button', { name: /Mais Filtros/ });
+    const filters = page.getByRole('button', { name: /^Filtros/ });
     const ib = (await input.boundingBox())!, sb = (await search.boundingBox())!, fb = (await filters.boundingBox())!;
     expect(sb.x).toBeGreaterThan(ib.x);
     expect(sb.x + sb.width).toBeLessThanOrEqual(ib.x + ib.width);
-    expect(Math.abs(fb.y - ib.y)).toBeLessThanOrEqual(2);
+    expect(fb.y).toBeGreaterThanOrEqual(ib.y + ib.height);
+    await filters.click();
+    await page.getByRole("combobox", { name: "Situação" }).selectOption("CONFIRMED");
+    await expect(filters).toHaveAccessibleName(/1 filtro ativo/);
+    await expect(filters).toHaveAttribute("aria-expanded", "true");
+    const group = page.getByRole("group", { name: "Filtrar movimento" });
+    const buttons = group.getByRole("button");
+    await expect(buttons).toHaveText(["Todos", "Entradas", "Saídas", /Filtros/]);
+    const bounds = await buttons.evaluateAll(elements => elements.map(el => {
+      const { x, y, right, height } = el.getBoundingClientRect();
+      return { x, y, right, height, fits: el.scrollWidth <= el.clientWidth };
+    }));
+    for (const [index, button] of bounds.entries()) {
+      expect(button.y).toBe(bounds[0].y);
+      expect(button.height).toBe(44);
+      expect(button.fits).toBe(true);
+      if (index) expect(button.x).toBeGreaterThan(bounds[index - 1].right);
+    }
+    expect(bounds[0].x).toBeCloseTo(ib.x, 0);
+    expect(bounds[3].right).toBeCloseTo(ib.x + ib.width, 0);
+    const badge = (await filters.locator(".finance-active-filter-count").boundingBox())!;
+    expect(badge.x + badge.width).toBeLessThanOrEqual(bounds[3].right);
+    await filters.click();
     await input.fill('Nenhum lançamento deste teste');
     await search.click();
     await expect(page).toHaveURL(/search=Nenhum/);

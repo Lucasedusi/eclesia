@@ -58,11 +58,15 @@ for (const type of [
   });
 }
 
-test("blocked popups still offer a usable PDF link and download", async ({
+test("mobile reports show PDF actions after generation and omit the empty card", async ({
   page,
 }) => {
   const f = fixture();
+  await page.setViewportSize({ width: 320, height: 740 });
   await page.goto(`/financeiro/relatorios?unidade=${f.unitId}&mes=2026-10`);
+  await expect(page.getByRole("button", { name: "Gerar relatório" })).toBeVisible();
+  await expect(page.locator(".finance-report-empty")).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Abrir PDF" })).toHaveCount(0);
   await page.evaluate(() => {
     window.open = () => null;
   });
@@ -76,6 +80,7 @@ test("blocked popups still offer a usable PDF link and download", async ({
       "Use Abrir PDF para visualizar o relatório em uma nova aba.",
     ),
   ).toBeVisible();
+  await expect(page.getByRole("link", { name: "Baixar PDF" })).toBeVisible();
   const url = await link.getAttribute("href");
   expect(
     await page.evaluate(

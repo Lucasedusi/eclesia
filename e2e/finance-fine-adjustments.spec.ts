@@ -22,7 +22,7 @@ test("mobile resets only advanced filters, keeps nature/search and gives active 
   await page.getByRole('button', { name: 'Buscar lançamentos' }).click();
   await expect(page).toHaveURL(/search=Oferta/);
   await expect(clear).toBeHidden();
-  const advanced = page.getByRole('button', { name: /Mais Filtros/ });
+  const advanced = page.getByRole('button', { name: /^Filtros/ });
   await advanced.click();
   await expect(advanced).toHaveCSS('background-color', 'rgb(229, 244, 236)');
   await page.getByRole('combobox', { name: 'Situação' }).selectOption('CONFIRMED');

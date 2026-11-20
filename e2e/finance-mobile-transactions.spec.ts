@@ -54,7 +54,7 @@ test("mobile transaction cards share filters, totals and details with the deskto
   await expect(page).toHaveURL(/mes=2026-10/);
   await nature.getByRole("button", { name: "Todos" }).click();
 
-  await page.getByRole("button", { name: /Mais Filtros/ }).click();
+  await page.getByRole("button", { name: /^Filtros/ }).click();
   await page.getByRole("combobox", { name: "Situação" }).selectOption("CANCELLED");
   const toggle = page.getByRole("button", { name: /1 filtro ativo/ });
   await expect(toggle).toBeVisible();
