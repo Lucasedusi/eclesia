@@ -32,10 +32,13 @@ test("search can be cleared and advanced reset stays inside expanded filters", a
   await page.goto(`/financeiro/lancamentos?unidade=${f.headquartersId}&mes=2026-10`);
   await expect(page.getByRole("button", { name: "Limpar filtros", exact: true })).toHaveCount(0);
   const search = page.getByRole("textbox", { name: "Buscar", exact: true });
+  const height = (await page.locator(".finance-list-results").boundingBox())!.height;
   await search.fill("Busca inexistente teste");
   await page.getByRole("button", { name: "Filtrar", exact: true }).click();
   await expect(page.locator(".empty")).toContainText("Nenhum lançamento encontrado");
   await expect(page.locator(".empty > svg")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Limpar filtros", exact: true })).toHaveCount(0);
+  expect((await page.locator(".finance-list-results").boundingBox())!.height).toBe(height);
   await page.getByRole("button", { name: "Limpar busca" }).click();
   await expect(search).toHaveValue("");
   await expect(page).not.toHaveURL(/search=/);
@@ -59,6 +62,8 @@ test("overview and report controls are compact and adapt to mobile", async ({ pa
   await expect(page.getByRole("complementary").locator(".finance-logo b")).toHaveCSS("font-weight", "600");
   await expect(page.getByRole("heading", { name: "Visão geral", exact: true })).toBeVisible();
   await expect(page.getByRole("complementary")).toBeVisible();
+  const direction = page.getByLabel("Natureza do gráfico");
+  expect((await direction.boundingBox())!.width).toBeGreaterThanOrEqual(150);
   const sidebar = (await page.getByRole("complementary").boundingBox())!;
   const toggle = (await page.getByRole("button", { name: "Recolher menu" }).boundingBox())!;
   expect(Math.abs(toggle.x - sidebar.x - sidebar.width)).toBeLessThan(2);

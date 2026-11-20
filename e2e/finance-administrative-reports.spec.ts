@@ -80,7 +80,33 @@ test("administrator records, corrects, filters, exports and undoes a receipt wit
   await page
     .getByRole("button", { name: "Registrar entrega", exact: true })
     .click();
-  await page.getByLabel("Data da entrega", { exact: true }).fill("2026-10-07");
+  const actions: string[] = [];
+  page.on("request", request => { if (request.headers()["next-action"]) actions.push(request.url()); });
+  await page.getByRole("dialog").getByRole("button", { name: "Cancelar" }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  const region = page.locator(".finance-list-results");
+  const height = (await region.boundingBox())!.height;
+  const search = page.getByLabel("Buscar congregação");
+  await search.fill("Sem correspondência");
+  await expect(region).toContainText("Nenhuma congregação encontrada.");
+  expect((await region.boundingBox())!.height).toBe(height);
+  await search.fill("");
+  expect(actions).toHaveLength(0);
+  await page.route("**/financeiro/relatorios/entregas?**", async route => {
+    if (route.request().headers()["next-action"]) await new Promise(resolve => setTimeout(resolve, 400));
+    await route.continue();
+  });
+  const month = page.getByLabel("Mês de referência", { exact: true });
+  await month.fill("08/2026");
+  await expect(region.getByRole("status", { name: "Carregando entregas" })).toBeVisible();
+  expect((await region.boundingBox())!.height).toBe(height);
+  await expect(region.getByRole("status")).toHaveCount(0);
+  await month.fill("09/2026");
+  await page.unroute("**/financeiro/relatorios/entregas?**");
+  await page.getByRole("button", { name: "Registrar entrega", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Fechar modal" })).toBeFocused();
+  await page.getByLabel("Data da entrega", { exact: true }).fill("07/10/2026");
+  await expect(page.getByLabel("Data da entrega", { exact: true })).toHaveValue("07/10/2026");
   await page
     .getByRole("dialog")
     .getByRole("button", { name: "Registrar entrega", exact: true })
@@ -89,7 +115,8 @@ test("administrator records, corrects, filters, exports and undoes a receipt wit
     page.getByRole("cell", { name: "07/10/2026", exact: true }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Corrigir", exact: true }).click();
-  await page.getByLabel("Data da entrega", { exact: true }).fill("2026-10-10");
+  await expect(page.getByRole("button", { name: "Fechar modal" })).toBeFocused();
+  await page.getByLabel("Data da entrega", { exact: true }).fill("10/10/2026");
   await page
     .getByLabel("Motivo da alteração")
     .fill("Correção da data informada");
@@ -187,8 +214,8 @@ test("deadline setting changes only current/future reference months", async ({
     `/financeiro/relatorios/entregas?unidade=${f.headquartersId}&mes=2026-09`,
   );
   await expect(
-    page.getByText("Entrega até 08/10/2026", { exact: true }),
-  ).toBeVisible();
+    page.getByText(/Entrega até/),
+  ).toHaveCount(0);
 });
 test("treasurer cannot see administrative controls or call their PDF endpoints", async ({
   browser,

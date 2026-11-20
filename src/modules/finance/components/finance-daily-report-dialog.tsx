@@ -59,10 +59,6 @@ export function FinanceDailyReportDialog({
       }
     >
       <div className="stack">
-        <p>
-          Data do movimento ·{" "}
-          <strong>{date.split("-").reverse().join("/")}</strong>
-        </p>
         <fieldset
           className="stack finance-daily-report-fields"
           disabled={report.busy}
@@ -169,7 +165,7 @@ function ReportBoxPicker({ boxes, selected, onChange }: {
   return (
     <div className={styles.field}>
       <label htmlFor={id}>Caixas e contas</label>
-      <button type="button" id={id} ref={anchor} className={styles.multiTrigger}
+      <button type="button" id={id} ref={anchor} className={styles.dailyBoxTrigger}
         aria-expanded={open} aria-controls={open ? id + "-options" : undefined}
         onClick={() => setOpen(!open)}>{label}<ChevronDown size={16} aria-hidden="true" /></button>
       {open && <FinanceFieldPopup anchor={anchor} onDismiss={() => setOpen(false)}>

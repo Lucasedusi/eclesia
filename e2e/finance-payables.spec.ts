@@ -20,7 +20,7 @@ async function create(page: Page, name: string, category: string, dueDate: strin
 }
 async function search(page: Page, name: string) {
   await page.getByRole("searchbox").fill(name);
-  await page.getByRole("button", { name: "Filtrar", exact: true }).click();
+  await page.getByRole("button", { name: "Filtro", exact: true }).click();
   await expect(page).toHaveURL((url) => url.searchParams.get("search") === name);
 }
 for (const width of [1280, 1024]) {

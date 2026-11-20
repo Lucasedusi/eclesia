@@ -230,7 +230,7 @@
 .multiTrigger[aria-expanded="true"] { border-color: #087f5b; }
 .multiTrigger[aria-expanded="true"] .chevron { transform: translateY(-50%) rotate(180deg); }
 
-.multiTrigger {
+.dailyBoxTrigger {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -242,10 +242,12 @@
   background: white;
   color: #194b39;
   font: inherit;
+  font-size: 14px;
   text-align: start;
   cursor: pointer;
 }
-.multiOptions label {
+:global(#finance-modal-root) .multiOptions label {
+  font-size: 14px;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -254,4 +256,4 @@
   cursor: pointer;
 }
 .multiOptions label:is(:hover, :focus-within, :has(:checked)) { background: #edf6ef; }
-.multiOptions input[type="checkbox"] { width: 16px; height: 16px; min-height: 0; accent-color: #087f5b; }
+:global(#finance-modal-root) .multiOptions input[type="checkbox"] { flex: 0 0 16px; padding: 0; width: 16px; height: 16px; min-height: 0; accent-color: #087f5b; }

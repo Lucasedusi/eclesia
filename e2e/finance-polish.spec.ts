@@ -91,8 +91,9 @@ test("filter and detail loading have stable feedback and payment identification"
       .boundingBox())!.width,
   ).toBe(filterWidth);
   await expect(
-    page.getByRole("status", { name: "Carregando lançamentos" }),
+    page.getByRole("button", { name: /^Detalhes / }).first(),
   ).toBeVisible();
+  await expect(page.locator(".finance-list-results")).toHaveAttribute("aria-busy", "false");
   await expect(
     page.getByRole("button", { name: "Filtrar", exact: true }),
   ).toBeEnabled();

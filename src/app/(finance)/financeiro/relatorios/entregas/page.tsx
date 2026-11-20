@@ -23,7 +23,6 @@ async function Content({
     <FinanceDeliveries
       key={`${context.congregationId}-${month}`}
       initial={data}
-      unit={context.congregationId}
     />
   );
 }

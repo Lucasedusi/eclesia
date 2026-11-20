@@ -1,4 +1,4 @@
-export function FinanceSkeleton({ table = false }: { table?: boolean }) {
+export function FinanceSkeleton({ table = false, label }: { table?: boolean; label?: string }) {
   const block = (height: number, width = "100%") => (
     <div
       className="finance-skeleton-block"
@@ -8,7 +8,7 @@ export function FinanceSkeleton({ table = false }: { table?: boolean }) {
   return (
     <div
       role="status"
-      aria-label={table ? "Carregando lançamentos" : "Carregando financeiro"}
+      aria-label={label ?? (table ? "Carregando lançamentos" : "Carregando financeiro")}
       className="finance-skeleton"
       style={{
         display: "grid",

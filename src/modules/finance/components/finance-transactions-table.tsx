@@ -2,7 +2,6 @@
 import { FinanceSelect } from "./finance-select";
 import { FinanceEmpty } from "./finance-empty";
 import { useFinanceNavigation } from "./finance-shell";
-import { FinanceSkeleton } from "./finance-skeleton";
 import { Loader2 } from "lucide-react";
 import { useRef, useState } from "react";
 import { usePathname } from "next/navigation";
@@ -67,7 +66,7 @@ export function FinanceTransactionsTable({
     filters.memberId,
   ].filter(Boolean).length;
   const desktopFilterCount = advancedFilterCount + Number(filters.direction !== "ALL");
-  const hasActiveFilters = desktopFilterCount > 0 || Boolean(filters.search);
+  const hasActiveFilters = desktopFilterCount > 0;
   function filter(data: FormData) {
     const query = new URLSearchParams({ unidade: unit, mes: month });
     if (filters.dateFrom && filters.dateTo) {
@@ -250,7 +249,7 @@ export function FinanceTransactionsTable({
                   ))}
                 </FinanceSelect>
               ))}
-              {advanced && resetButtons}
+              {advanced && (!filters.search || hasActiveFilters) && resetButtons}
             </div>
           </div>
           {!advanced && hasActiveFilters && resetButtons}
@@ -269,87 +268,87 @@ export function FinanceTransactionsTable({
           </span>
         </div>
         {error && <div role="alert">{error}</div>}
-        {isPending ? (
-          <FinanceSkeleton table />
-        ) : result.items.length === 0 ? (
-          <FinanceEmpty>
-            Nenhum lançamento encontrado. Confira o mês e os filtros
-            selecionados.
-          </FinanceEmpty>
-        ) : (
-          <>
-            <FinanceMobileTransactionCards
-              items={result.items}
-              catalogs={catalogs}
-              onOpen={openDetail}
-              loadingId={loading}
-            />
-            <div className="table-scroll finance-desktop-transactions">
-            <table>
-              <thead>
-                <tr>
-                  <th>Data</th>
-                  <th>Lançamento</th>
-                  <th>Pagamento</th>
-                  <th>Departamento</th>
-                  <th style={{ textAlign: "right" }}>Valor</th>
-                  <th>
-                    <span className="sr-only">Detalhes</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {result.items.map((t) => (
-                  <tr
-                    key={t.id}
-                    className={t.direction === "INCOME" ? "finance-row-income" : "finance-row-expense"}
-                  >
-                    <td style={{ whiteSpace: "nowrap" }}>
-                      <time dateTime={t.date}>{t.date.split("-").reverse().join("/")}</time>
-                    </td>
-                    <td>
-                      <strong>{t.categoryName || "Lançamento"}</strong>
-                      <div className="muted">
-                        {t.personName ||
-                          t.beneficiaryName ||
-                          t.description ||
-                          (t.direction === "INCOME" ? "Coletivo" : "Não informado")}
-                      </div>
-                    </td>
-                    <td><FinanceTransactionPayment item={t} catalogs={catalogs} /></td>
-                    <td>
-                      {t.departmentName}
-                      {t.classificationName && (
-                        <div className="muted finance-classification">
-                          {t.classificationName}
-                        </div>
-                      )}
-                    </td>
-                    <td className="money"><FinanceTransactionAmount item={t} /></td>
-                    <td>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        aria-label={`Detalhes ${t.categoryName} ${t.personName || t.beneficiaryName || ""}`}
-                        disabled={loading === t.id}
-                        aria-busy={loading === t.id}
-                        className="finance-icon-button"
-                        onClick={() => openDetail(t.id)}
-                      >
-                        {loading === t.id ? (
-                          <Loader2 size={15} className="finance-spin" />
-                        ) : (
-                          <Eye size={15} />
-                        )}
-                      </Button>
-                    </td>
+        <div className="finance-list-results" aria-busy={isPending}>
+          {result.items.length === 0 ? (
+            <FinanceEmpty>
+              Nenhum lançamento encontrado. Confira o mês e os filtros
+              selecionados.
+            </FinanceEmpty>
+          ) : (
+            <>
+              <FinanceMobileTransactionCards
+                items={result.items}
+                catalogs={catalogs}
+                onOpen={openDetail}
+                loadingId={loading}
+              />
+              <div className="table-scroll finance-desktop-transactions">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Data</th>
+                    <th>Lançamento</th>
+                    <th>Pagamento</th>
+                    <th>Departamento</th>
+                    <th style={{ textAlign: "right" }}>Valor</th>
+                    <th>
+                      <span className="sr-only">Detalhes</span>
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-            </div>
-          </>
-        )}
+                </thead>
+                <tbody>
+                  {result.items.map((t) => (
+                    <tr
+                      key={t.id}
+                      className={t.direction === "INCOME" ? "finance-row-income" : "finance-row-expense"}
+                    >
+                      <td style={{ whiteSpace: "nowrap" }}>
+                        <time dateTime={t.date}>{t.date.split("-").reverse().join("/")}</time>
+                      </td>
+                      <td>
+                        <strong>{t.categoryName || "Lançamento"}</strong>
+                        <div className="muted">
+                          {t.personName ||
+                            t.beneficiaryName ||
+                            t.description ||
+                            (t.direction === "INCOME" ? "Coletivo" : "Não informado")}
+                        </div>
+                      </td>
+                      <td><FinanceTransactionPayment item={t} catalogs={catalogs} /></td>
+                      <td>
+                        {t.departmentName}
+                        {t.classificationName && (
+                          <div className="muted finance-classification">
+                            {t.classificationName}
+                          </div>
+                        )}
+                      </td>
+                      <td className="money"><FinanceTransactionAmount item={t} /></td>
+                      <td>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          aria-label={`Detalhes ${t.categoryName} ${t.personName || t.beneficiaryName || ""}`}
+                          disabled={loading === t.id}
+                          aria-busy={loading === t.id}
+                          className="finance-icon-button"
+                          onClick={() => openDetail(t.id)}
+                        >
+                          {loading === t.id ? (
+                            <Loader2 size={15} className="finance-spin" />
+                          ) : (
+                            <Eye size={15} />
+                          )}
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              </div>
+            </>
+          )}
+        </div>
         <div className="row spread finance-pagination">
           <span className="muted">
             Página {result.page} de {result.pageCount}<span className="finance-desktop-only"> · até 20 por página</span>

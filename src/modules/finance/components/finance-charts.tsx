@@ -128,7 +128,7 @@ export function FinanceCharts({ overview }: { overview: FinanceOverview }) {
           <FinanceSelect hideLabel label="Natureza do gráfico"
             value={direction}
             onChange={(e) => setDirection(e.target.value)}
-            style={{ width: 120 }}
+            fieldClassName="finance-chart-direction"
           >
             <option value="INCOME">Entradas</option>
             <option value="EXPENSE">Saídas</option>

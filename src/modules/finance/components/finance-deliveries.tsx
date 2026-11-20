@@ -15,6 +15,7 @@ import { isMonth } from "../utils/finance-period";
 import { financeLocation } from "../utils/finance-navigation";
 import { useFinanceReportPdf } from "../hooks/use-finance-report-pdf";
 import { useFinanceDesktop } from "../hooks/use-finance-desktop";
+import { FinanceSkeleton } from "./finance-skeleton";
 import { FinanceEmpty } from "./finance-empty";
 import { Eye, FileText, History, Monitor, Pencil, Plus } from "lucide-react";
 import { FinanceDeliveryForm } from "./finance-delivery-form";
@@ -34,7 +35,6 @@ const labels = {
 };
 type FinanceDeliveriesProps = {
   initial: DeliveryProjection;
-  unit: string;
 };
 export function FinanceDeliveries(props: FinanceDeliveriesProps) {
   const desktop = useFinanceDesktop();
@@ -46,23 +46,12 @@ export function FinanceDeliveries(props: FinanceDeliveriesProps) {
         <p className="muted">
           Acesse pelo computador para acompanhar as entregas.
         </p>
-        <Link
-          className="finance-report-link"
-          href={financeLocation(
-            "/financeiro/relatorios",
-            props.unit,
-            props.initial.month,
-          )}
-        >
-          Voltar aos relatórios
-        </Link>
       </section>
     );
   return <FinanceDeliveriesContent {...props} />;
 }
 function FinanceDeliveriesContent({
   initial,
-  unit,
 }: FinanceDeliveriesProps) {
   const [data, setData] = useState(initial),
     [month, setMonth] = useState(initial.month),
@@ -81,6 +70,7 @@ function FinanceDeliveriesContent({
     pdf.invalidate();
     const id = ++request.current;
     if (!isMonth(m)) {
+      setLoading(false);
       setError("Selecione um mês válido.");
       return;
     }
@@ -135,12 +125,6 @@ function FinanceDeliveriesContent({
             Congregações ativas autorizadas, exceto a catedral.
           </p>
         </div>
-        <Link
-          className="finance-report-link"
-          href={financeLocation("/financeiro/relatorios", unit, month)}
-        >
-          Voltar aos relatórios
-        </Link>
       </header>
       <section className="card stack">
         <div className="finance-informative-period">
@@ -167,14 +151,6 @@ function FinanceDeliveriesContent({
               placeholder="Nome da congregação"
             />
           </label>
-        </div>
-        <div className="row spread">
-          <p className="muted">
-            {ready
-              ? `Entrega até ${date(data.dueDate)}`
-              : "Consultando período…"}
-          </p>
-
         </div>
         <div
           className="tabs finance-delivery-tabs"
@@ -203,20 +179,19 @@ function FinanceDeliveriesContent({
           </Button>
         </div>
       )}
-      {loading && <p role="status">Carregando entregas…</p>}
-      {ready && (
-        <section className="card stack">
-          <div className="row spread">
-            <h2>{labels[filter]}</h2>
-            <Button
-              disabled={pdf.busy}
-              onClick={() => void pdf.generate()}
-              loading={pdf.busy}
-            >
-              <FileText size={16} aria-hidden="true" /> Gerar PDF
-            </Button>
-          </div>
-          {rows.length ? (
+      <section className="card stack">
+        <div className="row spread">
+          <h2>{labels[filter]}</h2>
+          <Button
+            disabled={!ready || pdf.busy}
+            onClick={() => void pdf.generate()}
+            loading={pdf.busy}
+          >
+            <FileText size={16} aria-hidden="true" /> Gerar PDF
+          </Button>
+        </div>
+        <div className="finance-list-results">
+          {loading || pdf.isPending ? <FinanceSkeleton table label="Carregando entregas" /> : !ready ? null : rows.length ? (
             <div className="table-scroll">
               <table className="finance-delivery-table">
                 <thead>
@@ -308,9 +283,9 @@ function FinanceDeliveriesContent({
               </p>
             </FinanceEmpty>
           )}
-          <p className="muted">{rows.length} congregações na listagem.</p>
-        </section>
-      )}
+        </div>
+        <p className="muted">{ready ? `${rows.length} congregações na listagem.` : "\u00a0"}</p>
+      </section>
       {pdf.error && (
         <p role="alert" className="notice">
           {pdf.error}
@@ -341,9 +316,9 @@ function FinanceDeliveriesContent({
           row={editing}
           month={month}
           today={data.today}
-          onClose={() => {
+          onClose={(writeAttempted) => {
             setEditing(null);
-            void load();
+            if (writeAttempted) void load();
           }}
           onSaved={async () => {
             setEditing(null);

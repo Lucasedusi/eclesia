@@ -31,8 +31,7 @@ export function FinancePayableFilters({ query, categories, busy, onApply }: {
       <FinanceSelect label="Situação" name="dueStatus" disabled={busy || query.status === "PAID"} defaultValue={query.status === "PAID" ? "PAID" : query.dueStatus}>
         {query.status === "PAID" ? <option value="PAID">Pagas</option> : <><option value="ALL">Todas</option><option value="OVERDUE">Em atraso</option><option value="TODAY">Vence hoje</option><option value="UPCOMING">A vencer</option></>}
       </FinanceSelect>
-      <Button type="submit" variant="outline" className="finance-icon-button" disabled={busy} aria-label="Filtrar" title="Filtrar"><Funnel size={18} aria-hidden="true" /></Button>
+      <Button type="submit" disabled={busy}><Funnel size={18} aria-hidden="true" /> Filtro</Button>
     </fieldset>
-    {(query.search || query.categoryId || query.dueStatus !== "ALL" || query.dateFrom) && <div className="finance-payable-filter-reset"><Button variant="outline" disabled={busy} onClick={() => onApply({ search: undefined, categoryId: undefined, dueStatus: undefined, dateFrom: undefined, dateTo: undefined })}><X size={15} />Limpar filtros</Button></div>}
   </form>;
 }

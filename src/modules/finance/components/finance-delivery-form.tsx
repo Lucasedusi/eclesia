@@ -17,7 +17,7 @@ export function FinanceDeliveryForm({
   row: DeliveryRow;
   month: string;
   today: string;
-  onClose: () => void;
+  onClose: (writeAttempted: boolean) => void;
   onSaved: () => Promise<void>;
 }) {
   const [date, setDate] = useState(row.deliveryDate ?? today),
@@ -26,6 +26,7 @@ export function FinanceDeliveryForm({
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const key = useRef<string | null>(null);
+  const writeAttempted = useRef(false);
   const manual = row.source === "MANUAL";
   const title = undo
     ? "Desfazer entrega"
@@ -36,7 +37,7 @@ export function FinanceDeliveryForm({
     <Modal
       title={title}
       onClose={() => {
-        if (!busy) onClose();
+        if (!busy) onClose(writeAttempted.current);
       }}
       className="finance-drawer finance-secondary-drawer"
     >
@@ -63,6 +64,7 @@ export function FinanceDeliveryForm({
             setError(parsed.error.issues[0].message);
             return;
           }
+          writeAttempted.current = true;
           setBusy(true);
           setError("");
           try {
@@ -129,7 +131,7 @@ export function FinanceDeliveryForm({
             <Button type="submit" loading={busy}>
               {title}
             </Button>
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={() => onClose(writeAttempted.current)}>
               Cancelar
             </Button>
           </div>

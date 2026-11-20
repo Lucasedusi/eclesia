@@ -116,7 +116,7 @@ test("emite os três PDFs pelo modal sem herdar os filtros da listagem", async (
   );
   await page.getByRole("button", { name: "Relatórios", exact: true }).click();
   const dialog = page.getByRole("dialog");
-  await expect(dialog.getByText("01/10/2026")).toBeVisible();
+  await expect(dialog.getByText("01/10/2026")).toHaveCount(0);
   await expect(dialog.getByLabel("Caixas e contas", {exact:true})).toHaveText("Todos os caixas e contas");
   await expect(dialog.getByRole("radio", { name: /Resumido/ })).toBeChecked();
   const payments = dialog.getByLabel("Incluir resumo por forma de pagamento");
@@ -126,7 +126,12 @@ test("emite os três PDFs pelo modal sem herdar os filtros da listagem", async (
     if (mode === "detalhado") {
       await dialog.getByRole("radio", { name: /Detalhado/ }).check();
       const picker = dialog.getByLabel("Caixas e contas", { exact: true });
+      await expect(picker).toHaveCSS("font-size", "14px");
+      await expect(dialog.getByText("Resumido", {exact:true})).toHaveCSS("font-weight", "700");
       await picker.click();
+      const option = dialog.getByLabel("Caixa principal", { exact: true }).locator("..");
+      await expect(option).toHaveCSS("display", "flex");
+      await expect(option).toHaveCSS("flex-direction", "row");
       await dialog.getByLabel("Todos os caixas e contas", { exact: true }).uncheck();
       await expect(dialog.getByRole("button", { name: "Gerar PDF" })).toBeDisabled();
       await dialog.getByLabel("Caixa principal", { exact: true }).check();
