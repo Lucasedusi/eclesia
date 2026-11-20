@@ -1,4 +1,5 @@
 import { FinanceSkeleton } from "@/modules/finance/components/finance-skeleton";
+import { isFinanceMobileRequest } from "@/modules/finance/utils/finance-mobile-request";
 import { Suspense } from "react";
 import {
   resolveFinancePage,
@@ -25,7 +26,7 @@ async function Content({
   ]);
   return (<div className="stack">
     <FinanceOverview
-      canViewDailyFlow={canViewDailyFlow}
+      canViewDailyFlow={canViewDailyFlow && !(await isFinanceMobileRequest())}
       overview={overview}
       recent={recent}
       unit={context.congregationId}

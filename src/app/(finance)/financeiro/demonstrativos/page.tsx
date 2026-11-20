@@ -1,4 +1,5 @@
 import { FinanceSkeleton } from "@/modules/finance/components/finance-skeleton";
+import { isFinanceMobileRequest } from "@/modules/finance/utils/finance-mobile-request";
 import { Suspense } from "react";
 import {
   resolveFinancePage,
@@ -32,7 +33,7 @@ async function Content({
       versions={versions}
       configured={rules.some((r) => r.effectiveMonth <= month)}
       canGenerate={context.capabilities.generateStatement}
-      canConfigure={context.capabilities.manageSettings}
+      canConfigure={context.capabilities.manageSettings && !(await isFinanceMobileRequest())}
     />
   );
 }

@@ -25,12 +25,8 @@ for (const width of [320, 390]) {
 
     await page.goto(`/financeiro/configuracoes?unidade=${unit}&mes=2026-10`);
     await expect(page.getByRole("heading", { name: "Configurações financeiras" })).toBeVisible();
-    await expect(page.locator(".finance-mobile-card-table").first()).toBeVisible();
-    await expect(page.getByRole("button", { name: "Novo cadastro" })).toBeVisible();
-    await page.getByRole("button", { name: "Novo cadastro" }).click();
-    await expect(page.getByRole("dialog")).toBeVisible();
-    await expect(page.locator("#finance-modal-root .finance-secondary-drawer")).toHaveCSS("width", `${width}px`);
-    await page.getByRole("button", { name: "Fechar modal" }).click();
+    await expect(page.getByText("Acesse pelo computador para alterar as configurações financeiras.")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Novo cadastro" })).toHaveCount(0);
 
     await page.goto(`/financeiro/demonstrativos?unidade=${unit}&mes=2026-10`);
     await expect(page.getByRole("button", { name: /Gerar (demonstrativo|nova versão)/ })).toBeVisible();

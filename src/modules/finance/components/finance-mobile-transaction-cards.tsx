@@ -2,7 +2,7 @@
 
 import type { FinanceTransactionRow } from "../types/finance-query.types";
 import type { FinanceCatalogs } from "../types/finance-catalog.types";
-import { FinanceTransactionAmount, FinanceTransactionPayment } from "./finance-transaction-cells";
+import { FinanceTransactionAmount, FinancePaymentBadge } from "./finance-transaction-cells";
 import { Loader2 } from "lucide-react";
 
 export function FinanceMobileTransactionCards({
@@ -39,10 +39,11 @@ export function FinanceMobileTransactionCards({
                   item.description ||
                   (item.direction === "INCOME" ? "Contribuição coletiva" : "Não informado")}
               </span>
-              <FinanceTransactionPayment item={item} catalogs={catalogs} />
-              <span>{[item.departmentName, item.classificationName].filter(Boolean).join(" · ")}</span>
             </span>
-            <strong className="finance-mobile-transaction-side"><FinanceTransactionAmount item={item} /></strong>
+            <span className="finance-mobile-transaction-side">
+              <strong><FinanceTransactionAmount item={item} /></strong>
+              <FinancePaymentBadge item={item} catalogs={catalogs} />
+            </span>
             {loadingId === item.id && (
               <span className="finance-card-loading" role="status">
                 <Loader2 size={24} className="finance-spin" aria-hidden="true" />

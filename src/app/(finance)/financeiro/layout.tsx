@@ -1,7 +1,6 @@
 import {canManagePayables} from "@/modules/finance/utils/finance-payables";
 import {Suspense} from "react";
-import { headers } from "next/headers";
-import { userAgent } from "next/server";
+import { isFinanceMobileRequest } from "@/modules/finance/utils/finance-mobile-request";
 import type { Metadata, Viewport } from "next";
 import {requireFinanceContext,listFinanceUnits} from "@/modules/finance/services/finance-access.service";
 import {PERMISSIONS} from "@/modules/auth/constants/permissions";
@@ -18,8 +17,7 @@ export const viewport: Viewport = { themeColor: "#0B3D32" };
 async function AuthenticatedFinance({children}:{children:React.ReactNode}){
  const context=await requireFinanceContext({permission:PERMISSIONS.financeView});
  const units=await listFinanceUnits(context.auth);
- const { device } = userAgent({ headers: await headers() });
- const desktopDevice = device.type !== "mobile" && device.type !== "tablet";
- return <FinanceShell context={{name:context.auth.profile.displayName||context.auth.profile.fullName,churchName:context.auth.church.name,units,defaultUnitId:context.congregationId,defaultMonth:todayLocal().slice(0,7),canManagePayables:desktopDevice && canManagePayables(context.auth)}}>{children}</FinanceShell>;
+ const mobileDevice = await isFinanceMobileRequest();
+ return <FinanceShell context={{name:context.auth.profile.displayName||context.auth.profile.fullName,churchName:context.auth.church.name,units,defaultUnitId:context.congregationId,defaultMonth:todayLocal().slice(0,7),mobileDevice,canManagePayables:!mobileDevice && canManagePayables(context.auth)}}>{children}</FinanceShell>;
 }
 export default function Layout({children}:{children:React.ReactNode}){return <Suspense fallback={<Loading/>}><AuthenticatedFinance>{children}</AuthenticatedFinance></Suspense>;}

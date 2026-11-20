@@ -7,9 +7,14 @@ import { todayLocal } from "../utils/finance-period";
 import { throwFinanceDatabaseError } from "../utils/finance-errors";
 import { dailyCashFlowPage, dailyCashFlowQuery } from "../validations/finance-daily-cash-flow.schemas";
 
-export async function getDailyCashFlow(params: Record<string, string | string[] | undefined>) {
+export async function requireDailyCashFlowContext() {
   const context = await requireFinanceContext({ permission: PERMISSIONS.financeView });
   if (!hasFinanceAdminAccess(context)) throw new Error("FORBIDDEN");
+  return context;
+}
+
+export async function getDailyCashFlow(params: Record<string, string | string[] | undefined>) {
+  const context = await requireDailyCashFlowContext();
   const today = todayLocal();
   const filters = dailyCashFlowQuery.parse({ ...params, date: params.date ?? today });
   const client = await createClient();

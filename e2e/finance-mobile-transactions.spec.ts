@@ -32,8 +32,15 @@ test("mobile transaction cards share filters, totals and details with the deskto
   await expect(page.getByText("Entradas filtradas")).toBeHidden();
   for (const card of await cards.getByRole("button").all()) {
     await expect(card.locator("time")).toHaveText(/\d{2}\/\d{2}\/\d{4}/);
-    await expect(card.locator(".finance-transaction-payment")).toBeVisible();
-    await expect(card.locator(".finance-transaction-payment svg")).toBeVisible();
+    await expect(card.locator(".finance-payment-badge")).toBeVisible();
+    await expect(card.locator(".finance-payment-badge svg")).toBeVisible();
+    const amount = (await card.locator(".finance-mobile-transaction-side > strong").boundingBox())!;
+    const badge = (await card.locator(".finance-payment-badge").boundingBox())!;
+    const date = (await card.locator("time").boundingBox())!;
+    expect(amount.x).toBeGreaterThan(date.x);
+    expect(amount.y).toBeCloseTo(date.y, 0);
+    expect(badge.y).toBeGreaterThan(amount.y + amount.height);
+    expect(badge.x + badge.width).toBeCloseTo(amount.x + amount.width, 0);
   }
 
   await cards.getByRole("button", { name: /Oferta de culto/ }).first().click();
@@ -49,7 +56,18 @@ test("mobile transaction cards share filters, totals and details with the deskto
 
   await page.getByRole("button", { name: /Mais Filtros/ }).click();
   await page.getByRole("combobox", { name: "Situação" }).selectOption("CANCELLED");
-  await expect(page.getByRole("button", { name: /1 filtro ativo/ })).toBeVisible();
+  const toggle = page.getByRole("button", { name: /1 filtro ativo/ });
+  await expect(toggle).toBeVisible();
+  const badge = toggle.locator(".finance-active-filter-count");
+  await expect(badge).toHaveText("1");
+  expect(await badge.evaluate(el => {
+    const digits = document.createRange();
+    digits.selectNodeContents(el);
+    const text = digits.getBoundingClientRect();
+    const circle = el.getBoundingClientRect();
+    return text.top >= circle.top && text.bottom <= circle.bottom &&
+      Math.abs(text.left + text.width / 2 - circle.left - circle.width / 2) < 1;
+  })).toBe(true);
   await page.getByRole("button", { name: "Limpar filtros" }).click();
   await expect(page).not.toHaveURL(/status=CANCELLED/);
 });
@@ -86,4 +104,31 @@ test("mobile transfers stay separate from entry and expense totals", async ({
   await page.goto(`/financeiro/lancamentos?unidade=${f.headquartersId}&mes=2026-10&dateFrom=2026-09-29&dateTo=2026-10-19`);
   await page.getByText("Transferências entre caixas", { exact: true }).click();
   await expect(page.locator(".finance-mobile-transfers").getByText(description)).toBeVisible();
+});
+
+test("mobile search preserves the list height and text entered while results load", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(`/financeiro/lancamentos?unidade=${fixture().headquartersId}&mes=2026-10`);
+  const results = page.locator(".finance-list-results");
+  const search = page.getByRole("textbox", { name: "Buscar", exact: true });
+  await expect(results.getByRole("list")).toBeVisible();
+  const before = (await results.boundingBox())!.height;
+  const hold = Promise.withResolvers<void>();
+  await page.route(url => url.searchParams.get("search") === "sem-resultado", async route => {
+    await hold.promise;
+    await route.continue();
+  });
+  await search.fill("sem-resultado");
+  await search.press("Enter");
+  try {
+    await expect(results.getByRole("status", { name: "Buscando lançamentos" })).toBeVisible();
+    expect((await results.boundingBox())!.height).toBe(before);
+    await expect(search).toBeFocused();
+    await search.fill("próxima consulta");
+  } finally {
+    hold.resolve();
+  }
+  await expect(results).toContainText("Nenhum lançamento encontrado");
+  await expect(search).toBeFocused();
+  await expect(search).toHaveValue("próxima consulta");
 });

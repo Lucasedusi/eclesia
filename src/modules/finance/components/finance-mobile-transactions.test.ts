@@ -123,17 +123,17 @@ describe("mobile finance transactions", () => {
     expect(cards).toHaveLength(2);
     expect(cards[0]).toContain('<time dateTime="2026-10-14">14/10/2026</time>');
     expect(cards[1]).toContain('<time dateTime="2026-10-13">13/10/2026</time>');
-    expect(cards[0]).toContain("Membros");
+    expect(cards[0]).not.toContain("Membros");
     expect(cards[1]).toContain("<s>");
     expect(cards[0]).not.toContain("<s>");
     expect(html).toContain("<th>Data</th><th>Lançamento</th><th>Pagamento</th><th>Departamento</th>");
     expect(html).not.toContain("<th>Situação</th>");
     for (const card of cards) {
-      expect(card).toContain("Tesouraria");
-      expect(card).toContain("Caixa central");
+      expect(card).not.toContain("Tesouraria");
+      expect(card).not.toContain("Caixa central");
       expect(card).toContain('data-method="CASH"');
       expect(card).toContain("Dinheiro");
-      expect(card.indexOf("Dinheiro")).toBeLessThan(card.indexOf("Tesouraria"));
+      expect(card.indexOf("Dinheiro")).toBeGreaterThan(card.indexOf("finance-mobile-transaction-side"));
     }
   });
 

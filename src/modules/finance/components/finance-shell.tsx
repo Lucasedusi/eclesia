@@ -60,7 +60,8 @@ type Guard = {
 };
 type Navigation = {
   headquartersId?: string;
-  navigate: (url: string) => void;
+  navigate: (url: string, feedback?: "results") => void;
+  filtering: boolean;
   refresh: () => void;
   isPending: boolean;
   register: (guard: Guard) => () => void;
@@ -88,6 +89,7 @@ export type FinanceShellDTO = {
   units: FinanceUnit[];
   defaultUnitId: string;
   defaultMonth: string;
+  mobileDevice?: boolean;
   canManagePayables?: boolean;
 };
 export function FinanceShell({
@@ -113,7 +115,9 @@ export function FinanceShell({
     }
     window.dispatchEvent(new Event("finance-sidebar-change"));
   }
-  const [isPending, startTransition] = useTransition();
+  const [navigating, startTransition] = useTransition();
+  const [filtering, startFilterTransition] = useTransition();
+  const isPending = navigating || filtering;
   const refresh = useCallback(
     () => startTransition(() => router.refresh()),
     [router],
@@ -140,11 +144,12 @@ export function FinanceShell({
     [],
   );
   const navigate = useCallback(
-    (url: string) => {
+    (url: string, feedback?: "results") => {
       if ([...guards.current].some((g) => g.dirty)) setPending(url);
+      else if (feedback === "results") startFilterTransition(() => router.push(url, { scroll: false }));
       else push(url);
     },
-    [push, setPending],
+    [push, router, setPending, startFilterTransition],
   );
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
@@ -193,13 +198,14 @@ export function FinanceShell({
       label: "Configurações",
       path: "/financeiro/configuracoes",
       icon: SlidersHorizontal,
-      show: unit.capabilities?.manageSettings,
+      show: !context.mobileDevice && unit.capabilities?.manageSettings,
+      desktopOnly: true,
     },
   ];
   return (
     <FinanceThemeProvider>
       <NavigationContext.Provider
-        value={{ navigate, register, refresh, isPending, headquartersId: context.units.find(u => u.isHeadquarters)?.id }}
+        value={{ navigate, register, refresh, isPending, filtering, headquartersId: context.units.find(u => u.isHeadquarters)?.id }}
       >
         <Workspace
           className="finance"
@@ -319,7 +325,7 @@ export function FinanceShell({
               </div>
             </div>
           </header>
-          {isPending && (
+          {navigating && (
             <div className="finance-progress no-print" role="status">
               <span className="finance-spinner" aria-hidden="true" />
               <span className="finance-desktop-only">Atualizando financeiro…</span>

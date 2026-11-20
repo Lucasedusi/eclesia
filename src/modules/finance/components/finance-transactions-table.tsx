@@ -1,10 +1,11 @@
 "use client";
 import { FinanceSelect } from "./finance-select";
 import { FinanceEmpty } from "./finance-empty";
+import { FinanceSkeleton } from "./finance-skeleton";
 import { FinanceListResults } from "./finance-list-results";
 import { useFinanceNavigation } from "./finance-shell";
 import { Loader2 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import {
   Search,
@@ -49,14 +50,29 @@ export function FinanceTransactionsTable({
     close: () => void,
   ) => React.ReactNode;
 }) {
-  const { navigate, isPending } = useFinanceNavigation(),
+  const { navigate, isPending, filtering } = useFinanceNavigation(),
     path = usePathname(),
     sequence = useRef(0),
     [detail, setDetail] = useState<FinanceTransactionDetail | null>(initialDetail ?? null),
     [error, setError] = useState(""),
     [loading, setLoading] = useState<string | null>(null);
   const [advanced, setAdvanced] = useState(false);
+  const [showSkeleton, setShowSkeleton] = useState(false);
+  useEffect(() => {
+    if (!filtering) return;
+    const delay = window.setTimeout(() => setShowSkeleton(true), 180);
+    return () => {
+      window.clearTimeout(delay);
+      setShowSkeleton(false);
+    };
+  }, [filtering]);
   const filterForm = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    for (const select of filterForm.current?.querySelectorAll("select[name]") ?? []) {
+      if (select instanceof HTMLSelectElement)
+        select.value = String(filters[select.name as keyof FinanceFilters] ?? "");
+    }
+  }, [filters]);
   const advancedFilterCount = [
     filters.status !== "ALL",
     filters.titheClassificationId,
@@ -76,7 +92,7 @@ export function FinanceTransactionsTable({
     }
     for (const [k, v] of data)
       if (typeof v === "string" && v && v !== "ALL") query.set(k, v);
-    navigate(`${path}?${query}`);
+    navigate(`${path}?${query}`, "results");
   }
   function paginate(page: number) {
     const data = new FormData();
@@ -133,7 +149,6 @@ export function FinanceTransactionsTable({
             if (e.target instanceof HTMLSelectElement)
               filter(new FormData(e.currentTarget));
           }}
-          key={JSON.stringify(filters)}
           onSubmit={(e) => {
             e.preventDefault();
             filter(new FormData(e.currentTarget));
@@ -171,10 +186,10 @@ export function FinanceTransactionsTable({
                 <span className="finance-desktop-only">{filterCountLabel(desktopFilterCount)}</span>
               )}
               {advancedFilterCount > 0 && (
-                <span className="finance-mobile-only finance-active-filter-count">
-                  <span aria-hidden="true">{advancedFilterCount}</span>
-                  <span className="sr-only">{filterCountLabel(advancedFilterCount)}</span>
-                </span>
+                <>
+                  <span className="finance-mobile-only finance-active-filter-count" aria-hidden="true">{advancedFilterCount}</span>
+                  <span className="finance-mobile-only"><span className="sr-only">{filterCountLabel(advancedFilterCount)}</span></span>
+                </>
               )}
             </Button>
           </div>
@@ -270,7 +285,7 @@ export function FinanceTransactionsTable({
         </div>
         {error && <div role="alert">{error}</div>}
         <FinanceListResults busy={isPending}>
-          {result.items.length === 0 ? (
+          {filtering && showSkeleton ? <FinanceSkeleton table label="Buscando lançamentos" /> : result.items.length === 0 ? (
             <FinanceEmpty>
               Nenhum lançamento encontrado. Confira o mês e os filtros
               selecionados.
@@ -399,12 +414,19 @@ function TransactionSearch({ initialValue, busy, onClear }: {
   busy: boolean;
   onClear: () => void;
 }) {
-  const [value, setValue] = useState(initialValue);
+  const [draft, setDraft] = useState({ applied: initialValue, text: initialValue, editedWhileBusy: false });
+  if (draft.applied !== initialValue) {
+    setDraft({
+      applied: initialValue,
+      text: draft.editedWhileBusy ? draft.text : initialValue,
+      editedWhileBusy: false,
+    });
+  }
   const input = useRef<HTMLInputElement>(null);
   return <span className="finance-search-input">
-    <input ref={input} aria-label="Buscar" name="search" value={value} onChange={event => setValue(event.target.value)} placeholder="Nome, descrição ou documento" maxLength={160} />
-    {busy ? <span className="finance-search-loading" role="status" aria-label="Buscando lançamentos"><Loader2 size={16} className="finance-spin" aria-hidden="true" /></span> : value && <button type="button" className="finance-clear-search" aria-label="Limpar busca" onClick={() => {
-      setValue("");
+    <input ref={input} aria-label="Buscar" name="search" value={draft.text} onChange={event => setDraft({ applied: initialValue, text: event.target.value, editedWhileBusy: busy })} placeholder="Nome, descrição ou documento" maxLength={160} />
+    {draft.text && <button type="button" className="finance-clear-search" aria-label="Limpar busca" onClick={() => {
+      setDraft({ applied: initialValue, text: "", editedWhileBusy: false });
       onClear();
       input.current?.focus();
     }}><X size={15} aria-hidden="true" /></button>}

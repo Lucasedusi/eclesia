@@ -1,5 +1,7 @@
 import { listFinanceDeliveryRules } from "@/modules/finance/services/finance-administrative.service";
 import { FinanceSkeleton } from "@/modules/finance/components/finance-skeleton";
+import { isFinanceMobileRequest } from "@/modules/finance/utils/finance-mobile-request";
+import { FinanceDesktopAccess } from "@/modules/finance/components/finance-desktop-access";
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -19,11 +21,10 @@ async function Content({
 }: {
   searchParams: FinanceSearchParams;
 }) {
-  const { context, month, search } = await resolveFinancePage(
-      searchParams,
-      true,
-    ),
-    client = await createClient();
+  const { context, month, search } = await resolveFinancePage(searchParams, true);
+  const access = { title: "Configurações financeiras", message: "Acesse pelo computador para alterar as configurações financeiras." };
+  if (await isFinanceMobileRequest()) return <FinanceDesktopAccess {...access} mobileDevice />;
+  const client = await createClient();
   const [catalogs, rules, units, roles, latestMonth, deliveryRules] =
     await Promise.all([
       listFinanceCatalogs(context),
@@ -41,18 +42,20 @@ async function Content({
     ]);
   if (roles.error) throw new Error("UNAVAILABLE");
   return (
-    <FinanceSettings
-      initialArea={search.area === "entregas" ? "DELIVERY" : undefined}
-      deliveryRules={deliveryRules}
-      latestStatementMonth={latestMonth}
-      currentMonth={todayLocal().slice(0, 7)}
-      catalogs={catalogs}
-      unit={context.congregationId}
-      month={month}
-      roles={roles.data ?? []}
-      rules={rules}
-      units={units}
-    />
+    <FinanceDesktopAccess {...access}>
+      <FinanceSettings
+        initialArea={search.area === "entregas" ? "DELIVERY" : undefined}
+        deliveryRules={deliveryRules}
+        latestStatementMonth={latestMonth}
+        currentMonth={todayLocal().slice(0, 7)}
+        catalogs={catalogs}
+        unit={context.congregationId}
+        month={month}
+        roles={roles.data ?? []}
+        rules={rules}
+        units={units}
+      />
+    </FinanceDesktopAccess>
   );
 }
 export default function Page(props: { searchParams: FinanceSearchParams }) {

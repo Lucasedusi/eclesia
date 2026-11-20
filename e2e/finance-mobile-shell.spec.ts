@@ -33,8 +33,12 @@ for (const width of [320, 390]) {
 
     await mobile.getByRole("button", { name: "Mais" }).click();
     await expect(page.getByRole("link", { name: "Caixas e contas" })).toBeVisible();
+    await expect(mobile.getByRole("link", { name: "Configurações" })).toHaveCount(0);
+    await expect(mobile.getByRole("link", { name: "Caixas e contas" })).toHaveCSS("gap", "12px");
     await expect(mobile.getByRole("group", { name: "Mais opções" }).getByRole("link", { name: "Relatórios" })).toHaveCount(0);
     await mobile.getByRole("link", { name: "Relatórios" }).click();
+    await expect(page.getByText("Confira cada entrada e saída", { exact: true })).toBeVisible();
+    await expect(page.getByText(/PDF em A4, pronto para conferir|Selecione o modelo e gere o relatório/)).toHaveCount(0);
     await expect(page).toHaveURL(new RegExp("/financeiro/relatorios\\?unidade=" + unitId + "&mes=2026-10"));
   });
 }

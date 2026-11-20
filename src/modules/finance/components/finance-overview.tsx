@@ -138,7 +138,7 @@ export function FinanceOverview({
             Sua congregação em números · {month.split("-").reverse().join("/")}
           </p>
         </div>
-        {canViewDailyFlow && <Link className="finance-daily-shortcut" href="/financeiro/fluxo-de-caixa"><CalendarDays size={17} />Fluxo de caixa diário</Link>}
+        {canViewDailyFlow && <Link className="finance-daily-shortcut finance-desktop-only" href="/financeiro/fluxo-de-caixa"><CalendarDays size={17} />Fluxo de caixa diário</Link>}
       </div>
       <FinanceSummaryCards overview={overview} />
       <RecentTransactions recent={recent} unit={unit} month={month} mobile />

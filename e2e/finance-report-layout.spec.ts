@@ -148,7 +148,7 @@ test("catalog columns stay fixed across tabs and edit actions start beneath the 
   }
 });
 
-for (const width of [390, 1280]) {
+for (const width of [1024, 1280]) {
   test(`category filters keep the layout stable and the finance header stays visible at ${width}px`, async ({ page }) => {
     const f = fixture();
     await page.setViewportSize({ width, height: 700 });
@@ -162,12 +162,7 @@ for (const width of [390, 1280]) {
     const status = await card.getByRole("combobox", { name: "Situação" }).boundingBox();
     expect(searchBefore!.x).toBeCloseTo(results!.x, 0);
     expect(status!.x + status!.width).toBeCloseTo(results!.x + results!.width, 0);
-    if (width === 390) {
-      expect(searchBefore!.width).toBeCloseTo(results!.width, 0);
-      expect(status!.width).toBeCloseTo(results!.width, 0);
-    } else {
-      expect(status!.y).toBeCloseTo(searchBefore!.y, 0);
-    }
+    expect(status!.y).toBeCloseTo(searchBefore!.y, 0);
     await search.fill("categoria-inexistente");
     await expect(card.getByRole("button", { name: "Limpar filtros" })).toHaveCount(0);
     await expect(page.getByText("Nenhuma categoria corresponde aos filtros.")).toBeVisible();

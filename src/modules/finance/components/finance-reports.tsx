@@ -161,8 +161,7 @@ function FinanceReportsContent({
             {
               value: "ANALYTIC",
               title: "Analítico — lançamentos detalhados",
-              description:
-                "Confira cada entrada e saída, com pessoas e descrições.",
+              description: "Confira cada entrada e saída",
               Icon: ListOrdered,
             },
             {
@@ -400,17 +399,8 @@ function FinanceReportsContent({
         <section className="card finance-report-empty">
           <FileText size={34} aria-hidden="true" />
           <h2>Uma visão clara das finanças</h2>
-          <p>
-            {categoryReport
-              ? "Selecione o período, a movimentação e as categorias desejadas para gerar o relatório."
-              : informative
-                ? "Confira o período e as colunas desejadas para gerar o informativo da congregação."
-                : "Selecione o modelo e gere o relatório do período escolhido no cabeçalho."}
-          </p>
-          <small>
-            PDF em A4, pronto para conferir, imprimir ou compartilhar com a
-            contabilidade.
-          </small>
+          {categoryReport && <p>Selecione o período, a movimentação e as categorias desejadas para gerar o relatório.</p>}
+          {informative && <p>Confira o período e as colunas desejadas para gerar o informativo da congregação.</p>}
         </section>
       )}
     </div>

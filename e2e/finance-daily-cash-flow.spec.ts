@@ -12,6 +12,13 @@ for (const width of [390, 1280]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto(`/financeiro?unidade=${f.unitId}&mes=2026-10`);
     const shortcut = page.getByRole("link", { name: "Fluxo de caixa diário" });
+    if (width < 761) {
+      await expect(shortcut).toBeHidden();
+      await page.goto("/financeiro/fluxo-de-caixa?date=2026-10-01");
+      await expect(page.getByText("Acesse pelo computador para consultar o fluxo de caixa diário.")).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Movimentações do dia" })).toHaveCount(0);
+      return;
+    }
     await expect(shortcut).toHaveCSS("height", "48px");
     await expect(shortcut).toHaveCSS("padding", "10px 14px");
     await shortcut.click();

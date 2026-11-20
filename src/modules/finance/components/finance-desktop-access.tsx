@@ -7,7 +7,9 @@ import { Button } from "@/components/ui/button";
 import { useFinanceDesktop } from "../hooks/use-finance-desktop";
 import { useFinanceNavigation } from "./finance-shell";
 
-export function FinancePayablesAccess({ children, mobileDevice = false }: {
+export function FinanceDesktopAccess({ title, message, children, mobileDevice = false }: {
+  title: string;
+  message: string;
   children?: ReactNode;
   mobileDevice?: boolean;
 }) {
@@ -25,10 +27,10 @@ export function FinancePayablesAccess({ children, mobileDevice = false }: {
   }
 
   if (mobileDevice || !desktop) return (
-    <section className="card stack finance-payables-desktop-notice">
+    <section className="card stack finance-desktop-notice">
       <Monitor size={30} aria-hidden="true" />
-      <h1>Contas a pagar</h1>
-      <p className="muted">Contas a pagar está disponível apenas no computador.</p>
+      <h1>{title}</h1>
+      <p className="muted">{message}</p>
       <Button variant="outline" onClick={back} disabled={navigation.isPending}>Voltar à visão geral</Button>
     </section>
   );

@@ -9,13 +9,22 @@ export function FinanceTransactionPayment({ item, catalogs }: {
   catalogs: FinanceCatalogs;
 }) {
   const cashbox = catalogs.cashboxes.find((box) => box.id === item.cashboxId);
-  const method = catalogs.paymentMethods.find((option) => option.id === item.paymentMethodId);
   return (
     <span className="finance-transaction-payment">
       <span>{cashbox?.name ?? "Caixa indisponível"}</span>
-      <span className="finance-payment-badge" data-method={method?.kind ?? "OTHER"}>
-        <FinancePaymentIcon kind={method?.kind} />{method?.name ?? "Forma indisponível"}
-      </span>
+      <FinancePaymentBadge item={item} catalogs={catalogs} />
+    </span>
+  );
+}
+
+export function FinancePaymentBadge({ item, catalogs }: {
+  item: FinanceTransactionRow;
+  catalogs: FinanceCatalogs;
+}) {
+  const method = catalogs.paymentMethods.find((option) => option.id === item.paymentMethodId);
+  return (
+    <span className="finance-payment-badge" data-method={method?.kind ?? "OTHER"}>
+      <FinancePaymentIcon kind={method?.kind} />{method?.name ?? "Forma indisponível"}
     </span>
   );
 }

@@ -112,6 +112,7 @@ export function FinanceStatements({
             <>
               {" "}
               <Link
+                className="finance-desktop-only"
                 href={financeLocation("/financeiro/configuracoes", unit, month)}
               >
                 Abrir configurações

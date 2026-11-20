@@ -83,7 +83,7 @@ test("filter and detail loading have stable feedback and payment identification"
     .getByRole("combobox", { name: "Situação", exact: true })
     .selectOption("CONFIRMED");
   await expect(
-    page.getByRole("status", { name: "Buscando lançamentos" }),
+    page.locator(".finance-list-results").getByRole("status", { name: "Buscando lançamentos" }),
   ).toBeVisible();
   expect(
     (await page
