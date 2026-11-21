@@ -809,7 +809,7 @@ export const Workspace = styled.div`
     }
     .finance-mobile-nature {
       display: grid;
-      grid-template-columns: repeat(4, minmax(max-content, 1fr));
+      grid-template-columns: repeat(3, minmax(max-content, 1fr)) 44px;
       gap: 6px;
     }
     .finance-mobile-nature button {
@@ -832,6 +832,8 @@ export const Workspace = styled.div`
     }
     .finance-mobile-nature .finance-filter-toggle {
       position: relative;
+      display: grid;
+      place-items: center;
     }
     .finance-mobile-nature .finance-filter-toggle[aria-expanded="true"] {
       background: #e5f4ec;

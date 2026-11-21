@@ -39,13 +39,17 @@ for (const width of [320, 393, 430]) {
     expect(sb.x).toBeGreaterThan(ib.x);
     expect(sb.x + sb.width).toBeLessThanOrEqual(ib.x + ib.width);
     expect(fb.y).toBeGreaterThanOrEqual(ib.y + ib.height);
+    await expect(filters).toHaveAccessibleName("Filtros");
+    await expect(filters).toHaveText("");
+    await expect(filters.locator("svg")).toBeVisible();
+    expect(fb.width).toBe(44);
     await filters.click();
     await page.getByRole("combobox", { name: "Situação" }).selectOption("CONFIRMED");
     await expect(filters).toHaveAccessibleName(/1 filtro ativo/);
     await expect(filters).toHaveAttribute("aria-expanded", "true");
     const group = page.getByRole("group", { name: "Filtrar movimento" });
     const buttons = group.getByRole("button");
-    await expect(buttons).toHaveText(["Todos", "Entradas", "Saídas", /Filtros/]);
+    await expect(buttons).toHaveText(["Todos", "Entradas", "Saídas", "1"]);
     const bounds = await buttons.evaluateAll(elements => elements.map(el => {
       const { x, y, right, height } = el.getBoundingClientRect();
       return { x, y, right, height, fits: el.scrollWidth <= el.clientWidth };

@@ -12,6 +12,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Eye,
+  Funnel,
   SlidersHorizontal,
   X,
 } from "lucide-react";
@@ -208,16 +209,14 @@ export function FinanceTransactionsTable({
             <button
               type="button"
               className="finance-filter-toggle"
+              aria-label={advancedFilterCount ? `Filtros, ${filterCountLabel(advancedFilterCount)}` : "Filtros"}
               aria-expanded={advanced}
               aria-controls="finance-advanced-filters"
               onClick={() => setAdvanced(!advanced)}
             >
-              Filtros
+              <Funnel size={18} aria-hidden="true" />
               {advancedFilterCount > 0 && (
-                <>
-                  <span className="finance-active-filter-count" aria-hidden="true">{advancedFilterCount}</span>
-                  <span className="sr-only"> {filterCountLabel(advancedFilterCount)}</span>
-                </>
+                <span className="finance-active-filter-count" aria-hidden="true">{advancedFilterCount}</span>
               )}
             </button>
           </div>
