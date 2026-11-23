@@ -21,6 +21,7 @@ import {
   ListChecks,
   SlidersHorizontal,
   Landmark,
+  BookOpenCheck,
   Leaf,
   Files,
   Pencil,
@@ -91,6 +92,7 @@ export type FinanceShellDTO = {
   defaultMonth: string;
   mobileDevice?: boolean;
   canManagePayables?: boolean;
+  canUseAccounting?: boolean;
 };
 export function FinanceShell({
   context,
@@ -194,6 +196,7 @@ export function FinanceShell({
       icon: Files,
       show: true,
     },
+    { label: "Contabilidade", path: "/financeiro/contabilidade", icon: BookOpenCheck, show: context.canUseAccounting },
     {
       label: "Configurações",
       path: "/financeiro/configuracoes",

@@ -4569,6 +4569,7 @@ export type Database = {
       financial_cashboxes: {
         Row: {
           account_number: string | null
+          accounting_code: string | null
           agency: string | null
           bank_name: string | null
           cashbox_type: string
@@ -4592,6 +4593,7 @@ export type Database = {
         }
         Insert: {
           account_number?: string | null
+          accounting_code?: string | null
           agency?: string | null
           bank_name?: string | null
           cashbox_type?: string
@@ -4615,6 +4617,7 @@ export type Database = {
         }
         Update: {
           account_number?: string | null
+          accounting_code?: string | null
           agency?: string | null
           bank_name?: string | null
           cashbox_type?: string
@@ -4669,6 +4672,7 @@ export type Database = {
       }
       financial_categories: {
         Row: {
+          accounting_code: string | null
           category_group: string
           category_type: string
           church_id: string
@@ -4693,6 +4697,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          accounting_code?: string | null
           category_group?: string
           category_type?: string
           church_id: string
@@ -4717,6 +4722,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          accounting_code?: string | null
           category_group?: string
           category_type?: string
           church_id?: string
@@ -9013,6 +9019,10 @@ export type Database = {
         }
         Returns: Json
       }
+      confirm_finance_accounting_import: {
+        Args: { p_batch: string; p_church: string }
+        Returns: undefined
+      }
       consume_event_public_limit: {
         Args: {
           p_event_id: string
@@ -9125,6 +9135,16 @@ export type Database = {
         Args: { p_event_id: string }
         Returns: number
       }
+      finance_accounting_catalog: { Args: { p_church: string }; Returns: Json }
+      finance_accounting_history: {
+        Args: {
+          p_box: string
+          p_church: string
+          p_page: number
+          p_unit: string
+        }
+        Returns: Json
+      }
       finance_bank_import_candidates: {
         Args: {
           p_church_id: string
@@ -9143,6 +9163,15 @@ export type Database = {
           p_payload: Json
           p_revision: number
           p_unit: string
+        }
+        Returns: Json
+      }
+      generate_finance_accounting: {
+        Args: {
+          p_church: string
+          p_filters: Json
+          p_fingerprint: string
+          p_repeat: boolean
         }
         Returns: Json
       }
@@ -9398,6 +9427,10 @@ export type Database = {
       prepare_member_import_official: {
         Args: { p_items: Json; p_payload: Json }
         Returns: string
+      }
+      preview_finance_accounting: {
+        Args: { p_church: string; p_filters: Json; p_page: number }
+        Returns: Json
       }
       promote_event_waitlist: {
         Args: { p_registration_id: string }
@@ -9908,6 +9941,16 @@ export type Database = {
           p_access_id: string
           p_effect: string
           p_permission_key: string
+        }
+        Returns: undefined
+      }
+      set_finance_accounting_code: {
+        Args: {
+          p_church: string
+          p_code: string
+          p_id: string
+          p_kind: string
+          p_previous: string
         }
         Returns: undefined
       }

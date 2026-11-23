@@ -1,0 +1,46 @@
+.filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 175px), 1fr));
+  gap: 14px;
+  align-items: end;
+}
+.summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+.summary + form {
+  margin-top: 16px;
+}
+.totals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 36px;
+}
+.totals span,
+.detail,
+.issue {
+  display: block;
+}
+.totals strong {
+  display: block;
+  color: #194b39;
+  font-size: 1.25rem;
+}
+.detail {
+  color: #52665e;
+  overflow-wrap: anywhere;
+}
+.issue {
+  color: #923e12;
+  font-weight: 700;
+}
+.repeat {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.repeat input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  min-height: 0;
+}

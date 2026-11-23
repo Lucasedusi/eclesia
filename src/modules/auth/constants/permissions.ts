@@ -43,6 +43,7 @@ export const PERMISSIONS = {
   memberHistoryCreate: "member_history.create",
   memberHistoryViewSensitive: "member_history.view_sensitive",
   financeView: "finance.view",
+  financeAccounting: "finance.accounting.export",
   financePayables: "finance.payables.manage",
   financeCreate: "finance.transactions.create",
   financeUpdate: "finance.transactions.update",

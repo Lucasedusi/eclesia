@@ -18,6 +18,6 @@ async function AuthenticatedFinance({children}:{children:React.ReactNode}){
  const context=await requireFinanceContext({permission:PERMISSIONS.financeView});
  const units=await listFinanceUnits(context.auth);
  const mobileDevice = await isFinanceMobileRequest();
- return <FinanceShell context={{name:context.auth.profile.displayName||context.auth.profile.fullName,churchName:context.auth.church.name,units,defaultUnitId:context.congregationId,defaultMonth:todayLocal().slice(0,7),mobileDevice,canManagePayables:!mobileDevice && canManagePayables(context.auth)}}>{children}</FinanceShell>;
+ return <FinanceShell context={{name:context.auth.profile.displayName||context.auth.profile.fullName,churchName:context.auth.church.name,units,defaultUnitId:context.congregationId,defaultMonth:todayLocal().slice(0,7),mobileDevice,canUseAccounting:context.auth.permissions.includes(PERMISSIONS.financeAccounting),canManagePayables:!mobileDevice && canManagePayables(context.auth)}}>{children}</FinanceShell>;
 }
 export default function Layout({children}:{children:React.ReactNode}){return <Suspense fallback={<Loading/>}><AuthenticatedFinance>{children}</AuthenticatedFinance></Suspense>;}
