@@ -8507,6 +8507,15 @@ export type Database = {
         }
         Returns: Json
       }
+      apply_finance_accounting_plan: {
+        Args: {
+          p_accounts: Json
+          p_church: string
+          p_links: Json
+          p_revision: string
+        }
+        Returns: Json
+      }
       assign_finance_operator: {
         Args: {
           p_access_id: string
@@ -9145,6 +9154,7 @@ export type Database = {
         }
         Returns: Json
       }
+      finance_accounting_plan: { Args: { p_church: string }; Returns: Json }
       finance_bank_import_candidates: {
         Args: {
           p_church_id: string

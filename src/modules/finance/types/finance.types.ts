@@ -22,6 +22,8 @@ export type FinanceContext = {
 export type FinanceErrorCode =
   | "ACCOUNTING_REPEAT"
   | "ACCOUNTING_ENCODING"
+  | "ACCOUNTING_PLAN_FILE"
+  | "ACCOUNTING_PLAN_GROUP"
   | "BANK_IMPORT_DELETE_BLOCKED"
   | "BANK_IMPORT_FILE"
   | "BANK_IMPORT_CONFLICT"

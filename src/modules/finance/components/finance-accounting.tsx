@@ -22,6 +22,7 @@ import {
   exportAccountingAction,
   saveAccountingCodeAction,
 } from "../actions/finance-accounting.actions";
+import { AccountingPlanWorkspace } from "../accounting-plan/workspace";
 import styles from "./finance-accounting.module.css";
 
 type Props = {
@@ -53,10 +54,12 @@ function AccountingCodes({ catalog }: { catalog: AccountingCatalog }) {
           label:
             b.name + " · " + catalog.units.find((u) => u.id === b.unit)?.name,
         }))
-      : catalog.categories.map((c) => ({
-          ...c,
-          label: c.name + " · " + movement(c.direction),
-        }));
+      : catalog.categories
+          .filter((c) => c.direction !== "BOTH")
+          .map((c) => ({
+            ...c,
+            label: c.name + " · " + movement(c.direction),
+          }));
   const item = options.find((o) => o.id === id);
   return (
     <details className="card">
@@ -314,7 +317,12 @@ export function FinanceAccounting({
           Aplicar filtros
         </Button>
       </form>
-      {canConfigure && <AccountingCodes catalog={catalog} />}
+      {canConfigure && (
+        <>
+          <AccountingPlanWorkspace />
+          <AccountingCodes catalog={catalog} />
+        </>
+      )}
       <section className="card stack" aria-label="Prévia contábil">
         <div className="row spread">
           <h2>Prévia contábil</h2>

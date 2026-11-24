@@ -91,7 +91,92 @@ test("oculta a Contabilidade do operador sem a permissão e protege o endereço 
       page.getByRole("button", { name: "Gerar CSV Alterdata" }),
     ).toHaveCount(0);
     await expect(page).not.toHaveURL(/\/financeiro\/contabilidade/);
+    await page.goto(`/financeiro/lancamentos?unidade=${f.unitId}&mes=2026-10`);
+    await page
+      .getByRole("button", { name: "Nova entrada", exact: true })
+      .click();
+    const form = page.getByRole("dialog", { name: "Nova entrada" });
+    const choices = form.getByRole("combobox", {
+      name: "Categoria",
+      exact: true,
+    });
+    const offering = choices.locator(`option[value="${f.offeringId}"]`);
+    await expect(offering).toHaveText(/Oferta/i);
+    await expect(offering).not.toHaveText(/1420/);
+    await expect(form.getByText(/Chamada|Código Alterdata/)).toHaveCount(0);
   } finally {
     await ctx.close();
   }
+});
+
+test("revisa o plano e os vínculos antes de criar uma categoria", async ({
+  page,
+}) => {
+  test.skip(
+    !process.env.E2E_FINANCE_FIXTURE || !process.env.E2E_STORAGE_STATE,
+    "Requer ambiente financeiro local.",
+  );
+  expect(new URL(process.env.E2E_BASE_URL!).hostname).toBe("127.0.0.1");
+  const f = JSON.parse(readFileSync(process.env.E2E_FINANCE_FIXTURE!, "utf8"));
+  await page.goto(
+    `/financeiro/contabilidade?unidade=${f.headquartersId}&mes=2026-10`,
+  );
+  const open = page.getByRole("button", { name: "Gerenciar plano de contas" });
+  await open.click();
+  const upload = page.getByLabel("Importar plano em PDF");
+  const { PDFDocument, StandardFonts } = await import("pdf-lib");
+  const doc = await PDFDocument.create();
+  const font = await doc.embedFont(StandardFonts.Helvetica);
+  const sheet = doc.addPage();
+  const rows = [
+    ["Classificação", "Nome da Conta", "Chamada"],
+    ["3", "Receitas", "01"],
+    ["3.01", "Doações", "0102"],
+  ];
+  rows.forEach((row, i) =>
+    row.forEach((value, j) =>
+      sheet.drawText(value, {
+        x: [24, 160, 510][j],
+        y: 720 - i * 18,
+        font,
+        size: 10,
+      }),
+    ),
+  );
+  await upload.setInputFiles({
+    name: "plano.pdf",
+    mimeType: "application/pdf",
+    buffer: Buffer.from(await doc.save()),
+  });
+  await expect(
+    page.getByText("PDF lido. 2 contas para conferência."),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Adicionar vínculo" }).click();
+  const name = `Doação fictícia ${Date.now()}`;
+  await page
+    .getByRole("textbox", { name: "Categoria", exact: true })
+    .or(page.getByRole("combobox", { name: "Categoria", exact: true }))
+    .fill(name);
+  await page.getByLabel("Chamada", { exact: true }).fill("0102");
+  await page.getByRole("checkbox", { name: /Criar esta categoria/ }).check();
+  await page.getByRole("button", { name: "Revisar alterações" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Revisar alterações" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Nova categoria", { exact: false }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Voltar à edição" }).click();
+  await page.getByRole("button", { name: "Revisar alterações" }).click();
+  await page.getByRole("button", { name: "Confirmar alterações" }).click();
+  await expect(page.getByText("Alterações contábeis aplicadas.")).toBeVisible();
+  await page.reload();
+  await open.click();
+  await page.getByText(/^Consultar vínculos atuais/).click();
+  const saved = page
+    .getByRole("row")
+    .filter({ has: page.getByRole("cell", { name, exact: true }) });
+  await expect(
+    saved.getByRole("cell", { name: "0102", exact: true }),
+  ).toBeVisible();
 });

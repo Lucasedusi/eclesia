@@ -15,7 +15,7 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "6mb",
     },
   },
-  serverExternalPackages: ["exceljs", "@resvg/resvg-js"],
+  serverExternalPackages: ["exceljs", "@resvg/resvg-js", "unpdf"],
   async redirects() {
     return [{ source: "/financeiro/atendimento", destination: "/financeiro/lancamentos", permanent: true }];
   },

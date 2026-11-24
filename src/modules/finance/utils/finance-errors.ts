@@ -4,6 +4,8 @@ import type {
   FinanceErrorCode,
 } from "../types/finance.types";
 const messages: Record<FinanceErrorCode, string> = {
+  ACCOUNTING_PLAN_GROUP: "O plano transforma uma conta vinculada em grupo. Revise o vínculo da categoria e escolha uma conta analítica antes de confirmar.",
+  ACCOUNTING_PLAN_FILE: "Envie um PDF de até 5 MB com as colunas Classificação, Nome da Conta e Chamada. Confira se todas as linhas têm nome e chamada única e se o texto pode ser selecionado.",
   ACCOUNTING_REPEAT: "Há lançamentos já exportados. Confira a prévia e confirme a nova geração.",
   ACCOUNTING_ENCODING: "O histórico ou documento contém um caractere incompatível com o arquivo Alterdata (Windows-1252). Revise o lançamento antes de exportar.",
   BANK_IMPORT_DELETE_BLOCKED: "Este extrato ou item possui histórico financeiro e não pode ser excluído.",

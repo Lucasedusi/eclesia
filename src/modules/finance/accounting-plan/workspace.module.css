@@ -1,0 +1,58 @@
+.section {
+  display: grid;
+  gap: 1rem;
+}
+.section + .section {
+  border-top: 1px solid #dce6df;
+  padding-top: 1rem;
+}
+.section summary {
+  cursor: pointer;
+  font-weight: 700;
+  padding: 0.6rem 0;
+}
+.scroll {
+  max-width: 100%;
+  overflow-x: auto;
+}
+.edit {
+  display: grid;
+  align-items: start;
+  gap: 0.8rem;
+  grid-template-columns:
+    auto minmax(9rem, 2fr) minmax(6rem, 1fr) minmax(7rem, 1fr)
+    auto;
+  padding: 0.8rem;
+  background: #f5f9f6;
+  border-radius: 0.65rem;
+}
+.edit .check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  grid-column: 1 / -1;
+}
+.edit .check input {
+  width: 18px;
+  height: 18px;
+  min-height: 0;
+  margin: 0;
+}
+.edit label:nth-child(2) {
+  grid-column: span 2;
+}
+.edit button {
+  align-self: center;
+}
+.notice {
+  color: #194b39;
+  font-weight: 600;
+}
+@media (max-width: 650px) {
+  .edit {
+    grid-template-columns: 1fr 1fr;
+  }
+  .edit label:nth-child(2) {
+    grid-column: 1 / -1;
+  }
+}
