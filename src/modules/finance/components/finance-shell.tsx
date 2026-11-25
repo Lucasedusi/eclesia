@@ -93,7 +93,7 @@ export type FinanceShellDTO = {
   mobileDevice?: boolean;
   canManagePayables?: boolean;
   canUseAccounting?: boolean;
-  accountingOnly?: boolean;
+  financeOnly?: boolean;
 };
 export function FinanceShell({
   context,
@@ -207,7 +207,7 @@ export function FinanceShell({
       show: !context.mobileDevice && unit.capabilities?.manageSettings,
       desktopOnly: true,
     },
-  ].filter(link => !context.accountingOnly || link.path === "/financeiro/contabilidade");
+  ];
   return (
     <FinanceThemeProvider>
       <NavigationContext.Provider
@@ -263,7 +263,7 @@ export function FinanceShell({
                   <strong>Servir com transparência.</strong>
                 </p>
               </div>
-              {!context.accountingOnly && <Link
+              {!context.financeOnly && <Link
                 title="Voltar ao sistema"
                 aria-label="Voltar ao sistema"
                 href="/"
@@ -343,13 +343,14 @@ export function FinanceShell({
           <main className="finance-main" key={unit.id} aria-busy={isPending}>
             {children}
           </main>
-          {!context.accountingOnly && <FinanceMobileNavigation
+          <FinanceMobileNavigation
+            financeOnly={context.financeOnly}
             items={links.filter((link) => link.show && !link.desktopOnly)}
             pathname={path}
             unitId={unit.id}
             month={month}
             navigate={navigate}
-          />}
+          />
         </Workspace>
         <Modal
           open={pending !== null}

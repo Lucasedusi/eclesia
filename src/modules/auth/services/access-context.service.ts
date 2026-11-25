@@ -287,7 +287,7 @@ export async function getAuthenticatedDestination() {
     case "onboarding":
       return "/onboarding";
     case "ready":
-      return result.context.access.role === "ACCOUNTANT" ? "/financeiro/contabilidade" : "/";
+      return result.context.access.role === "ACCOUNTANT" ? "/financeiro" : "/";
   }
 }
 
@@ -301,8 +301,8 @@ export async function requireAccessContext(
   if (result.status === "pending-invite") redirect("/aguardando-liberacao");
   if (result.status === "onboarding") redirect("/onboarding");
 
-  if (result.context.access.role === "ACCOUNTANT" && permission !== PERMISSIONS.financeAccounting) {
-    redirect("/financeiro/contabilidade");
+  if (result.context.access.role === "ACCOUNTANT" && permission !== PERMISSIONS.financeAccounting && permission !== PERMISSIONS.financeView) {
+    redirect("/financeiro");
   }
   if (permission && !result.context.permissions.includes(permission)) {
     redirect("/acesso-negado");

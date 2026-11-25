@@ -23,6 +23,7 @@ async function Content({
     <FinanceDeliveries
       key={`${context.congregationId}-${month}`}
       initial={data}
+      readOnly={context.auth.access.role === "ACCOUNTANT"}
     />
   );
 }

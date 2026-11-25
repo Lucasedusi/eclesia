@@ -83,6 +83,7 @@ async function AccountingPage({
   ]);
   return (
     <FinanceAccounting
+      canConfirm={auth.access.role !== "ACCOUNTANT"}
       key={JSON.stringify(filters)}
       {...{
         filters,

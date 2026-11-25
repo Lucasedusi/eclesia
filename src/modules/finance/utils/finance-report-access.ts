@@ -10,4 +10,8 @@ export function hasFinanceAdminAccess(context: FinanceContext) {
   );
 }
 
-export { hasFinanceAdminAccess as canViewInformativeReport };
+export function canViewInformativeReport(context: FinanceContext) {
+  return hasFinanceAdminAccess(context) || (context.capabilities.view &&
+    context.auth.profile.status === "ACTIVE" && context.auth.access.status === "ACTIVE" &&
+    context.auth.access.role === "ACCOUNTANT");
+}

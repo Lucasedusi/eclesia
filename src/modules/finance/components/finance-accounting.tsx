@@ -30,6 +30,7 @@ type Props = {
   preview: AccountingPreview;
   history: AccountingHistory | null;
   canConfigure: boolean;
+  canConfirm: boolean;
   historyPage: number;
   month: string;
   selected: string;
@@ -178,6 +179,7 @@ export function FinanceAccounting({
   preview,
   history,
   canConfigure,
+  canConfirm,
   historyPage,
   month,
   selected,
@@ -261,7 +263,9 @@ export function FinanceAccounting({
       a.click();
       window.setTimeout(() => URL.revokeObjectURL(url), 30000);
       setMessage(
-        "Arquivo gerado. Após conferir no Alterdata, use Consultar exportações para confirmar a importação.",
+        canConfirm
+          ? "Arquivo gerado. Após conferir no Alterdata, use Consultar exportações para confirmar a importação."
+          : "Arquivo gerado. O lote está disponível em Consultar exportações.",
       );
       setRepeatFingerprint(null);
       refresh();
@@ -564,7 +568,7 @@ export function FinanceAccounting({
                       <td>
                         {h.confirmed ? (
                           "Importação confirmada"
-                        ) : (
+                        ) : !canConfirm ? "Aguardando confirmação" : (
                           <Button
                             variant="secondary"
                             disabled={busy || isPending}

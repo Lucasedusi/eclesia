@@ -184,7 +184,7 @@ function FinanceReportsContent({
                     value: "RANKING",
                     title: "Informativo geral por congregação",
                     description:
-                      "Ranking por entradas, com totais de todas as congregações.",
+                      "Ranking por entradas, com totais das congregações autorizadas.",
                     Icon: ListOrdered,
                   },
                 ]

@@ -2,6 +2,7 @@
 import { FinanceDateField } from "./finance-date-field";
 import { useRef, useState } from "react";
 import Link from "next/link";
+import { useFinanceNavigation } from "./finance-shell";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { listFinanceDeliveriesAction } from "../actions/finance-delivery.actions";
@@ -36,6 +37,7 @@ const labels = {
 };
 type FinanceDeliveriesProps = {
   initial: DeliveryProjection;
+  readOnly?: boolean;
 };
 export function FinanceDeliveries(props: FinanceDeliveriesProps) {
   const desktop = useFinanceDesktop();
@@ -52,8 +54,9 @@ export function FinanceDeliveries(props: FinanceDeliveriesProps) {
   return <FinanceDeliveriesContent {...props} />;
 }
 function FinanceDeliveriesContent({
-  initial,
+  initial, readOnly = false,
 }: FinanceDeliveriesProps) {
+  const { headquartersId } = useFinanceNavigation();
   const [data, setData] = useState(initial),
     [month, setMonth] = useState(initial.month),
     [filter, setFilter] = useState<DeliveryOptions["filter"]>("ALL"),
@@ -223,7 +226,7 @@ function FinanceDeliveriesContent({
                       </td>
                       <td data-label="Origem">
                         <span className="finance-delivery-origin">{deliverySourceLabel(row.source)}
-                        {row.source === "TRANSFER" && row.transfer && transferLink(row.transfer)}</span>
+                        {row.source === "TRANSFER" && row.transfer && (!readOnly || row.transfer.unit === headquartersId) && transferLink(row.transfer)}</span>
                       </td>
                       <td data-label="Data da entrega">
                         {row.deliveryDate ? date(row.deliveryDate) : "—"}
@@ -241,11 +244,11 @@ function FinanceDeliveriesContent({
                       </td>
                       <td data-label="Ações">
                         <div className="row finance-delivery-actions">
-                          <Button variant="outline" size="sm" className="finance-icon-button"
+                          {!readOnly && <Button variant="outline" size="sm" className="finance-icon-button"
                             title={deliveryActionLabel(row)} aria-label={deliveryActionLabel(row)}
                             onClick={() => setEditing(row)}>
                             {row.source === "MANUAL" ? <Pencil size={16} /> : <Plus size={16} />}
-                          </Button>
+                          </Button>}
                           {(row.history.length > 0 || row.transferHistory.length > 0) && (
                             <Button
                               variant="outline"
@@ -340,7 +343,7 @@ function FinanceDeliveriesContent({
               <div className="card stack" key={event.eventId}>
                 <strong>{event.included ? "Repasse considerado" : "Repasse deixou de contar"}</strong>
                 <span>Data do lançamento: {date(event.date)}</span>
-                {transferLink(event)}
+                {(!readOnly || event.unit === headquartersId) && transferLink(event)}
                 <small className="muted">{event.actor} · {new Date(event.createdAt).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}</small>
               </div>
             ))}

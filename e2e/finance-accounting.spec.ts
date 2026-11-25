@@ -185,7 +185,7 @@ test("revisa o plano e os vínculos antes de criar uma categoria", async ({
   ).toBeVisible();
 });
 
-test("contador entra apenas na Contabilidade da congregação autorizada", async ({
+test("contador consulta o painel e gera PDF apenas para a congregação autorizada", async ({
   browser,
 }) => {
   test.skip(
@@ -213,8 +213,10 @@ test("contador entra apenas na Contabilidade da congregação autorizada", async
     .select("id,role,access_scope,region_id")
     .eq("church_id", f.churchId)
     .eq("profile_id", f.sessions.observer)
+    .is("deleted_at", null)
     .single();
   expect(error).toBeNull();
+  test.setTimeout(60000);
   const ctx = await browser.newContext({
     storageState: state.replace("admin-session", "observer-session"),
   });
@@ -228,21 +230,41 @@ test("contador entra apenas na Contabilidade da congregação autorizada", async
     });
     expect(change.error).toBeNull();
     const page = await ctx.newPage();
-    for (const url of [
-      "/",
-      "/financeiro/lancamentos",
-      "/financeiro/configuracoes",
-    ]) {
-      await page.goto(url);
-      await expect(
-        page.getByRole("heading", { name: "Contabilidade", exact: true }),
-      ).toBeVisible();
-      await expect(page).toHaveURL(/\/financeiro\/contabilidade/);
-    }
-    await expect(page.getByText("Configurar códigos contábeis")).toHaveCount(0);
+    await page.goto("/");
+    await expect(page).toHaveURL(/\/financeiro(?:\?|$)/);
     await expect(
-      page.getByRole("link", { name: "Lançamentos", exact: true }),
+      page.getByRole("link", { name: "Lançamentos", exact: true }).first(),
+    ).toBeVisible();
+    await page.goto("/financeiro/lancamentos");
+    await expect(
+      page.getByRole("heading", { name: "Lançamentos", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", {
+        name: /Nova entrada|Nova saída|Importar extrato/i,
+      }),
     ).toHaveCount(0);
+    await page.goto("/financeiro/configuracoes");
+    await expect(page).toHaveURL(/\/financeiro(?:\?|$)/);
+    await page.goto("/financeiro/relatorios");
+    await expect(
+      page.getByRole("heading", { name: /Relatórios/i }).first(),
+    ).toBeVisible();
+    const pdf = await page.request.post("/api/finance/reports/pdf", {
+      data: { type: "SYNTHETIC", month: "2026-10", congregationId: f.unitId },
+    });
+    expect(pdf.status()).toBe(200);
+    expect(pdf.headers()["content-type"]).toContain("application/pdf");
+    const forbidden = await page.request.post("/api/finance/reports/pdf", {
+      data: {
+        type: "SYNTHETIC",
+        month: "2026-10",
+        congregationId: f.headquartersId,
+      },
+    });
+    expect(forbidden.status()).toBe(403);
+    await page.goto("/financeiro/contabilidade");
+    await expect(page.getByText("Configurar códigos contábeis")).toHaveCount(0);
     await expect(
       page.getByRole("button", { name: "Sair", exact: true }),
     ).toBeVisible();
@@ -255,14 +277,79 @@ test("contador entra apenas na Contabilidade da congregação autorizada", async
     await expect(
       page.getByRole("button", { name: "Gerar CSV Alterdata" }),
     ).toHaveCount(0);
+    const adminContext = await browser.newContext({ storageState: state });
+    try {
+      const manager = await adminContext.newPage();
+      const { data: profile } = await admin
+        .from("profiles")
+        .select("email")
+        .eq("id", f.sessions.observer)
+        .single();
+      await manager.goto("/usuarios");
+      await manager
+        .getByRole("searchbox", { name: "Buscar nome ou e-mail" })
+        .fill(profile!.email);
+      await manager.getByRole("button", { name: "Editar acesso" }).click();
+      const choices = manager.getByRole("group", {
+        name: "Congregações autorizadas",
+      });
+      await expect(choices.locator(`input[value="${f.unitId}"]`)).toBeChecked();
+      await choices.locator(`input[value="${f.headquartersId}"]`).check();
+      await manager.getByRole("button", { name: "Salvar alterações" }).click();
+      await expect(choices).toHaveCount(0);
+      await page.goto("/financeiro/contas-a-pagar");
+      await expect(
+        page.getByRole("heading", { name: "Contas a pagar", exact: true }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "Nova conta" }),
+      ).toHaveCount(0);
+      await page.goto("/financeiro/fluxo-de-caixa");
+      await expect(
+        page.getByRole("heading", {
+          name: "Fluxo de caixa diário",
+          exact: true,
+        }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: /relatório/i }).first(),
+      ).toBeVisible();
+      await page.goto("/financeiro/relatorios/entregas");
+      await expect(
+        page.getByRole("button", {
+          name: /Registrar entrega|Registrar data manual|Corrigir/,
+        }),
+      ).toHaveCount(0);
+      await manager.getByRole("button", { name: "Editar acesso" }).click();
+      await choices.locator(`input[value="${f.headquartersId}"]`).uncheck();
+      await manager.getByRole("button", { name: "Salvar alterações" }).click();
+      await expect(choices).toHaveCount(0);
+      await page.goto("/financeiro/contas-a-pagar");
+      await expect(page).toHaveURL(/acesso-negado/);
+    } finally {
+      await adminContext.close();
+    }
   } finally {
-    const restored = await admin.rpc("update_church_access", {
-      p_access_id: access!.id,
-      p_role: access!.role,
-      p_scope: access!.access_scope,
-      p_status: "ACTIVE",
-      p_region_id: access!.region_id,
-    });
+    const { data: grants } = await admin
+      .from("user_church_access")
+      .select("id")
+      .eq("profile_id", f.sessions.observer)
+      .eq("church_id", f.churchId)
+      .eq("role", "ACCOUNTANT")
+      .is("deleted_at", null);
+    const restored = grants?.length
+      ? await admin.rpc("update_accountant_scope", {
+          p_church: f.churchId,
+          p_access: grants[0].id,
+          p_expected: grants.map((a) => a.id),
+          p_units: [],
+          p_role: access!.role,
+          p_scope: access!.access_scope,
+          p_status: "ACTIVE",
+          p_target: access!.region_id,
+          p_notes: "",
+        })
+      : { error: null };
     await ctx.close();
     expect(restored.error).toBeNull();
   }
@@ -280,9 +367,11 @@ test("filtro de conta e prévia contábil em tela estreita", async ({ page }) =>
     `/financeiro/contabilidade?unidade=${f.headquartersId}&mes=2026-10`,
   );
   const field = page.getByLabel("Caixa ou conta", { exact: true });
-  await field.focus();
-  await field.press("ArrowDown");
   const list = page.getByRole("listbox", { name: "Caixa ou conta" });
+  await expect(async () => {
+    if (!(await list.isVisible())) await field.press("ArrowDown");
+    await expect(list).toBeVisible({ timeout: 500 });
+  }).toPass({ timeout: 5000 });
   const box = list.getByRole("option", { name: /Caixa principal/ });
   await expect(box.locator("strong").first()).toHaveText(/\S/);
   await box.click();

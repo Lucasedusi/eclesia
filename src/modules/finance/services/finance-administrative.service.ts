@@ -11,7 +11,7 @@ import type {
   RankingOptions,
 } from "../types/finance-administrative.types";
 import { FinanceReportError } from "../types/finance-report.types";
-import { canViewInformativeReport } from "../utils/finance-report-access";
+import { canViewInformativeReport, hasFinanceAdminAccess } from "../utils/finance-report-access";
 import { throwFinanceDatabaseError } from "../utils/finance-errors";
 import { summarizeInformativeProjection } from "../utils/finance-informative-summary";
 import { sumCents, summarizeRanking } from "../utils/finance-administrative";
@@ -34,7 +34,7 @@ async function identity(context: FinanceContext) {
   const data = await loadFinanceReportIdentity(context);
   return {
     ...data,
-    congregationName: "Todas as congregações",
+    congregationName: context.auth.access.role === "ACCOUNTANT" ? "Congregações autorizadas" : "Todas as congregações",
     congregationAddress: null,
     emissionId: randomUUID(),
   };
@@ -170,7 +170,7 @@ export async function recordFinanceDelivery(
   context: FinanceContext,
   input: unknown,
 ) {
-  assertAdministrativeReports(context);
+  if (!hasFinanceAdminAccess(context)) throw new FinanceReportError("FORBIDDEN");
   const value = recordDeliverySchema.parse(input),
     client = await createClient();
   const { data, error } = await client.rpc("record_finance_delivery", {

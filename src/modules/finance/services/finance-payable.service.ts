@@ -9,10 +9,12 @@ import { throwFinanceDatabaseError } from "../utils/finance-errors";
 import type { FinanceContext } from "../types/finance.types";
 import { payableCommandSchema, payableQuerySchema, payablePageSchema, payableDetailSchema, payableResultSchema } from "../validations/finance-payable.schemas";
 
-export async function requirePayableContext(): Promise<FinanceContext> {
-  const auth = await requireAccessContext(PERMISSIONS.financePayables);
-  if (!canManagePayables(auth)) throw new Error("FORBIDDEN");
+export async function requirePayableContext(write = false): Promise<FinanceContext> {
+  const auth = await requireAccessContext(write ? PERMISSIONS.financePayables : PERMISSIONS.financeView);
+  const reader = !write && auth.access.role === "ACCOUNTANT" && auth.permissions.includes(PERMISSIONS.financeView);
+  if (!reader && !canManagePayables(auth)) throw new Error("FORBIDDEN");
   const headquarters = (await listFinanceUnits(auth)).filter((u) => u.isHeadquarters);
+  if (reader && !headquarters.length) throw new Error("FORBIDDEN");
   if (headquarters.length !== 1 || !headquarters[0].capabilities?.view) throw new Error("CONFIGURATION_REQUIRED");
   return { auth, churchId: auth.church.id, congregationId: headquarters[0].id, capabilities: headquarters[0].capabilities };
 }
@@ -33,7 +35,7 @@ export async function getFinancePayable(input: unknown) {
   return result.data;
 }
 export async function submitFinancePayable(input: unknown) {
-  const command = payableCommandSchema.parse(input), context = await requirePayableContext(), client = await createClient();
+  const command = payableCommandSchema.parse(input), context = await requirePayableContext(true), client = await createClient();
   const { data, error } = await client.rpc("execute_finance_payable", { p_church_id: context.churchId, p_command: command });
   if (error) throwFinanceDatabaseError(error);
   const result = payableResultSchema.safeParse(data);

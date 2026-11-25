@@ -1,4 +1,5 @@
 import "server-only";
+import { redirect } from "next/navigation";
 import { cache } from "react";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
@@ -29,6 +30,7 @@ export async function requireFinanceContext(input: {
       ? undefined
       : z.uuid().parse(input.congregationId);
   const units = await listFinanceUnits(auth);
+  if (!units.length && auth.access.role === "ACCOUNTANT") redirect("/acesso-negado");
   const congregationId = selectFinanceUnit(auth, units, requested);
   const capabilities = units.find(
     (unit) => unit.id === congregationId,

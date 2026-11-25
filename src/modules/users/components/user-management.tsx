@@ -46,6 +46,16 @@ function PermissionEditor({ access, permissions }: { access: UserAccessItem; per
   </S.PermissionBox>;
 }
 
+function AccountantUnits({ options, selected = [] }: { options: { id: string; name: string }[]; selected?: string[] }) {
+  return <S.AccountantUnits>
+    <legend>Congregações autorizadas</legend>
+    {options.map(unit => <label key={unit.id}>
+      <input type="checkbox" name="accountantUnits" value={unit.id} defaultChecked={selected.includes(unit.id)} />
+      {unit.name}
+    </label>)}
+  </S.AccountantUnits>;
+}
+
 function AccessEditor({ access, data }: { access: UserAccessItem; data: UserManagementData }) {
   const [open, setOpen] = useState(false);
   const [scope, setScope] = useState<AccessScope>(access.scope);
@@ -67,6 +77,8 @@ function AccessEditor({ access, data }: { access: UserAccessItem; data: UserMana
       {state.status !== "idle" ? <S.Alert $success={state.status === "success"}>{state.message}</S.Alert> : null}
       <form action={action}>
         <input type="hidden" name="accessId" value={access.id}/>
+        {access.accessIds.map(id => <input key={id} type="hidden" name="expectedAccessIds" value={id} />)}
+        <input type="hidden" name="previousRole" value={access.role}/>
         <S.FormGrid>
           <S.Field><span>Papel de acesso</span><S.Select name="role" value={role} onChange={event => {
             const next = event.target.value as AccessRole;
@@ -75,7 +87,7 @@ function AccessEditor({ access, data }: { access: UserAccessItem; data: UserMana
           }}>{ACCESS_ROLES.map((role)=><option key={role} value={role}>{ROLE_LABELS[role]}</option>)}</S.Select></S.Field>
           <S.Field><span>Escopo</span><S.Select name="scope" value={scope} onChange={(event)=>{setScope(event.target.value as AccessScope); setTargetId("");}}>{ACCESS_SCOPES.filter(item => role !== "ACCOUNTANT" || item === "CONGREGATION").map((item)=><option key={item} value={item}>{SCOPE_LABELS[item]}</option>)}</S.Select></S.Field>
           <S.Field><span>Situação</span><S.Select name="status" value={status} onChange={event => setStatus(event.target.value as AccessStatus)}><option value="ACTIVE">Ativo</option><option value="INACTIVE">Inativo</option><option value="BLOCKED">Bloqueado</option></S.Select></S.Field>
-          {scope !== "CHURCH" ? <S.Field><span>Alvo do escopo</span><S.Select name="targetId" value={targetId} onChange={event => setTargetId(event.target.value)}><option value="">Selecione</option>{scopeOptions(scope,data).map((option)=><option key={option.id} value={option.id}>{option.name}</option>)}</S.Select></S.Field> : <input type="hidden" name="targetId" value=""/>}
+          {role === "ACCOUNTANT" ? <AccountantUnits options={data.congregations} selected={access.accountantUnits} /> : scope !== "CHURCH" ? <S.Field><span>Alvo do escopo</span><S.Select name="targetId" value={targetId} onChange={event => setTargetId(event.target.value)}><option value="">Selecione</option>{scopeOptions(scope,data).map((option)=><option key={option.id} value={option.id}>{option.name}</option>)}</S.Select></S.Field> : <input type="hidden" name="targetId" value=""/>}
           <S.Field style={{gridColumn:"1 / -1"}}><span>Observação administrativa</span><S.Textarea name="notes" defaultValue={access.notes ?? ""}/></S.Field>
         </S.FormGrid>
         <S.FormFooter><S.Button type="submit" disabled={pending}>{pending?<S.Spinner/>:<Save size={15}/>} {pending?"Salvando...":"Salvar alterações"}</S.Button></S.FormFooter>
@@ -102,8 +114,8 @@ function InvitationForm({ data }: { data: UserManagementData }) {
       if (next === "ACCOUNTANT") setScope("CONGREGATION");
     }}>{ACCESS_ROLES.map((role)=><option key={role} value={role}>{ROLE_LABELS[role]}</option>)}</S.Select></S.InviteField>
     <S.InviteField><span>Escopo</span><S.Select name="scope" value={scope} onChange={(event)=>setScope(event.target.value as AccessScope)}>{ACCESS_SCOPES.filter(item => role !== "ACCOUNTANT" || item === "CONGREGATION").map((item)=><option key={item} value={item}>{SCOPE_LABELS[item]}</option>)}</S.Select></S.InviteField>
-    {scope !== "CHURCH" ? <S.InviteField><span>Regional, congregação ou ministério</span><S.Select name="targetId" defaultValue="" required><option value="">Selecione</option>{scopeOptions(scope,data).map((option)=><option key={option.id} value={option.id}>{option.name}</option>)}</S.Select></S.InviteField> : <input type="hidden" name="targetId" value=""/>}
-    {role === "ACCOUNTANT" && <p>O contador acessa a Contabilidade desta congregação. Para autorizar outra, envie um convite para o mesmo e-mail.</p>}
+    {role === "ACCOUNTANT" ? <AccountantUnits options={data.congregations} /> : scope !== "CHURCH" ? <S.InviteField><span>Regional, congregação ou ministério</span><S.Select name="targetId" defaultValue="" required><option value="">Selecione</option>{scopeOptions(scope,data).map((option)=><option key={option.id} value={option.id}>{option.name}</option>)}</S.Select></S.InviteField> : <input type="hidden" name="targetId" value=""/>}
+    {role === "ACCOUNTANT" && <p>O contador pode consultar o Financeiro, gerar relatórios e exportar os dados das congregações selecionadas.</p>}
     <S.InviteField><span>Observação administrativa</span><S.Textarea name="notes" placeholder="Opcional"/></S.InviteField>
     <S.Button type="submit" disabled={pending}>{pending?<S.Spinner/>:<MailPlus size={16}/>} {pending?"Enviando...":"Enviar convite"}</S.Button>
   </S.InviteForm>;
@@ -130,7 +142,7 @@ export function UserManagement({ data }: { data: UserManagementData }) {
     <S.Grid>
       <S.Card><S.CardHeader><div><h2>Usuários e acessos</h2><p>Gerencie papel, escopo, situação e permissões individuais.</p></div></S.CardHeader><S.CardBody>
         <S.Toolbar><S.Control type="search" placeholder="Buscar nome ou e-mail" value={query} onChange={(e)=>setQuery(e.target.value)}/><S.Select value={role} onChange={(e)=>setRole(e.target.value)}><option value="">Todos os papéis</option>{ACCESS_ROLES.map((item)=><option key={item} value={item}>{ROLE_LABELS[item]}</option>)}</S.Select><S.Select value={status} onChange={(e)=>setStatus(e.target.value)}><option value="">Todas as situações</option><option value="ACTIVE">Ativo</option><option value="INACTIVE">Inativo</option><option value="BLOCKED">Bloqueado</option></S.Select></S.Toolbar>
-        <S.AccessList>{filtered.length?filtered.map((access)=><AccessEditor key={access.id} access={access} data={data}/>):<S.Empty>Nenhum usuário encontrado com estes filtros.</S.Empty>}</S.AccessList>
+        <S.AccessList>{filtered.length?filtered.map((access)=><AccessEditor key={[access.id, access.role, access.status, ...access.accountantUnits].join(":")} access={access} data={data}/>):<S.Empty>Nenhum usuário encontrado com estes filtros.</S.Empty>}</S.AccessList>
       </S.CardBody></S.Card>
       <div style={{display:"grid",gap:20}}>
         <S.Card><S.CardHeader><div><h2>Convidar usuário</h2><p>O link seguro expira automaticamente em sete dias.</p></div></S.CardHeader><S.CardBody><InvitationForm data={data}/></S.CardBody></S.Card>

@@ -89,7 +89,7 @@ export async function POST(request: Request) {
       !canViewInformativeReport(context)
     )
       return failure(
-        "Este relatório está disponível somente para administradores.",
+        "Seu acesso não permite consultar este relatório.",
         403,
       );
     const report =

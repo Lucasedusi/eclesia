@@ -39,6 +39,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      accountant_invitation_units: {
+        Row: {
+          church_id: string
+          congregation_id: string
+          id: number
+          invitation_id: string
+        }
+        Insert: {
+          church_id: string
+          congregation_id: string
+          id?: never
+          invitation_id: string
+        }
+        Update: {
+          church_id?: string
+          congregation_id?: string
+          id?: never
+          invitation_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accountant_invitation_units_church_id_congregation_id_fkey"
+            columns: ["church_id", "congregation_id"]
+            isOneToOne: false
+            referencedRelation: "congregations"
+            referencedColumns: ["church_id", "id"]
+          },
+          {
+            foreignKeyName: "accountant_invitation_units_church_id_invitation_id_fkey"
+            columns: ["church_id", "invitation_id"]
+            isOneToOne: false
+            referencedRelation: "church_invitations"
+            referencedColumns: ["church_id", "id"]
+          },
+        ]
+      }
       accounts_payable: {
         Row: {
           amount: number | null
@@ -9304,6 +9340,16 @@ export type Database = {
         Args: { p_church_id: string; p_permission_key: string }
         Returns: boolean
       }
+      invite_finance_accountant: {
+        Args: {
+          p_church: string
+          p_email: string
+          p_name: string
+          p_notes: string
+          p_units: string[]
+        }
+        Returns: string
+      }
       is_valid_cpf: { Args: { p_value: string }; Returns: boolean }
       issue_finance_receipt_link: {
         Args: {
@@ -10036,6 +10082,20 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      update_accountant_scope: {
+        Args: {
+          p_access: string
+          p_church: string
+          p_expected: string[]
+          p_notes: string
+          p_role: string
+          p_scope: string
+          p_status: string
+          p_target: string
+          p_units: string[]
+        }
+        Returns: undefined
       }
       update_administrative_document_metadata: {
         Args: {

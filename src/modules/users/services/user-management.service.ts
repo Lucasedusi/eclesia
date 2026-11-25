@@ -36,6 +36,7 @@ type AccessRow = {
 };
 
 type InvitationRow = {
+  accountant_invitation_units: { congregation_id: string }[];
   id: string; invited_name: string; email: string; role: AccessRole; access_scope: AccessScope;
   status: "PENDING" | "ACCEPTED" | "EXPIRED" | "CANCELLED"; invited_at: string; expires_at: string;
   region_id: string | null; congregation_id: string | null; ministry_id: string | null;
@@ -47,6 +48,8 @@ function first<T>(value: T | T[] | null): T | null {
 }
 
 export type UserAccessItem = {
+  accessIds: string[];
+  accountantUnits: string[];
   id: string; profileId: string; name: string; email: string; avatarUrl: string | null;
   role: AccessRole; scope: AccessScope; status: AccessStatus; targetName: string;
   regionId: string | null; congregationId: string | null; ministryId: string | null;
@@ -84,7 +87,7 @@ export async function getUserManagementData(): Promise<UserManagementData> {
       "id, profile_id, role, access_scope, status, region_id, congregation_id, ministry_id, invited_at, accepted_at, last_access_at, notes, profiles!user_church_access_profile_id_fkey(full_name, display_name, email, avatar_url), regions(name), congregations(name), ministries(name), overrides:user_permission_overrides!user_permission_overrides_access_id_fkey(effect, deleted_at, permissions!user_permission_overrides_permission_id_fkey(key))",
     ).eq("church_id", context.church.id).is("deleted_at", null).order("created_at", { ascending: true }),
     supabase.from("church_invitations").select(
-      "id, invited_name, email, role, access_scope, status, invited_at, expires_at, region_id, congregation_id, ministry_id, regions(name), congregations(name), ministries(name)",
+      "id, invited_name, email, role, access_scope, status, invited_at, expires_at, region_id, congregation_id, ministry_id, regions(name), congregations!church_invitations_congregation_id_fkey(name), ministries(name), accountant_invitation_units(congregation_id)",
     ).eq("church_id", context.church.id).eq("status", "PENDING").is("deleted_at", null).order("invited_at", { ascending: false }),
     supabase.from("regions").select("id, name").eq("church_id", context.church.id).eq("status", "ACTIVE").is("deleted_at", null).order("name"),
     supabase.from("congregations").select("id, name").eq("church_id", context.church.id).eq("status", "ACTIVE").is("deleted_at", null).order("name"),
@@ -118,9 +121,21 @@ export async function getUserManagementData(): Promise<UserManagementData> {
 
   const rows = (accessResult.data ?? []) as unknown as AccessRow[];
 
+  const accountantGroups = new Map<string, AccessRow[]>();
+  const displayed = rows.filter(row => {
+    if (row.role !== "ACCOUNTANT") return true;
+    const key = row.profile_id + "/" + row.status;
+    const group = accountantGroups.get(key);
+    if (group) { group.push(row); return false; }
+    accountantGroups.set(key, [row]);
+    return true;
+  });
+  const names = new Map((congregationsResult.data ?? []).map(c => [c.id, c.name]));
   return {
     financeOperations: financeOperations ? { ...financeOperations, assignments: financeOperations.assignments.filter(item => rows.some(row => row.id === item.accessId)) } : null,
-    accesses: rows.map((row) => {
+    accesses: displayed.map((row) => {
+      const group = row.role === "ACCOUNTANT" ? accountantGroups.get(row.profile_id + "/" + row.status)! : [row];
+      const accountantUnits = group.flatMap(a => a.congregation_id ? [a.congregation_id] : []);
       const profile = first(row.profiles);
       const target = first(row.regions) ?? first(row.congregations) ?? first(row.ministries);
       const overrides = (row.overrides ?? []).filter((override) => !override.deleted_at).reduce<Record<string, "ALLOW" | "DENY">>((current, override) => {
@@ -129,11 +144,12 @@ export async function getUserManagementData(): Promise<UserManagementData> {
         return current;
       }, {});
       return {
+        accessIds: group.map(a => a.id), accountantUnits,
         id: row.id, profileId: row.profile_id,
         name: profile?.full_name ?? profile?.display_name ?? "Usuário",
         email: profile?.email ?? "", avatarUrl: profile?.avatar_url ?? null,
         role: row.role, scope: row.access_scope, status: row.status,
-        targetName: row.access_scope === "CHURCH" ? "Toda a igreja" : target?.name ?? "Escopo indisponível",
+        targetName: row.role === "ACCOUNTANT" ? group.map(a => first(a.congregations)?.name ?? "Congregação indisponível").join(", ") : row.access_scope === "CHURCH" ? "Toda a igreja" : target?.name ?? "Escopo indisponível",
         regionId: row.region_id, congregationId: row.congregation_id, ministryId: row.ministry_id,
         invitedAt: row.invited_at, acceptedAt: row.accepted_at, lastAccessAt: row.last_access_at,
         notes: row.notes, overrides,
@@ -143,7 +159,7 @@ export async function getUserManagementData(): Promise<UserManagementData> {
       const target = first(row.regions) ?? first(row.congregations) ?? first(row.ministries);
       return {
         id: row.id, name: row.invited_name, email: row.email, role: row.role, scope: row.access_scope,
-        status: row.status, targetName: row.access_scope === "CHURCH" ? "Toda a igreja" : target?.name ?? "Escopo indisponível",
+        status: row.status, targetName: row.role === "ACCOUNTANT" && row.accountant_invitation_units?.length ? row.accountant_invitation_units.map(u => names.get(u.congregation_id) ?? "Congregação indisponível").join(", ") : row.access_scope === "CHURCH" ? "Toda a igreja" : target?.name ?? "Escopo indisponível",
         invitedAt: row.invited_at, expiresAt: row.expires_at,
       };
     }),

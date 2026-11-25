@@ -17,7 +17,7 @@ async function load(searchParams: FinanceSearchParams) {
     dueStatus: params.dueStatus, categoryId: params.categoryId, dateFrom: params.dateFrom, dateTo: params.dateTo, page: params.page });
   if (query.status === "ALL") query.status = "PENDING";
   const [result, catalogs] = await Promise.all([queryFinancePayables(query), listFinanceCatalogs(context)]);
-  return { result, query, catalogs, canCreateCategory: context.capabilities.manageSettings };
+  return { result, query, catalogs, readOnly: context.auth.access.role === "ACCOUNTANT", canCreateCategory: context.capabilities.manageSettings };
 }
 async function Content({ searchParams }: { searchParams: FinanceSearchParams }) {
   let data;

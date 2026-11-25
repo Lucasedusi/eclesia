@@ -11,9 +11,9 @@ import { payableStatus, payableStatusLabels } from "../utils/finance-payables";
 import type { PayableRow, PayableDetail } from "../types/finance-payable.types";
 export const payableDate = (date: string) => date.split("-").reverse().join("/");
 const historyLabels = { CREATE: "Conta cadastrada", COPY: "Conta copiada", UPDATE: "Conta editada", PAY: "Pagamento confirmado", REOPEN: "Confirmação desfeita", DELETE: "Conta excluída" };
-export function FinancePayableDetails({ detail, onClose, onReopen }: { detail: PayableDetail; onClose: () => void; onReopen: () => void }) {
+export function FinancePayableDetails({ detail, onClose, onReopen }: { detail: PayableDetail; onClose: () => void; onReopen?: () => void }) {
   const item = detail.item;
-  return <Modal title="Detalhes da conta" className="finance-secondary-drawer" onClose={onClose} footer={<><Button variant="outline" onClick={onClose}>Fechar</Button>{item.status === "PAID" && <Button onClick={onReopen}>Desfazer confirmação</Button>}</>}>
+  return <Modal title="Detalhes da conta" className="finance-secondary-drawer" onClose={onClose} footer={<><Button variant="outline" onClick={onClose}>Fechar</Button>{item.status === "PAID" && onReopen && <Button onClick={onReopen}>Desfazer confirmação</Button>}</>}>
     <div className="stack finance-payable-detail">
       <div className="finance-payable-detail-heading">
         <span className={`badge payable-${payableStatus(item.status, item.dueDate, todayLocal()).toLowerCase()}`}>{payableStatusLabels[payableStatus(item.status, item.dueDate, todayLocal())]}</span>

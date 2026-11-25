@@ -16,6 +16,7 @@ const emailSchema = z
   .pipe(z.email("Informe um e-mail válido."));
 const accessSchema = z.object({
   accessId: z.uuid(),
+  accountantUnits: z.array(z.uuid()).default([]),
   role: z.enum(ACCESS_ROLES),
   scope: z.enum(["CHURCH", "REGION", "CONGREGATION", "MINISTRY"]),
   status: z.enum(["ACTIVE", "INACTIVE", "BLOCKED"]),
@@ -103,12 +104,15 @@ export async function inviteUserAction(
     role: formData.get("role"),
     scope: formData.get("scope"),
     targetId: formData.get("targetId") || "",
+    accountantUnits: formData.getAll("accountantUnits"),
     notes: formData.get("notes") || "",
   });
   if (!parsed.success) return validationError(parsed.error);
   const roleScopeError = validateRoleScope(parsed.data.role, parsed.data.scope);
   if (roleScopeError) return roleScopeError;
-  if (parsed.data.scope !== "CHURCH" && !parsed.data.targetId) {
+  if (parsed.data.role === "ACCOUNTANT" && !parsed.data.accountantUnits.length)
+    return { status: "error", message: "Selecione pelo menos uma congregação para o contador." };
+  if (parsed.data.role !== "ACCOUNTANT" && parsed.data.scope !== "CHURCH" && !parsed.data.targetId) {
     return {
       status: "error",
       message: "Selecione o alvo do escopo.",
@@ -119,7 +123,12 @@ export async function inviteUserAction(
   const context = await requireAccessContext(PERMISSIONS.usersInvite);
   const supabase = await createClient();
   const targets = resolveTargets(parsed.data.scope, parsed.data.targetId);
-  const { data, error } = await supabase.rpc("create_church_invitation", {
+  const { data, error } = parsed.data.role === "ACCOUNTANT"
+    ? await supabase.rpc("invite_finance_accountant", {
+        p_church: context.church.id, p_name: parsed.data.name, p_email: parsed.data.email,
+        p_units: parsed.data.accountantUnits, p_notes: parsed.data.notes,
+      })
+    : await supabase.rpc("create_church_invitation", {
     p_church_id: context.church.id,
     p_name: parsed.data.name,
     p_email: parsed.data.email,
@@ -168,16 +177,26 @@ export async function updateAccessAction(
     scope: formData.get("scope"),
     status: formData.get("status"),
     targetId: formData.get("targetId") || "",
+    accountantUnits: formData.getAll("accountantUnits"),
     notes: formData.get("notes") || "",
   });
   if (!parsed.success) return validationError(parsed.error);
   const roleScopeError = validateRoleScope(parsed.data.role, parsed.data.scope);
   if (roleScopeError) return roleScopeError;
-  if (parsed.data.scope !== "CHURCH" && !parsed.data.targetId)
+  if (parsed.data.role === "ACCOUNTANT" && !parsed.data.accountantUnits.length)
+    return { status: "error", message: "Selecione pelo menos uma congregação para o contador." };
+  if (parsed.data.role !== "ACCOUNTANT" && parsed.data.scope !== "CHURCH" && !parsed.data.targetId)
     return { status: "error", message: "Selecione o alvo do escopo." };
-  await requireAccessContext(PERMISSIONS.usersUpdateAccess);
+  const context = await requireAccessContext(PERMISSIONS.usersUpdateAccess);
   const supabase = await createClient();
-  const { error } = await supabase.rpc("update_church_access", {
+  const grouped = parsed.data.role === "ACCOUNTANT" || formData.get("previousRole") === "ACCOUNTANT";
+  const expected = z.array(z.uuid()).nonempty().safeParse(formData.getAll("expectedAccessIds"));
+  if (grouped && !expected.success) return { status: "error", message: "Atualize a página e confira o acesso." };
+  const { error } = grouped && expected.success ? await supabase.rpc("update_accountant_scope", {
+    p_church: context.church.id, p_access: parsed.data.accessId, p_expected: expected.data,
+    p_units: parsed.data.accountantUnits, p_role: parsed.data.role, p_scope: parsed.data.scope,
+    p_target: parsed.data.targetId || null!, p_status: parsed.data.status, p_notes: parsed.data.notes,
+  }) : await supabase.rpc("update_church_access", {
     p_access_id: parsed.data.accessId,
     p_role: parsed.data.role,
     p_scope: parsed.data.scope,

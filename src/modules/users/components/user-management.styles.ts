@@ -51,3 +51,15 @@ export const Empty = styled.div`padding:30px 15px;text-align:center;color:#98a2b
 export const Spinner = styled.span`width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;@keyframes spin{to{transform:rotate(360deg)}}`;
 
 export const OperationalControls = styled.div`display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:12px;button{min-height:44px;}@media(max-width:720px){grid-template-columns:1fr;}`;
+
+export const AccountantUnits = styled.fieldset`
+  grid-column: 1 / -1;
+  min-width: 0;
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid ${({theme}) => theme.colors.border.soft};
+  border-radius: 6px;
+  legend { padding: 0 4px; font-weight: 600; }
+  label { display: flex; align-items: center; gap: 8px; min-height: 32px; cursor: pointer; }
+  input { flex: none; width: 16px; height: 16px; }
+`;

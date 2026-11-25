@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { createClient } from "@/lib/supabase/server";
 import { FinanceReportError } from "../types/finance-report.types";
 import type { FinanceContext } from "../types/finance.types";
-import { hasFinanceAdminAccess } from "../utils/finance-report-access";
+import { canViewInformativeReport } from "../utils/finance-report-access";
 import { sumCents } from "../utils/finance-money";
 import {
   dailyReportOptions,
@@ -19,7 +19,7 @@ export async function getDailyCashFlowReport(
   context: FinanceContext,
   input: DailyReportOptions,
 ): Promise<DailyReportDocument | CashBalanceReportDocument> {
-  if (!hasFinanceAdminAccess(context))
+  if (!canViewInformativeReport(context))
     throw new FinanceReportError("FORBIDDEN");
   const options = dailyReportOptions.parse(input);
   const balanceOnly = options.presentation === "BALANCES";

@@ -2,14 +2,14 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { PERMISSIONS } from "@/modules/auth/constants/permissions";
 import { requireFinanceContext } from "./finance-access.service";
-import { hasFinanceAdminAccess } from "../utils/finance-report-access";
+import { canViewInformativeReport } from "../utils/finance-report-access";
 import { todayLocal } from "../utils/finance-period";
 import { throwFinanceDatabaseError } from "../utils/finance-errors";
 import { dailyCashFlowPage, dailyCashFlowQuery } from "../validations/finance-daily-cash-flow.schemas";
 
 export async function requireDailyCashFlowContext() {
   const context = await requireFinanceContext({ permission: PERMISSIONS.financeView });
-  if (!hasFinanceAdminAccess(context)) throw new Error("FORBIDDEN");
+  if (!canViewInformativeReport(context)) throw new Error("FORBIDDEN");
   return context;
 }
 

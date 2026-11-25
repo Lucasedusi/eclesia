@@ -10,11 +10,20 @@ declare
  unit constant uuid := '30000000-0000-4000-8000-000000000001';
  hq constant uuid := '30000000-0000-4000-8000-000000000002';
  catalog jsonb := public.finance_accounting_catalog(church);
+ command_kind text;
 begin
- assert public.get_my_access_context(church)->'permissions' = '["finance.accounting.export"]'::jsonb;
+ assert public.get_my_access_context(church)->'permissions' = '["finance.accounting.export","finance.view"]'::jsonb;
  assert jsonb_array_length(catalog->'units')=1 and (catalog->'units'->0->>'id')::uuid=unit;
  assert public.finance_accounting_catalog('20000000-0000-4000-8000-000000000002')->'units'='[]'::jsonb;
- assert not private.can_access_finance_unit(church,unit,'finance.view');
+ assert private.can_access_finance_unit(church,unit,'finance.view');
+ assert not private.can_access_finance_unit(church,hq,'finance.view');
+ assert not private.can_access_finance_unit(church,unit,'finance.transactions.create');
+ foreach command_kind in array array['RECORD','CORRECT_TRANSACTION','CANCEL_TRANSACTION'] loop
+   begin
+     perform public.execute_finance_command(church,jsonb_build_object('kind',command_kind,'congregationId',unit,'operationKey',gen_random_uuid()));
+     raise exception 'accountant could execute %', command_kind;
+   exception when insufficient_privilege then null; end;
+ end loop;
  assert not public.can_access_congregation(church,unit);
  assert not exists(select from public.financial_transactions where church_id=church);
  begin
@@ -31,7 +40,9 @@ do $$
 declare
  church constant uuid := '20000000-0000-4000-8000-000000000001';
  hq constant uuid := '30000000-0000-4000-8000-000000000002';
- token text;
+ unit constant uuid := '30000000-0000-4000-8000-000000000001';
+ foreign_unit constant uuid := '30000000-0000-4000-8000-000000000003';
+ token text; ids uuid[];
 begin
  perform set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000001',true);
  execute 'set local role authenticated';
@@ -39,10 +50,37 @@ begin
    perform public.create_church_invitation(church,'Contador Teste','finance-treasurer@example.invalid','ACCOUNTANT','CHURCH');
    raise exception 'accountant invited without a congregation';
  exception when check_violation then null; end;
- token := public.create_church_invitation(church,'Contador Teste','finance-treasurer@example.invalid','ACCOUNTANT','CONGREGATION',null,hq);
+ begin
+   perform public.invite_finance_accountant(church,'Contador Teste','finance-treasurer@example.invalid',array[unit,foreign_unit],'');
+   raise exception 'cross-tenant invitation';
+ exception when invalid_parameter_value or insufficient_privilege then null; end;
+ token := public.invite_finance_accountant(church,'Contador Teste','finance-treasurer@example.invalid',array[unit,hq],'');
+ assert (select count(*) from public.accountant_invitation_units where church_id=church)=2;
  perform set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000002',true);
  perform public.accept_church_invitation(token);
  assert (select count(*) from private.accounting_units(church))=2;
+ assert jsonb_array_length(public.list_finance_units(church))=2;
+ perform public.query_finance_payables(church,'{"month":"2026-10"}');
+ perform public.get_finance_daily_cash_flow(church,'{"date":"2026-10-01"}');
+ begin
+   perform public.execute_finance_payable(church,'{}');
+   raise exception 'accountant can manage payables';
+ exception when insufficient_privilege then null; end;
+ select array_agg(id order by id) into ids from public.user_church_access where church_id=church and profile_id=auth.uid() and role='ACCOUNTANT' and deleted_at is null and status='ACTIVE';
+ begin
+   perform public.update_accountant_scope(church,ids[1],ids,array[unit,hq],'ACCOUNTANT','CONGREGATION',null,'ACTIVE','');
+   raise exception 'accountant could grant access';
+ exception when insufficient_privilege then null; end;
+ perform set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000001',true);
+ perform public.update_accountant_scope(church,ids[1],ids,array[unit],'ACCOUNTANT','CONGREGATION',null,'ACTIVE','');
+ perform set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000002',true);
+ assert jsonb_array_length(public.list_finance_units(church))=1;
+ begin
+   perform public.query_finance_payables(church,'{"month":"2026-10"}');
+   raise exception 'payables still available after revocation';
+ exception when insufficient_privilege then null; end;
+ assert jsonb_array_length(public.get_finance_ranking_report(church,'{"type":"RANKING","startMonth":"2026-10","endMonth":"2026-10","includePrebend":false,"includeTransfer":false,"includeInactive":false}')->'units')=1;
+ assert jsonb_array_length(public.list_finance_deliveries_with_transfers(church,'2026-10',false)->'rows')=1;
  execute 'reset role';
 end $$;
 select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000001',true);
@@ -72,9 +110,11 @@ begin
  batch := public.generate_finance_accounting(church,filters,preview->>'fingerprint',false);
  csv := convert_from(decode(batch->>'file','base64'),'WIN1252');
  assert strpos(csv,';2124;1415;2026-10-02;876,00;;Dízimo de Maria Fictícia — referente a outubro;;;DOC-1')>0;
- assert not exists(select from public.financial_transactions where church_id=church);
- perform public.confirm_finance_accounting_import(church,(batch->>'id')::uuid);
- assert public.finance_accounting_history(church,unit,box,1)#>>'{items,0,confirmed}' is not null;
+ assert exists(select from public.financial_transactions where church_id=church and congregation_id=unit);
+ begin
+   perform public.confirm_finance_accounting_import(church,(batch->>'id')::uuid);
+   raise exception 'confirmation by read-only accountant';
+ exception when insufficient_privilege then null; end;
  begin
    perform public.set_finance_accounting_code(church,'CASHBOX',box,'999','2124');
    raise exception 'accountant edited the bank mapping';

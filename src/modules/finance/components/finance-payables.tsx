@@ -16,8 +16,8 @@ import { FinancePayableConfirmation, FinancePayableDetails, payableDate } from "
 import { FinancePayableCopy } from "./finance-payable-copy";
 
 type Dialog = { kind: "CREATE" } | { kind: "EDIT" | "PAY" | "REOPEN" | "DELETE"; item: PayableRow } | { kind: "DETAIL"; detail: PayableDetail } | { kind: "COPY"; initial: PayablePage };
-export function FinancePayables({ result, query, catalogs, canCreateCategory }: {
-  result: PayablePage; query: PayableQuery; catalogs: FinanceCatalogs; canCreateCategory: boolean;
+export function FinancePayables({ result, query, catalogs, canCreateCategory, readOnly = false }: {
+  result: PayablePage; query: PayableQuery; catalogs: FinanceCatalogs; canCreateCategory: boolean; readOnly?: boolean;
 }) {
   const navigation = useFinanceNavigation(), searchParams = useSearchParams(), sequence = useRef(0);
   const [dialog, setDialog] = useState<Dialog | null>(null), [loading, setLoading] = useState<string | null>(null),
@@ -59,8 +59,8 @@ export function FinancePayables({ result, query, catalogs, canCreateCategory }: 
   }
   return <div className="stack finance-payables">
     <div className="row spread finance-payables-heading"><div><h1>Contas a pagar</h1><p className="muted">Organize os vencimentos e acompanhe as confirmações de pagamento.</p></div>
-      <div className="row finance-payable-heading-actions">{!query.dateFrom && query.month !== "2099-12" && <Button variant="outline" disabled={navigation.isPending} loading={loading === "copy"} onClick={() => void copy()}>{loading !== "copy" && <Copy size={17} aria-hidden="true" />}Copiar para o próximo mês</Button>}
-      <Button disabled={navigation.isPending} onClick={() => { setNotice(null); setDialog({ kind: "CREATE" }); }}><Plus size={18} />Nova conta</Button></div></div>
+      {!readOnly && <div className="row finance-payable-heading-actions">{!query.dateFrom && query.month !== "2099-12" && <Button variant="outline" disabled={navigation.isPending} loading={loading === "copy"} onClick={() => void copy()}>{loading !== "copy" && <Copy size={17} aria-hidden="true" />}Copiar para o próximo mês</Button>}
+      <Button disabled={navigation.isPending} onClick={() => { setNotice(null); setDialog({ kind: "CREATE" }); }}><Plus size={18} />Nova conta</Button></div>}</div>
     {notice && <p className="notice" role="status">{notice.message}</p>}{error && <p role="alert">{error}</p>}
     {result.previousOverdue.count > 0 && <aside className="notice row spread"><span><strong>{result.previousOverdue.count} conta(s) vencida(s) de períodos anteriores</strong><br /><small>Fora da lista atual, independentemente da busca e da categoria.</small></span>
       <Button variant="outline" onClick={() => go({ status: "PENDING", search: undefined, categoryId: undefined, dueStatus: "OVERDUE", dateFrom: result.previousOverdue.firstDate!, dateTo: result.previousOverdue.lastDate! })}>Ver pendências anteriores</Button></aside>}
@@ -74,27 +74,27 @@ export function FinancePayables({ result, query, catalogs, canCreateCategory }: 
         <span className="badge finance-payable-period">Vencimentos: {formatFinanceDateRange(result.start, result.end)}</span>
       </div>
       {!result.items.length ? <div className="notice">Nenhuma conta encontrada para estes filtros.</div> : <table className="finance-mobile-card-table finance-payable-table">
-        <colgroup><col /><col className="finance-payable-date-column" /><col className="finance-payable-amount-column" /><col className="finance-payable-status-column" /><col className="finance-payable-actions-column" /></colgroup>
-        <thead><tr><th>Conta</th><th>Vencimento</th><th>Valor</th><th>Situação</th><th>Ações</th></tr></thead>
+        <colgroup><col /><col className="finance-payable-date-column" /><col className="finance-payable-amount-column" /><col className="finance-payable-status-column" />{!readOnly && <col className="finance-payable-actions-column" />}</colgroup>
+        <thead><tr><th>Conta</th><th>Vencimento</th><th>Valor</th><th>Situação</th>{!readOnly && <th>Ações</th>}</tr></thead>
         <tbody>{result.items.map((item) => {
           const status = payableStatus(item.status, item.dueDate, result.today);
           return <tr key={item.id}><td data-label="Conta"><button className="finance-payable-name" aria-label={`Detalhes: ${item.name}`} onClick={() => void details(item)} disabled={loading === item.id || navigation.isPending}>{item.name}</button><small className="muted">{item.categoryName}</small></td>
             <td data-label="Vencimento">{payableDate(item.dueDate)}{item.paidDate && <small className="muted">Pago em {payableDate(item.paidDate)}</small>}</td>
             <td data-label="Valor">{item.amountCents === null ? "Não informado" : formatMoney(item.amountCents)}</td>
             <td data-label="Situação"><span className={`badge payable-${status.toLowerCase()}`}>{payableStatusLabels[status]}</span></td>
-            <td data-label="Ações"><div className="row finance-payable-row-actions">{item.status === "PENDING" && <Button size="sm" disabled={navigation.isPending} aria-label={`Pagar: ${item.name}`} onClick={() => setDialog({ kind: "PAY", item })}><Check size={16} aria-hidden="true" />Pagar</Button>}
+            {!readOnly && <td data-label="Ações"><div className="row finance-payable-row-actions">{item.status === "PENDING" && <Button size="sm" disabled={navigation.isPending} aria-label={`Pagar: ${item.name}`} onClick={() => setDialog({ kind: "PAY", item })}><Check size={16} aria-hidden="true" />Pagar</Button>}
               <div className="finance-payable-menu"><Button size="sm" variant="outline" disabled={loading === item.id || navigation.isPending} aria-busy={loading === item.id} aria-label={`Ações: ${item.name}`} aria-expanded={menu === item.id} onClick={() => setMenu(menu === item.id ? null : item.id)}>{loading === item.id ? <Loader2 size={18} className="finance-spin" aria-hidden="true" /> : <Ellipsis size={18} aria-hidden="true" />}</Button>
                 {menu === item.id && <div className="finance-payable-menu-items" onKeyDown={(e) => { if (e.key === "Escape") setMenu(null); }}>
                   <button disabled={navigation.isPending} onClick={() => { setMenu(null); void details(item); }}><Eye size={16} aria-hidden="true" />Detalhes</button>
                   {item.status === "PENDING" ? <><button disabled={navigation.isPending} onClick={() => { setMenu(null); setDialog({ kind: "EDIT", item }); }}><Pencil size={16} aria-hidden="true" />Editar</button><button disabled={navigation.isPending} onClick={() => { setMenu(null); setDialog({ kind: "DELETE", item }); }}><Trash2 size={16} aria-hidden="true" />Excluir</button></> : <button disabled={navigation.isPending} onClick={() => { setMenu(null); setDialog({ kind: "REOPEN", item }); }}><Undo2 size={16} aria-hidden="true" />Desfazer confirmação</button>}
                 </div>}
-              </div></div></td></tr>;
+              </div></div></td>}</tr>;
         })}</tbody>
       </table>}
       <div className="row spread"><span className="muted">{result.count} conta(s) · Página {result.page} de {Math.max(1, Math.ceil(result.count / 20))}</span><div className="row"><Button variant="outline" disabled={navigation.isPending || result.page <= 1} onClick={() => go({ page: String(result.page - 1) })}>Anterior</Button><Button variant="outline" disabled={navigation.isPending || result.page * 20 >= result.count} onClick={() => go({ page: String(result.page + 1) })}>Próxima</Button></div></div>
     </section>
     {(dialog?.kind === "CREATE" || dialog?.kind === "EDIT") && <FinancePayableForm item={dialog.kind === "EDIT" ? dialog.item : undefined} catalogs={catalogs} unit={result.headquartersId} month={query.month} canCreateCategory={canCreateCategory} onClose={closeDialog} onSaved={() => saved("Conta salva.")} />}
-    {dialog?.kind === "DETAIL" && <FinancePayableDetails detail={dialog.detail} onClose={() => closeDialog()} onReopen={() => setDialog({ kind: "REOPEN", item: dialog.detail.item })} />}
+    {dialog?.kind === "DETAIL" && <FinancePayableDetails detail={dialog.detail} onClose={() => closeDialog()} onReopen={readOnly ? undefined : () => setDialog({ kind: "REOPEN", item: dialog.detail.item })} />}
     {(dialog?.kind === "PAY" || dialog?.kind === "REOPEN" || dialog?.kind === "DELETE") && <FinancePayableConfirmation kind={dialog.kind} item={dialog.item} onClose={closeDialog} onSaved={() => saved()} />}
     {dialog?.kind === "COPY" && <FinancePayableCopy initial={dialog.initial} month={query.month} categories={catalogs.categories} onClose={closeDialog} onSaved={(r) => saved(`${r.created ?? 0} conta(s) copiada(s). ${r.skipped ?? 0} já existia(m) no próximo mês.`)} />}
   </div>;

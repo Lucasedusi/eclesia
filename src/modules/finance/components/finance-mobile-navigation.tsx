@@ -10,11 +10,13 @@ type Item = { label: string; path: string; icon: LucideIcon };
 
 export function FinanceMobileNavigation({
   items,
+  financeOnly,
   pathname,
   unitId,
   month,
   navigate,
 }: {
+  financeOnly?: boolean;
   items: ReadonlyArray<Item>;
   pathname: string;
   unitId: string;
@@ -66,7 +68,7 @@ export function FinanceMobileNavigation({
       <div id="finance-mobile-more" className="finance-mobile-more" role="group" aria-label="Mais opções" hidden={!moreOpen}>
         {secondary.map((item) => link(item, false))}
         <FinancePwaInstall />
-        <Link
+        {!financeOnly && <Link
           href="/"
           onNavigate={(event) => {
             event.preventDefault();
@@ -76,7 +78,7 @@ export function FinanceMobileNavigation({
         >
           <ArrowLeft size={20} aria-hidden="true" />
           <span>Voltar ao sistema</span>
-        </Link>
+        </Link>}
       </div>
       <div className="finance-mobile-navigation-row">
         {primary.map((item) => link(item, true))}
