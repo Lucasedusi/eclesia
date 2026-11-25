@@ -22,14 +22,13 @@ import {
   exportAccountingAction,
   saveAccountingCodeAction,
 } from "../actions/finance-accounting.actions";
-import { AccountingPlanWorkspace } from "../accounting-plan/workspace";
 import styles from "./finance-accounting.module.css";
 
 type Props = {
   filters: AccountingFilters;
   catalog: AccountingCatalog;
   preview: AccountingPreview;
-  history: AccountingHistory;
+  history: AccountingHistory | null;
   canConfigure: boolean;
   historyPage: number;
   month: string;
@@ -193,7 +192,7 @@ export function FinanceAccounting({
   const [busy, start] = useTransition();
   const changed = JSON.stringify(draft) !== JSON.stringify(filters);
   const valid = accountingFilters.safeParse(draft).success;
-  function go(f: AccountingFilters, page = 1, h = 1) {
+  function go(f: AccountingFilters, page = 1, h?: number) {
     navigate(
       financeLocation("/financeiro/contabilidade", f.unit ?? selected, month, {
         inicio: f.start,
@@ -202,7 +201,7 @@ export function FinanceAccounting({
         ...(!f.unit && { escopo: "todas" }),
         ...(f.box && { caixa: f.box }),
         pagina: String(page),
-        historico: String(h),
+        ...(h && { historico: String(h) }),
       }),
     );
   }
@@ -212,6 +211,32 @@ export function FinanceAccounting({
     preview.total > 0 &&
     !preview.missing &&
     !preview.special.length;
+  const units = new Map(catalog.units.map((u) => [u.id, u.name]));
+  const boxes = new Map(
+    catalog.boxes
+      .filter((b) => !draft.unit || b.unit === draft.unit)
+      .map((b) => [b.id, b]),
+  );
+  function renderBox(value: string) {
+    const box = boxes.get(value);
+    if (!box) return "Todos os caixas";
+    return (
+      <span>
+        {box.name} · <strong>{units.get(box.unit)}</strong>
+        {(box.agency || box.account) && (
+          <span className={styles.bankDetails}>
+            {box.agency && `AG: ${box.agency}`}
+            {box.agency && box.account && " | "}
+            {box.account && (
+              <>
+                CC: <strong>{box.account}</strong>
+              </>
+            )}
+          </span>
+        )}
+      </span>
+    );
+  }
   function download() {
     start(async () => {
       const r = await exportAccountingAction(
@@ -236,7 +261,7 @@ export function FinanceAccounting({
       a.click();
       window.setTimeout(() => URL.revokeObjectURL(url), 30000);
       setMessage(
-        "Arquivo gerado. Confirme a importação no histórico após a conferência no Alterdata.",
+        "Arquivo gerado. Após conferir no Alterdata, use Consultar exportações para confirmar a importação.",
       );
       setRepeatFingerprint(null);
       refresh();
@@ -247,8 +272,9 @@ export function FinanceAccounting({
       <header className="finance-page-header">
         <h1>Contabilidade</h1>
       </header>
+      {canConfigure && <AccountingCodes catalog={catalog} />}
       <form
-        className={`card ${styles.filters}`}
+        className={`card ${styles.filters} ${styles.searchFilters}`}
         onSubmit={(e) => {
           e.preventDefault();
           if (valid) go(draft);
@@ -270,19 +296,26 @@ export function FinanceAccounting({
         </FinanceSelect>
         <FinanceSelect
           label="Caixa ou conta"
+          fieldClassName={styles.boxField}
+          popupWidth={540}
+          renderValue={renderBox}
           value={draft.box ?? ""}
           onChange={(e) => setDraft({ ...draft, box: e.target.value || null })}
         >
           <option value="">Todos os caixas</option>
-          {catalog.boxes
-            .filter((b) => !draft.unit || b.unit === draft.unit)
-            .map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name}
-                {!draft.unit &&
-                  " · " + catalog.units.find((u) => u.id === b.unit)?.name}
-              </option>
-            ))}
+          {Array.from(boxes.values(), (b) => (
+            <option key={b.id} value={b.id}>
+              {[
+                b.name,
+                units.get(b.unit),
+                [b.agency && `AG: ${b.agency}`, b.account && `CC: ${b.account}`]
+                  .filter(Boolean)
+                  .join(" | "),
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </option>
+          ))}
         </FinanceSelect>
         <FinanceDateField
           label="Data inicial"
@@ -317,13 +350,10 @@ export function FinanceAccounting({
           Aplicar filtros
         </Button>
       </form>
-      {canConfigure && (
-        <>
-          <AccountingPlanWorkspace />
-          <AccountingCodes catalog={catalog} />
-        </>
-      )}
-      <section className="card stack" aria-label="Prévia contábil">
+      <section
+        className={`card stack ${styles.preview}`}
+        aria-label="Prévia contábil"
+      >
         <div className="row spread">
           <h2>Prévia contábil</h2>
           <span className="muted">{preview.total} lançamentos confirmados</span>
@@ -364,8 +394,7 @@ export function FinanceAccounting({
                   {[
                     "Data",
                     "Congregação / Caixa",
-                    "Categoria / Histórico",
-                    "Documento",
+                    "Plano de contas",
                     "Débito",
                     "Crédito",
                     "Valor",
@@ -386,7 +415,11 @@ export function FinanceAccounting({
                     </td>
                     <td>
                       {r.category ?? "Sem categoria"}
-                      <small className={styles.detail}>{r.memo}</small>
+                      {r.classification && (
+                        <small className={styles.detail}>
+                          {r.classification}
+                        </small>
+                      )}
                       {r.payer && (
                         <small className={styles.detail}>
                           Congregação vinculada · {r.payer}
@@ -400,11 +433,7 @@ export function FinanceAccounting({
                           pendente
                         </small>
                       )}
-                      {r.exported && (
-                        <small className={styles.detail}>Já exportado</small>
-                      )}
                     </td>
-                    <td>{r.document || "—"}</td>
                     <td>{r.debit || "—"}</td>
                     <td>{r.credit || "—"}</td>
                     <td>
@@ -425,7 +454,7 @@ export function FinanceAccounting({
           page={preview.page}
           total={preview.total}
           size={50}
-          go={(p) => go(filters, p, historyPage)}
+          go={(p) => go(filters, p, history ? historyPage : undefined)}
         />
         {(!filters.unit || !filters.box) && (
           <p className="muted">
@@ -446,7 +475,7 @@ export function FinanceAccounting({
             Incluir novamente {preview.previous} lançamento(s) já exportado(s)
           </label>
         )}
-        <div>
+        <div className="row">
           <Button
             loading={busy}
             disabled={
@@ -460,6 +489,15 @@ export function FinanceAccounting({
             <Download size={16} />
             Gerar CSV Alterdata
           </Button>
+          <button
+            type="button"
+            className={styles.historyToggle}
+            aria-expanded={Boolean(history)}
+            disabled={isPending}
+            onClick={() => go(filters, preview.page, history ? undefined : 1)}
+          >
+            {history ? "Fechar consulta" : "Consultar exportações"}
+          </button>
         </div>
       </section>
       {message && (
@@ -467,96 +505,99 @@ export function FinanceAccounting({
           {message}
         </p>
       )}
-      <section className="card stack">
-        <h2>Histórico de exportações</h2>
-        {history.items.length === 0 ? (
-          <p>Nenhum lote gerado para a seleção.</p>
-        ) : (
-          <div className="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  {[
-                    "Geração",
-                    "Congregação / Caixa",
-                    "Período",
-                    "Lançamentos",
-                    "Entradas",
-                    "Saídas",
-                    "Importação",
-                  ].map((c) => (
-                    <th key={c}>{c}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {history.items.map((h) => (
-                  <tr key={h.id}>
-                    <td>
-                      {new Date(h.created).toLocaleString("pt-BR", {
-                        timeZone: "America/Sao_Paulo",
-                      })}
-                      <small className={styles.detail}>{h.actor}</small>
-                    </td>
-                    <td>
-                      {catalog.units.find((u) => u.id === h.unit)?.name}
-                      <small className={styles.detail}>
-                        {catalog.boxes.find((b) => b.id === h.box)?.name ||
-                          "Conta arquivada"}
-                      </small>
-                    </td>
-                    <td>
-                      {dateLabel(h.start)} a {dateLabel(h.end)}
-                      <small className={styles.detail}>
-                        {movement(h.direction)}
-                      </small>
-                    </td>
-                    <td>
-                      {h.count}
-                      {h.changed > 0 && (
-                        <small className={styles.issue}>
-                          {h.changed} alterado(s) ou cancelado(s) após a geração
-                        </small>
-                      )}
-                    </td>
-                    <td>{formatMoney(h.income)}</td>
-                    <td>{formatMoney(h.expense)}</td>
-                    <td>
-                      {h.confirmed ? (
-                        "Importação confirmada"
-                      ) : (
-                        <Button
-                          variant="secondary"
-                          disabled={busy || isPending}
-                          onClick={() =>
-                            start(async () => {
-                              const r = await confirmAccountingAction(h.id);
-                              setMessage(
-                                r.ok
-                                  ? "Importação confirmada pelo usuário."
-                                  : r.message,
-                              );
-                              refresh();
-                            })
-                          }
-                        >
-                          Confirmar importação
-                        </Button>
-                      )}
-                    </td>
+      {history && (
+        <section className="card stack" aria-label="Exportações da seleção">
+          <h2>Exportações da seleção</h2>
+          {history.items.length === 0 ? (
+            <p>Nenhum lote gerado para a seleção.</p>
+          ) : (
+            <div className="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    {[
+                      "Geração",
+                      "Congregação / Caixa",
+                      "Período",
+                      "Lançamentos",
+                      "Entradas",
+                      "Saídas",
+                      "Importação",
+                    ].map((c) => (
+                      <th key={c}>{c}</th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-        <Pager
-          page={historyPage}
-          total={history.total}
-          size={20}
-          go={(p) => go(filters, preview.page, p)}
-        />
-      </section>
+                </thead>
+                <tbody>
+                  {history.items.map((h) => (
+                    <tr key={h.id}>
+                      <td>
+                        {new Date(h.created).toLocaleString("pt-BR", {
+                          timeZone: "America/Sao_Paulo",
+                        })}
+                        <small className={styles.detail}>{h.actor}</small>
+                      </td>
+                      <td>
+                        {catalog.units.find((u) => u.id === h.unit)?.name}
+                        <small className={styles.detail}>
+                          {catalog.boxes.find((b) => b.id === h.box)?.name ||
+                            "Conta arquivada"}
+                        </small>
+                      </td>
+                      <td>
+                        {dateLabel(h.start)} a {dateLabel(h.end)}
+                        <small className={styles.detail}>
+                          {movement(h.direction)}
+                        </small>
+                      </td>
+                      <td>
+                        {h.count}
+                        {h.changed > 0 && (
+                          <small className={styles.issue}>
+                            {h.changed} alterado(s) ou cancelado(s) após a
+                            geração
+                          </small>
+                        )}
+                      </td>
+                      <td>{formatMoney(h.income)}</td>
+                      <td>{formatMoney(h.expense)}</td>
+                      <td>
+                        {h.confirmed ? (
+                          "Importação confirmada"
+                        ) : (
+                          <Button
+                            variant="secondary"
+                            disabled={busy || isPending}
+                            onClick={() =>
+                              start(async () => {
+                                const r = await confirmAccountingAction(h.id);
+                                setMessage(
+                                  r.ok
+                                    ? "Importação confirmada pelo usuário."
+                                    : r.message,
+                                );
+                                refresh();
+                              })
+                            }
+                          >
+                            Confirmar importação
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          <Pager
+            page={historyPage}
+            total={history.total}
+            size={20}
+            go={(p) => go(filters, preview.page, p)}
+          />
+        </section>
+      )}
     </div>
   );
 }

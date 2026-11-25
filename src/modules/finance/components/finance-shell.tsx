@@ -93,13 +93,16 @@ export type FinanceShellDTO = {
   mobileDevice?: boolean;
   canManagePayables?: boolean;
   canUseAccounting?: boolean;
+  accountingOnly?: boolean;
 };
 export function FinanceShell({
   context,
   children,
+  sessionControl,
 }: {
   context: FinanceShellDTO;
   children: React.ReactNode;
+  sessionControl?: React.ReactNode;
 }) {
   const path = usePathname(),
     search = useSearchParams(),
@@ -204,7 +207,7 @@ export function FinanceShell({
       show: !context.mobileDevice && unit.capabilities?.manageSettings,
       desktopOnly: true,
     },
-  ];
+  ].filter(link => !context.accountingOnly || link.path === "/financeiro/contabilidade");
   return (
     <FinanceThemeProvider>
       <NavigationContext.Provider
@@ -260,7 +263,7 @@ export function FinanceShell({
                   <strong>Servir com transparência.</strong>
                 </p>
               </div>
-              <Link
+              {!context.accountingOnly && <Link
                 title="Voltar ao sistema"
                 aria-label="Voltar ao sistema"
                 href="/"
@@ -271,7 +274,7 @@ export function FinanceShell({
               >
                 <ArrowLeft size={16} />
                 <span className="finance-nav-label">Voltar ao sistema</span>
-              </Link>
+              </Link>}
             </div>
           </aside>
           <header className="finance-topbar">
@@ -312,6 +315,7 @@ export function FinanceShell({
               onChange={(u, m) => navigate(financeLocation(path, u, m))}
             />}
             <div className="row">
+              {sessionControl}
               <div className="identity" style={{ textAlign: "right" }}>
                 <div style={{ fontSize: 12 }}>{context.name}</div>
                 <div className="muted" style={{ fontSize: 10 }}>
@@ -339,13 +343,13 @@ export function FinanceShell({
           <main className="finance-main" key={unit.id} aria-busy={isPending}>
             {children}
           </main>
-          <FinanceMobileNavigation
+          {!context.accountingOnly && <FinanceMobileNavigation
             items={links.filter((link) => link.show && !link.desktopOnly)}
             pathname={path}
             unitId={unit.id}
             month={month}
             navigate={navigate}
-          />
+          />}
         </Workspace>
         <Modal
           open={pending !== null}

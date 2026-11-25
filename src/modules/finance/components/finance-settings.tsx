@@ -1,4 +1,5 @@
 "use client";
+import { AccountingPlanWorkspace } from "../accounting-plan/workspace";
 import { FinanceSelect } from "./finance-select";
 import { FinanceDeliveryDeadline } from "./finance-delivery-deadline";
 import type { DeliveryRule } from "../types/finance-administrative.types";
@@ -24,6 +25,7 @@ import {
 import { FinanceRuleEditor } from "./finance-rule-editor";
 export function FinanceSettings({
   initialArea,
+  canConfigureAccounting,
   deliveryRules,
   latestStatementMonth,
   currentMonth,
@@ -35,6 +37,7 @@ export function FinanceSettings({
   units,
 }: {
   initialArea?: "DELIVERY";
+  canConfigureAccounting?: boolean;
   deliveryRules: DeliveryRule[];
   latestStatementMonth: string | null;
   currentMonth: string;
@@ -47,7 +50,7 @@ export function FinanceSettings({
 }) {
   const { isPending } = useFinanceNavigation();
   const [rulesDirty, setRulesDirty] = useState(false);
-  const [tab, setTab] = useState<CatalogEntity | "RULES" | "DELIVERY">(
+  const [tab, setTab] = useState<CatalogEntity | "RULES" | "DELIVERY" | "ACCOUNTING">(
       initialArea ?? "DEPARTMENT",
     ),
     [editing, setEditing] = useState<{
@@ -66,6 +69,7 @@ export function FinanceSettings({
     { id: "PAYMENT_METHOD", label: "Formas de pagamento" },
     { id: "RULES", label: "Regras do demonstrativo" },
     { id: "DELIVERY", label: "Prazo de entrega" },
+    { id: "ACCOUNTING", label: "Contabilidade" },
   ] as const;
   const rows: CatalogItem[] =
     tab === "DEPARTMENT"
@@ -110,7 +114,7 @@ export function FinanceSettings({
         className="tabs finance-settings-tabs"
         aria-label="Áreas das configurações financeiras"
       >
-        {tabs.map((t) => (
+        {tabs.filter(t => t.id !== "ACCOUNTING" || canConfigureAccounting).map((t) => (
           <button
             key={t.id}
             aria-pressed={tab === t.id}
@@ -129,7 +133,7 @@ export function FinanceSettings({
           </button>
         ))}
       </div>
-      {tab === "DELIVERY" ? (
+      {tab === "ACCOUNTING" ? <AccountingPlanWorkspace /> : tab === "DELIVERY" ? (
         <FinanceDeliveryDeadline
           key={Math.max(0, ...deliveryRules.map((r) => r.revision))}
           rules={deliveryRules}

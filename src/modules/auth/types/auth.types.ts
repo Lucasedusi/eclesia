@@ -5,6 +5,7 @@ export const ACCESS_ROLES = [
   "LEADER",
   "MINISTRY_LEADER",
   "VIEWER",
+  "ACCOUNTANT",
 ] as const;
 
 export const ACCESS_SCOPES = [
@@ -74,6 +75,7 @@ export const ROLE_LABELS: Record<AccessRole, string> = {
   LEADER: "Líder",
   MINISTRY_LEADER: "Líder de Ministério",
   VIEWER: "Visualizador",
+  ACCOUNTANT: "Contador",
 };
 
 export const SCOPE_LABELS: Record<AccessScope, string> = {

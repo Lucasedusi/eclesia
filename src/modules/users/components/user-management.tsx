@@ -68,8 +68,12 @@ function AccessEditor({ access, data }: { access: UserAccessItem; data: UserMana
       <form action={action}>
         <input type="hidden" name="accessId" value={access.id}/>
         <S.FormGrid>
-          <S.Field><span>Papel de acesso</span><S.Select name="role" value={role} onChange={event => setRole(event.target.value as AccessRole)}>{ACCESS_ROLES.map((role)=><option key={role} value={role}>{ROLE_LABELS[role]}</option>)}</S.Select></S.Field>
-          <S.Field><span>Escopo</span><S.Select name="scope" value={scope} onChange={(event)=>{setScope(event.target.value as AccessScope); setTargetId("");}}>{ACCESS_SCOPES.map((item)=><option key={item} value={item}>{SCOPE_LABELS[item]}</option>)}</S.Select></S.Field>
+          <S.Field><span>Papel de acesso</span><S.Select name="role" value={role} onChange={event => {
+            const next = event.target.value as AccessRole;
+            setRole(next);
+            if (next === "ACCOUNTANT" && scope !== "CONGREGATION") { setScope("CONGREGATION"); setTargetId(""); }
+          }}>{ACCESS_ROLES.map((role)=><option key={role} value={role}>{ROLE_LABELS[role]}</option>)}</S.Select></S.Field>
+          <S.Field><span>Escopo</span><S.Select name="scope" value={scope} onChange={(event)=>{setScope(event.target.value as AccessScope); setTargetId("");}}>{ACCESS_SCOPES.filter(item => role !== "ACCOUNTANT" || item === "CONGREGATION").map((item)=><option key={item} value={item}>{SCOPE_LABELS[item]}</option>)}</S.Select></S.Field>
           <S.Field><span>Situação</span><S.Select name="status" value={status} onChange={event => setStatus(event.target.value as AccessStatus)}><option value="ACTIVE">Ativo</option><option value="INACTIVE">Inativo</option><option value="BLOCKED">Bloqueado</option></S.Select></S.Field>
           {scope !== "CHURCH" ? <S.Field><span>Alvo do escopo</span><S.Select name="targetId" value={targetId} onChange={event => setTargetId(event.target.value)}><option value="">Selecione</option>{scopeOptions(scope,data).map((option)=><option key={option.id} value={option.id}>{option.name}</option>)}</S.Select></S.Field> : <input type="hidden" name="targetId" value=""/>}
           <S.Field style={{gridColumn:"1 / -1"}}><span>Observação administrativa</span><S.Textarea name="notes" defaultValue={access.notes ?? ""}/></S.Field>
@@ -77,13 +81,14 @@ function AccessEditor({ access, data }: { access: UserAccessItem; data: UserMana
         <S.FormFooter><S.Button type="submit" disabled={pending}>{pending?<S.Spinner/>:<Save size={15}/>} {pending?"Salvando...":"Salvar alterações"}</S.Button></S.FormFooter>
       </form>
       {operation && data.financeOperations && <UserFinanceAssignmentEditor assignment={operation} authorizationUnitId={data.financeOperations.authorizationUnitId} accessChanged={accessChanged}/>}
-      {access.scope === "CONGREGATION" && <S.PermissionBox><h3>Operação financeira</h3><p>Utiliza automaticamente a congregação deste acesso, conforme as permissões concedidas.</p></S.PermissionBox>}
-      <PermissionEditor access={access} permissions={data.permissions}/>
+      {access.role !== "ACCOUNTANT" && access.scope === "CONGREGATION" && <S.PermissionBox><h3>Operação financeira</h3><p>Utiliza automaticamente a congregação deste acesso, conforme as permissões concedidas.</p></S.PermissionBox>}
+      {access.role !== "ACCOUNTANT" && <PermissionEditor access={access} permissions={data.permissions}/>}
     </S.Editor> : null}
   </S.AccessCard>;
 }
 
 function InvitationForm({ data }: { data: UserManagementData }) {
+  const [role,setRole] = useState<AccessRole>("SECRETARY");
   const [scope,setScope] = useState<AccessScope>("CONGREGATION");
   const [state,action,pending] = useActionState(inviteUserAction,INITIAL_ACTION_STATE);
   function copyLink(){ if(state.meta?.invitationPath) void navigator.clipboard.writeText(`${window.location.origin}${state.meta.invitationPath}`); }
@@ -91,9 +96,14 @@ function InvitationForm({ data }: { data: UserManagementData }) {
     {state.status !== "idle" ? <S.Alert $success={state.status === "success"}>{state.message}{state.meta?.invitationPath?<S.CopyRow><input readOnly value={state.meta.invitationPath}/><S.Button type="button" $secondary onClick={copyLink}><Copy size={14}/></S.Button></S.CopyRow>:null}</S.Alert>:null}
     <S.InviteField><span>Nome completo</span><S.Control name="name" placeholder="Nome do usuário" required/></S.InviteField>
     <S.InviteField><span>E-mail</span><S.Control name="email" type="email" placeholder="usuario@igreja.com.br" required/></S.InviteField>
-    <S.InviteField><span>Papel</span><S.Select name="role" defaultValue="SECRETARY">{ACCESS_ROLES.map((role)=><option key={role} value={role}>{ROLE_LABELS[role]}</option>)}</S.Select></S.InviteField>
-    <S.InviteField><span>Escopo</span><S.Select name="scope" value={scope} onChange={(event)=>setScope(event.target.value as AccessScope)}>{ACCESS_SCOPES.map((item)=><option key={item} value={item}>{SCOPE_LABELS[item]}</option>)}</S.Select></S.InviteField>
+    <S.InviteField><span>Papel</span><S.Select name="role" value={role} onChange={event => {
+      const next = event.target.value as AccessRole;
+      setRole(next);
+      if (next === "ACCOUNTANT") setScope("CONGREGATION");
+    }}>{ACCESS_ROLES.map((role)=><option key={role} value={role}>{ROLE_LABELS[role]}</option>)}</S.Select></S.InviteField>
+    <S.InviteField><span>Escopo</span><S.Select name="scope" value={scope} onChange={(event)=>setScope(event.target.value as AccessScope)}>{ACCESS_SCOPES.filter(item => role !== "ACCOUNTANT" || item === "CONGREGATION").map((item)=><option key={item} value={item}>{SCOPE_LABELS[item]}</option>)}</S.Select></S.InviteField>
     {scope !== "CHURCH" ? <S.InviteField><span>Regional, congregação ou ministério</span><S.Select name="targetId" defaultValue="" required><option value="">Selecione</option>{scopeOptions(scope,data).map((option)=><option key={option.id} value={option.id}>{option.name}</option>)}</S.Select></S.InviteField> : <input type="hidden" name="targetId" value=""/>}
+    {role === "ACCOUNTANT" && <p>O contador acessa a Contabilidade desta congregação. Para autorizar outra, envie um convite para o mesmo e-mail.</p>}
     <S.InviteField><span>Observação administrativa</span><S.Textarea name="notes" placeholder="Opcional"/></S.InviteField>
     <S.Button type="submit" disabled={pending}>{pending?<S.Spinner/>:<MailPlus size={16}/>} {pending?"Enviando...":"Enviar convite"}</S.Button>
   </S.InviteForm>;

@@ -1,5 +1,6 @@
 import "server-only";
 
+import { PERMISSIONS } from "../constants/permissions";
 import { cache } from "react";
 import { io } from "next/cache";
 import { cookies } from "next/headers";
@@ -286,7 +287,7 @@ export async function getAuthenticatedDestination() {
     case "onboarding":
       return "/onboarding";
     case "ready":
-      return "/";
+      return result.context.access.role === "ACCOUNTANT" ? "/financeiro/contabilidade" : "/";
   }
 }
 
@@ -300,6 +301,9 @@ export async function requireAccessContext(
   if (result.status === "pending-invite") redirect("/aguardando-liberacao");
   if (result.status === "onboarding") redirect("/onboarding");
 
+  if (result.context.access.role === "ACCOUNTANT" && permission !== PERMISSIONS.financeAccounting) {
+    redirect("/financeiro/contabilidade");
+  }
   if (permission && !result.context.permissions.includes(permission)) {
     redirect("/acesso-negado");
   }

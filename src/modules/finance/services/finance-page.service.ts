@@ -6,6 +6,11 @@ import { isMonth, todayLocal } from "../utils/finance-period";
 export type FinanceSearchParams = Promise<
   Record<string, string | string[] | undefined>
 >;
+export function financePageMonth(value: string | string[] | undefined) {
+  return value === undefined
+    ? todayLocal().slice(0, 7)
+    : z.string().refine(isMonth).parse(value);
+}
 export async function resolveFinancePage(
   searchParams: FinanceSearchParams,
   settings = false,
@@ -19,9 +24,6 @@ export async function resolveFinancePage(
       ? PERMISSIONS.financeSettings
       : PERMISSIONS.financeView,
   });
-  const month =
-    search.mes === undefined
-      ? todayLocal().slice(0, 7)
-      : z.string().refine(isMonth).parse(search.mes);
+  const month = financePageMonth(search.mes);
   return { context, month, search };
 }

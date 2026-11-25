@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
   type KeyboardEvent,
+  type ReactNode,
   type SelectHTMLAttributes,
 } from "react";
 import { Check, ChevronDown } from "lucide-react";
@@ -21,12 +22,14 @@ export function FinanceSelect({
   hideLabel,
   fieldClassName,
   popupWidth,
+  renderValue,
   ...props
 }: SelectHTMLAttributes<HTMLSelectElement> & {
   label: string;
   hideLabel?: boolean;
   fieldClassName?: string;
   popupWidth?: number;
+  renderValue?: (value: string) => ReactNode;
 }) {
   const id = useId();
   const select = useRef<HTMLSelectElement>(null);
@@ -131,6 +134,7 @@ export function FinanceSelect({
         <select
           aria-label={hideLabel ? label : undefined}
           {...props}
+          data-rich={renderValue ? true : undefined}
           ref={select}
           id={id}
           aria-expanded={open}
@@ -162,6 +166,7 @@ export function FinanceSelect({
         >
           {children}
         </select>
+        {renderValue && <span aria-hidden="true" className={styles.selectedContent}>{renderValue(String(props.value ?? ""))}</span>}
         <ChevronDown size={17} aria-hidden="true" className={styles.chevron} />
       </div>
       {open && (
@@ -197,6 +202,7 @@ export function FinanceSelect({
               {visible.map((option, i) => (
                 <div
                   role="option"
+                  aria-label={renderValue ? option.text : undefined}
                   id={id + "-item-" + i}
                   key={option.value}
                   aria-selected={option.value === selected}
@@ -208,7 +214,7 @@ export function FinanceSelect({
                   onMouseDown={(event) => event.preventDefault()}
                   onClick={() => choose(option)}
                 >
-                  {option.text}
+                  {renderValue ? renderValue(option.value) : option.text}
                   {option.value === selected && (
                     <Check size={16} aria-hidden="true" />
                   )}

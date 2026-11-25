@@ -1,4 +1,6 @@
 import "server-only";
+import { cache } from "react";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { requireAccessContext } from "@/modules/auth/services/access-context.service";
@@ -19,20 +21,23 @@ async function accountingAccess() {
   return { auth, church: auth.church.id, client: await createClient() };
 }
 
-export async function getAccountingCatalog() {
+export const getAccountingCatalog = cache(async () => {
   const { auth, church, client } = await accountingAccess();
   const { data, error } = await client.rpc("finance_accounting_catalog", {
     p_church: church,
   });
   if (error) throwFinanceDatabaseError(error);
   const catalog = data as unknown as AccountingCatalog;
-  if (!catalog.units.length) throw new Error("FORBIDDEN");
+  if (!catalog.units.length) redirect("/acesso-negado");
   const canConfigure =
     auth.access.role === "ADMIN" &&
     auth.access.scope === "CHURCH" &&
     auth.permissions.includes(PERMISSIONS.financeSettings);
-  return { catalog, canConfigure };
-}
+  return {
+    catalog: canConfigure ? catalog : { ...catalog, categories: [] },
+    canConfigure,
+  };
+});
 
 const pageNumber = z.number().int().min(1).max(2147483647);
 export async function getAccountingPreview(input: unknown, page: number) {
@@ -44,7 +49,25 @@ export async function getAccountingPreview(input: unknown, page: number) {
     p_page: pageNumber.parse(page),
   });
   if (error) throwFinanceDatabaseError(error);
-  return data as unknown as AccountingPreview;
+  const preview = data as unknown as AccountingPreview;
+  return {
+    ...preview,
+    rows: preview.rows.map((row) => ({
+      id: row.id,
+      date: row.date,
+      unit: row.unit,
+      box: row.box,
+      category: row.category,
+      classification: row.classification,
+      payer: row.payer,
+      debit: row.debit,
+      credit: row.credit,
+      direction: row.direction,
+      cents: row.cents,
+      box_issue: row.box_issue,
+      category_issue: row.category_issue,
+    })),
+  };
 }
 export async function exportAccounting(
   input: unknown,

@@ -257,3 +257,22 @@
 }
 .multiOptions label:is(:hover, :focus-within, :has(:checked)) { background: #edf6ef; }
 :global(#finance-modal-root) .multiOptions input[type="checkbox"] { flex: 0 0 16px; padding: 0; width: 16px; height: 16px; min-height: 0; accent-color: #087f5b; }
+
+.control select[data-rich] {
+  color: transparent;
+}
+.selectedContent {
+  position: absolute;
+  inset: 0 38px 0 12px;
+  display: grid;
+  align-content: center;
+  pointer-events: none;
+  color: #194b39;
+  font-size: 14px;
+  line-height: 1.2;
+}
+.selectedContent > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

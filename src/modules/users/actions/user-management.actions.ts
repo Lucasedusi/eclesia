@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { sendInvitationEmail } from "@/lib/email/invitation-email";
 import { requireAccessContext } from "@/modules/auth/services/access-context.service";
 import { PERMISSIONS } from "@/modules/auth/constants/permissions";
-import type { ActionState } from "@/modules/auth/types/auth.types";
+import { ACCESS_ROLES, type ActionState } from "@/modules/auth/types/auth.types";
 
 const emailSchema = z
   .string()
@@ -16,14 +16,7 @@ const emailSchema = z
   .pipe(z.email("Informe um e-mail válido."));
 const accessSchema = z.object({
   accessId: z.uuid(),
-  role: z.enum([
-    "ADMIN",
-    "SECRETARY",
-    "TREASURER",
-    "LEADER",
-    "MINISTRY_LEADER",
-    "VIEWER",
-  ]),
+  role: z.enum(ACCESS_ROLES),
   scope: z.enum(["CHURCH", "REGION", "CONGREGATION", "MINISTRY"]),
   status: z.enum(["ACTIVE", "INACTIVE", "BLOCKED"]),
   targetId: z.string().optional().default(""),
@@ -53,6 +46,9 @@ function resolveTargets(scope: string, targetId: string) {
 }
 
 function validateRoleScope(role: string, scope: string): ActionState | null {
+  if (role === "ACCOUNTANT" && scope !== "CONGREGATION") {
+    return { status: "error", message: "Selecione a congregação autorizada para o contador." };
+  }
   if (role === "ADMIN" && scope !== "CHURCH") {
     return {
       status: "error",

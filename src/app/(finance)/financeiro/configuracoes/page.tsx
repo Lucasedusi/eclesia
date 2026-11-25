@@ -1,3 +1,4 @@
+import { PERMISSIONS } from "@/modules/auth/constants/permissions";
 import { listFinanceDeliveryRules } from "@/modules/finance/services/finance-administrative.service";
 import { FinanceSkeleton } from "@/modules/finance/components/finance-skeleton";
 import { isFinanceMobileRequest } from "@/modules/finance/utils/finance-mobile-request";
@@ -44,6 +45,7 @@ async function Content({
   return (
     <FinanceDesktopAccess {...access}>
       <FinanceSettings
+        canConfigureAccounting={context.auth.access.role === "ADMIN" && context.auth.access.scope === "CHURCH" && context.auth.permissions.includes(PERMISSIONS.financeAccounting) && context.auth.permissions.includes(PERMISSIONS.financeView)}
         initialArea={search.area === "entregas" ? "DELIVERY" : undefined}
         deliveryRules={deliveryRules}
         latestStatementMonth={latestMonth}

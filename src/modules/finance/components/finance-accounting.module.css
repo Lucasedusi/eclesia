@@ -44,3 +44,41 @@
   height: 18px;
   min-height: 0;
 }
+
+.searchFilters {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 155px), 1fr));
+}
+.boxField {
+  grid-column: span 2;
+}
+.bankDetails::before {
+  content: " · ";
+}
+section.preview table {
+  font-size: 14px;
+}
+section.preview table th {
+  font-size: 12px;
+}
+.historyToggle {
+  border: 0;
+  background: transparent;
+  color: #176348;
+  padding: 10px 4px;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+@media (max-width: 640px) {
+  .boxField {
+    grid-column: 1 / -1;
+  }
+  .bankDetails {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .bankDetails::before {
+    content: none;
+  }
+}

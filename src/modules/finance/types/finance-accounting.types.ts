@@ -1,7 +1,12 @@
 export type AccountingUnit = { id: string; name: string };
 export type AccountingCatalog = {
-  units: AccountingUnit[];
-  boxes: (AccountingUnit & { unit: string; code: string | null })[];
+  units: (AccountingUnit & { isHeadquarters?: boolean })[];
+  boxes: (AccountingUnit & {
+    unit: string;
+    code: string | null;
+    agency: string | null;
+    account: string | null;
+  })[];
   categories: (AccountingUnit & { direction: string; code: string | null })[];
 };
 
@@ -15,12 +20,10 @@ export type AccountingRow = {
   cents: number;
   debit: string | null;
   credit: string | null;
-  memo: string;
-  document: string;
+  classification: string | null;
   payer: string | null;
   box_issue: string | null;
   category_issue: string | null;
-  exported: boolean;
 };
 export type AccountingPreview = {
   rows: AccountingRow[];

@@ -51,6 +51,7 @@ test("configura os códigos, baixa o CSV e confirma a importação", async ({
   expect(csv.split("\n")[0].split(";")).toHaveLength(10);
   expect(csv).toContain(";45;1420;");
   expect(csv).toContain(";45;1435;");
+  await page.getByRole("button", { name: "Consultar exportações" }).click();
   const confirm = page.getByRole("button", { name: "Confirmar importação" });
   const confirmed = page.getByText("Importação confirmada", { exact: true });
   await expect(confirm.or(confirmed).first()).toBeVisible();
@@ -119,8 +120,10 @@ test("revisa o plano e os vínculos antes de criar uma categoria", async ({
   expect(new URL(process.env.E2E_BASE_URL!).hostname).toBe("127.0.0.1");
   const f = JSON.parse(readFileSync(process.env.E2E_FINANCE_FIXTURE!, "utf8"));
   await page.goto(
-    `/financeiro/contabilidade?unidade=${f.headquartersId}&mes=2026-10`,
+    `/financeiro/configuracoes?unidade=${f.headquartersId}&mes=2026-10`,
   );
+  const tab = page.getByRole("button", { name: "Contabilidade", exact: true });
+  await tab.click();
   const open = page.getByRole("button", { name: "Gerenciar plano de contas" });
   await open.click();
   const upload = page.getByLabel("Importar plano em PDF");
@@ -171,6 +174,7 @@ test("revisa o plano e os vínculos antes de criar uma categoria", async ({
   await page.getByRole("button", { name: "Confirmar alterações" }).click();
   await expect(page.getByText("Alterações contábeis aplicadas.")).toBeVisible();
   await page.reload();
+  await tab.click();
   await open.click();
   await page.getByText(/^Consultar vínculos atuais/).click();
   const saved = page
@@ -179,4 +183,119 @@ test("revisa o plano e os vínculos antes de criar uma categoria", async ({
   await expect(
     saved.getByRole("cell", { name: "0102", exact: true }),
   ).toBeVisible();
+});
+
+test("contador entra apenas na Contabilidade da congregação autorizada", async ({
+  browser,
+}) => {
+  test.skip(
+    !process.env.E2E_FINANCE_FIXTURE || !process.env.E2E_STORAGE_STATE,
+    "Requer contas fictícias no banco local.",
+  );
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  expect(new URL(url).hostname).toBe("127.0.0.1");
+  expect(new URL(process.env.E2E_BASE_URL!).hostname).toBe("127.0.0.1");
+  const f = JSON.parse(readFileSync(process.env.E2E_FINANCE_FIXTURE!, "utf8"));
+  const state = process.env.E2E_STORAGE_STATE!;
+  const { createServerClient } = await import("@supabase/ssr");
+  const admin = createServerClient(
+    url,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    {
+      cookies: {
+        getAll: () => JSON.parse(readFileSync(state, "utf8")).cookies,
+        setAll: () => {},
+      },
+    },
+  );
+  const { data: access, error } = await admin
+    .from("user_church_access")
+    .select("id,role,access_scope,region_id")
+    .eq("church_id", f.churchId)
+    .eq("profile_id", f.sessions.observer)
+    .single();
+  expect(error).toBeNull();
+  const ctx = await browser.newContext({
+    storageState: state.replace("admin-session", "observer-session"),
+  });
+  try {
+    const change = await admin.rpc("update_church_access", {
+      p_access_id: access!.id,
+      p_role: "ACCOUNTANT",
+      p_scope: "CONGREGATION",
+      p_status: "ACTIVE",
+      p_congregation_id: f.unitId,
+    });
+    expect(change.error).toBeNull();
+    const page = await ctx.newPage();
+    for (const url of [
+      "/",
+      "/financeiro/lancamentos",
+      "/financeiro/configuracoes",
+    ]) {
+      await page.goto(url);
+      await expect(
+        page.getByRole("heading", { name: "Contabilidade", exact: true }),
+      ).toBeVisible();
+      await expect(page).toHaveURL(/\/financeiro\/contabilidade/);
+    }
+    await expect(page.getByText("Configurar códigos contábeis")).toHaveCount(0);
+    await expect(
+      page.getByRole("link", { name: "Lançamentos", exact: true }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: "Sair", exact: true }),
+    ).toBeVisible();
+    await page.goto(`/financeiro/contabilidade?unidade=${f.headquartersId}`);
+    await expect(
+      page.getByText(
+        "Seu acesso à Contabilidade não inclui a congregação selecionada.",
+      ),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Gerar CSV Alterdata" }),
+    ).toHaveCount(0);
+  } finally {
+    const restored = await admin.rpc("update_church_access", {
+      p_access_id: access!.id,
+      p_role: access!.role,
+      p_scope: access!.access_scope,
+      p_status: "ACTIVE",
+      p_region_id: access!.region_id,
+    });
+    await ctx.close();
+    expect(restored.error).toBeNull();
+  }
+});
+
+test("filtro de conta e prévia contábil em tela estreita", async ({ page }) => {
+  test.skip(
+    !process.env.E2E_FINANCE_FIXTURE || !process.env.E2E_STORAGE_STATE,
+    "Requer dados locais.",
+  );
+  expect(new URL(process.env.E2E_BASE_URL!).hostname).toBe("127.0.0.1");
+  const f = JSON.parse(readFileSync(process.env.E2E_FINANCE_FIXTURE!, "utf8"));
+  await page.setViewportSize({ width: 320, height: 700 });
+  await page.goto(
+    `/financeiro/contabilidade?unidade=${f.headquartersId}&mes=2026-10`,
+  );
+  const field = page.getByLabel("Caixa ou conta", { exact: true });
+  await field.focus();
+  await field.press("ArrowDown");
+  const list = page.getByRole("listbox", { name: "Caixa ou conta" });
+  const box = list.getByRole("option", { name: /Caixa principal/ });
+  await expect(box.locator("strong").first()).toHaveText(/\S/);
+  await box.click();
+  await expect(field).toHaveValue(f.boxes[f.headquartersId].cash);
+  const bounds = await field.boundingBox();
+  expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(320);
+  await expect(
+    page.getByRole("columnheader", { name: "Plano de contas" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("columnheader", { name: "Documento" }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", { name: "Exportações da seleção" }),
+  ).toHaveCount(0);
 });
