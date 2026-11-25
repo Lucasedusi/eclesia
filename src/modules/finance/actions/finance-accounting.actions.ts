@@ -5,6 +5,8 @@ import type { FinanceActionResult } from "../types/finance.types";
 import {
   confirmAccountingImport,
   exportAccounting,
+  getAccountingHistory,
+  getAccountingPreview,
   updateAccountingCode,
 } from "../services/finance-accounting.service";
 import type {
@@ -22,6 +24,20 @@ async function result<T>(
     return financeFailure(error);
   }
 }
+export async function consultAccountingAction(
+  filters: AccountingFilters,
+  page: number,
+) {
+  return result(() => getAccountingPreview(filters, page));
+}
+
+export async function accountingHistoryAction(
+  filters: AccountingFilters,
+  page: number,
+) {
+  return result(() => getAccountingHistory(filters.unit, filters.box, page));
+}
+
 export async function exportAccountingAction(
   filters: AccountingFilters,
   fingerprint: string,

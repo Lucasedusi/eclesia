@@ -10,22 +10,9 @@ import {
   financePageMonth,
   type FinanceSearchParams,
 } from "@/modules/finance/services/finance-page.service";
-import {
-  getAccountingCatalog,
-  getAccountingPreview,
-  getAccountingHistory,
-} from "@/modules/finance/services/finance-accounting.service";
-import { accountingFilters } from "@/modules/finance/validations/finance-accounting.schemas";
-import {
-  monthRange,
-  shiftCivilDate,
-} from "@/modules/finance/utils/finance-period";
+import { getAccountingCatalog } from "@/modules/finance/services/finance-accounting.service";
+import { todayLocal } from "@/modules/finance/utils/finance-period";
 
-function pageNumber(value: unknown) {
-  return typeof value === "string" && /^[1-9]\d{0,8}$/.test(value)
-    ? Number(value)
-    : 1;
-}
 async function AccountingPage({
   searchParams,
 }: {
@@ -37,7 +24,6 @@ async function AccountingPage({
     requireAccessContext(PERMISSIONS.financeAccounting),
   ]);
   const month = financePageMonth(search.mes);
-  const range = monthRange(month);
   if (Array.isArray(search.unidade)) notFound();
   const selected =
     search.unidade ??
@@ -56,45 +42,16 @@ async function AccountingPage({
       </section>
     );
   }
-  const parsed = accountingFilters.safeParse({
-    unit: search.escopo === "todas" ? null : selected,
-    box: search.caixa || null,
-    start: search.inicio ?? range.start,
-    end: search.fim ?? shiftCivilDate(range.end, -1),
-    direction: search.movimento ?? "ALL",
-  });
-  if (
-    !parsed.success ||
-    (parsed.data.box &&
-      !catalog.boxes.some(
-        (b) =>
-          b.id === parsed.data.box &&
-          (!parsed.data.unit || b.unit === parsed.data.unit),
-      ))
-  )
-    notFound();
-  const filters = parsed.data;
-  const historyPage = pageNumber(search.historico);
-  const [preview, history] = await Promise.all([
-    getAccountingPreview(filters, pageNumber(search.pagina)),
-    search.historico
-      ? getAccountingHistory(filters.unit, filters.box, historyPage)
-      : null,
-  ]);
+  const box = catalog.boxes.find((item) => item.id === search.caixa);
+  if (search.caixa && !box) notFound();
   return (
     <FinanceAccounting
+      key={JSON.stringify([selected, month, box?.id])}
+      currentMonth={todayLocal().slice(0, 7)}
+      initialBox={box?.id ?? null}
+      catalog={catalog}
+      canConfigure={canConfigure}
       canConfirm={auth.access.role !== "ACCOUNTANT"}
-      key={JSON.stringify(filters)}
-      {...{
-        filters,
-        preview,
-        history,
-        historyPage,
-        catalog,
-        canConfigure,
-        month,
-        selected,
-      }}
     />
   );
 }

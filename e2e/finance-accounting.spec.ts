@@ -1,5 +1,17 @@
 import { readFileSync } from "node:fs";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+
+async function consultFixtureMonth(page: Page) {
+  await page.getByLabel("Período da consulta").selectOption("custom");
+  await page.getByRole("textbox", { name: "Data final", exact: true }).fill("");
+  await page
+    .getByRole("textbox", { name: "Data inicial", exact: true })
+    .fill("01/10/2026");
+  await page
+    .getByRole("textbox", { name: "Data final", exact: true })
+    .fill("31/10/2026");
+  await page.getByRole("button", { name: "Consultar", exact: true }).click();
+}
 
 test("configura os códigos, baixa o CSV e confirma a importação", async ({
   page,
@@ -18,6 +30,7 @@ test("configura os códigos, baixa o CSV e confirma a importação", async ({
   await expect(
     page.getByRole("heading", { name: "Contabilidade", exact: true }),
   ).toBeVisible();
+  await consultFixtureMonth(page);
   await page.getByText("Configurar códigos contábeis", { exact: true }).click();
   const config = page.locator("details").filter({
     has: page.getByText("Configurar códigos contábeis", { exact: true }),
@@ -51,6 +64,13 @@ test("configura os códigos, baixa o CSV e confirma a importação", async ({
   expect(csv.split("\n")[0].split(";")).toHaveLength(10);
   expect(csv).toContain(";45;1420;");
   expect(csv).toContain(";45;1435;");
+  await expect(repeat).toBeVisible();
+  const mark = await repeat.boundingBox();
+  const caption = await page.getByText(/^Incluir novamente/).boundingBox();
+  expect(caption!.x).toBeGreaterThanOrEqual(mark!.x + mark!.width);
+  expect(
+    Math.abs(caption!.y + caption!.height / 2 - (mark!.y + mark!.height / 2)),
+  ).toBeLessThan(2);
   await page.getByRole("button", { name: "Consultar exportações" }).click();
   const confirm = page.getByRole("button", { name: "Confirmar importação" });
   const confirmed = page.getByText("Importação confirmada", { exact: true });
@@ -363,19 +383,34 @@ test("filtro de conta e prévia contábil em tela estreita", async ({ page }) =>
   expect(new URL(process.env.E2E_BASE_URL!).hostname).toBe("127.0.0.1");
   const f = JSON.parse(readFileSync(process.env.E2E_FINANCE_FIXTURE!, "utf8"));
   await page.setViewportSize({ width: 320, height: 700 });
-  await page.goto(
-    `/financeiro/contabilidade?unidade=${f.headquartersId}&mes=2026-10`,
+  await page.goto(`/financeiro/contabilidade?unidade=${f.unitId}&mes=2026-10`);
+  const prompt = page.getByText(
+    "Selecione o caixa ou conta e o período para consultar os lançamentos.",
   );
+  await expect(prompt).toBeVisible();
+  await expect(page.getByLabel("Período da consulta")).toHaveValue("previous");
+  await page.getByLabel("Período da consulta").selectOption("current");
+  await expect(prompt).toBeVisible();
+  await expect(page.getByRole("columnheader")).toHaveCount(0);
   const field = page.getByLabel("Caixa ou conta", { exact: true });
   const list = page.getByRole("listbox", { name: "Caixa ou conta" });
   await expect(async () => {
     if (!(await list.isVisible())) await field.press("ArrowDown");
     await expect(list).toBeVisible({ timeout: 500 });
   }).toPass({ timeout: 5000 });
-  const box = list.getByRole("option", { name: /Caixa principal/ });
+  const box = list.getByRole("option", {
+    name: "Caixa principal · Headquarters",
+    exact: true,
+  });
   await expect(box.locator("strong").first()).toHaveText(/\S/);
   await box.click();
   await expect(field).toHaveValue(f.boxes[f.headquartersId].cash);
+  await expect(prompt).toBeVisible();
+  await consultFixtureMonth(page);
+  await expect(page.getByText("Saldo anterior", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Saldo do período", { exact: true }),
+  ).toBeVisible();
   const bounds = await field.boundingBox();
   expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(320);
   await expect(
@@ -387,4 +422,38 @@ test("filtro de conta e prévia contábil em tela estreita", async ({ page }) =>
   await expect(
     page.getByRole("heading", { name: "Exportações da seleção" }),
   ).toHaveCount(0);
+  await page
+    .getByRole("textbox", { name: "Data inicial", exact: true })
+    .fill("02/10/2026");
+  let resume!: () => void;
+  const paused = new Promise<void>((resolve) => {
+    resume = resolve;
+  });
+  await page.route("**/financeiro/contabilidade**", async (route) => {
+    if (route.request().method() === "POST") await paused;
+    await route.continue();
+  });
+  try {
+    await page.getByRole("button", { name: "Consultar", exact: true }).click();
+    await expect(
+      page.getByRole("status", { name: "Consultando prévia contábil" }),
+    ).toBeVisible();
+    await expect(field).toBeVisible();
+  } finally {
+    resume();
+  }
+  await expect(
+    page.getByText("Nenhum lançamento confirmado no período."),
+  ).toBeVisible();
+  const opening = page
+    .getByText("Saldo anterior", { exact: true })
+    .locator("../..");
+  await expect(opening).toContainText(/18\.000,00/);
+  const net = page
+    .getByText("Saldo do período", { exact: true })
+    .locator("../..");
+  await expect(net).toContainText(/R\$\s*0,00/);
+  await page.reload();
+  await expect(prompt).toBeVisible();
+  await expect(page.getByRole("columnheader")).toHaveCount(0);
 });

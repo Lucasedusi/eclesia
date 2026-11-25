@@ -26,6 +26,7 @@ export type AccountingRow = {
   category_issue: string | null;
 };
 export type AccountingPreview = {
+  opening: number;
   rows: AccountingRow[];
   total: number;
   page: number;

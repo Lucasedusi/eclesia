@@ -12,19 +12,21 @@
   margin-top: 16px;
 }
 .totals {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px 36px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 175px), 1fr));
+  gap: 12px;
 }
-.totals span,
+.empty {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 32px 12px;
+  text-align: center;
+  color: #52665e;
+}
 .detail,
 .issue {
   display: block;
-}
-.totals strong {
-  display: block;
-  color: #194b39;
-  font-size: 1.25rem;
 }
 .detail {
   color: #52665e;
@@ -34,13 +36,16 @@
   color: #923e12;
   font-weight: 700;
 }
-.repeat {
+section.preview label.repeat {
+  flex-direction: row;
   display: flex;
   align-items: center;
   gap: 10px;
 }
 .repeat input[type="checkbox"] {
   width: 18px;
+  flex: 0 0 18px;
+  margin: 0;
   height: 18px;
   min-height: 0;
 }

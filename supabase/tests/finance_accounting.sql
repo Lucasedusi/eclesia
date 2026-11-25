@@ -27,6 +27,9 @@ begin
  execute 'set local role authenticated';
  f:=jsonb_build_object('unit',hq,'box',cash,'start','2026-10-01','end','2026-10-31','direction','ALL');
  first_preview:=public.preview_finance_accounting(church,f,1);
+ assert (first_preview->>'opening')::numeric=0, 'opening on first day belongs to that day';
+ result:=public.preview_finance_accounting(church,f||'{"start":"2026-10-02"}',1);
+ assert (result->>'opening')::numeric=200000 and (result->>'income')::numeric-(result->>'expense')::numeric=7500;
  assert first_preview->>'missing'='2' and first_preview->>'total'='2', 'missing mappings retained';
  begin
   perform public.generate_finance_accounting(church,f,first_preview->>'fingerprint',false);
@@ -57,6 +60,10 @@ begin
  assert result->>'total'='1' and result#>>'{items,0,confirmed}' is not null and result#>>'{items,0,changed}'='1';
  perform public.execute_finance_command(church,jsonb_build_object('kind','TRANSFER','operationKey',gen_random_uuid(),'congregationId',hq,'sourceCashboxId',cash,'targetCashboxId',bank,'date','2026-10-02','amountCents',500));
  perform public.execute_finance_command(church,jsonb_build_object('kind','ADJUST_BALANCE','operationKey',gen_random_uuid(),'congregationId',hq,'cashboxId',cash,'date','2026-10-02','amountCents',-200,'reason','Conferência fictícia'));
+ result:=public.preview_finance_accounting(church,f||'{"start":"2026-10-03"}',1);
+ assert (result->>'opening')::numeric=196800 and result->>'total'='0', 'opening includes reversal, transfer and adjustment in an empty period';
+ result:=public.preview_finance_accounting(church,f||'{"start":"2026-10-03","box":null,"unit":null}',1);
+ assert (result->>'opening')::numeric=397800, 'authorized consolidated balance includes both units and offsets internal transfer';
  result:=public.preview_finance_accounting(church,f,1);
  assert jsonb_array_length(result->'special')=2 and result->>'total'='1';
  begin
@@ -78,6 +85,7 @@ begin
  perform set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000004',true);
  assert jsonb_array_length(public.finance_accounting_catalog(church)->'units')=1;
  assert public.preview_finance_accounting(church,f||'{"unit":null,"box":null}',1)->>'total'='0';
+ assert (public.preview_finance_accounting(church,f||'{"unit":null,"box":null,"start":"2026-10-03"}',1)->>'opening')::numeric=200000, 'aggregate limited to authorized unit';
  assert public.finance_accounting_history(church,null,null,1)->>'total'='0';
  begin perform public.preview_finance_accounting(church,f,1); raise exception 'wrong unit'; exception when insufficient_privilege then null; end;
  begin perform public.confirm_finance_accounting_import(church,(batch->>'id')::uuid); raise exception 'cross-scope mutation'; exception when insufficient_privilege then null; end;
