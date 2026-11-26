@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { ChevronDown } from "lucide-react";
 import { isLocalDate } from "../utils/finance-period";
-import styles from "./finance-pickers.module.css";
+import styles from "@/components/form/pickers/pickers.module.css";
 import { useRef, useState } from "react";
 import type {
   CategoryReportOptions,

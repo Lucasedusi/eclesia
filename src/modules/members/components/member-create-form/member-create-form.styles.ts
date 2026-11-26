@@ -1,4 +1,5 @@
 "use client";
+import { PickerSelect } from "@/components/form/pickers/picker-select";
 import { administrativeControl, administrativeSelect, administrativeTextarea } from "@/styles/administrative-controls";
 
 import styled from "styled-components";
@@ -236,7 +237,7 @@ export const Control = styled.input<{
   ${({ $withInlineStatus }) => $withInlineStatus && "padding-right: 150px;"}
 `;
 
-export const SelectControl = styled.select<{ $invalid?: boolean }>`
+export const SelectControl = styled(PickerSelect)<{ $invalid?: boolean }>`
   width: 100%;
   min-height: 44px;
   border: 1px solid ${({ $invalid }) => ($invalid ? "#ef7770" : "#d9deea")};

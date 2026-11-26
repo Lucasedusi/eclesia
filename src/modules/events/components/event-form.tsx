@@ -1,5 +1,7 @@
 "use client";
 
+import { DateTimeField } from "@/components/form/pickers/date-time-field";
+import { PickerSelect } from "@/components/form/pickers/picker-select";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -213,7 +215,7 @@ export function EventForm({ initial, options }: Props) {
       (element instanceof HTMLInputElement || element instanceof HTMLSelectElement || element instanceof HTMLTextAreaElement) && !element.checkValidity(),
     ) as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | undefined;
     if (invalidField) {
-      setStep(fieldStep[invalidField.name] ?? 0);
+      setStep(fieldStep[invalidField.name || invalidField.closest<HTMLElement>("[data-field-name]")?.dataset.fieldName || ""] ?? 0);
       setNotice({ message: "Preencha os campos obrigatórios destacados em vermelho.", danger: true });
       window.requestAnimationFrame(() => invalidField.focus());
       return;
@@ -393,16 +395,16 @@ export function EventForm({ initial, options }: Props) {
               <S.FieldGrid>
                 <S.Field><span>Nome do evento *</span><input name="name" required defaultValue={initial?.name ?? ""} minLength={3} onChange={(event) => { if (!slugTouched) setSlug(slugify(event.target.value)); }} /></S.Field>
                 <S.Field><span>Link amigável</span><input value={slug} onChange={(event) => { setSlugTouched(true); setSlug(slugify(event.target.value)); }} placeholder="nome-do-evento" /></S.Field>
-                <S.Field><span>Tipo</span><select name="eventType" defaultValue={initial?.eventType ?? "OTHER"}>{EVENT_TYPES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></S.Field>
-                <S.Field><span>Visibilidade</span><select name="visibility" defaultValue={initial?.visibility ?? "INTERNAL"}>{EVENT_VISIBILITIES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></S.Field>
+                <S.Field><span>Tipo</span><PickerSelect name="eventType" defaultValue={initial?.eventType ?? "OTHER"}>{EVENT_TYPES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</PickerSelect></S.Field>
+                <S.Field><span>Visibilidade</span><PickerSelect name="visibility" defaultValue={initial?.visibility ?? "INTERNAL"}>{EVENT_VISIBILITIES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</PickerSelect></S.Field>
                 <S.Wide><S.Field><span>Descrição</span><textarea name="description" defaultValue={initial?.description ?? ""} maxLength={5000} /></S.Field></S.Wide>
               </S.FieldGrid>
             </S.StepPanel>
 
             <S.StepPanel hidden={step !== 1}>
               <S.FieldGrid>
-                <S.Field><span>Início *</span><input type="datetime-local" name="startsAt" required defaultValue={localDate(initial?.startsAt)} /></S.Field>
-                <S.Field><span>Término</span><input type="datetime-local" name="endsAt" defaultValue={localDate(initial?.endsAt)} /></S.Field>
+                <S.Field><span>Início *</span><DateTimeField label="Início" name="startsAt" required defaultValue={localDate(initial?.startsAt)} /></S.Field>
+                <S.Field><span>Término</span><DateTimeField label="Término" name="endsAt" defaultValue={localDate(initial?.endsAt)} /></S.Field>
                 <S.Field><span>Local</span><input name="locationName" defaultValue={initial?.location ?? ""} placeholder="Ex.: Templo Central" /></S.Field>
                 <S.Field>
                   <S.FieldHeader>
@@ -419,24 +421,24 @@ export function EventForm({ initial, options }: Props) {
                 <S.Field><span>Complemento</span><input name="complement" value={addressFields.complement} onChange={(event) => updateAddressField("complement", event.target.value)} /></S.Field>
                 <S.Field><span>Bairro</span><input name="district" value={addressFields.district} onChange={(event) => updateAddressField("district", event.target.value)} /></S.Field>
                 <S.Field><span>Cidade</span><input name="city" value={addressFields.city} onChange={(event) => updateAddressField("city", event.target.value)} /></S.Field>
-                <S.Field><span>UF</span><select name="state" value={addressFields.state} onChange={(event) => updateAddressField("state", event.target.value)}><option value="">Selecione</option>{brazilianStates.map((state) => <option key={state} value={state}>{state}</option>)}</select></S.Field>
+                <S.Field><span>UF</span><PickerSelect name="state" value={addressFields.state} onChange={(event) => updateAddressField("state", event.target.value)}><option value="">Selecione</option>{brazilianStates.map((state) => <option key={state} value={state}>{state}</option>)}</PickerSelect></S.Field>
                 <S.Field><span>País</span><input name="country" defaultValue={initial?.country ?? "Brasil"} /></S.Field>
               </S.FieldGrid>
             </S.StepPanel>
 
             <S.StepPanel hidden={step !== 2}>
               <S.FieldGrid>
-                <S.Field><span>Escopo do evento</span><select name="eventScope" value={scope} onChange={(event) => setScope(event.target.value as EventScope)}>{EVENT_SCOPES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></S.Field>
-                {scope === "REGION" ? <S.Field><span>Regional *</span><select name="regionId" required defaultValue={initial?.regionId ?? ""}><option value="">Selecione</option>{options.regions.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></S.Field> : <input type="hidden" name="regionId" value="" />}
-                {scope === "CONGREGATION" ? <S.Field><span>Congregação *</span><select name="congregationId" required defaultValue={initial?.congregationId ?? ""}><option value="">Selecione</option>{options.congregations.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></S.Field> : <input type="hidden" name="congregationId" value="" />}
-                {scope === "MINISTRY" ? <S.Field><span>Ministério *</span><select name="ministryId" required defaultValue={initial?.ministryId ?? ""}><option value="">Selecione</option>{options.ministries.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></S.Field> : <input type="hidden" name="ministryId" value="" />}
+                <S.Field><span>Escopo do evento</span><PickerSelect name="eventScope" value={scope} onChange={(event) => setScope(event.target.value as EventScope)}>{EVENT_SCOPES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</PickerSelect></S.Field>
+                {scope === "REGION" ? <S.Field><span>Regional *</span><PickerSelect name="regionId" required defaultValue={initial?.regionId ?? ""}><option value="">Selecione</option>{options.regions.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</PickerSelect></S.Field> : <input type="hidden" name="regionId" value="" />}
+                {scope === "CONGREGATION" ? <S.Field><span>Congregação *</span><PickerSelect name="congregationId" required defaultValue={initial?.congregationId ?? ""}><option value="">Selecione</option>{options.congregations.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</PickerSelect></S.Field> : <input type="hidden" name="congregationId" value="" />}
+                {scope === "MINISTRY" ? <S.Field><span>Ministério *</span><PickerSelect name="ministryId" required defaultValue={initial?.ministryId ?? ""}><option value="">Selecione</option>{options.ministries.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</PickerSelect></S.Field> : <input type="hidden" name="ministryId" value="" />}
               </S.FieldGrid>
               <S.InfoBox><ShieldCheck /><div><strong>Isolamento de acesso</strong><p>O escopo limita a operação aos usuários autorizados para a igreja, regional, congregação ou ministério selecionado.</p></div></S.InfoBox>
             </S.StepPanel>
 
             <S.StepPanel hidden={step !== 3}>
               <S.FieldGrid>
-                <S.Field><span>Modo de inscrição</span><select name="registrationMode" value={registrationMode} onChange={(event)=>setRegistrationMode(event.target.value)}>{REGISTRATION_MODES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></S.Field>
+                <S.Field><span>Modo de inscrição</span><PickerSelect name="registrationMode" value={registrationMode} onChange={(event)=>setRegistrationMode(event.target.value)}>{REGISTRATION_MODES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</PickerSelect></S.Field>
                 <S.Field><span>Capacidade total</span><input type="number" name="capacity" min={0} defaultValue={initial?.capacity ?? ""} placeholder="Sem limite" /></S.Field>
               </S.FieldGrid>
               <S.InfoBox><ClipboardCheck /><div><strong>Abertura e encerramento manuais</strong><p>Publicar ou iniciar o evento não abre nem encerra inscrições. Use os comandos do workspace quando decidir receber ou interromper novos cadastros.</p></div></S.InfoBox>
@@ -459,8 +461,8 @@ export function EventForm({ initial, options }: Props) {
                       {field.kind === "CUSTOM" ? <S.Field style={{ marginTop: 7 }}><span>Texto de ajuda</span><input value={field.helpText ?? ""} maxLength={300} placeholder="Orientação opcional para o participante" onChange={(event) => updateRegistrationField(field.key, { helpText: event.target.value })} /></S.Field> : null}
                       <small>{field.kind === "STANDARD" ? "Campo padrão" : `Personalizado · ${field.key}`}{field.systemLocked ? " · protegido" : ""}</small>
                     </S.FormFieldIdentity>
-                    <S.FormFieldControl data-slot="type"><S.Field><span>Tipo</span><select value={field.type} disabled={field.kind === "STANDARD" || Boolean(field.id && initial?.hasRegistrations)} onChange={(event) => updateRegistrationField(field.key, { type: event.target.value as EventRegistrationFieldRow["type"], options: event.target.value === "SINGLE_SELECT" ? ["Opção 1"] : [] })}><option value="SHORT_TEXT">Texto curto</option><option value="LONG_TEXT">Texto longo</option><option value="DATE">Data</option><option value="NUMBER">Número</option><option value="SINGLE_SELECT">Seleção única</option><option value="BOOLEAN">Sim/Não</option></select></S.Field></S.FormFieldControl>
-                    <S.FormFieldControl data-slot="visibility"><S.Field><span>Exibição</span><select value={field.visibility} disabled={field.systemLocked} onChange={(event) => updateRegistrationField(field.key, { visibility: event.target.value as EventRegistrationFieldRow["visibility"], active: event.target.value !== "HIDDEN" })}><option value="HIDDEN">Oculto</option><option value="OPTIONAL">Opcional</option><option value="REQUIRED">Obrigatório</option></select></S.Field></S.FormFieldControl>
+                    <S.FormFieldControl data-slot="type"><S.Field><span>Tipo</span><PickerSelect value={field.type} disabled={field.kind === "STANDARD" || Boolean(field.id && initial?.hasRegistrations)} onChange={(event) => updateRegistrationField(field.key, { type: event.target.value as EventRegistrationFieldRow["type"], options: event.target.value === "SINGLE_SELECT" ? ["Opção 1"] : [] })}><option value="SHORT_TEXT">Texto curto</option><option value="LONG_TEXT">Texto longo</option><option value="DATE">Data</option><option value="NUMBER">Número</option><option value="SINGLE_SELECT">Seleção única</option><option value="BOOLEAN">Sim/Não</option></PickerSelect></S.Field></S.FormFieldControl>
+                    <S.FormFieldControl data-slot="visibility"><S.Field><span>Exibição</span><PickerSelect value={field.visibility} disabled={field.systemLocked} onChange={(event) => updateRegistrationField(field.key, { visibility: event.target.value as EventRegistrationFieldRow["visibility"], active: event.target.value !== "HIDDEN" })}><option value="HIDDEN">Oculto</option><option value="OPTIONAL">Opcional</option><option value="REQUIRED">Obrigatório</option></PickerSelect></S.Field></S.FormFieldControl>
                     <S.FormFieldControl data-slot="options">{field.kind === "CUSTOM" && field.type === "SINGLE_SELECT" ? <S.Field><span>Opções (separadas por vírgula)</span><input value={field.options.join(", ")} onChange={(event) => updateRegistrationField(field.key, { options: event.target.value.split(",").map((option) => option.trim()).filter(Boolean) })} /></S.Field> : null}</S.FormFieldControl>
                     <S.FormFieldAction>{field.kind === "CUSTOM" ? <S.ActionButton type="button" $danger aria-label={`Remover ${field.label}`} onClick={() => removeCustomField(field)}><Trash2 /></S.ActionButton> : null}</S.FormFieldAction>
                   </S.FormFieldCard>
@@ -477,7 +479,7 @@ export function EventForm({ initial, options }: Props) {
                   <S.OptionCard $selected={cashEnabled}><input type="checkbox" checked={cashEnabled} onChange={(event)=>setCashEnabled(event.target.checked)}/><span><CreditCard/></span><div><strong>Dinheiro</strong><small>Permitir orientação de pagamento presencial.</small></div><Check/></S.OptionCard>
                 </S.CardChoices>
                 <S.FieldGrid>
-                  <S.Wide><S.Field><span>Item principal da caravana</span><select name="caravanRegistrationItemId" defaultValue={initial?.paymentSettings.caravanRegistrationItemId??options.items.find((item)=>item.item_type==="REGISTRATION")?.id??""}><option value="">Selecione após cadastrar os itens</option>{options.items.map((item)=><option key={item.id} value={item.id}>{item.name}</option>)}</select></S.Field></S.Wide>
+                  <S.Wide><S.Field><span>Item principal da caravana</span><PickerSelect name="caravanRegistrationItemId" defaultValue={initial?.paymentSettings.caravanRegistrationItemId??options.items.find((item)=>item.item_type==="REGISTRATION")?.id??""}><option value="">Selecione após cadastrar os itens</option>{options.items.map((item)=><option key={item.id} value={item.id}>{item.name}</option>)}</PickerSelect></S.Field></S.Wide>
                   {pixEnabled?<><S.Field><span>Chave Pix *</span><input name="pixKey" required defaultValue={initial?.paymentSettings.pixKey??""}/></S.Field><S.Field><span>Titular da chave *</span><input name="pixHolderName" required defaultValue={initial?.paymentSettings.pixHolderName??""}/></S.Field><S.Wide><S.UploadBox>{pixQrPreview?<Image src={pixQrPreview} alt="Prévia do QR Code Pix" width={220} height={220} unoptimized/>:<span><ImageUp/><strong>QR Code Pix do evento</strong><small>Imagem opcional em JPG, PNG ou WEBP de até 2 MB</small></span>}<div><label className="app-button-secondary"><ImageUp size={16}/>{pixQrPreview?"Substituir QR Code":"Selecionar QR Code"}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event)=>{setPixQr(event.target.files?.[0]??null);setRemovePixQr(false);}}/></label>{pixQrPreview?<button type="button" className="app-button-secondary" onClick={()=>{setPixQr(null);setRemovePixQr(true);}}><Trash2 size={15}/>Remover</button>:null}</div></S.UploadBox></S.Wide></>:null}
                   <S.Field><span>WhatsApp do evento</span><input name="whatsappNumber" inputMode="tel" maxLength={15} placeholder="(00) 00000-0000" defaultValue={formatBrazilPhone(initial?.paymentSettings.whatsappNumber??"")} onChange={(event)=>{event.currentTarget.value=formatBrazilPhone(event.currentTarget.value);}}/></S.Field>
                   <S.Wide><S.Field><span>Instruções de pagamento</span><textarea name="paymentInstructions" maxLength={1500} defaultValue={initial?.paymentSettings.paymentInstructions??""}/></S.Field></S.Wide>

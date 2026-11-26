@@ -1,5 +1,6 @@
 "use client";
 
+import { PickerSelect } from "@/components/form/pickers/picker-select";
 import styled from "styled-components";
 
 export const Layout = styled.div`display:grid;gap:22px;container-type:inline-size;`;
@@ -23,7 +24,7 @@ export const CardHeader = styled.div`display:flex;align-items:flex-start;justify
 export const CardBody = styled.div`padding:20px 22px;`;
 export const Toolbar = styled.div`display:grid;grid-template-columns:minmax(180px,1fr) 150px 150px;gap:10px;margin-bottom:15px;@media(max-width:680px){grid-template-columns:1fr;}`;
 export const Control = styled.input`width:100%;min-height:44px;border:1px solid #d9deea;border-radius: 6px;outline:0;background:#f8f9fc;padding:0 13px;color:#344054;font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px));font-weight:500;&:focus{border-color:${({theme})=>theme.colors.brand.primary};background:#fff;box-shadow:${({theme})=>theme.shadows.focus};}`;
-export const Select = styled.select`width:100%;min-height:44px;border:1px solid #d9deea;border-radius: 6px;outline:0;background:#f8f9fc;padding:0 12px;color:#344054;font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px));font-weight:600;&:focus{border-color:${({theme})=>theme.colors.brand.primary};}`;
+export const Select = styled(PickerSelect)`width:100%;min-height:44px;border:1px solid #d9deea;border-radius: 6px;outline:0;background:#f8f9fc;padding:0 12px;color:#344054;font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px));font-weight:600;&:focus{border-color:${({theme})=>theme.colors.brand.primary};}`;
 export const AccessList = styled.div`display:grid;gap:10px;`;
 export const AccessCard = styled.article`border:1px solid #e7eaf1;border-radius: 6px;background:#fff;`;
 export const AccessSummary = styled.div`display:grid;grid-template-columns:minmax(180px,1.2fr) minmax(125px,.6fr) minmax(125px,.6fr) auto;align-items:center;gap:12px;padding:14px;@media(max-width:720px){grid-template-columns:1fr auto;}`;

@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const congregationReportFieldsSchema = z.object({
+  energy: z.boolean().optional(), water: z.boolean().optional(),
   spouse: z.boolean().default(false), phone: z.boolean().default(true), address: z.boolean().default(false),
 }).strict();
 export const congregationReportSchema = z.discriminatedUnion("kind", [

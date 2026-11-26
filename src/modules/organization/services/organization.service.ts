@@ -50,6 +50,7 @@ type CongregationRow = {
   city: string | null;
   state: string | null;
   country: string;
+  congregation_utility_accounts: { energy_unit: string | null; water_account: string | null } | null;
   notes: string | null;
   is_headquarters: boolean;
   display_order: number;
@@ -111,7 +112,7 @@ async function loadOrganizationRows(churchId: string) {
         .order("id"),
       supabase
         .from("congregations")
-        .select("id, region_id, name, code, pastor_name, pastor_spouse_name, phone, whatsapp, email, zip_code, address, number, complement, district, city, state, country, notes, is_headquarters, display_order, status, created_at, updated_at, regions(name)")
+        .select("id, region_id, name, code, pastor_name, pastor_spouse_name, phone, whatsapp, email, zip_code, address, number, complement, district, city, state, country, notes, congregation_utility_accounts(energy_unit, water_account), is_headquarters, display_order, status, created_at, updated_at, regions(name)")
         .eq("church_id", churchId)
         .is("deleted_at", null)
         .order("display_order")
@@ -175,6 +176,8 @@ function mapCongregation(row: CongregationRow): CongregationItem {
     city: row.city,
     state: row.state,
     country: row.country,
+    energy: row.congregation_utility_accounts?.energy_unit ?? null,
+    water: row.congregation_utility_accounts?.water_account ?? null,
     notes: row.notes,
     isHeadquarters: row.is_headquarters,
     displayOrder: row.display_order,
@@ -283,7 +286,7 @@ export async function getCongregationDetails(
   const { data, error } = await supabase
     .from("congregations")
     .select(
-      "id, region_id, name, code, pastor_name, pastor_spouse_name, phone, whatsapp, email, zip_code, address, number, complement, district, city, state, country, notes, is_headquarters, display_order, status, created_at, updated_at, regions(name)",
+      "id, region_id, name, code, pastor_name, pastor_spouse_name, phone, whatsapp, email, zip_code, address, number, complement, district, city, state, country, notes, congregation_utility_accounts(energy_unit, water_account), is_headquarters, display_order, status, created_at, updated_at, regions(name)",
     )
     .eq("id", congregationId)
     .eq("church_id", context.church.id)

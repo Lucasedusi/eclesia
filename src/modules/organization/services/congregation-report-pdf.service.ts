@@ -1,3 +1,4 @@
+import { congregationUtilities } from "../constants/congregation-utilities";
 import "server-only";
 import { formatPersonName } from "@/utils/person-name";
 
@@ -9,7 +10,7 @@ export async function createCongregationReportPdf(data: CongregationReportDocume
   const document = await PDFDocument.create();
   const assets = await createChurchPdfAssets(document, data.church.logoDataUri);
   const { regular, bold } = assets;
-  const landscape = data.kind === "simplified" && data.fields.address;
+  const landscape = data.kind === "simplified" && (data.fields.address || data.fields.energy || data.fields.water);
   const width = landscape ? PAGE_HEIGHT : PAGE_WIDTH, height = landscape ? PAGE_WIDTH : PAGE_HEIGHT;
   const contentWidth = width - PAGE_MARGIN * 2, bottom = height - 57;
   const title = data.kind === "simplified" ? "Lista de Congregações" : data.congregations[0]?.name || "Congregação";
@@ -52,6 +53,9 @@ export async function createCongregationReportPdf(data: CongregationReportDocume
       ...(data.fields.spouse ? [{ label: "Cônjuge", weight: 1, value: (r: ReportCongregation) => formatPersonName(r.spouseName || "Não informado") }] : []),
       ...(data.fields.phone ? [{ label: "WhatsApp", weight: 0, fixed: 108, value: (r: ReportCongregation) => r.contactPhone || "Não informado" }] : []),
       ...(data.fields.address ? [{ label: "Endereço", weight: 2.1, value: (r: ReportCongregation) => r.address?.full || "Não informado" }] : []),
+      ...congregationUtilities.filter(({ key }) => data.fields[key]).map(({ key, label }) => ({
+        label, weight: 1.2, value: (row: ReportCongregation) => row[key] || "Não informado",
+      })),
     ];
     const remaining = contentWidth - columns.reduce((sum, c) => sum + (c.fixed ?? 0), 0);
     const weights = columns.reduce((sum, c) => sum + c.weight, 0);
@@ -125,6 +129,11 @@ export async function createCongregationReportPdf(data: CongregationReportDocume
     paragraph(row?.regionName || "Sem regional", 10, regular, PDF_COLORS.muted, 24);
     if (data.scopeLabel) paragraph(data.scopeLabel, 9, regular, PDF_COLORS.muted);
     fields("Endereço", [["Logradouro e número", row?.address?.street], ...(row?.address?.complement ? [["Complemento", row.address.complement] as [string, string]] : []), ["Bairro", row?.address?.district], ["Cidade", row?.address?.city], ["Estado", row?.address?.state], ["CEP", row?.address?.zipCode]]);
+    const utilities: [string, string][] = [];
+    for (const { key, label } of congregationUtilities) {
+      if (row?.[key]) utilities.push([label, row[key]]);
+    }
+    if (utilities.length) fields("Contas de consumo", utilities);
     if (row?.notes) { heading("Observação"); paragraph(row.notes); }
   }
   return finishChurchPdf(document, regular, data.issuedAt, title);

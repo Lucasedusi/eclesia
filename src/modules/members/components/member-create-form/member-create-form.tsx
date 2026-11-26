@@ -1,5 +1,6 @@
 "use client";
 
+import { DateField } from "@/components/form/pickers/date-field";
 import { ChangeEvent, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CircleAlert, Info, Loader2 } from "lucide-react";
@@ -73,6 +74,7 @@ export function MemberCreateForm({ options, mode = "create", initialData }: Prop
   const [cpfChecking, setCpfChecking] = useState(false);
   const [cpfMessage, setCpfMessage] = useState("");
   const [notice, setNotice] = useState<Notice | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   const cepTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cepRequest = useRef<AbortController | null>(null);
   const cpfTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -176,6 +178,12 @@ export function MemberCreateForm({ options, mode = "create", initialData }: Prop
     cpfTimer.current = setTimeout(() => void checkCpf(clean), 350);
   }
 
+  function datesAreValid() {
+    const invalidDate = formRef.current?.querySelector<HTMLInputElement>("[data-picker] input:invalid");
+    if (invalidDate) invalidDate.reportValidity();
+    return !invalidDate;
+  }
+
   function previous() {
     setErrors({});
     setStepIndex((current) => Math.max(0, current - 1));
@@ -191,6 +199,7 @@ export function MemberCreateForm({ options, mode = "create", initialData }: Prop
       return;
     }
 
+    if (!datesAreValid()) return;
     if (cpfChecking && targetIndex > 0) {
       setNotice({
         title: "Aguarde a verificação",
@@ -223,6 +232,7 @@ export function MemberCreateForm({ options, mode = "create", initialData }: Prop
 
   async function next() {
     if (saving) return;
+    if (!datesAreValid()) return;
     if (currentStep.id === "personal" && cpfChecking) {
       setNotice({ title: "Aguarde a verificação", description: "A validação do CPF ainda está em andamento.", variant: "warning" });
       return;
@@ -282,14 +292,18 @@ export function MemberCreateForm({ options, mode = "create", initialData }: Prop
   const input = (field: keyof MemberFormData, label: string, type = "text", placeholder?: string) => (
     <S.Field>
       <span>{label}</span>
-      <S.Control
-        id={field}
-        type={type}
-        value={String(data[field] ?? "")}
-        placeholder={placeholder}
-        $invalid={Boolean(errors[field])}
-        onChange={(event) => update(field, event.target.value as never)}
-      />
+      {type === "date" ? (
+        <DateField id={field} label={label} hideLabel value={String(data[field] ?? "")} onChange={(value) => update(field, value as never)} aria-invalid={Boolean(errors[field])} />
+      ) : (
+        <S.Control
+          id={field}
+          type={type}
+          value={String(data[field] ?? "")}
+          placeholder={placeholder}
+          $invalid={Boolean(errors[field])}
+          onChange={(event) => update(field, event.target.value as never)}
+        />
+      )}
       {errors[field] && <S.FieldError>{errors[field]}</S.FieldError>}
     </S.Field>
   );
@@ -313,7 +327,7 @@ export function MemberCreateForm({ options, mode = "create", initialData }: Prop
           currentStepIndex={stepIndex}
           onStepChange={goToStep}
         />
-        <S.FormCard onSubmit={(event) => event.preventDefault()}>
+        <S.FormCard ref={formRef} onSubmit={(event) => event.preventDefault()}>
           <S.FormBody>
             <S.StepHeader>
               <S.StepTitle>{currentStep.title}</S.StepTitle>

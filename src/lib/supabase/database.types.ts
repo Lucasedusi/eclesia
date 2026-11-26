@@ -951,6 +951,35 @@ export type Database = {
           },
         ]
       }
+      congregation_utility_accounts: {
+        Row: {
+          church_id: string
+          congregation_id: string
+          energy_unit: string | null
+          water_account: string | null
+        }
+        Insert: {
+          church_id: string
+          congregation_id: string
+          energy_unit?: string | null
+          water_account?: string | null
+        }
+        Update: {
+          church_id?: string
+          congregation_id?: string
+          energy_unit?: string | null
+          water_account?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "congregation_utility_accounts_church_id_congregation_id_fkey"
+            columns: ["church_id", "congregation_id"]
+            isOneToOne: true
+            referencedRelation: "congregations"
+            referencedColumns: ["church_id", "id"]
+          },
+        ]
+      }
       congregations: {
         Row: {
           address: string | null
@@ -9956,6 +9985,16 @@ export type Database = {
       }
       rollback_member_import: { Args: { p_batch_id: string }; Returns: Json }
       safe_uuid: { Args: { p_value: string }; Returns: string }
+      save_congregation_registration: {
+        Args: {
+          p_church_id: string
+          p_details: Json
+          p_energy: string
+          p_id?: string
+          p_water: string
+        }
+        Returns: string
+      }
       save_finance_catalog: {
         Args: { p_church_id: string; p_payload: Json }
         Returns: Json

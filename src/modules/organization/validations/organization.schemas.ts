@@ -79,6 +79,8 @@ export const congregationSchema = z.object({
     .optional()
     .default(""),
   country: z.string().trim().min(2, "Informe o país.").max(80).default("Brasil"),
+  energy: optionalText(64),
+  water: optionalText(64),
   notes: optionalText(1000),
   status,
 });

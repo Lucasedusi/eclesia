@@ -1,6 +1,6 @@
 "use client";
 import { FinanceFieldPopup } from "./finance-field-popup";
-import styles from "./finance-pickers.module.css";
+import styles from "@/components/form/pickers/pickers.module.css";
 
 import { useId, useRef, useState } from "react";
 import { ChevronDown, FileText } from "lucide-react";

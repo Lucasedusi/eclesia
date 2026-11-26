@@ -1,5 +1,6 @@
 "use client";
 
+import { congregationUtilities } from "../constants/congregation-utilities";
 import {
   type ChangeEvent,
   useActionState,
@@ -84,6 +85,8 @@ export function CongregationForm({
     city: congregation?.city ?? "",
     state: congregation?.state ?? "",
     country: congregation?.country ?? "Brasil",
+    energy: congregation?.energy ?? "",
+    water: congregation?.water ?? "",
     notes: congregation?.notes ?? "",
     status: congregation?.status ?? "ACTIVE",
   });
@@ -559,6 +562,18 @@ export function CongregationForm({
                 />
               </S.Field>
             </S.FieldGrid>
+            <S.UtilityAccounts>
+              <legend>Contas de consumo</legend>
+              <S.FieldGrid>
+                {congregationUtilities.map(({ key, label }) => (
+                  <S.Field key={key}>
+                    <span>{label}</span>
+                    <S.Control value={values[key]} onChange={(event) => update(key, event.target.value)} maxLength={64} />
+                    {errors[key] && <S.FieldError>{errors[key]}</S.FieldError>}
+                  </S.Field>
+                ))}
+              </S.FieldGrid>
+            </S.UtilityAccounts>
           </>
         )}
 
@@ -622,6 +637,12 @@ export function CongregationForm({
                     : values.country}
                 </p>
               </S.ReviewCard>
+              {(values.energy || values.water) && (
+                <S.ReviewCard>
+                  <strong>Contas de consumo</strong>
+                  {congregationUtilities.map(({ key, label }) => values[key] && <p key={key}>{label}: {values[key]}</p>)}
+                </S.ReviewCard>
+              )}
             </S.ReviewGrid>
           </>
         )}

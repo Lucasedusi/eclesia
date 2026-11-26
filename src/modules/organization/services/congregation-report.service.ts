@@ -39,11 +39,13 @@ export async function loadCongregationReportDocument(context: AuthContext, optio
   const { scope, regionId, congregationId } = context.access;
   if (scope !== "CHURCH" && !(scope === "REGION" && regionId) && !(scope === "CONGREGATION" && congregationId)) throw new CongregationReportError("CONGREGATION_REPORT_PERMISSION_DENIED");
   const individual = options.kind === "individual";
-  const fields = individual ? { spouse: true, phone: true, address: true } : options.fields;
+  const fields = individual ? { spouse: true, phone: true, address: true, energy: true, water: true } : options.fields;
   try {
     const client = await createClient();
     const churchId = context.church.id;
+    const utilityColumns = [fields.energy && "energy_unit", fields.water && "water_account"].filter(Boolean);
     const columns = ["id, region_id, name, code, pastor_name, city, is_headquarters, status, display_order, created_at, regions(name, church_id, deleted_at)",
+      ...(utilityColumns.length ? [`congregation_utility_accounts(${utilityColumns.join(", ")})`] : []),
       ...(fields.spouse ? ["pastor_spouse_name"] : []), ...(fields.phone ? ["whatsapp"] : []),
       ...(fields.address ? ["address, number, complement, district, state, zip_code"] : []), ...(individual ? ["notes"] : [])].join(", ");
     const rows = await allRows((start, end) => {
@@ -80,6 +82,9 @@ export async function loadCongregationReportDocument(context: AuthContext, optio
     const church = churchResult.data, settings = settingsResult.data;
     const congregations = selected.map((row): ReportCongregation => {
       const item: ReportCongregation = { id: row.id, name: value(row, "name"), regionName: regionName(row, churchId), pastorName: text(value(row, "pastor_name")) };
+      const accounts = row.congregation_utility_accounts as Record<string, unknown> | null;
+      if (fields.energy) item.energy = value(accounts ?? {}, "energy_unit");
+      if (fields.water) item.water = value(accounts ?? {}, "water_account");
       if (fields.spouse) item.spouseName = text(value(row, "pastor_spouse_name"));
       if (fields.phone && !individual) item.contactPhone = text(formatBrazilPhone(value(row, "whatsapp")));
       if (fields.address) {

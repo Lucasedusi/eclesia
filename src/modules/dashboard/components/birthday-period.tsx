@@ -1,5 +1,6 @@
 "use client";
 
+import { PickerSelect } from "@/components/form/pickers/picker-select";
 import { useOptimistic, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { dashboardPeriod, type DashboardPeriod } from "../dashboard";
@@ -8,7 +9,7 @@ export function BirthdayPeriod({ period }: { period: DashboardPeriod }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [selected, setSelected] = useOptimistic(period);
-  return <select aria-label="Período dos aniversariantes" aria-busy={pending} value={selected} onChange={event => {
+  return <PickerSelect aria-label="Período dos aniversariantes" aria-busy={pending} value={selected} onChange={event => {
     const next = dashboardPeriod(event.target.value);
     startTransition(() => {
       setSelected(next);
@@ -16,5 +17,5 @@ export function BirthdayPeriod({ period }: { period: DashboardPeriod }) {
     });
   }}>
     <option value="today">Dia</option><option value="week">Semana</option><option value="month">Mês</option>
-  </select>;
+  </PickerSelect>;
 }

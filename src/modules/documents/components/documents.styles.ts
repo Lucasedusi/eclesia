@@ -1,5 +1,6 @@
 "use client";
 
+import { PickerSelect } from "@/components/form/pickers/picker-select";
 import styled, { css } from "styled-components";
 
 export const Module = styled.section`
@@ -258,7 +259,7 @@ export const Input = styled.input`
   ${control}
 `;
 
-export const Select = styled.select`
+export const Select = styled(PickerSelect)`
   ${control}
 `;
 

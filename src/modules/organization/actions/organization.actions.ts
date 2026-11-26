@@ -224,6 +224,35 @@ export async function archiveRegionAction(idValue: string): Promise<Organization
   return { status: "success", message: "Regional excluída com sucesso." };
 }
 
+function registrationArgs(churchId: string, input: z.infer<typeof congregationSchema>) {
+  return {
+    p_church_id: churchId,
+    p_energy: input.energy,
+    p_water: input.water,
+    p_details: {
+      region_id: input.regionId || null,
+      name: input.name,
+      code: input.code || null,
+      pastor_name: input.pastorName || null,
+      pastor_spouse_name: input.pastorSpouseName || null,
+      phone: input.phone || null,
+      whatsapp: input.whatsapp || null,
+      email: input.email || null,
+      zip_code: input.zipCode || null,
+      address: input.address || null,
+      number: input.number || null,
+      complement: input.complement || null,
+      district: input.district || null,
+      city: input.city || null,
+      state: input.state || null,
+      country: input.country,
+      notes: input.notes || null,
+      display_order: input.displayOrder,
+      status: input.status,
+    },
+  };
+}
+
 export async function createCongregationAction(
   _previous: OrganizationActionState,
   formData: FormData,
@@ -247,6 +276,8 @@ export async function createCongregationAction(
     city: fieldValue(formData, "city"),
     state: fieldValue(formData, "state"),
     country: fieldValue(formData, "country"),
+    energy: fieldValue(formData, "energy"),
+    water: fieldValue(formData, "water"),
     notes: fieldValue(formData, "notes"),
     status: fieldValue(formData, "status"),
   });
@@ -263,29 +294,7 @@ export async function createCongregationAction(
   if (!authorized) return denied();
 
   const supabase = await createClient();
-  const { error } = await supabase.from("congregations").insert({
-    church_id: context.church.id,
-    region_id: parsed.data.regionId,
-    name: parsed.data.name,
-    code: parsed.data.code || null,
-    pastor_name: parsed.data.pastorName || null,
-    pastor_spouse_name: parsed.data.pastorSpouseName || null,
-    phone: parsed.data.phone || null,
-    whatsapp: parsed.data.whatsapp || null,
-    email: parsed.data.email || null,
-    zip_code: parsed.data.zipCode || null,
-    address: parsed.data.address || null,
-    number: parsed.data.number || null,
-    complement: parsed.data.complement || null,
-    district: parsed.data.district || null,
-    city: parsed.data.city || null,
-    state: parsed.data.state || null,
-    country: parsed.data.country,
-    notes: parsed.data.notes || null,
-    is_headquarters: false,
-    display_order: parsed.data.displayOrder,
-    status: parsed.data.status,
-  });
+  const { error } = await supabase.rpc("save_congregation_registration", registrationArgs(context.church.id, parsed.data));
 
   if (error) {
     logMutationError("create congregation", error);
@@ -323,6 +332,8 @@ export async function updateCongregationAction(
     city: fieldValue(formData, "city"),
     state: fieldValue(formData, "state"),
     country: fieldValue(formData, "country"),
+    energy: fieldValue(formData, "energy"),
+    water: fieldValue(formData, "water"),
     notes: fieldValue(formData, "notes"),
     status: fieldValue(formData, "status"),
   });
@@ -360,34 +371,10 @@ export async function updateCongregationAction(
     };
   }
 
-  const { data: updated, error } = await supabase
-    .from("congregations")
-    .update({
-      region_id: parsed.data.regionId || null,
-      name: parsed.data.name,
-      code: parsed.data.code || null,
-      pastor_name: parsed.data.pastorName || null,
-      pastor_spouse_name: parsed.data.pastorSpouseName || null,
-      phone: parsed.data.phone || null,
-      whatsapp: parsed.data.whatsapp || null,
-      email: parsed.data.email || null,
-      zip_code: parsed.data.zipCode || null,
-      address: parsed.data.address || null,
-      number: parsed.data.number || null,
-      complement: parsed.data.complement || null,
-      district: parsed.data.district || null,
-      city: parsed.data.city || null,
-      state: parsed.data.state || null,
-      country: parsed.data.country,
-      notes: parsed.data.notes || null,
-      display_order: parsed.data.displayOrder,
-      status: parsed.data.status,
-    })
-    .eq("id", parsed.data.id)
-    .eq("church_id", context.church.id)
-    .is("deleted_at", null)
-    .select("id")
-    .maybeSingle();
+  const { data: updated, error } = await supabase.rpc("save_congregation_registration", {
+    ...registrationArgs(context.church.id, parsed.data),
+    p_id: parsed.data.id,
+  });
 
   if (error) {
     logMutationError("update congregation", error);

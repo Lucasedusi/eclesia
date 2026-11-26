@@ -31,6 +31,8 @@ const congregation: CongregationDetails = {
   city: "Goiânia",
   state: "GO",
   country: "Brasil",
+  energy: "00123-X",
+  water: "00084/9",
   notes: "Observação administrativa.",
   isHeadquarters: false,
   displayOrder: 3,
@@ -62,7 +64,7 @@ describe("congregation modals presentation", () => {
     );
 
     for (const label of ["Ordem de exibição", "Situação atual", "Código", "Tipo", "País", "Telefone", congregation.phone!]) expect(markup).not.toContain(label);
-    for (const label of ["Documentos anexados", congregation.whatsapp!, congregation.address!, congregation.notes!]) expect(markup).toContain(label);
+    for (const label of ["Documentos anexados", congregation.energy!, congregation.water!, congregation.whatsapp!, congregation.address!, congregation.notes!]) expect(markup).toContain(label);
     expect(markup).not.toContain("Histórico do cadastro");
     expect(markup).not.toContain("Cadastrada em");
     expect(markup).not.toContain("Última atualização");

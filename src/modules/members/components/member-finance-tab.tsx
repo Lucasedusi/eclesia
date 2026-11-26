@@ -1,4 +1,5 @@
 "use client";
+import { DateField } from "@/components/form/pickers/date-field";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   ArrowDownLeft,
@@ -155,20 +156,20 @@ export function MemberFinanceTab({
       <S.FinanceFilters onSubmit={filter}>
         <S.FormField>
           <span>Data inicial</span>
-          <S.FilterControl
-            type="date"
+          <DateField
+            label="Data inicial" hideLabel
             value={filters.dateFrom}
-            onChange={(e) =>
-              setFilters({ ...filters, dateFrom: e.target.value })
+            onChange={(value) =>
+              setFilters({ ...filters, dateFrom: value })
             }
           />
         </S.FormField>
         <S.FormField>
           <span>Data final</span>
-          <S.FilterControl
-            type="date"
+          <DateField
+            label="Data final" hideLabel
             value={filters.dateTo}
-            onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })}
+            onChange={(value) => setFilters({ ...filters, dateTo: value })}
           />
         </S.FormField>
         <S.FormField>

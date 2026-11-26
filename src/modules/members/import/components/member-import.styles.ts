@@ -1,5 +1,6 @@
 "use client";
 
+import { PickerSelect } from "@/components/form/pickers/picker-select";
 import styled, { keyframes } from "styled-components";
 import * as P from "../../components/member-create-form/member-form-progress.styles";
 
@@ -127,7 +128,7 @@ export const Field = styled.label`
   }
 `;
 
-export const Select = styled.select`
+export const Select = styled(PickerSelect)`
   width: 100%;
   min-height: 44px;
   border: 1px solid #d7dde8;

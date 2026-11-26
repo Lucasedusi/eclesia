@@ -1,4 +1,5 @@
 "use client";
+import { PickerSelect } from "@/components/form/pickers/picker-select";
 import { administrativeControl, administrativeSelect } from "@/styles/administrative-controls";
 
 import styled from "styled-components";
@@ -101,7 +102,7 @@ export const FilterControl = styled.input`
 export const FormControl = styled(FilterControl)`
   &:not([type="file"]) { ${administrativeControl} }
 `;
-export const SelectControl = styled.select`
+export const SelectControl = styled(PickerSelect)`
   width: 100%; min-height: 44px; border: 1px solid #d9deea; border-radius: 6px; outline: 0; background: #f8f9fc; padding: 0 12px;
   color: #344054; font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 600;
   &:focus { border-color: #415ba5; background: #fff; box-shadow: 0 0 0 3px rgba(65, 91, 165, .12); }
@@ -162,7 +163,7 @@ export const FinanceFilters = styled.form`
   > div { min-width: 0; grid-column: auto; } input { min-width: 0; }
   @media (max-width: 640px) { grid-template-columns: 1fr 1fr; > label:last-of-type, > div:last-child { grid-column: 1 / -1; } }
 `;
-export const FinanceFilterSelect = styled.select`
+export const FinanceFilterSelect = styled(PickerSelect)`
   width: 100%; min-width: 0; min-height: 44px; border: 1px solid #d9deea; border-radius: 6px; outline: 0; background: #f8f9fc; padding: 0 12px;
   color: #344054; font-size: calc(12px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 500;
   &:focus { border-color: #415ba5; background: #fff; box-shadow: 0 0 0 3px rgba(65, 91, 165, .12); }

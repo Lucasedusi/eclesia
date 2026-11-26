@@ -74,6 +74,15 @@ describe("congregation report data", () => {
     expect(db.calls.find((c) => c.table === "congregations")!.select).not.toMatch(/\bphone\b/);
     expect(db.calls.find((c) => c.table === "congregations")!.select).not.toMatch(/pastor_spouse_name|notes|email|\*/);
   });
+  it("loads only the requested utility identifier and keeps both on the individual sheet", async () => {
+    const db = database({ congregations: [{ ...congregation, congregation_utility_accounts: { energy_unit: "00012-X", water_account: "00084/9" } }] });
+    const list = await loadCongregationReportDocument(context, { ...simple, fields: { ...simple.fields, energy: true } });
+    expect(list.congregations[0].energy).toBe("00012-X");
+    expect(list.congregations[0]).not.toHaveProperty("water");
+    expect(db.calls[0].select).toContain("congregation_utility_accounts(energy_unit)");
+    const sheet = await loadCongregationReportDocument(context, individual);
+    expect(sheet.congregations[0]).toMatchObject({ energy: "00012-X", water: "00084/9" });
+  });
   it("includes spouse and full address only when selected", async () => {
     const db = database({ congregations: [{ ...congregation, address: "Rua A", number: "10", complement: "Sala 1", district: "Centro", state: "SP", zip_code: "01001000" }] });
     const doc = await loadCongregationReportDocument(context, { ...simple, fields: { spouse: true, phone: false, address: true } });

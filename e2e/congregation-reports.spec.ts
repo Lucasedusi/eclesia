@@ -161,3 +161,84 @@ test.describe("relatórios de congregações", () => {
     }
   });
 });
+
+test.describe("cadastro administrativo e controles de formulário", () => {
+  test.skip(!process.env.E2E_REPORT_FIXTURE || !process.env.E2E_STORAGE_STATE, "Requer as sessões locais de congregações");
+  test.use({ storageState: process.env.E2E_REPORT_FIXTURE
+    ? path.join(path.dirname(process.env.E2E_REPORT_FIXTURE), "admin-session.json") : undefined });
+
+  test("edita as contas, revisa e exporta os identificadores com zeros à esquerda", async ({ page }) => {
+    const name = "Congregação de Teste 19";
+    await page.goto("/estrutura-eclesiastica/congregacoes");
+    await page.getByRole("textbox", { name: "Buscar em Congregações" }).fill(name);
+    await page.getByRole("button", { name: `Editar ${name}`, exact: true }).first().click();
+    const modal = page.getByRole("dialog", { name: "Editar Congregação" });
+    const region = modal.getByRole("combobox", { name: "Regional *", exact: true });
+    await region.press("ArrowDown");
+    const search = modal.getByRole("combobox", { name: "Buscar em Regional *" });
+    await search.fill("sao jose");
+    await search.press("Enter");
+    await expect(region).toBeFocused();
+    const next = modal.getByRole("button", { name: "Continuar" });
+    await next.click();
+    await next.click();
+    await modal.getByLabel("Nº da unidade consumidora (energia)").fill("00123-X");
+    await modal.getByLabel("Nº da conta de água").fill("00084/9");
+    await next.click();
+    await expect(modal).toContainText("00123-X");
+    await modal.getByRole("button", { name: "Salvar Congregação" }).click();
+    await expect(modal).toBeHidden();
+
+    await page.getByRole("button", { name: `Ver detalhes de ${name}`, exact: true }).first().click();
+    await expect(page.getByRole("dialog")).toContainText("00123-X");
+    await expect(page.getByRole("dialog")).toContainText("00084/9");
+    await page.keyboard.press("Escape");
+    await page.getByRole("button", { name: "Relatório", exact: true }).click();
+    const report = page.getByRole("dialog", { name: "Relatórios de congregações" });
+    for (const label of ["Nº da unidade consumidora (energia)", "Nº da conta de água"]) {
+      const field = report.getByRole("checkbox", { name: label, exact: true });
+      await expect(field).not.toBeChecked();
+      await field.check();
+    }
+    await report.getByRole("combobox", { name: "Formato", exact: true }).click();
+    await report.getByRole("listbox", { name: "Formato" }).getByRole("option", { name: /Excel/ }).click();
+    const download = page.waitForEvent("download");
+    await report.getByRole("button", { name: "Baixar Excel" }).click();
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.readFile((await (await download).path())!);
+    const row = workbook.worksheets[0].getRows(7, 27)?.find((row) => row.getCell(2).text === name);
+    expect(row?.values).toEqual(expect.arrayContaining(["00123-X", "00084/9"]));
+  });
+
+  for (const width of [390, 1280]) {
+    test.describe(`seletores em ${width}px`, () => {
+      test.use({ viewport: { width, height: 844 }, hasTouch: width === 390 });
+      test("abre o menu, navega pelo calendário e preserva data histórica e horário", async ({ page }) => {
+        await page.goto("/perfil");
+        const timezone = page.getByRole("combobox", { name: "Fuso horário" });
+        if (width === 390) await timezone.tap();
+        else await timezone.press("ArrowDown");
+        const list = page.getByRole("listbox", { name: "Fuso horário" });
+        await expect(list).toBeVisible();
+        await list.press("End");
+        await list.press("Enter");
+        await expect(timezone).toHaveValue("America/Belem");
+
+        await page.goto("/membros/novo");
+        await page.getByRole("textbox", { name: "Data de nascimento" }).fill("15/01/1975");
+        const calendar = page.getByRole("button", { name: "Abrir calendário de data de nascimento" });
+        await calendar.click();
+        const dialog = page.getByRole("dialog", { name: "Escolher data" });
+        await expect(dialog).toContainText(/1975/);
+        await dialog.getByRole("button", { name: /16 de janeiro de 1975/ }).click();
+        await expect(page.getByRole("textbox", { name: "Data de nascimento" })).toHaveValue("16/01/1975");
+
+        await page.goto("/eventos/novo");
+        await page.getByRole("button", { name: "Continuar" }).click();
+        await page.getByRole("textbox", { name: "Início", exact: true }).fill("17/12/2026");
+        await page.getByLabel("Horário de início").fill("19:35");
+        await expect(page.locator('input[name="startsAt"]')).toHaveValue("2026-12-17T19:35");
+      });
+    });
+  }
+});

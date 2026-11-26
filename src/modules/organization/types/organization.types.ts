@@ -53,6 +53,8 @@ export type CongregationItem = {
   city: string | null;
   state: string | null;
   country: string;
+  energy: string | null;
+  water: string | null;
   notes: string | null;
   isHeadquarters: boolean;
   displayOrder: number;

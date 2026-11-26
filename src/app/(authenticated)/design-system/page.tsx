@@ -1,3 +1,4 @@
+import { DateField } from "@/components/form/pickers/date-field";
 import {
   CalendarDays,
   CheckCircle2,
@@ -306,7 +307,7 @@ export default async function DesignSystemPage() {
                   { label: "Outra congregação", value: "outra" },
                 ]}
               />
-              <Input id="data" label="Data de cadastro" type="date" />
+              <DateField id="data" label="Data de cadastro" />
               <div className="md:col-span-2">
                 <Checkbox
                   id="termos"

@@ -1,5 +1,6 @@
 "use client";
 
+import { congregationUtilities } from "../constants/congregation-utilities";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   AlertCircle,
@@ -488,6 +489,7 @@ export function CongregationDetailsContent({
           <Info label="Cidade" value={details.city} />
           <Info label="Estado" value={details.state} />
           <Info label="CEP" value={details.zipCode} />
+          {congregationUtilities.map(({ key, label }) => details[key] && <Info key={key} label={label} value={details[key]} />)}
         </S.InfoGrid>
       </S.Section>
 

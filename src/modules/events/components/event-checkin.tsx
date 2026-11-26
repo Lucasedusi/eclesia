@@ -1,5 +1,6 @@
 "use client";
 
+import { PickerSelect } from "@/components/form/pickers/picker-select";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -114,7 +115,7 @@ export function EventCheckin({ data }: { data: EventWorkspaceData }) {
         <h2>Busca manual</h2>
         <S.CheckinFilters>
           <S.Field><span>Nome, número ou telefone</span><S.FilterSearch><Search aria-hidden="true" /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Digite para localizar" /></S.FilterSearch></S.Field>
-          <S.Field><span>Congregação</span><select value={congregationId} onChange={(event) => setCongregationId(event.target.value)}><option value="">Todas as congregações</option>{data.references.congregations.map((congregation) => <option key={congregation.id} value={congregation.id}>{congregation.name}</option>)}</select></S.Field>
+          <S.Field><span>Congregação</span><PickerSelect value={congregationId} onChange={(event) => setCongregationId(event.target.value)}><option value="">Todas as congregações</option>{data.references.congregations.map((congregation) => <option key={congregation.id} value={congregation.id}>{congregation.name}</option>)}</PickerSelect></S.Field>
         </S.CheckinFilters>
         <S.CheckinResults>
           {eligible.slice(0, 30).map((registration) => <S.CheckinResult key={registration.id}><div><strong>{registration.participantName}</strong><small>{registration.registrationNumber} · {registration.congregationName || "Sem congregação"}</small></div><S.CheckinConfirm type="button" disabled={pending && processingId !== registration.id} onClick={() => perform({ registrationId: registration.id, method: "SEARCH" })}>{pending && processingId === registration.id ? <LoaderCircle data-loading /> : <CheckCircle2 />}Confirmar</S.CheckinConfirm></S.CheckinResult>)}

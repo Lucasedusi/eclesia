@@ -1,5 +1,6 @@
 "use client";
 
+import { DateField } from "@/components/form/pickers/date-field";
 import {
   ChangeEvent,
   FormEvent,
@@ -853,16 +854,16 @@ export function MemberManagement({
             <S.FieldGrid>
               <S.Field>
                 <span>Data do evento *</span>
-                <S.Control
+                <DateField
                   name="eventDate"
-                  type="date"
+                  label="Data do evento" hideLabel
                   required
                   value={lifecycle.eventDate}
                   max={new Date().toISOString().slice(0, 10)}
-                  onChange={(event) =>
+                  onChange={(value) =>
                     setLifecycle((current) =>
                       current
-                        ? { ...current, eventDate: event.target.value }
+                        ? { ...current, eventDate: value }
                         : current,
                     )
                   }
@@ -871,15 +872,15 @@ export function MemberManagement({
               {lifecycle.action === "DISCIPLINE" && (
                 <S.Field>
                   <span>Previsão de encerramento</span>
-                  <S.Control
+                  <DateField
                     name="expectedEndDate"
-                    type="date"
+                    label="Previsão de encerramento" hideLabel
                     min={lifecycle.eventDate}
                     value={lifecycle.expectedEndDate ?? ""}
-                    onChange={(event) =>
+                    onChange={(value) =>
                       setLifecycle((current) =>
                         current
-                          ? { ...current, expectedEndDate: event.target.value }
+                          ? { ...current, expectedEndDate: value }
                           : current,
                       )
                     }

@@ -1,10 +1,10 @@
 "use client";
 import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { formatFinanceMonth, todayLocal } from "../utils/finance-period";
-import styles from "./finance-pickers.module.css";
+import { formatMonth, todayLocal } from "@/utils/civil-date";
+import styles from "./pickers.module.css";
 
-export default function FinanceMonthPicker({
+export default function MonthPicker({
   value,
   min,
   max,
@@ -47,7 +47,7 @@ export default function FinanceMonthPicker({
       >
         {Array.from({ length: 12 }, (_, i) => {
           const month = year + "-" + String(i + 1).padStart(2, "0");
-          const name = formatFinanceMonth(month, true);
+          const name = formatMonth(month, true);
           return (
             <button
               key={month}

@@ -64,7 +64,7 @@ export const Filters = styled(Toolbar)<{ $selectCount: number }>`
       grid-template-columns: minmax(0, 1fr) 44px;
       > div:first-child { grid-column: 1; margin-right: 0; }
       > button { grid-column: 2; }
-      > select { grid-column: 1 / -1; }
+      > [data-picker] { grid-column: 1 / -1; }
     }
   }
 `;

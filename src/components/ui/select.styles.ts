@@ -1,5 +1,6 @@
 "use client";
 
+import { PickerSelect } from "@/components/form/pickers/picker-select";
 import styled from "styled-components";
 
 export const FieldWrapper = styled.div`
@@ -16,7 +17,7 @@ export const FieldLabel = styled.label`
   line-height: 1.2;
 `;
 
-export const SelectControl = styled.select<{ $hasError?: boolean }>`
+export const SelectControl = styled(PickerSelect)<{ $hasError?: boolean }>`
   width: 100%;
   height: 52px;
   border-radius: ${({ theme }) => theme.radius.sm};
@@ -53,19 +54,6 @@ export const SelectControl = styled.select<{ $hasError?: boolean }>`
 export const SelectBox = styled.div`
   position: relative;
   width: 100%;
-
-  &::after {
-    content: "";
-    position: absolute;
-    right: 16px;
-    top: 50%;
-    width: 8px;
-    height: 8px;
-    border-right: 1.8px solid ${({ theme }) => theme.colors.text.muted};
-    border-bottom: 1.8px solid ${({ theme }) => theme.colors.text.muted};
-    transform: translateY(-65%) rotate(45deg);
-    pointer-events: none;
-  }
 `;
 
 export const ErrorText = styled.p`

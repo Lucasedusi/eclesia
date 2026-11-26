@@ -39,11 +39,31 @@ describe("congregation report documents", () => {
     expect(headers.includes("Endereço")).toBe(fields.address);
     await save(`lista-${Number(fields.spouse)}${Number(fields.phone)}${Number(fields.address)}.pdf`, bytes);
   });
+  it.each([[true, false], [false, true], [true, true]])("exports only the requested utility identifiers as literal text", async (energy, water) => {
+    const data = congregationReportFixture();
+    Object.assign(data.fields, { energy, water, spouse: true, address: true });
+    Object.assign(data.congregations[0], { energy: "00123-X", water: "00084/9" });
+    const drawn = vi.spyOn(PDFPage.prototype, "drawText");
+    const bytes = await createCongregationReportPdf(data);
+    await save(`contas-${energy}-${water}.pdf`, bytes);
+    const text = drawn.mock.calls.map(([value]) => value).join(" ");
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(await createCongregationReportWorkbook(data) as never);
+    const row = workbook.worksheets[0].getRow(7);
+    for (const [id, selected] of [["00123-X", energy], ["00084/9", water]] as const) {
+      expect(text.includes(id)).toBe(selected);
+      expect((row.values as string[]).includes(id)).toBe(selected);
+    }
+  });
   it("groups the sheet title and regional below the leadership header, retaining address and notes", async () => {
     const drawn = vi.spyOn(PDFPage.prototype, "drawText");
     const data = congregationReportFixture("individual");
+    data.congregations[0].water = "00012-8";
     const bytes = await createCongregationReportPdf(data);
     const text = drawn.mock.calls.map(([s]) => s).join(" ");
+    expect(text).toContain("CONTAS DE CONSUMO");
+    expect(text).toContain("00012-8");
+    expect(text).not.toContain("UNIDADE CONSUMIDORA");
     for (const label of ["Presidentes: Paulo e Ana", "Dirigente: João de Souza", "Maria de Souza", "(11) 99999-8888", "ENDEREÇO", "OBSERVAÇÃO", "CONGREGAÇÃO CENTRAL", "Salão 2", data.congregations[0].notes!]) expect(text).toContain(label);
     for (const label of ["LIDERANÇA E CONTATO", "Pastores:", "E-MAIL", data.church.document!, data.church.phone!]) expect(text).not.toContain(label);
     const y = (label: string) => drawn.mock.calls.find(([s]) => s === label)![1]!.y!;

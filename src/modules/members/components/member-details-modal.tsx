@@ -1,4 +1,5 @@
 "use client";
+import { DateField } from "@/components/form/pickers/date-field";
 import { MemberFinanceTab } from "./member-finance-tab";
 import { ChevronDown } from "lucide-react";
 
@@ -969,9 +970,9 @@ export function MemberDetailsModal({
                     </S.FormField>
                     <S.FormField>
                       <span>Data *</span>
-                      <S.FormControl
+                      <DateField
                         name="eventDate"
-                        type="date"
+                        label="Data" hideLabel
                         required
                         max={new Date().toISOString().slice(0, 10)}
                       />
@@ -1333,11 +1334,11 @@ export function MemberDetailsModal({
                 {roleId && (
                   <S.FormField>
                     <span>Data de início</span>
-                    <S.FormControl
-                      type="date"
+                    <DateField
+                      label="Data de início" hideLabel
                       value={roleStartDate}
                       max={new Date().toISOString().slice(0, 10)}
-                      onChange={(event) => setRoleStartDate(event.target.value)}
+                      onChange={(value) => setRoleStartDate(value)}
                     />
                   </S.FormField>
                 )}

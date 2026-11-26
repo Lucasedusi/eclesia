@@ -1,4 +1,5 @@
 "use client";
+import { PickerSelect } from "@/components/form/pickers/picker-select";
 import { administrativeControl, administrativeSelect, administrativeTextarea } from "@/styles/administrative-controls";
 
 import styled, { keyframes } from "styled-components";
@@ -393,7 +394,7 @@ export const ClearSearchButton = styled.button`
     box-shadow: ${({ theme }) => theme.shadows.focus};
   }
 `;
-export const Select = styled.select`
+export const Select = styled(PickerSelect)`
   width: 100%;
   min-height: 44px;
   border: 1px solid #d9deea;

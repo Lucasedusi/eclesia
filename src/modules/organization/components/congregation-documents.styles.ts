@@ -1,4 +1,5 @@
 "use client";
+import { PickerSelect } from "@/components/form/pickers/picker-select";
 import { administrativeControl, administrativeSelect } from "@/styles/administrative-controls";
 
 import styled from "styled-components";
@@ -91,7 +92,7 @@ export const Input = styled.input<{ $invalid?: boolean }>`
   ${({ $invalid }) => $invalid && "border-color: #ef7770;"}
 `;
 
-export const Select = styled.select<{ $invalid?: boolean }>`
+export const Select = styled(PickerSelect)<{ $invalid?: boolean }>`
   ${controlStyles}
   border-color: ${({ $invalid }) => ($invalid ? "#ef7770" : "#d9deea")};
 

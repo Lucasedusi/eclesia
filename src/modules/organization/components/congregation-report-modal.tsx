@@ -1,4 +1,5 @@
 "use client";
+import { congregationUtilities } from "../constants/congregation-utilities";
 import { useState } from "react";
 import { Download, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,7 @@ type Props = { filters: { search: string; status: string; sort: string; region: 
 export function CongregationReportModal({ filters, onClose }: Props) {
   const [useFilters, setUseFilters] = useState(false);
   const [format, setFormat] = useState<"pdf" | "xlsx">("pdf");
-  const [fields, setFields] = useState({ spouse: false, phone: true, address: false });
+  const [fields, setFields] = useState({ spouse: false, phone: true, address: false, energy: false, water: false });
   const { busy, feedback, download, setFeedback } = useCongregationReport();
   function generate() {
     const input = congregationReportSchema.safeParse({ kind: "simplified", format, fields, ...(useFilters ? filters : {}) });
@@ -25,7 +26,7 @@ export function CongregationReportModal({ filters, onClose }: Props) {
         {useFilters && <S.Hint>{filters.search ? `Busca: ${filters.search}. ` : ""}Inclui todas as páginas dos resultados filtrados.</S.Hint>}
       </S.Options>
       <S.Options disabled={busy}><legend>Campos opcionais</legend>
-        {([{ key: "spouse", label: "Cônjuge" }, { key: "phone", label: "WhatsApp" }, { key: "address", label: "Endereço" }] as const).map(({ key, label }) => <S.Choice key={key} $selected={fields[key]}><input type="checkbox" checked={fields[key]} onChange={(e) => setFields({ ...fields, [key]: e.target.checked })} /><strong>{label}</strong></S.Choice>)}
+        {([{ key: "spouse", label: "Cônjuge" }, { key: "phone", label: "WhatsApp" }, { key: "address", label: "Endereço" }, ...congregationUtilities] as const).map(({ key, label }) => <S.Choice key={key} $selected={fields[key]}><input type="checkbox" checked={fields[key]} onChange={(e) => setFields({ ...fields, [key]: e.target.checked })} /><strong>{label}</strong></S.Choice>)}
       </S.Options>
       <S.Options disabled={busy}>
         <S.Field>Formato<S.SelectBox><S.SelectControl value={format} onChange={(e) => setFormat(e.target.value === "xlsx" ? "xlsx" : "pdf")}><option value="pdf">PDF · pronto para impressão</option><option value="xlsx">Excel · planilha .xlsx</option></S.SelectControl></S.SelectBox></S.Field>

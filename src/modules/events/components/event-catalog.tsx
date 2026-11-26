@@ -1,5 +1,6 @@
 "use client";
 
+import { PickerSelect } from "@/components/form/pickers/picker-select";
 import { useEffect, useLayoutEffect, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
@@ -239,8 +240,8 @@ export function EventCatalog({ data, canManage, canPublish }: Props) {
       </S.Stats>
       <S.Filters>
         <S.Field><span>Pesquisar</span><S.FilterSearch aria-busy={filterPending}><Search aria-hidden="true" /><input name="search" value={searchValue} onChange={(event) => setSearchValue(event.target.value)} placeholder="Digite ao menos 3 caracteres" />{filterPending ? <LoaderCircle data-loading aria-label="Atualizando eventos" /> : null}</S.FilterSearch></S.Field>
-        <S.Field><span>Situação</span><select name="status" value={selectedStatus} onChange={(event) => updateFilter("status", event.target.value)}><option value="OPEN">Inscrições abertas</option><option value="ALL">Todas</option>{EVENT_STATUSES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></S.Field>
-        <S.Field><span>Tipo</span><select name="type" value={current.get("type") ?? ""} onChange={(event) => updateFilter("type", event.target.value)}><option value="">Todos</option>{EVENT_TYPES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></S.Field>
+        <S.Field><span>Situação</span><PickerSelect name="status" value={selectedStatus} onChange={(event) => updateFilter("status", event.target.value)}><option value="OPEN">Inscrições abertas</option><option value="ALL">Todas</option>{EVENT_STATUSES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</PickerSelect></S.Field>
+        <S.Field><span>Tipo</span><PickerSelect name="type" value={current.get("type") ?? ""} onChange={(event) => updateFilter("type", event.target.value)}><option value="">Todos</option>{EVENT_TYPES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</PickerSelect></S.Field>
         <S.FilterActions><S.ResetFilterButton type="button" aria-label="Limpar filtros" title="Limpar filtros" disabled={!hasFilters} onClick={resetFilters}><RotateCcw /></S.ResetFilterButton></S.FilterActions>
       </S.Filters>
       <S.Tabs aria-label="Filtros rápidos">

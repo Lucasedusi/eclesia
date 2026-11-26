@@ -2,9 +2,9 @@
 
 import { DayPicker } from "react-day-picker";
 import { ptBR } from "react-day-picker/locale";
-import { useFinanceDesktop } from "../hooks/use-finance-desktop";
-import { isLocalDate, todayLocal } from "../utils/finance-period";
-import styles from "./finance-pickers.module.css";
+import { useWideCalendar } from "./use-wide-calendar";
+import { isCivilDate, todayLocal } from "@/utils/civil-date";
+import styles from "./pickers.module.css";
 
 type Props =
   | { mode: "single"; value: string; min?: string; max?: string; onChange: (date: string) => void }
@@ -17,7 +17,7 @@ type Props =
     };
 
 function asDate(value: string) {
-  return isLocalDate(value) ? new Date(value + "T12:00:00") : undefined;
+  return isCivilDate(value) ? new Date(value + "T12:00:00") : undefined;
 }
 function civil(date?: Date) {
   if (!date) return "";
@@ -29,8 +29,8 @@ function civil(date?: Date) {
 }
 
 const fullDate = new Intl.DateTimeFormat("pt-BR", { dateStyle: "full" });
-export default function FinanceCalendar(props: Props) {
-  const desktop = useFinanceDesktop();
+export default function Calendar(props: Props) {
+  const desktop = useWideCalendar();
   const today = asDate(todayLocal());
   const first = asDate(props.mode === "single" ? props.value : props.from);
   const min = props.mode === "single" ? props.min ?? "2000-01-01" : "2000-01-01";
