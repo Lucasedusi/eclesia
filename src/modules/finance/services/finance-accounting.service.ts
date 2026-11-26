@@ -14,6 +14,7 @@ import type {
   AccountingCatalog,
   AccountingHistory,
   AccountingPreview,
+  AccountingRowPage,
 } from "../types/finance-accounting.types";
 
 async function accountingAccess() {
@@ -39,35 +40,41 @@ export const getAccountingCatalog = cache(async () => {
   };
 });
 
-const pageNumber = z.number().int().min(1).max(2147483647);
-export async function getAccountingPreview(input: unknown, page: number) {
+const rowCursor = z.object({ date: z.iso.date(), id: z.uuid() }).nullable();
+const batchCursor = z
+  .object({ date: z.iso.datetime({ offset: true }), id: z.uuid() })
+  .nullable();
+async function readAccountingPage(
+  input: unknown,
+  after: unknown,
+  summary: boolean,
+) {
   const filters = accountingFilters.parse(input);
   const { church, client } = await accountingAccess();
-  const { data, error } = await client.rpc("preview_finance_accounting", {
+  const cursor = rowCursor.parse(after);
+  const { data, error } = await client.rpc("finance_accounting_page", {
     p_church: church,
     p_filters: filters,
-    p_page: pageNumber.parse(page),
+    p_summary: summary,
+    ...(cursor && { p_after: cursor }),
   });
   if (error) throwFinanceDatabaseError(error);
-  const preview = data as unknown as AccountingPreview;
-  return {
-    ...preview,
-    rows: preview.rows.map((row) => ({
-      id: row.id,
-      date: row.date,
-      unit: row.unit,
-      box: row.box,
-      category: row.category,
-      classification: row.classification,
-      payer: row.payer,
-      debit: row.debit,
-      credit: row.credit,
-      direction: row.direction,
-      cents: row.cents,
-      box_issue: row.box_issue,
-      category_issue: row.category_issue,
-    })),
-  };
+  return data;
+}
+
+export async function getAccountingPreview(input: unknown) {
+  return (await readAccountingPage(
+    input,
+    null,
+    true,
+  )) as unknown as AccountingPreview;
+}
+export async function getAccountingRows(input: unknown, after: unknown) {
+  return (await readAccountingPage(
+    input,
+    after,
+    false,
+  )) as unknown as AccountingRowPage;
 }
 export async function exportAccounting(
   input: unknown,
@@ -107,14 +114,15 @@ export async function updateAccountingCode(input: unknown) {
 export async function getAccountingHistory(
   unit: string | null,
   box: string | null,
-  page: number,
+  after: unknown,
 ) {
   const { church, client } = await accountingAccess();
-  const { data, error } = await client.rpc("finance_accounting_history", {
+  const cursor = batchCursor.parse(after);
+  const { data, error } = await client.rpc("finance_accounting_batch_page", {
     p_church: church,
     p_unit: z.uuid().nullable().parse(unit)!,
     p_box: z.uuid().nullable().parse(box)!,
-    p_page: pageNumber.parse(page),
+    ...(cursor && { p_after: cursor }),
   });
   if (error) throwFinanceDatabaseError(error);
   return data as unknown as AccountingHistory;

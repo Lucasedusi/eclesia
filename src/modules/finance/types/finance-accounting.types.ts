@@ -25,14 +25,14 @@ export type AccountingRow = {
   box_issue: string | null;
   category_issue: string | null;
 };
-export type AccountingPreview = {
+export type AccountingCursor = { date: string; id: string };
+export type AccountingRowPage = { rows: AccountingRow[]; hasMore: boolean };
+export type AccountingPreview = AccountingRowPage & {
   opening: number;
-  rows: AccountingRow[];
   total: number;
-  page: number;
   previous: number;
   missing: number;
-  fingerprint: string;
+  fingerprint: string | null;
   income: number;
   expense: number;
   special: { date: string; kind: string; quantity: number }[];
@@ -52,4 +52,4 @@ export type AccountingBatch = {
   count: number;
   changed: number;
 };
-export type AccountingHistory = { total: number; items: AccountingBatch[] };
+export type AccountingHistory = { hasMore: boolean; items: AccountingBatch[] };

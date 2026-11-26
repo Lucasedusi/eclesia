@@ -5,6 +5,8 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   ChartNoAxesColumn,
+  ChevronLeft,
+  ChevronRight,
   Download,
   Search,
   Save,
@@ -23,12 +25,14 @@ import {
 } from "../validations/finance-accounting.schemas";
 import type {
   AccountingCatalog,
+  AccountingCursor,
   AccountingHistory,
   AccountingPreview,
 } from "../types/finance-accounting.types";
 import {
   confirmAccountingAction,
   consultAccountingAction,
+  accountingRowsAction,
   accountingHistoryAction,
   exportAccountingAction,
   saveAccountingCodeAction,
@@ -154,36 +158,49 @@ function AccountingCodes({
 
 function Pager({
   page,
-  total,
-  size,
+  pageCount,
+  more,
+  busy,
+  label,
   go,
 }: {
   page: number;
-  total: number;
-  size: number;
+  pageCount?: number;
+  more: boolean;
+  busy: boolean;
+  label: string;
   go: (page: number) => void;
 }) {
-  if (total <= size) return null;
+  if (page === 1 && !more) return null;
   return (
-    <div className="row">
-      <Button
-        variant="secondary"
-        disabled={page === 1}
-        onClick={() => go(page - 1)}
-      >
-        Anterior
-      </Button>
-      <span>
-        Página {page} de {Math.ceil(total / size)}
+    <nav aria-label={label} className="row spread finance-pagination">
+      <span aria-live="polite" className="muted">
+        Página {page}
+        {pageCount && page <= pageCount ? ` de ${pageCount}` : ""}
       </span>
-      <Button
-        variant="secondary"
-        disabled={page * size >= total}
-        onClick={() => go(page + 1)}
-      >
-        Próxima
-      </Button>
-    </div>
+      <div className="row finance-pagination-buttons">
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          aria-label="Página anterior"
+          disabled={busy || page === 1}
+          onClick={() => go(page - 1)}
+        >
+          <ChevronLeft size={16} />
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          aria-label="Próxima página"
+          disabled={busy || !more}
+          onClick={() => go(page + 1)}
+        >
+          <ChevronRight size={16} />
+        </Button>
+      </div>
+    </nav>
   );
 }
 
@@ -212,7 +229,14 @@ export function FinanceAccounting({
   const [filters, setFilters] = useState(draft);
   const [preview, setPreview] = useState<AccountingPreview | null>(null);
   const [history, setHistory] = useState<AccountingHistory | null>(null);
-  const [historyPage, setHistoryPage] = useState(1);
+  const [pageAnchors, setPageAnchors] = useState<(AccountingCursor | null)[]>([
+    null,
+  ]);
+  const [batchAnchors, setBatchAnchors] = useState<(AccountingCursor | null)[]>(
+    [null],
+  );
+  const [paging, turnPage] = useTransition();
+  const [loadingHistory, loadHistory] = useTransition();
   const [isPending, query] = useTransition();
   const request = useRef(0);
   const [repeatFingerprint, setRepeatFingerprint] = useState<string | null>(
@@ -223,14 +247,16 @@ export function FinanceAccounting({
   const [busy, start] = useTransition();
   const changed = JSON.stringify(draft) !== JSON.stringify(filters);
   const valid = accountingFilters.safeParse(draft).success;
-  function consult(next: AccountingFilters, page = 1) {
+  function consult(next: AccountingFilters) {
     const id = ++request.current;
     setHistory(null);
+    setBatchAnchors([null]);
+    setPageAnchors([null]);
     setMessage("");
     setRepeatFingerprint(null);
     query(async () => {
       try {
-        const response = await consultAccountingAction(next, page);
+        const response = await consultAccountingAction(next);
         if (request.current !== id) return;
         setFilters(next);
         setPreview(response.ok ? response.data : null);
@@ -246,14 +272,50 @@ export function FinanceAccounting({
     });
   }
 
+  function paginate(page: number) {
+    if (!preview || paging || changed) return;
+    const last = preview.rows.at(-1);
+    const cursor =
+      page === 1
+        ? null
+        : (pageAnchors[page - 1] ?? (last && { date: last.date, id: last.id }));
+    if (cursor === undefined) return;
+    const id = ++request.current;
+    turnPage(async () => {
+      try {
+        const r = await accountingRowsAction(filters, cursor);
+        if (id !== request.current) return;
+        if (!r.ok) return setMessage(r.message);
+        setPreview({ ...preview, ...r.data });
+        setPageAnchors([...pageAnchors.slice(0, page - 1), cursor]);
+      } catch {
+        if (id === request.current)
+          setMessage("Não foi possível carregar a página. Tente novamente.");
+      }
+    });
+  }
   function showHistory(page: number) {
-    const id = request.current;
-    start(async () => {
-      const result = await accountingHistoryAction(filters, page);
-      if (request.current !== id) return;
-      if (!result.ok) return setMessage(result.message);
-      setHistoryPage(page);
-      setHistory(result.data);
+    const last = history?.items.at(-1);
+    const cursor =
+      page === 1
+        ? null
+        : (batchAnchors[page - 1] ??
+          (last && { date: last.created, id: last.id }));
+    if (cursor === undefined) return;
+    const id = ++request.current;
+    loadHistory(async () => {
+      try {
+        const result = await accountingHistoryAction(filters, cursor);
+        if (request.current !== id) return;
+        if (!result.ok) return setMessage(result.message);
+        setBatchAnchors([...batchAnchors.slice(0, page - 1), cursor]);
+        setHistory(result.data);
+      } catch {
+        if (request.current === id)
+          setMessage(
+            "Não foi possível carregar as exportações. Tente novamente.",
+          );
+      }
     });
   }
   const eligible =
@@ -286,15 +348,12 @@ export function FinanceAccounting({
     );
   }
   function download() {
-    if (!preview || !eligible || changed) return;
+    const fingerprint = preview?.fingerprint;
+    if (!fingerprint || !eligible || changed) return;
     start(async () => {
-      const r = await exportAccountingAction(
-        filters,
-        preview.fingerprint,
-        repeat,
-      );
+      const r = await exportAccountingAction(filters, fingerprint, repeat);
       if (!r.ok) {
-        consult(filters, preview.page);
+        consult(filters);
         setMessage(r.message);
         return;
       }
@@ -309,7 +368,7 @@ export function FinanceAccounting({
       a.download = `Alterdata-${box.replace(/[^\p{L}\d-]+/gu, "-")}-${filters.start}-${filters.end}-${r.data.id.slice(0, 8)}.csv`;
       a.click();
       window.setTimeout(() => URL.revokeObjectURL(url), 30000);
-      consult(filters, preview.page);
+      consult(filters);
       setMessage(
         canConfirm
           ? "Arquivo gerado. Após conferir no Alterdata, use Consultar exportações para confirmar a importação."
@@ -326,7 +385,7 @@ export function FinanceAccounting({
         <AccountingCodes
           catalog={catalog}
           onSaved={() => {
-            if (preview) consult(filters, preview.page);
+            if (preview) consult(filters);
           }}
         />
       )}
@@ -403,7 +462,7 @@ export function FinanceAccounting({
             setDraft({ ...draft, end });
           }}
         />
-        <Button type="submit" disabled={!valid || isPending || busy}>
+        <Button type="submit" disabled={!valid || isPending || busy || paging}>
           <Search size={16} />
           Consultar
         </Button>
@@ -490,7 +549,9 @@ export function FinanceAccounting({
                 </ul>
               </details>
             )}
-            {preview.rows.length ? (
+            {paging ? (
+              <FinanceSkeleton table label="Carregando página de lançamentos" />
+            ) : preview.rows.length ? (
               <div className="table-scroll">
                 <table>
                   <thead>
@@ -553,10 +614,12 @@ export function FinanceAccounting({
               <p>Nenhum lançamento confirmado no período.</p>
             )}
             <Pager
-              page={preview.page}
-              total={preview.total}
-              size={50}
-              go={(p) => consult(filters, p)}
+              page={pageAnchors.length}
+              pageCount={Math.ceil(preview.total / 50)}
+              label="Páginas da prévia contábil"
+              more={preview.hasMore}
+              busy={busy || paging || loadingHistory || changed}
+              go={paginate}
             />
             {(!filters.unit || !filters.box) && (
               <p className="muted">
@@ -585,6 +648,8 @@ export function FinanceAccounting({
                 loading={busy}
                 disabled={
                   !eligible ||
+                  loadingHistory ||
+                  paging ||
                   changed ||
                   isPending ||
                   (preview.previous > 0 && !repeat)
@@ -598,7 +663,9 @@ export function FinanceAccounting({
                 type="button"
                 className={styles.historyToggle}
                 aria-expanded={Boolean(history)}
-                disabled={isPending || busy || changed}
+                disabled={
+                  isPending || busy || paging || loadingHistory || changed
+                }
                 onClick={() => (history ? setHistory(null) : showHistory(1))}
               >
                 {history ? "Fechar consulta" : "Consultar exportações"}
@@ -613,7 +680,11 @@ export function FinanceAccounting({
         </p>
       )}
       {history && (
-        <section className="card stack" aria-label="Exportações da seleção">
+        <section
+          className="card stack"
+          aria-label="Exportações da seleção"
+          aria-busy={loadingHistory}
+        >
           <h2>Exportações da seleção</h2>
           {history.items.length === 0 ? (
             <p>Nenhum lote gerado para a seleção.</p>
@@ -676,7 +747,9 @@ export function FinanceAccounting({
                         ) : (
                           <Button
                             variant="secondary"
-                            disabled={busy || isPending}
+                            disabled={
+                              busy || isPending || paging || loadingHistory
+                            }
                             onClick={() =>
                               start(async () => {
                                 const r = await confirmAccountingAction(h.id);
@@ -685,7 +758,7 @@ export function FinanceAccounting({
                                     ? "Importação confirmada pelo usuário."
                                     : r.message,
                                 );
-                                if (r.ok) showHistory(historyPage);
+                                if (r.ok) showHistory(batchAnchors.length);
                               })
                             }
                           >
@@ -700,9 +773,10 @@ export function FinanceAccounting({
             </div>
           )}
           <Pager
-            page={historyPage}
-            total={history.total}
-            size={20}
+            page={batchAnchors.length}
+            label="Páginas das exportações"
+            more={history.hasMore}
+            busy={busy || paging || loadingHistory || changed || isPending}
             go={showHistory}
           />
         </section>

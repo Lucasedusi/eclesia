@@ -457,3 +457,88 @@ test("filtro de conta e prévia contábil em tela estreita", async ({ page }) =>
   await expect(prompt).toBeVisible();
   await expect(page.getByRole("columnheader")).toHaveCount(0);
 });
+
+test("percorre páginas contábeis sem repetir os lançamentos ou perder os indicadores", async ({
+  page,
+}) => {
+  test.skip(
+    !process.env.E2E_FINANCE_FIXTURE || !process.env.E2E_STORAGE_STATE,
+    "Requer contas fictícias locais.",
+  );
+  test.setTimeout(60000);
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  expect(new URL(url).hostname).toBe("127.0.0.1");
+  expect(new URL(process.env.E2E_BASE_URL!).hostname).toBe("127.0.0.1");
+  const f = JSON.parse(readFileSync(process.env.E2E_FINANCE_FIXTURE!, "utf8"));
+  const { createServerClient } = await import("@supabase/ssr");
+  const client = createServerClient(
+    url,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    {
+      cookies: {
+        getAll: () =>
+          JSON.parse(readFileSync(process.env.E2E_STORAGE_STATE!, "utf8"))
+            .cookies,
+        setAll: () => {},
+      },
+    },
+  );
+  const cash = f.boxes[f.headquartersId].cash;
+  for (let i = 1; i <= 51; i++) {
+    const { error } = await client.rpc("execute_finance_command", {
+      p_church_id: f.churchId,
+      p_payload: {
+        operationKey:
+          f.headquartersId.slice(0, 24) + i.toString(16).padStart(12, "0"),
+        kind: "RECORD",
+        mode: "SINGLE",
+        direction: "INCOME",
+        congregationId: f.headquartersId,
+        cashboxId: cash,
+        date: "2026-11-05",
+        paymentMethodId: f.cashMethod,
+        contributor: { kind: "COLLECTIVE" },
+        items: [
+          {
+            categoryId: f.offeringId,
+            departmentId: f.departmentId,
+            amountCents: i,
+          },
+        ],
+      },
+    });
+    expect(error).toBeNull();
+  }
+  await page.goto(
+    `/financeiro/contabilidade?unidade=${f.headquartersId}&caixa=${cash}`,
+  );
+  await page.getByRole("textbox", { name: "Data final", exact: true }).fill("");
+  await page
+    .getByRole("textbox", { name: "Data inicial", exact: true })
+    .fill("05/11/2026");
+  await page
+    .getByRole("textbox", { name: "Data final", exact: true })
+    .fill("05/11/2026");
+  await page.getByRole("button", { name: "Consultar", exact: true }).click();
+  const nav = page.getByRole("navigation", {
+    name: "Páginas da prévia contábil",
+  });
+  const rows = page
+    .getByRole("region", { name: "Prévia contábil" })
+    .locator("tbody tr");
+  await expect(rows).toHaveCount(50);
+  const firstPage = await rows.allTextContents();
+  await nav.getByRole("button", { name: "Próxima página" }).click();
+  await expect(rows).toHaveCount(1);
+  await expect(nav).toContainText("Página 2");
+  await expect(
+    nav.getByRole("button", { name: "Próxima página" }),
+  ).toBeDisabled();
+  expect(firstPage).not.toContain(await rows.first().textContent());
+  await expect(
+    page.getByText("Saldo do período", { exact: true }).locator("../.."),
+  ).toContainText(/13,26/);
+  await nav.getByRole("button", { name: "Página anterior" }).click();
+  await expect(rows).toHaveCount(50);
+  expect(await rows.allTextContents()).toEqual(firstPage);
+});

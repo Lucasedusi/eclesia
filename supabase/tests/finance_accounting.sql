@@ -10,6 +10,7 @@ declare
  hq uuid := '30000000-0000-4000-8000-000000000002';
  other_unit uuid := '30000000-0000-4000-8000-000000000001';
  other_box uuid; cash uuid; bank uuid; method uuid; cat uuid; expense uuid; dept uuid; tx_id uuid;
+ first_page jsonb; second_page jsonb; batch_first jsonb; batch_second jsonb;
  cmd jsonb; result jsonb; f jsonb; first_preview jsonb; batch jsonb; csv_text text;
 begin
   method := (public.save_finance_catalog(church,jsonb_build_object('entity','PAYMENT_METHOD','congregationId',hq,'name','Dinheiro','kind','CASH'))->>'id')::uuid;
@@ -81,12 +82,42 @@ begin
  assert (result->>'income')::bigint=4725643 and result->>'total'='14' and result#>>'{rows,0,payer}'='Unit A';
  csv_text:=convert_from(decode(public.generate_finance_accounting(church,f,result->>'fingerprint',false)->>'file','base64'),'WIN1252');
  assert (select count(*) from regexp_split_to_table(csv_text,chr(10)) line where line like ';45;3580;%')=14;
+ -- Same-date rows and batches must cross page boundaries exactly once.
+ for n in 1..37 loop
+   perform public.execute_finance_command(church,cmd||jsonb_build_object('date','2026-11-05','operationKey',gen_random_uuid()));
+ end loop;
+ first_page:=public.finance_accounting_page(church,f,true);
+ assert jsonb_array_length(first_page->'rows')=50 and (first_page->>'hasMore')::boolean and first_page->>'total'='51';
+ assert not ((first_page#>'{rows,0}') ?| array['memo','document','exported','revision']);
+ second_page:=public.finance_accounting_page(church,f,false,first_page#>'{rows,49}');
+ assert jsonb_array_length(second_page->'rows')=1 and not (second_page->>'hasMore')::boolean;
+ assert not (second_page ?| array['income','opening','special','fingerprint']);
+ assert (first_page#>>'{rows,49,id}')::uuid < (second_page#>>'{rows,0,id}')::uuid;
+ assert public.finance_accounting_page(church,f,false)->'rows'=first_page->'rows';
+ assert public.preview_finance_accounting(church,f,99)->>'page'='2';
+ batch:=public.generate_finance_accounting(church,f,first_page->>'fingerprint',true);
+ assert array_length(string_to_array(trim(trailing chr(10) from convert_from(decode(batch->>'file','base64'),'WIN1252')),chr(10)),1)=52;
+ -- Recover the same batch with the historical signature and preserve re-export confirmation.
+ assert public.generate_finance_accounting(church,f,private.accounting_snapshot(church,f)->>'fingerprint',true)=batch;
+ for n in 6..25 loop
+   f:=f||jsonb_build_object('end',make_date(2026,11,n));
+   result:=public.finance_accounting_page(church,f,true);
+   perform public.generate_finance_accounting(church,f,result->>'fingerprint',true);
+ end loop;
+ batch_first:=public.finance_accounting_batch_page(church,hq,cash);
+ assert jsonb_array_length(batch_first->'items')=20 and (batch_first->>'hasMore')::boolean;
+ batch_second:=public.finance_accounting_batch_page(church,hq,cash,jsonb_build_object(
+    'date',batch_first#>>'{items,19,created}','id',batch_first#>>'{items,19,id}'));
+ assert not (batch_second->>'hasMore')::boolean and jsonb_array_length(batch_second->'items')=3;
+ assert not exists(select from jsonb_array_elements(batch_first->'items') a join jsonb_array_elements(batch_second->'items') b on a->>'id'=b->>'id');
  f:=f||'{"start":"2026-10-01","end":"2026-10-31"}';
  perform set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000004',true);
  assert jsonb_array_length(public.finance_accounting_catalog(church)->'units')=1;
  assert public.preview_finance_accounting(church,f||'{"unit":null,"box":null}',1)->>'total'='0';
  assert (public.preview_finance_accounting(church,f||'{"unit":null,"box":null,"start":"2026-10-03"}',1)->>'opening')::numeric=200000, 'aggregate limited to authorized unit';
  assert public.finance_accounting_history(church,null,null,1)->>'total'='0';
+ assert public.finance_accounting_batch_page(church,hq,cash)->'items'='[]'::jsonb;
+ begin perform public.finance_accounting_page(church,f,false,first_page#>'{rows,49}'); raise exception 'cursor granted another unit'; exception when insufficient_privilege then null; end;
  begin perform public.preview_finance_accounting(church,f,1); raise exception 'wrong unit'; exception when insufficient_privilege then null; end;
  begin perform public.confirm_finance_accounting_import(church,(batch->>'id')::uuid); raise exception 'cross-scope mutation'; exception when insufficient_privilege then null; end;
  begin perform public.set_finance_accounting_code(church,'CASHBOX',other_box,'991',null); raise exception 'accountant can edit'; exception when insufficient_privilege then null; end;

@@ -9180,6 +9180,15 @@ export type Database = {
         Args: { p_event_id: string }
         Returns: number
       }
+      finance_accounting_batch_page: {
+        Args: {
+          p_after?: Json
+          p_box: string
+          p_church: string
+          p_unit: string
+        }
+        Returns: Json
+      }
       finance_accounting_catalog: { Args: { p_church: string }; Returns: Json }
       finance_accounting_history: {
         Args: {
@@ -9187,6 +9196,15 @@ export type Database = {
           p_church: string
           p_page: number
           p_unit: string
+        }
+        Returns: Json
+      }
+      finance_accounting_page: {
+        Args: {
+          p_after?: Json
+          p_church: string
+          p_filters: Json
+          p_summary: boolean
         }
         Returns: Json
       }

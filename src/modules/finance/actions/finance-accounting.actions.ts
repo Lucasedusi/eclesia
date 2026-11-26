@@ -1,12 +1,14 @@
 "use server";
 import { unstable_rethrow } from "next/navigation";
 import { financeFailure } from "../utils/finance-errors";
+import type { AccountingCursor } from "../types/finance-accounting.types";
 import type { FinanceActionResult } from "../types/finance.types";
 import {
   confirmAccountingImport,
   exportAccounting,
   getAccountingHistory,
   getAccountingPreview,
+  getAccountingRows,
   updateAccountingCode,
 } from "../services/finance-accounting.service";
 import type {
@@ -24,18 +26,21 @@ async function result<T>(
     return financeFailure(error);
   }
 }
-export async function consultAccountingAction(
+export async function consultAccountingAction(filters: AccountingFilters) {
+  return result(() => getAccountingPreview(filters));
+}
+export async function accountingRowsAction(
   filters: AccountingFilters,
-  page: number,
+  after: AccountingCursor | null,
 ) {
-  return result(() => getAccountingPreview(filters, page));
+  return result(() => getAccountingRows(filters, after));
 }
 
 export async function accountingHistoryAction(
   filters: AccountingFilters,
-  page: number,
+  after: AccountingCursor | null,
 ) {
-  return result(() => getAccountingHistory(filters.unit, filters.box, page));
+  return result(() => getAccountingHistory(filters.unit, filters.box, after));
 }
 
 export async function exportAccountingAction(
