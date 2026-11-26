@@ -49,6 +49,11 @@ describe("congregation report documents", () => {
     const text = drawn.mock.calls.map(([value]) => value).join(" ");
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(await createCongregationReportWorkbook(data) as never);
+    const headers = workbook.worksheets[0].getRow(6).values as string[];
+    expect(headers.includes("N˚ UC")).toBe(energy);
+    const pdfLabels = drawn.mock.calls.map(([label]) => label);
+    expect(pdfLabels.includes("N˚ UC")).toBe(energy);
+    expect(pdfLabels.includes("Nº DA CONTA DE ÁGUA")).toBe(water);
     const row = workbook.worksheets[0].getRow(7);
     for (const [id, selected] of [["00123-X", energy], ["00084/9", water]] as const) {
       expect(text.includes(id)).toBe(selected);
@@ -61,7 +66,7 @@ describe("congregation report documents", () => {
     data.congregations[0].water = "00012-8";
     const bytes = await createCongregationReportPdf(data);
     const text = drawn.mock.calls.map(([s]) => s).join(" ");
-    expect(text).toContain("CONTAS DE CONSUMO");
+    expect(text).not.toContain("CONTAS DE CONSUMO");
     expect(text).toContain("00012-8");
     expect(text).not.toContain("UNIDADE CONSUMIDORA");
     for (const label of ["Presidentes: Paulo e Ana", "Dirigente: João de Souza", "Maria de Souza", "(11) 99999-8888", "ENDEREÇO", "OBSERVAÇÃO", "CONGREGAÇÃO CENTRAL", "Salão 2", data.congregations[0].notes!]) expect(text).toContain(label);

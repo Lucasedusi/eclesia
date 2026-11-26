@@ -182,9 +182,15 @@ test.describe("cadastro administrativo e controles de formulário", () => {
     const next = modal.getByRole("button", { name: "Continuar" });
     await next.click();
     await next.click();
+    await expect(modal.getByText("Contas de consumo", { exact: true })).toHaveCount(0);
+    const fields = modal.getByRole("textbox");
+    await expect(fields.nth(-3)).toHaveAccessibleName("Nº da unidade consumidora (energia)");
+    await expect(fields.nth(-2)).toHaveAccessibleName("Nº da conta de água");
+    await expect(fields.last()).toHaveAccessibleName("Observações administrativas");
     await modal.getByLabel("Nº da unidade consumidora (energia)").fill("00123-X");
     await modal.getByLabel("Nº da conta de água").fill("00084/9");
     await next.click();
+    await expect(modal.getByText("Contas de consumo", { exact: true })).toHaveCount(0);
     await expect(modal).toContainText("00123-X");
     await modal.getByRole("button", { name: "Salvar Congregação" }).click();
     await expect(modal).toBeHidden();

@@ -246,20 +246,6 @@ export const Control = styled.input<{ $invalid?: boolean }>`
   }
 `;
 
-export const UtilityAccounts = styled.fieldset`
-  min-width: 0;
-  padding: 0;
-  margin: 0;
-  border: 0;
-  > div { margin: 0; }
-
-  legend {
-    margin-bottom: 10px;
-    color: ${({ theme }) => theme.colors.text.title};
-    font-weight: 600;
-  }
-`;
-
 export const SelectControl = styled(PickerSelect)<{ $invalid?: boolean }>`
   width: 100%;
   min-height: 44px;

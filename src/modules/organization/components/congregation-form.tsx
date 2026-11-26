@@ -552,6 +552,13 @@ export function CongregationForm({
                   <S.FieldError>{errors.country}</S.FieldError>
                 )}
               </S.Field>
+              {congregationUtilities.map(({ key, label }) => (
+                <S.Field key={key}>
+                  <span>{label}</span>
+                  <S.Control value={values[key]} onChange={(event) => update(key, event.target.value)} maxLength={64} />
+                  {errors[key] && <S.FieldError>{errors[key]}</S.FieldError>}
+                </S.Field>
+              ))}
               <S.Field $span={2}>
                 <span>Observações administrativas</span>
                 <S.Textarea
@@ -562,18 +569,6 @@ export function CongregationForm({
                 />
               </S.Field>
             </S.FieldGrid>
-            <S.UtilityAccounts>
-              <legend>Contas de consumo</legend>
-              <S.FieldGrid>
-                {congregationUtilities.map(({ key, label }) => (
-                  <S.Field key={key}>
-                    <span>{label}</span>
-                    <S.Control value={values[key]} onChange={(event) => update(key, event.target.value)} maxLength={64} />
-                    {errors[key] && <S.FieldError>{errors[key]}</S.FieldError>}
-                  </S.Field>
-                ))}
-              </S.FieldGrid>
-            </S.UtilityAccounts>
           </>
         )}
 
@@ -636,13 +631,10 @@ export function CongregationForm({
                     ? `${values.city}${values.state ? ` — ${values.state}` : ""}`
                     : values.country}
                 </p>
+                {congregationUtilities.map(({ key, label }) => values[key] && (
+                  <p key={key}>{label}: {values[key]}</p>
+                ))}
               </S.ReviewCard>
-              {(values.energy || values.water) && (
-                <S.ReviewCard>
-                  <strong>Contas de consumo</strong>
-                  {congregationUtilities.map(({ key, label }) => values[key] && <p key={key}>{label}: {values[key]}</p>)}
-                </S.ReviewCard>
-              )}
             </S.ReviewGrid>
           </>
         )}
