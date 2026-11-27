@@ -1,5 +1,7 @@
 "use client";
 
+import { ResultsSkeleton } from "@/components/ui/results-skeleton";
+
 import { DateField } from "@/components/form/pickers/date-field";
 import {
   ChangeEvent,
@@ -23,7 +25,6 @@ import {
   Eye,
   FileSpreadsheet,
   FileChartColumn,
-  Loader2,
   MoreHorizontal,
   Pencil,
   Plus,
@@ -61,26 +62,12 @@ import {
   memberStatusLabels,
 } from "../utils/member-formatters";
 import { MemberIdentity, MemberSearchField } from "./member-list-fields";
+import { MemberDetailsModal, prepareMemberDetails } from "./member-details-dialog";
 import * as S from "./members.styles";
 
 const MemberReportModal = dynamic(
   () => import("./member-report-modal").then((module) => module.MemberReportModal),
   { loading: () => <ModalLoading title="Preparando listagem de membros" description="Carregando as opções do relatório." /> },
-);
-
-const MemberDetailsModal = dynamic(
-  () =>
-    import("./member-details-modal").then(
-      (module) => module.MemberDetailsModal,
-    ),
-  {
-    loading: () => (
-      <ModalLoading
-        title="Preparando ficha do membro"
-        description="Carregando os dados completos e o histórico."
-      />
-    ),
-  },
 );
 
 type Props = {
@@ -157,7 +144,7 @@ export function MemberManagement({
     ),
   );
   const [pending, startTransition] = useTransition();
-  const [detailsId, setDetailsId] = useState<string | null>(null);
+  const [selection, setSelection] = useState<ReturnType<typeof prepareMemberDetails> | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
   const [menuMember, setMenuMember] = useState<MemberListItem | null>(null);
   const [lifecycle, setLifecycle] = useState<MemberLifecycleInput | null>(null);
@@ -196,6 +183,7 @@ export function MemberManagement({
   }
 
   function load(next: MemberListParams) {
+    if (searchTimer.current) clearTimeout(searchTimer.current);
     const normalized = {
       ...next,
       search: next.search.trim().length >= 3 ? next.search.trim() : "",
@@ -221,7 +209,7 @@ export function MemberManagement({
     field: keyof MemberListParams,
     value: string | boolean | number,
   ) {
-    load({ ...params, [field]: value, page: 1 });
+    load({ ...params, search: searchInput, [field]: value, page: 1 });
   }
 
   function search(event: ChangeEvent<HTMLInputElement>) {
@@ -256,7 +244,7 @@ export function MemberManagement({
   }
 
   function refresh() {
-    load(params);
+    load({ ...params, search: searchInput });
   }
 
   function beginLifecycle(
@@ -531,7 +519,7 @@ export function MemberManagement({
                 <S.Select
                   value={params.archived ? "archived" : "current"}
                   onChange={(event) =>
-                    load({ ...params, page: 1, archived: event.target.value === "archived", status: event.target.value === "archived" ? "" : "ACTIVE" })
+                    load({ ...params, search: searchInput, page: 1, archived: event.target.value === "archived", status: event.target.value === "archived" ? "" : "ACTIVE" })
                   }
                 >
                   <option value="current">Cadastros atuais</option>
@@ -551,10 +539,8 @@ export function MemberManagement({
             )}
           </S.Toolbar>
 
-          {pending ? (
-            <S.Loading>
-              <Loader2 />
-            </S.Loading>
+          {pending || (searchInput.trim().length >= 3 && searchInput.trim() !== params.search) ? (
+            <ResultsSkeleton label="Carregando membros" columns={6} />
           ) : result.items.length === 0 ? (
             <S.Empty>
               <div>
@@ -601,7 +587,7 @@ export function MemberManagement({
                           <S.Actions>
                             <S.IconButton
                               title="Ver ficha"
-                              onClick={() => setDetailsId(member.id)}
+                              onClick={() => setSelection(prepareMemberDetails(member.id))}
                             >
                               <Eye />
                             </S.IconButton>
@@ -648,7 +634,7 @@ export function MemberManagement({
                       </div>
                     </S.MobileMeta>
                     <S.Actions>
-                      <S.IconButton aria-label="Ver ficha" onClick={() => setDetailsId(member.id)}>
+                      <S.IconButton aria-label="Ver ficha" onClick={() => setSelection(prepareMemberDetails(member.id))}>
                         <Eye />
                       </S.IconButton>
                       {capabilities.update && !member.archived && (
@@ -692,7 +678,7 @@ export function MemberManagement({
                 size="sm"
                 variant="secondary"
                 disabled={result.page <= 1 || pending}
-                onClick={() => load({ ...params, page: params.page - 1 })}
+                onClick={() => load({ ...params, search: searchInput, page: params.page - 1 })}
               >
                 <ArrowLeft size={14} /> Anterior
               </Button>
@@ -700,7 +686,7 @@ export function MemberManagement({
                 size="sm"
                 variant="secondary"
                 disabled={result.page >= result.pageCount || pending}
-                onClick={() => load({ ...params, page: params.page + 1 })}
+                onClick={() => load({ ...params, search: searchInput, page: params.page + 1 })}
               >
                 Próxima <ArrowRight size={14} />
               </Button>
@@ -711,13 +697,13 @@ export function MemberManagement({
 
       {reportOpen && <MemberReportModal params={params} capabilities={capabilities} onClose={() => setReportOpen(false)} />}
 
-      {detailsId && (
+      {selection && (
         <MemberDetailsModal
-          key={detailsId}
-          memberId={detailsId}
+          key={selection.memberId}
+          selection={selection}
           capabilities={capabilities}
           filters={filters}
-          onClose={() => setDetailsId(null)}
+          onClose={() => setSelection(null)}
           onChanged={() => void refresh()}
         />
       )}

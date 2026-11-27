@@ -38,12 +38,7 @@ function RankingPanel({ view, rows, controls, footer, mobileActive }: {
     </div>
     {top.length === 0 ? <p className="church-dashboard-empty">
       {byRole ? "Nenhum membro com cargo ativo." : "Nenhum membro vinculado neste ranking."}
-    </p> : byRole ? <ol className="church-dashboard-role-list" aria-label={title}>
-      {top.map(row => <li key={row.id}>
-        <div><span>{row.name}</span><strong>{format(row.count)}</strong></div>
-        <span className="church-dashboard-role-track" aria-hidden><i style={{ width: `${100 * row.count / top[0].count}%` }} /></span>
-      </li>)}
-    </ol> : <div className="church-dashboard-plot" tabIndex={0} role="region" aria-label="Gráfico de colunas">
+    </p> : <div className="church-dashboard-plot" tabIndex={0} role="region" aria-label="Gráfico de colunas">
       <ol className="church-dashboard-columns" aria-label={title} style={{ minWidth: `calc(${top.length} * var(--dashboard-column-min))` }}>
         {top.map(row => <li key={row.id} title={`${row.name} · ${format(row.count)}`}>
           <div className="church-dashboard-column-track">

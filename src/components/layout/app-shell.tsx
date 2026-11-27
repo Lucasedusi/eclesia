@@ -16,36 +16,42 @@ const SIDEBAR_STORAGE_KEY = "eclesias-sidebar-collapsed";
 
 export function AppShell({ children, authContext }: AppShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean | null>(null);
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
-      setSidebarCollapsed(localStorage.getItem(SIDEBAR_STORAGE_KEY) === "true");
+      try {
+        setSidebarCollapsed(localStorage.getItem(SIDEBAR_STORAGE_KEY) === "true");
+      } catch {
+        setSidebarCollapsed(false);
+      }
     });
     return () => window.cancelAnimationFrame(frame);
   }, []);
 
   function handleToggleSidebar() {
-    setSidebarCollapsed((current) => {
-      const nextValue = !current;
-      localStorage.setItem(SIDEBAR_STORAGE_KEY, String(nextValue));
-      return nextValue;
-    });
+    const next = !sidebarCollapsed;
+    setSidebarCollapsed(next);
+    try {
+      localStorage.setItem(SIDEBAR_STORAGE_KEY, String(next));
+    } catch {
+      // Browsers that block storage still retain the preference for this session.
+    }
   }
 
   return (
     <S.ShellRoot data-app-shell>
         <S.DesktopSidebarSlot>
           <AppSidebar
-            collapsed={sidebarCollapsed}
-            onToggleCollapse={handleToggleSidebar}
+            collapsed={sidebarCollapsed === true}
+            onToggleCollapse={sidebarCollapsed === null ? undefined : handleToggleSidebar}
             authContext={authContext}
           />
         </S.DesktopSidebarSlot>
 
         <MobileSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} authContext={authContext} />
 
-        <S.Content $collapsed={sidebarCollapsed}>
+        <S.Content $collapsed={sidebarCollapsed === true}>
           <AppHeader
             onOpenSidebar={() => setSidebarOpen(true)}
             authContext={authContext}

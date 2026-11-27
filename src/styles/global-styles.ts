@@ -224,6 +224,14 @@ export const GlobalStyles = createGlobalStyle`
     gap: 18px;
   }
 
+  .app-results-skeleton { display: grid; gap: 1px; min-width: 0; }
+  .app-results-skeleton > div {
+    display: grid; grid-template-columns: repeat(var(--result-columns), minmax(0, 1fr));
+    gap: clamp(8px, 2vw, 24px); align-items: center; padding: 15px 12px; border-bottom: 1px solid var(--border-soft);
+  }
+  .app-results-skeleton .app-skeleton-block { height: 12px; width: 85%; }
+  .app-results-skeleton > div:nth-child(even) .app-skeleton-block { width: 65%; }
+
   .app-skeleton-block {
     position: relative;
     display: block;

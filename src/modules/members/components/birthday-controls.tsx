@@ -1,4 +1,6 @@
 "use client";
+
+import { ResultsSkeleton } from "@/components/ui/results-skeleton";
 import { type ReactNode, useEffect, useOptimistic, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -12,7 +14,7 @@ import * as B from "./birthdays.styles";
 import * as S from "./members.styles";
 
 type Props = {
-  filters: BirthdayFilters; month: number; label: string; total: number; canExport: boolean;
+  filters: BirthdayFilters; month: number; label: string; total: number; columns: number; canExport: boolean;
   congregations: { id: string; name: string; regions: { id: string; name: string } | null }[];
   children: ReactNode;
 };
@@ -23,7 +25,7 @@ export function BirthdayPageLink({ href, children }: { href?: string; children: 
   return <ButtonRoot as={Link} href={href} scroll={false} $variant="secondary" $size="sm" $fullWidth={false}>{children}</ButtonRoot>;
 }
 
-export function BirthdayControls({ filters, month, label, total, canExport, congregations, children }: Props) {
+export function BirthdayControls({ filters, month, label, total, columns, canExport, congregations, children }: Props) {
   const { busy, download, feedback, setFeedback } = useMemberReport();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -123,6 +125,6 @@ export function BirthdayControls({ filters, month, label, total, canExport, cong
         <RotateCcw aria-hidden />
       </S.ResetFiltersButton>
     </B.Filters>
-    {updating ? <S.Loading role="status" aria-label="Carregando aniversariantes"><Loader2 aria-hidden /></S.Loading> : children}
+    {updating ? <ResultsSkeleton label="Carregando aniversariantes" columns={columns} /> : children}
   </>;
 }

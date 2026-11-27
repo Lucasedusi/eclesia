@@ -477,18 +477,6 @@ export const IconButton = styled.button<{ $danger?: boolean }>`
   svg { width: 14px; height: 14px; }
 `;
 
-export const BusyOverlay = styled.div`
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  display: grid;
-  place-items: center;
-  background: rgb(255 255 255 / 72%);
-  color: ${({ theme }) => theme.colors.brand.primary};
-  backdrop-filter: blur(1px);
-  svg { width: 25px; height: 25px; animation: spin .75s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-`;
 
 export const Empty = styled.div`
   display: grid;

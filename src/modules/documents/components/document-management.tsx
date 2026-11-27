@@ -1,5 +1,7 @@
 "use client";
 
+import { ResultsSkeleton } from "@/components/ui/results-skeleton";
+
 import { DateField } from "@/components/form/pickers/date-field";
 import {
   type ChangeEvent,
@@ -382,7 +384,8 @@ export function DocumentManagement({ initial, initialStats }: Props) {
   }
 
   function changeParams(changes: Partial<DocumentListParams>) {
-    const next = { ...params, ...changes, page: changes.page ?? 1 };
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    const next = { ...params, search: searchInput.trim(), ...changes, page: changes.page ?? 1 };
     if (changes.categoryId !== undefined) {
       const folderStillMatches = data.folders.some(
         (folder) => folder.id === next.folderId && folder.categoryId === changes.categoryId,
@@ -813,10 +816,11 @@ export function DocumentManagement({ initial, initialStats }: Props) {
               <S.SpanAll><Button variant="ghost" size="sm" onClick={() => changeParams({ tagId: "", format: "", uploadedBy: "", dateFrom: "", dateTo: "" })}>Limpar filtros avançados</Button></S.SpanAll>
             </S.Filters>
             <S.ListHeader><strong>{selectedFolder?.name ?? selectedCategory?.name ?? "Documentos administrativos"}</strong><span>{data.documents.total} registro(s)</span></S.ListHeader>
-            {data.documents.items.length ? (
+            {pending || searchInput.trim() !== params.search ? (
+              <ResultsSkeleton label="Atualizando documentos" columns={4} />
+            ) : data.documents.items.length ? (
               <>
                 <S.TableWrap>
-                  {pending && <S.BusyOverlay><Loader2 aria-label="Atualizando documentos" /></S.BusyOverlay>}
                   <S.Table>
                     <thead><tr><th>Documento</th><th>Inclusão</th><th>Situação</th><th>Ações</th></tr></thead>
                     <tbody>{data.documents.items.map((document) => (

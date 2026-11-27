@@ -369,6 +369,22 @@ export const FormFooter = styled.footer`
   }
 `;
 
+export const JumpToFooter = styled.button`
+  position: fixed;
+  right: max(20px, env(safe-area-inset-right));
+  bottom: calc(4.5rem + env(safe-area-inset-bottom));
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--eclesia-primary);
+  color: white;
+  box-shadow: 0 3px 12px rgb(0 0 0 / 18%);
+  cursor: pointer;
+`;
+
 export const FooterHint = styled.p`
   max-width: 560px;
   color: ${({ theme }) => theme.colors.text.muted};

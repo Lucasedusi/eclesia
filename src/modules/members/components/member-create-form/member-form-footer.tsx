@@ -1,6 +1,7 @@
 "use client";
 
-import { ArrowLeft, ArrowRight, Save } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ArrowDown, ArrowLeft, ArrowRight, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import * as S from "./member-create-form.styles";
 
@@ -19,8 +20,27 @@ export function MemberFormFooter({
   onNext,
   saving = false,
 }: MemberFormFooterProps) {
+  const footer = useRef<HTMLElement>(null);
+  const [belowViewport, setBelowViewport] = useState(false);
+  useEffect(() => {
+    const target = footer.current?.querySelector<HTMLButtonElement>("[data-step-action]");
+    if (!target) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      setBelowViewport(!entry.isIntersecting && entry.boundingClientRect.top > 0);
+    });
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <S.FormFooter>
+    <S.FormFooter ref={footer}>
+      {belowViewport && <S.JumpToFooter type="button" aria-label="Ir para o fim da etapa" title="Ir para o fim da etapa"
+        onClick={() => {
+          footer.current?.scrollIntoView({ block: "end", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" });
+          footer.current?.querySelector<HTMLButtonElement>("[data-step-action]")?.focus({ preventScroll: true });
+        }}>
+        <ArrowDown size={20} aria-hidden />
+      </S.JumpToFooter>}
       <S.FooterHint>
         {saving
           ? "Aguarde enquanto o cadastro é salvo."
@@ -42,7 +62,7 @@ export function MemberFormFooter({
           </Button>
         )}
 
-        <Button type="button" onClick={onNext} loading={saving}>
+        <Button type="button" data-step-action onClick={onNext} loading={saving}>
           {isLastStep ? (
             <>
               <Save aria-hidden="true" />

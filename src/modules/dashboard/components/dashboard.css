@@ -85,10 +85,9 @@
 .church-dashboard-section-header p, .church-dashboard-empty, .church-dashboard-pagination,
 .church-dashboard-ranking-footer { color: var(--text-muted); font-size: 13px; }
 .church-dashboard-section-header p { margin-top: 4px; }
-.church-dashboard-section-header select {
-  margin-left: auto; max-width: 100%; padding: 6px 10px; min-height: 36px; border: 1px solid var(--border);
-  border-radius: var(--radius-control); font: inherit; font-size: 13px; background: var(--card);
-}
+.church-dashboard-birthday-heading { display: flex; align-items: center; gap: 12px; }
+.church-dashboard-birthday-heading .church-dashboard-icon { width: 44px; height: 44px; flex: none; background: var(--eclesia-primary-soft); color: var(--eclesia-primary); }
+.church-dashboard-section-header .birthday-period { width: 8rem; max-width: 100%; flex: none; }
 .church-dashboard-switch { display: inline-flex; width: fit-content; padding: 3px; gap: 2px; background: var(--surface-soft); border-radius: var(--radius-control); }
 .church-dashboard-switch button { padding: 6px 10px; font-size: 12px; font-weight: 550; border-radius: 4px; color: var(--text-muted); cursor: pointer; }
 .church-dashboard-switch button[aria-pressed="true"] { background: var(--eclesia-primary); color: white; }
@@ -114,14 +113,9 @@
   margin: 8px 2px 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
   overflow: hidden; overflow-wrap: anywhere; font-size: 11px; line-height: 1.3;
 }
-.church-dashboard-role-list, .church-dashboard-full-ranking { list-style: none; margin: 0; padding: 0; }
-.church-dashboard-role-list { display: grid; gap: 15px; }
-.church-dashboard-role-list li > div, .church-dashboard-full-ranking li { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
-.church-dashboard-role-list li > div { margin-bottom: 5px; font-size: 13px; }
-.church-dashboard-role-list strong, .church-dashboard-full-ranking strong { font-variant-numeric: tabular-nums; }
-.church-dashboard-role-track, .church-dashboard-role-track i { display: block; height: 14px; border-radius: 6px; }
-.church-dashboard-role-track { background: var(--surface-soft); }
-.church-dashboard-role-track i { background: var(--eclesia-primary); }
+.church-dashboard-full-ranking { list-style: none; margin: 0; padding: 0; }
+.church-dashboard-full-ranking li { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.church-dashboard-full-ranking strong { font-variant-numeric: tabular-nums; }
 .church-dashboard-ranking-footer { padding-top: 12px; margin-top: auto; }
 .church-dashboard-ranking-footer > span { padding-top: 2px; }
 .church-dashboard-more, .church-dashboard-pagination a, .church-dashboard-empty a { color: var(--eclesia-primary); font-size: 13px; font-weight: 550; }

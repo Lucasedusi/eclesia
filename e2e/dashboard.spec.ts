@@ -95,7 +95,10 @@ for (const role of ["congregation", "localTreasurer", "localViewer"]) {
       await expect(main.getByRole("article", { name: "Total de membros" })).toContainText("23");
       await expect(main.getByRole("article", { name: "Membros por sexo" }).getByRole("definition")).toHaveText(["0", "23"]);
       await expect(main.getByRole("heading", { name: "Membros por cargo" })).toBeVisible();
-      await expect(main.getByRole("listitem")).toHaveText(["Diácono1"]);
+      const columns = main.getByRole("region", { name: "Gráfico de colunas" }).getByRole("listitem");
+      await expect(columns).toHaveCount(1);
+      await expect(columns.getByText("Diácono", { exact: true })).toBeVisible();
+      await expect(columns.getByText("1", { exact: true })).toBeVisible();
       await expect(main.getByText("22 membros sem cargo ativo")).toBeVisible();
       await expect(main.getByRole("columnheader")).toHaveText(role === "congregation" ? ["", "Nome", "WhatsApp"] : ["", "Nome"]);
       await expect(main.getByRole("row")).toHaveCount(3);
@@ -108,7 +111,7 @@ test("um acesso regional não recebe os indicadores do campo", async ({ browser,
   const page = await browser.newPage({ baseURL, storageState: fixture!.sessions.region });
   try {
     await page.goto("/");
-    await expect(page.getByText("Seu perfil não possui indicadores disponíveis neste painel.")).toBeVisible();
+    await expect(page.getByRole("main").getByText("Seu perfil não possui indicadores disponíveis neste painel.")).toBeVisible();
     await expect(page.getByRole("main").getByRole("article")).toHaveCount(0);
   } finally { await page.close(); }
 });

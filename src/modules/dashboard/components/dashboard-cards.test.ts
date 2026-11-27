@@ -1,3 +1,5 @@
+import { DashboardRanking } from "./dashboard-ranking";
+
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
@@ -23,4 +25,13 @@ describe("composição por sexo no Dashboard", () => {
     expect(html).not.toContain("Não informado");
     expect(html).not.toContain("flex-grow:");
   });
+});
+
+it("exibe os quatro primeiros cargos em colunas e permite consultar o restante", () => {
+  const roles = Array.from({ length: 5 }, (_, index) => ({ id: String(index), name: `Cargo ${index}`, count: 5 - index }));
+  const html = renderToStaticMarkup(createElement(DashboardRanking, { roles, regions: null, congregations: null, total: 15 }));
+  expect(html).toContain('aria-label="Gráfico de colunas"');
+  expect(html).toContain("Cargo 3");
+  expect(html).not.toContain("Cargo 4");
+  expect(html).toContain("Ver todos");
 });

@@ -9,6 +9,7 @@ import {
   Settings,
   UserRound,
 } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { canViewBirthdays } from "@/modules/members/utils/birthday-access";
 import { BirthdayNotification } from "./birthday-notification";
@@ -107,6 +108,11 @@ export function AppHeader({ onOpenSidebar, authContext }: AppHeaderProps) {
         </S.HeaderLeft>
 
         <S.HeaderActions ref={actions}>
+          {hasPermission(authContext.permissions, PERMISSIONS.settingsView) && (
+            <S.BellTrigger as={Link} href="/configuracoes" aria-label="Abrir configurações" title="Configurações">
+              <Settings size={20} strokeWidth={1.8} aria-hidden />
+            </S.BellTrigger>
+          )}
           {canViewBirthdays(authContext) && <BirthdayNotification key={authContext.access.id} accessId={authContext.access.id} />}
 
           <S.UserMenu name="header-menu" ref={(details) => () => details?.removeAttribute("open")}>

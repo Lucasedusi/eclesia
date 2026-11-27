@@ -1,5 +1,7 @@
 "use client";
 
+import { ResultsSkeleton } from "@/components/ui/results-skeleton";
+
 import {
   type ChangeEvent,
   type DragEvent,
@@ -210,6 +212,7 @@ export function MemberImportWorkspace({ initial }: Props) {
   const [rollbackBlockers, setRollbackBlockers] = useState<Array<Record<string, string>>>([]);
   const [filters, setFilters] = useState<MemberImportReviewParams>({ page: 1, pageSize: 20, search: "", classification: "" });
   const [searchInput, setSearchInput] = useState("");
+  const reviewRequest = useRef(0);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => () => {
@@ -308,16 +311,18 @@ export function MemberImportWorkspace({ initial }: Props) {
 
   async function loadReview(next: MemberImportReviewParams) {
     if (!batch) return;
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    const request = ++reviewRequest.current;
     setFilters(next);
     setBusy("review");
     try {
       const response = await getMemberImportWorkspaceAction({ batchId: batch.id, ...next });
+      if (request !== reviewRequest.current) return;
       if (response.success) {
         setWorkspace(response.data);
-        setStep(3);
       } else showResult(false, response.message);
     } finally {
-      setBusy("");
+      if (request === reviewRequest.current) setBusy("");
     }
   }
 
@@ -340,7 +345,6 @@ export function MemberImportWorkspace({ initial }: Props) {
       const response = await resolveMemberImportItemAction({ batchId: batch.id, itemId: item.id, resolution });
       if (response.success) {
         setWorkspace(response.data);
-        setStep(3);
         showResult(true, response.message);
       } else showResult(false, response.message);
     } finally {
@@ -511,7 +515,7 @@ export function MemberImportWorkspace({ initial }: Props) {
               filters={filters}
               searchInput={searchInput}
               onSearch={search}
-              onLoad={loadReview}
+              onLoad={next => void loadReview({ ...next, search: searchInput.trim().length >= 3 ? searchInput.trim() : "" })}
               onResolve={resolveItem}
               onBack={() => setStep(2)}
               onContinue={() => setStep(4)}
@@ -758,39 +762,43 @@ function ReviewStep({
           {MEMBER_IMPORT_PAGE_SIZES.map((size) => <option key={size} value={size}>{size} por página</option>)}
         </S.Select>
       </S.Toolbar>
-      <S.TableWrap aria-busy={busy === "review"}>
-        <S.Table>
-          <thead><tr><th>Linha / situação</th><th>Membro</th><th>Contato e datas</th><th>Endereço, naturalidade e filiação</th><th>Cargo</th><th>Pendências</th><th>Decisão</th></tr></thead>
-          <tbody>
-            {items.items.map((item) => (
-              <tr key={item.id}>
-                <td><strong>#{item.rowNumber}</strong><small><S.Status $status={item.classification}>{MEMBER_IMPORT_CLASSIFICATION_LABELS[item.classification]}</S.Status></small></td>
-                <td><strong>{item.fullName || "Nome ausente"}</strong><small>{genderLabel(item.gender)} · CPF {maskCpf(item.cpf)}</small><small>{item.maritalStatusRaw || "Estado civil não informado"}</small></td>
-                <td>{item.whatsapp || item.phoneRaw || "Sem telefone"}<small>Nasc.: {formatDate(item.birthDate)} · Conversão: {formatDate(item.conversionDate)}</small><small>Águas: {formatDate(item.baptismDate)} · Espírito: {formatDate(item.holySpiritBaptismDate)} · Receb.: {formatDate(item.receivedDate)}</small></td>
-                <td><strong>{addressLabel(item)}</strong><small>Naturalidade: {naturalityLabel(item)}</small><small>Pai: {item.fatherName || "não informado"} · Mãe: {item.motherName || "não informada"}</small></td>
-                <td><strong>{item.roleName ?? "Não mapeado"}</strong><small>Origem: {item.roleRaw || "—"}</small></td>
-                <td>{item.issues.length ? <IssueList item={item} /> : <S.Status $status="VALID">Sem pendências</S.Status>}</td>
-                <td><ItemActions item={item} busy={busy} onResolve={onResolve} /></td>
-              </tr>
-            ))}
-          </tbody>
-        </S.Table>
-      </S.TableWrap>
-      <S.MobileRows>
-        {items.items.map((item) => (
-          <S.MobileRow key={item.id}>
-            <header><div><h3>#{item.rowNumber} · {item.fullName || "Nome ausente"}</h3><p>{item.roleName ?? item.roleRaw ?? "Cargo não mapeado"}</p></div><S.Status $status={item.classification}>{MEMBER_IMPORT_CLASSIFICATION_LABELS[item.classification]}</S.Status></header>
-            <div><strong>Sexo:</strong> {genderLabel(item.gender)} · <strong>CPF:</strong> {maskCpf(item.cpf)}</div>
-            <div><strong>Nascimento:</strong> {formatDate(item.birthDate)} · <strong>Conversão:</strong> {formatDate(item.conversionDate)}</div>
-            <div><strong>Batismo nas águas:</strong> {formatDate(item.baptismDate)} · <strong>Batismo com o Espírito:</strong> {formatDate(item.holySpiritBaptismDate)}</div>
-            <div><strong>Endereço:</strong> {addressLabel(item)}</div>
-            <div><strong>Naturalidade:</strong> {naturalityLabel(item)}</div>
-            <div><strong>Filiação:</strong> {item.fatherName || "Pai não informado"} · {item.motherName || "Mãe não informada"}</div>
-            {item.issues.length ? <IssueList item={item} /> : <S.Status $status="VALID">Sem pendências</S.Status>}
-            <ItemActions item={item} busy={busy} onResolve={onResolve} />
-          </S.MobileRow>
-        ))}
-      </S.MobileRows>
+      {busy === "review" || (searchInput.trim().length >= 3 && searchInput.trim() !== filters.search) ? (
+        <ResultsSkeleton label="Carregando revisão dos membros" columns={7} />
+      ) : <>
+        <S.TableWrap>
+          <S.Table>
+            <thead><tr><th>Linha / situação</th><th>Membro</th><th>Contato e datas</th><th>Endereço, naturalidade e filiação</th><th>Cargo</th><th>Pendências</th><th>Decisão</th></tr></thead>
+            <tbody>
+              {items.items.map((item) => (
+                <tr key={item.id}>
+                  <td><strong>#{item.rowNumber}</strong><small><S.Status $status={item.classification}>{MEMBER_IMPORT_CLASSIFICATION_LABELS[item.classification]}</S.Status></small></td>
+                  <td><strong>{item.fullName || "Nome ausente"}</strong><small>{genderLabel(item.gender)} · CPF {maskCpf(item.cpf)}</small><small>{item.maritalStatusRaw || "Estado civil não informado"}</small></td>
+                  <td>{item.whatsapp || item.phoneRaw || "Sem telefone"}<small>Nasc.: {formatDate(item.birthDate)} · Conversão: {formatDate(item.conversionDate)}</small><small>Águas: {formatDate(item.baptismDate)} · Espírito: {formatDate(item.holySpiritBaptismDate)} · Receb.: {formatDate(item.receivedDate)}</small></td>
+                  <td><strong>{addressLabel(item)}</strong><small>Naturalidade: {naturalityLabel(item)}</small><small>Pai: {item.fatherName || "não informado"} · Mãe: {item.motherName || "não informada"}</small></td>
+                  <td><strong>{item.roleName ?? "Não mapeado"}</strong><small>Origem: {item.roleRaw || "—"}</small></td>
+                  <td>{item.issues.length ? <IssueList item={item} /> : <S.Status $status="VALID">Sem pendências</S.Status>}</td>
+                  <td><ItemActions item={item} busy={busy} onResolve={onResolve} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </S.Table>
+        </S.TableWrap>
+        <S.MobileRows>
+          {items.items.map((item) => (
+            <S.MobileRow key={item.id}>
+              <header><div><h3>#{item.rowNumber} · {item.fullName || "Nome ausente"}</h3><p>{item.roleName ?? item.roleRaw ?? "Cargo não mapeado"}</p></div><S.Status $status={item.classification}>{MEMBER_IMPORT_CLASSIFICATION_LABELS[item.classification]}</S.Status></header>
+              <div><strong>Sexo:</strong> {genderLabel(item.gender)} · <strong>CPF:</strong> {maskCpf(item.cpf)}</div>
+              <div><strong>Nascimento:</strong> {formatDate(item.birthDate)} · <strong>Conversão:</strong> {formatDate(item.conversionDate)}</div>
+              <div><strong>Batismo nas águas:</strong> {formatDate(item.baptismDate)} · <strong>Batismo com o Espírito:</strong> {formatDate(item.holySpiritBaptismDate)}</div>
+              <div><strong>Endereço:</strong> {addressLabel(item)}</div>
+              <div><strong>Naturalidade:</strong> {naturalityLabel(item)}</div>
+              <div><strong>Filiação:</strong> {item.fatherName || "Pai não informado"} · {item.motherName || "Mãe não informada"}</div>
+              {item.issues.length ? <IssueList item={item} /> : <S.Status $status="VALID">Sem pendências</S.Status>}
+              <ItemActions item={item} busy={busy} onResolve={onResolve} />
+            </S.MobileRow>
+          ))}
+        </S.MobileRows>
+      </>}
       {items.total === 0 && <S.Empty><div><Users /><h3>Nenhuma linha encontrada</h3><p>Ajuste os filtros para visualizar os membros deste lote.</p></div></S.Empty>}
       <S.Pagination>
         <span>{items.total} linha(s) · página {items.page} de {items.pageCount}</span>

@@ -1,7 +1,9 @@
 "use client";
 
+import { ResultsSkeleton } from "@/components/ui/results-skeleton";
+
 import { PickerSelect } from "@/components/form/pickers/picker-select";
-import { useEffect, useLayoutEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useLayoutEffect, useOptimistic, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -80,8 +82,9 @@ export function EventCatalog({ data, canManage, canPublish }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const current = useSearchParams();
-  const currentQuery = current.toString();
-  const selectedStatus = current.get("status") || "OPEN";
+  const [currentQuery, setQuery] = useOptimistic(current.toString());
+  const filterParams = new URLSearchParams(currentQuery);
+  const selectedStatus = filterParams.get("status") || "OPEN";
   const [menu, setMenu] = useState<CatalogMenuState | null>(null);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
   const [reason, setReason] = useState("");
@@ -127,43 +130,51 @@ export function EventCatalog({ data, canManage, canPublish }: Props) {
     setMenu((currentMenu) => currentMenu?.id === menu.id ? { ...currentMenu, left, top } : currentMenu);
   }, [menu]);
 
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
-    const normalized = searchValue.trim();
-    if (normalized.length > 0 && normalized.length < 3) return;
-    if (normalized === (current.get("search") ?? "")) return;
-    const timer = window.setTimeout(() => {
-      const params = new URLSearchParams(currentQuery);
-      if (normalized) params.set("search", normalized);
-      else params.delete("search");
-      params.delete("page");
-      startFilterTransition(() => router.replace(`${pathname}?${params}`, { scroll: false }));
-    }, 400);
-    return () => window.clearTimeout(timer);
-  }, [current, currentQuery, pathname, router, searchValue]);
+    function restore() {
+      if (searchTimer.current) clearTimeout(searchTimer.current);
+      setSearchValue(new URLSearchParams(window.location.search).get("search") ?? "");
+    }
+    window.addEventListener("popstate", restore);
+    return () => {
+      if (searchTimer.current) clearTimeout(searchTimer.current);
+      window.removeEventListener("popstate", restore);
+    };
+  }, []);
+
+  function applyFilters(params: URLSearchParams, text: string) {
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    const term = text.trim();
+    if (!term) params.delete("search");
+    else if (term.length >= 3) params.set("search", term);
+    params.delete("page");
+    const query = params.toString();
+    setMenu(null);
+    startFilterTransition(() => {
+      setQuery(query);
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    });
+  }
+
+  function search(text: string) {
+    setSearchValue(text);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    const term = text.trim();
+    if ((term && term.length < 3) || term === (filterParams.get("search") ?? "")) return;
+    searchTimer.current = setTimeout(() => applyFilters(new URLSearchParams(currentQuery), text), 400);
+  }
 
   function updateFilter(name: "status" | "type", nextValue: string) {
-    setMenu(null);
     const params = new URLSearchParams(currentQuery);
     if (nextValue) params.set(name, nextValue);
     else params.delete(name);
-    params.delete("page");
-    startFilterTransition(() => router.replace(`${pathname}?${params}`, { scroll: false }));
-  }
-
-  function filter(status: string) {
-    updateFilter("status", status);
+    applyFilters(params, searchValue);
   }
 
   function resetFilters() {
-    setMenu(null);
     setSearchValue("");
-    const params = new URLSearchParams(currentQuery);
-    params.delete("search");
-    params.delete("status");
-    params.delete("type");
-    params.delete("page");
-    const query = params.toString();
-    startFilterTransition(() => router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false }));
+    applyFilters(new URLSearchParams(), "");
   }
 
   function ask(next: Confirmation) {
@@ -227,6 +238,8 @@ export function EventCatalog({ data, canManage, canPublish }: Props) {
         : "Confirme a alteração da situação do evento.";
   const requiresReason = confirmation?.kind === "lifecycle" && confirmation.option.action === "CANCEL";
   const destructive = confirmation?.kind === "permanent" || confirmation?.kind === "trash" || confirmation?.kind === "lifecycle" && confirmation.option.danger;
+  const searchTerm = searchValue.trim();
+  const updating = filterPending || ((searchTerm.length === 0 || searchTerm.length >= 3) && searchTerm !== (current.get("search") ?? ""));
   const hasFilters = Boolean(searchValue || current.get("status") || current.get("type"));
 
   return (
@@ -239,16 +252,16 @@ export function EventCatalog({ data, canManage, canPublish }: Props) {
         <StatCard title="Finalizados" value={String(data.stats.finished)} description="Histórico preservado" icon={CalendarCheck} />
       </S.Stats>
       <S.Filters>
-        <S.Field><span>Pesquisar</span><S.FilterSearch aria-busy={filterPending}><Search aria-hidden="true" /><input name="search" value={searchValue} onChange={(event) => setSearchValue(event.target.value)} placeholder="Digite ao menos 3 caracteres" />{filterPending ? <LoaderCircle data-loading aria-label="Atualizando eventos" /> : null}</S.FilterSearch></S.Field>
+        <S.Field><span>Pesquisar</span><S.FilterSearch aria-busy={filterPending}><Search aria-hidden="true" /><input name="search" value={searchValue} onChange={(event) => search(event.target.value)} placeholder="Digite ao menos 3 caracteres" />{filterPending ? <LoaderCircle data-loading aria-label="Atualizando eventos" /> : null}</S.FilterSearch></S.Field>
         <S.Field><span>Situação</span><PickerSelect name="status" value={selectedStatus} onChange={(event) => updateFilter("status", event.target.value)}><option value="OPEN">Inscrições abertas</option><option value="ALL">Todas</option>{EVENT_STATUSES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</PickerSelect></S.Field>
-        <S.Field><span>Tipo</span><PickerSelect name="type" value={current.get("type") ?? ""} onChange={(event) => updateFilter("type", event.target.value)}><option value="">Todos</option>{EVENT_TYPES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</PickerSelect></S.Field>
+        <S.Field><span>Tipo</span><PickerSelect name="type" value={filterParams.get("type") ?? ""} onChange={(event) => updateFilter("type", event.target.value)}><option value="">Todos</option>{EVENT_TYPES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</PickerSelect></S.Field>
         <S.FilterActions><S.ResetFilterButton type="button" aria-label="Limpar filtros" title="Limpar filtros" disabled={!hasFilters} onClick={resetFilters}><RotateCcw /></S.ResetFilterButton></S.FilterActions>
       </S.Filters>
       <S.Tabs aria-label="Filtros rápidos">
-        <button type="button" aria-current={selectedStatus === "ALL" ? "page" : undefined} onClick={() => filter("ALL")}>Todos</button>
-        {["OPEN", "IN_PROGRESS", "FINISHED", "CANCELLED", "DELETED"].map((status) => <button key={status} type="button" aria-current={selectedStatus === status ? "page" : undefined} onClick={() => filter(status)}>{status === "DELETED" ? "Lixeira" : status === "OPEN" ? "Inscrições abertas" : eventLabel(EVENT_STATUSES, status)}</button>)}
+        <button type="button" aria-current={selectedStatus === "ALL" ? "page" : undefined} onClick={() => updateFilter("status", "ALL")}>Todos</button>
+        {["OPEN", "IN_PROGRESS", "FINISHED", "CANCELLED", "DELETED"].map((status) => <button key={status} type="button" aria-current={selectedStatus === status ? "page" : undefined} onClick={() => updateFilter("status", status)}>{status === "DELETED" ? "Lixeira" : status === "OPEN" ? "Inscrições abertas" : eventLabel(EVENT_STATUSES, status)}</button>)}
       </S.Tabs>
-      {data.events.length === 0 ? <S.Empty><div><SearchX /><h3>Nenhum evento encontrado</h3><p>Ajuste os filtros ou crie um novo rascunho para começar.</p></div></S.Empty> : (
+      {updating ? <ResultsSkeleton label="Carregando eventos" columns={6} /> : data.events.length === 0 ? <S.Empty><div><SearchX /><h3>Nenhum evento encontrado</h3><p>Ajuste os filtros ou crie um novo rascunho para começar.</p></div></S.Empty> : (
         <S.TableWrap><table><thead><tr><th>Evento</th><th>Data e local</th><th>Inscrição</th><th>Ocupação</th><th>Situação</th><th>Ações</th></tr></thead><tbody>
           {data.events.map((event) => { const percent = event.capacity ? Math.min(100, Math.round((event.occupied / event.capacity) * 100)) : 0; return <tr key={event.id}>
             <td><S.EventName><span><CalendarDays size={18} /></span><div><strong>{event.name}</strong><small>{eventLabel(EVENT_TYPES, event.eventType)}</small></div></S.EventName></td>

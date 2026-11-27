@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Cake, MessageCircle } from "lucide-react";
+import { MessageCircle } from "lucide-react";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { hasPermission, PERMISSIONS } from "@/modules/auth/constants/permissions";
@@ -36,11 +36,7 @@ export async function DashboardBirthdays({ context, searchParams, showCongregati
   const pages = Math.ceil((result.count ?? 0) / BIRTHDAY_PAGE_SIZE);
   const missingPage = page > 1 && (result.error?.code === "PGRST103" || (!result.error && !result.data?.length));
 
-  return <section className="church-dashboard-panel" aria-label="Aniversariantes">
-    <div className="church-dashboard-section-header">
-      <div><h2><Cake size={19} aria-hidden />Aniversariantes</h2><p>{label}</p></div>
-      <BirthdayPeriod period={period} />
-    </div>
+  return <BirthdayPeriod period={period} label={label} columns={2 + Number(showContact) + Number(showCongregation)}>
     {missingPage ? <p className="church-dashboard-empty"><Link href={pageHref(period, 1)} scroll={false}>Voltar à primeira página</Link></p>
       : result.error || !result.data ? <p role="alert" className="church-dashboard-empty">Não foi possível carregar os aniversariantes.</p>
       : result.data.length === 0 ? <p className="church-dashboard-empty">{period === "today" ? "Nenhum aniversariante hoje." : "Nenhum aniversariante neste período."}</p>
@@ -76,5 +72,5 @@ export async function DashboardBirthdays({ context, searchParams, showCongregati
           {page < pages && <Link href={pageHref(period, page + 1)} scroll={false}>Próxima</Link>}
         </nav>}
       </>}
-  </section>;
+  </BirthdayPeriod>;
 }

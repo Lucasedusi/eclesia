@@ -3,11 +3,9 @@ import { PickerSelect } from "@/components/form/pickers/picker-select";
 import { administrativeControl, administrativeSelect } from "@/styles/administrative-controls";
 
 import styled from "styled-components";
-import { Modal } from "@/components/ui/modal";
-import { Body } from "@/components/ui/modal.styles";
 import { Badge } from "@/components/ui/badge";
 
-export const DetailsModal = styled(Modal)`height: min(860px, calc(100dvh - 40px)); ${Body} { flex: 1; } @media (max-width: 640px) { height: calc(100dvh - 24px); }`;
+
 export const RolesAccordion = styled.details`
   min-width: 0;
   padding: 4px 8px;
@@ -143,17 +141,6 @@ export const Empty = styled.div`display: grid; min-height: 180px; place-items: c
 export const Loading = styled(Empty)`svg { animation: spin 800ms linear infinite; color: #415ba5; } @keyframes spin { to { transform: rotate(360deg); } }`;
 export const Error = styled.div`border: 1px solid #f2cbc8; border-radius: 6px; background: #fff5f4; padding: 13px; color: #a63f3a; font-size: calc(10px + var(--eclesia-font-size-adjustment, 0px)); font-weight: 600;`;
 export const Pager = styled.div`display: flex; justify-content: flex-end; gap: 7px; margin-top: 10px;`;
-export const FooterActions = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  @media (max-width: 520px) {
-    width: 100%;
-    flex-direction: column-reverse;
-    button, a { width: 100%; justify-content: center; }
-  }
-`;
 
 export const ExportActions = styled.div`display: flex; flex-wrap: wrap; gap: 8px;`;
 

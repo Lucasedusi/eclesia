@@ -43,13 +43,14 @@ it.each([{}, { collapsed: true }, { mobile: true }])("exibe a igreja e os atalho
   expect(html).toContain('href="/configuracoes"');
 });
 
-it.each([true, false])("respeita a permissão de configurações no menu do perfil (%s)", (allowed) => {
+it.each([true, false])("respeita a permissão de configurações no atalho e no menu do perfil (%s)", (allowed) => {
   const authContext = { ...context, permissions: allowed ? [PERMISSIONS.settingsView] : [] };
   const html = renderToStaticMarkup(createElement(ThemeProvider, { theme },
     createElement(AppHeader, { authContext }),
   ));
   const links = Array.from(html.matchAll(/<a\b[^>]*href="([^"]+)"/g), (match) => match[1]);
-  expect(links).toEqual(allowed ? ["/perfil", "/configuracoes"] : ["/perfil"]);
+  expect(html.includes('aria-label="Abrir configurações"')).toBe(allowed);
+  expect(links).toEqual(allowed ? ["/configuracoes", "/perfil", "/configuracoes"] : ["/perfil"]);
 });
 
 it.each([true, false])("oferece o sino apenas para quem pode consultar aniversariantes (%s)", (allowed) => {

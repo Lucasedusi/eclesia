@@ -74,6 +74,17 @@ if (command === 'setup') {
       update public.members set member_status='INACTIVE' where id='${ids.members[4]}';
       update public.members set birth_date=null where id='${ids.members[5]}';`;
   }
+  if (process.argv.includes('--admin-feedback')) {
+    const creator = ids.users.find(user => user.name === 'full').id;
+    ids.feedbackBatch = randomUUID();
+    ids.feedbackCategory = randomUUID();
+    query += `select set_config('request.jwt.claim.sub','${creator}',true);
+      insert into public.document_categories(id,church_id,name,created_by,updated_by)
+      values ('${ids.feedbackCategory}','${ids.churches[0]}','Documentos de teste','${creator}','${creator}');
+      insert into public.member_import_batches(id,church_id,congregation_id,original_filename,worksheet_name,file_size_bytes,file_sha256,status,created_by)
+      values ('${ids.feedbackBatch}','${ids.churches[0]}','${ids.congregations[0]}','revisao.xlsx','Membros',100,repeat('0',64),'READY','${creator}');`;
+    save();
+  }
   query += 'commit;'; sql(query);
   for (const credential of credentials) {
     const cookies = [];
@@ -85,6 +96,11 @@ if (command === 'setup') {
 } else if(command === 'cleanup') {
   const ids=JSON.parse(readFileSync(`${root}/fixture.json`,'utf8'));
   if([...ids.churches,...ids.users.map(u=>u.id)].some(id=>!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(id))) throw new Error('Invalid fixture IDs');
+  if (ids.feedbackBatch && ids.feedbackCategory) {
+    if (![ids.feedbackBatch, ids.feedbackCategory].every(id => /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(id))) throw new Error('Invalid feedback fixture IDs');
+    sql(`begin; delete from public.member_import_batches where church_id='${ids.churches[0]}' and id='${ids.feedbackBatch}';
+      delete from public.document_categories where church_id='${ids.churches[0]}' and id='${ids.feedbackCategory}'; commit;`);
+  }
   for(const church of ids.churches) sql(`begin; delete from public.member_ministries where church_id='${church}'; delete from public.member_roles where church_id='${church}'; delete from public.member_history where church_id='${church}'; delete from public.member_pastoral_notes where church_id='${church}'; delete from public.member_sensitive_identity where church_id='${church}'; delete from public.members where church_id='${church}'; delete from public.user_church_access where church_id='${church}'; delete from public.ministries where church_id='${church}'; delete from public.roles where church_id='${church}'; delete from public.congregations where church_id='${church}'; delete from public.regions where church_id='${church}'; delete from public.app_settings where church_id='${church}'; delete from public.audit_logs where church_id='${church}'; delete from public.churches where id='${church}'; commit;`);
   for(const u of ids.users) { const r=await admin.auth.admin.deleteUser(u.id); if(r.error) throw new Error(r.error.message); }
   for (const name of ['full','limited','region','congregation','ministry','viewer','localTreasurer','localViewer']) { const session = `${root}/${name}.json`; if (existsSync(session)) unlinkSync(session); }

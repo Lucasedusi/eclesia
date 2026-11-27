@@ -1,4 +1,6 @@
 "use client";
+
+import { ResultsSkeleton } from "@/components/ui/results-skeleton";
 import { DateField } from "@/components/form/pickers/date-field";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
@@ -6,7 +8,6 @@ import {
   ArrowUpRight,
   CircleX,
   Download,
-  Loader2,
   Printer,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -211,9 +212,7 @@ export function MemberFinanceTab({
         </S.Error>
       )}
       {loading ? (
-        <S.Loading aria-label="Carregando financeiro">
-          <Loader2 />
-        </S.Loading>
+        <ResultsSkeleton label="Carregando financeiro" columns={4} />
       ) : (
         data && (
           <>

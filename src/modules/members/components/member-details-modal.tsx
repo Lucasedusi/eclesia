@@ -4,7 +4,7 @@ import { MemberFinanceTab } from "./member-finance-tab";
 import { ChevronDown } from "lucide-react";
 
 import { FormEvent, useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import { ResultsSkeleton } from "@/components/ui/results-skeleton";
 import {
   ArrowRight,
   BookOpen,
@@ -16,7 +16,6 @@ import {
   FileText,
   FolderOpen,
   Image as ImageIcon,
-  IdCard,
   Loader2,
   MessageCircle,
   Paperclip,
@@ -76,9 +75,10 @@ import {
   whatsappUrl,
 } from "../utils/member-formatters";
 import * as M from "./members.styles";
-import { MemberCredentialModal } from "./member-credential-modal";
-import { MemberSheetModal } from "./member-sheet-modal";
 import * as S from "./member-details.styles";
+
+export { MemberSheetModal } from "./member-sheet-modal";
+export { MemberCredentialModal } from "./member-credential-modal";
 
 type Tab = "data" | "history" | "events" | "finance" | "documents";
 type Notice = {
@@ -201,6 +201,9 @@ function DocumentIcon({ document }: { document: MemberDocumentItem }) {
 }
 
 type Props = {
+  initial: MemberCoreDetails;
+  busy: boolean;
+  setBusy: (value: boolean) => void;
   memberId: string;
   capabilities: MemberCapabilities;
   filters: MemberFilters;
@@ -208,7 +211,8 @@ type Props = {
   onChanged: () => void;
 };
 
-export function MemberDetailsModal({
+export function MemberDetailsContent({
+  initial, busy, setBusy,
   memberId,
   capabilities,
   filters,
@@ -216,8 +220,7 @@ export function MemberDetailsModal({
   onChanged,
 }: Props) {
   const [supabase] = useState(() => createClient());
-  const [details, setDetails] = useState<MemberCoreDetails | null>(null);
-  const [loadError, setLoadError] = useState("");
+  const [details, setDetails] = useState(initial);
   const [tab, setTab] = useState<Tab>("data");
   const [history, setHistory] =
     useState<PaginatedTab<MemberHistoryItem> | null>(null);
@@ -226,8 +229,9 @@ export function MemberDetailsModal({
     null,
   );
   const [documents, setDocuments] = useState<MemberDocumentItem[] | null>(null);
-  const [tabLoading, setTabLoading] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const [loadingTabs, setLoadingTabs] = useState<Partial<Record<Tab, boolean>>>({});
+  const tabLoading = loadingTabs[tab];
+  const [financeVisited, setFinanceVisited] = useState(false);
   const [documentBusy, setDocumentBusy] = useState<DocumentBusy>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -238,8 +242,6 @@ export function MemberDetailsModal({
   const [replacementFile, setReplacementFile] = useState<File | null>(null);
   const [showHistoryForm, setShowHistoryForm] = useState(false);
   const [showRoleEditor, setShowRoleEditor] = useState(false);
-  const [showCredential, setShowCredential] = useState(false);
-  const [showSheet, setShowSheet] = useState(false);
   const [roleId, setRoleId] = useState("");
   const [roleStartDate, setRoleStartDate] = useState("");
   const [roleNotes, setRoleNotes] = useState("");
@@ -251,18 +253,14 @@ export function MemberDetailsModal({
   useEffect(() => {
     const controller = new AbortController();
     detailsLifetime.current = controller.signal;
-    void getMemberDetailsAction(memberId).then((result) => {
-      if (controller.signal.aborted) return;
-      if (result.success) setDetails(result.data);
-      else setLoadError(result.message);
-    });
     return () => controller.abort();
   }, [memberId]);
 
   async function chooseTab(next: Tab) {
     setTab(next);
+    if (next === "finance") setFinanceVisited(true);
     if (
-      next === "data" ||
+      loadingTabs[next] || next === "data" ||
       (next === "history" && history) ||
       (next === "events" && events) ||
       next === "finance" ||
@@ -270,19 +268,49 @@ export function MemberDetailsModal({
     ) {
       return;
     }
-    setTabLoading(true);
-    if (next === "history") {
-      const result = await getMemberHistoryAction(memberId);
-      if (result.success) setHistory(result.data);
-      else
-        setNotice({
-          title: "Histórico indisponível",
-          description: result.message,
-          variant: "danger",
-        });
+    setLoadingTabs(current => ({ ...current, [next]: true }));
+    try {
+      if (next === "history") {
+        const result = await getMemberHistoryAction(memberId);
+        if (result.success) setHistory(result.data);
+        else
+          setNotice({
+            title: "Histórico indisponível",
+            description: result.message,
+            variant: "danger",
+          });
+      }
+      if (next === "events") {
+        const result = await getMemberEventsAction(memberId);
+        if (result.success) setEvents(result.data);
+        else
+          setNotice({
+            title: "Eventos indisponíveis",
+            description: result.message,
+            variant: "danger",
+          });
+      }
+      if (next === "documents") {
+        const result = await getMemberDocumentsAction(memberId);
+        if (result.success) setDocuments(result.data);
+        else
+          setNotice({
+            title: "Documentos indisponíveis",
+            description: result.message,
+            variant: "danger",
+          });
+      }
+    } catch {
+      setNotice({ title: "Consulta indisponível", description: "Tente abrir a aba novamente.", variant: "danger" });
+    } finally {
+      setLoadingTabs(current => ({ ...current, [next]: false }));
     }
-    if (next === "events") {
-      const result = await getMemberEventsAction(memberId);
+  }
+
+  async function changeEventsPage(page: number) {
+    setLoadingTabs(current => ({ ...current, events: true }));
+    try {
+      const result = await getMemberEventsAction(memberId, page);
       if (result.success) setEvents(result.data);
       else
         setNotice({
@@ -290,31 +318,9 @@ export function MemberDetailsModal({
           description: result.message,
           variant: "danger",
         });
+    } finally {
+      setLoadingTabs(current => ({ ...current, events: false }));
     }
-    if (next === "documents") {
-      const result = await getMemberDocumentsAction(memberId);
-      if (result.success) setDocuments(result.data);
-      else
-        setNotice({
-          title: "Documentos indisponíveis",
-          description: result.message,
-          variant: "danger",
-        });
-    }
-    setTabLoading(false);
-  }
-
-  async function changeEventsPage(page: number) {
-    setTabLoading(true);
-    const result = await getMemberEventsAction(memberId, page);
-    if (result.success) setEvents(result.data);
-    else
-      setNotice({
-        title: "Eventos indisponíveis",
-        description: result.message,
-        variant: "danger",
-      });
-    setTabLoading(false);
   }
 
   async function refreshDocuments() {
@@ -676,615 +682,548 @@ export function MemberDetailsModal({
   const deleteDocument = documents?.find(
     (document) => document.id === deleteId,
   );
-  const footer =
-    details &&
-    (capabilities.issueCredential ||
-      capabilities.update ||
-      (capabilities.exportSheet && !details.archived)) ? (
-      <S.FooterActions>
-        {capabilities.exportSheet && !details.archived && (
-          <Button variant="secondary" onClick={() => setShowSheet(true)}>
-            <FileText size={16} /> Baixar ficha em PDF
-          </Button>
-        )}
-        {capabilities.issueCredential && (
-          <Button variant="secondary" onClick={() => setShowCredential(true)}>
-            <IdCard size={16} /> Gerar credencial
-          </Button>
-        )}
-        {capabilities.update && (
-          <Link
-            href={`/membros/${memberId}/editar`}
-            className="app-button-primary"
-          >
-            <Pencil size={16} /> Editar cadastro
-          </Link>
-        )}
-      </S.FooterActions>
-    ) : undefined;
-
   return (
     <>
-      <S.DetailsModal
-        open={!showSheet}
-        title="Ficha do membro"
-        description="Consulta cadastral, eclesiástica, de eventos, financeira e documental."
-        icon={<UserRound />}
-        size="xl"
-        onClose={onClose}
-        footer={footer}
-        busy={busy}
-      >
-        {!details && !loadError && (
-          <S.Loading>
-            <Loader2 />
-          </S.Loading>
+      <S.HeaderCard>
+        <S.Identity>
+          <span>{initials(details.fullName)}</span>
+          <div>
+            <h3>{details.fullName}</h3>
+            <p>
+              {details.memberCode || "Sem código"} ·{" "}
+              {details.congregationName}
+              {details.regionName ? ` · ${details.regionName}` : ""}
+            </p>
+          </div>
+        </S.Identity>
+        <M.Status $status={details.memberStatus}>
+          {memberStatusLabels[details.memberStatus]}
+        </M.Status>
+      </S.HeaderCard>
+      <S.Tabs aria-label="Seções da ficha">
+        <S.Tab
+          $active={tab === "data"}
+          onClick={() => void chooseTab("data")}
+        >
+          <UserRound /> Dados de cadastro
+        </S.Tab>
+        {capabilities.viewHistory && (
+          <S.Tab
+            $active={tab === "history"}
+            onClick={() => void chooseTab("history")}
+          >
+            <BookOpen /> Histórico eclesiástico
+          </S.Tab>
         )}
-        {loadError && <S.Error>{loadError}</S.Error>}
-        {details && (
-          <>
-            <S.HeaderCard>
-              <S.Identity>
-                <span>{initials(details.fullName)}</span>
-                <div>
-                  <h3>{details.fullName}</h3>
-                  <p>
-                    {details.memberCode || "Sem código"} ·{" "}
-                    {details.congregationName}
-                    {details.regionName ? ` · ${details.regionName}` : ""}
-                  </p>
-                </div>
-              </S.Identity>
-              <M.Status $status={details.memberStatus}>
-                {memberStatusLabels[details.memberStatus]}
-              </M.Status>
-            </S.HeaderCard>
-            <S.Tabs aria-label="Seções da ficha">
-              <S.Tab
-                $active={tab === "data"}
-                onClick={() => void chooseTab("data")}
+        {capabilities.viewEvents && (
+          <S.Tab
+            $active={tab === "events"}
+            onClick={() => void chooseTab("events")}
+          >
+            <CalendarDays /> Eventos
+          </S.Tab>
+        )}
+        {capabilities.viewFinance && (
+          <S.Tab
+            $active={tab === "finance"}
+            onClick={() => void chooseTab("finance")}
+          >
+            <CreditCard /> Financeiro
+          </S.Tab>
+        )}
+        {capabilities.viewDocuments && (
+          <S.Tab
+            $active={tab === "documents"}
+            onClick={() => void chooseTab("documents")}
+          >
+            <FolderOpen /> Documentos
+          </S.Tab>
+        )}
+      </S.Tabs>
+
+      {tabLoading && (
+        <ResultsSkeleton label="Carregando seção da ficha" columns={tab === "documents" ? 2 : 3} />
+      )}
+
+      {!tabLoading && tab === "data" && (
+        <S.Section>
+          <h4>Identificação e vínculo</h4>
+          <S.Grid>
+            <Field
+              label="Tipo"
+              value={memberTypeLabels[details.memberType]}
+            />
+            <Field
+              label="Situação"
+              value={memberStatusLabels[details.memberStatus]}
+            />
+            <Field label="Nascimento" value={date(details.birthDate)} />
+            <Field label="Sexo" value={formatGender(details.gender)} />
+            <Field
+              label="Estado civil"
+              value={formatMaritalStatus(
+                details.maritalStatus,
+                details.gender,
+              )}
+            />
+            <Field label="Nacionalidade" value={details.nationality} />
+            <Field label="Naturalidade / UF" value={[details.naturalCity, details.naturalState].filter(Boolean).join(" / ")} />
+            <Field label="Profissão" value={details.profession} />
+            <Field label="Escolaridade" value={details.educationLevel} />
+            <Field label="Congregação" value={details.congregationName} />
+            <Field label="Regional" value={details.regionName} />
+            <Field label="Matrícula" value={details.memberCode} />
+            <Field label="CPF" value={details.cpf} />
+            <Field
+              label="RG / órgão"
+              value={[details.rg, details.issuingAgency]
+                .filter(Boolean)
+                .join(" / ")}
+            />
+          </S.Grid>
+
+          <S.Divider />
+          <h4>Contato, endereço e família</h4>
+          <S.Grid>
+            <WhatsAppField value={details.whatsapp} />
+            <Field label="E-mail" value={details.email} />
+            <Field label="Endereço" value={details.address} />
+            <Field label="Pai" value={details.fatherName} />
+            <Field label="Mãe" value={details.motherName} />
+            <Field label="Cônjuge" value={details.spouseName} />
+          </S.Grid>
+
+          <S.Divider />
+          <S.RolesAccordion>
+            <summary>
+              <span>
+                Cargo
+                <S.RoleBadge>
+                  {currentRole?.name || "Sem cargo atual"}
+                </S.RoleBadge>
+              </span>
+              <ChevronDown size={17} aria-hidden="true" />
+            </summary>
+            <div>
+          <S.TabHeader>
+            <div>
+              <h4>Cargo</h4>
+              <p>
+                Um único Cargo atual, com os vínculos anteriores
+                preservados.
+              </p>
+            </div>
+            {capabilities.manageRoles && (
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={openRoleEditor}
               >
-                <UserRound /> Dados de cadastro
-              </S.Tab>
-              {capabilities.viewHistory && (
-                <S.Tab
-                  $active={tab === "history"}
-                  onClick={() => void chooseTab("history")}
-                >
-                  <BookOpen /> Histórico eclesiástico
-                </S.Tab>
-              )}
-              {capabilities.viewEvents && (
-                <S.Tab
-                  $active={tab === "events"}
-                  onClick={() => void chooseTab("events")}
-                >
-                  <CalendarDays /> Eventos
-                </S.Tab>
-              )}
-              {capabilities.viewFinance && (
-                <S.Tab
-                  $active={tab === "finance"}
-                  onClick={() => void chooseTab("finance")}
-                >
-                  <CreditCard /> Financeiro
-                </S.Tab>
-              )}
-              {capabilities.viewDocuments && (
-                <S.Tab
-                  $active={tab === "documents"}
-                  onClick={() => void chooseTab("documents")}
-                >
-                  <FolderOpen /> Documentos
-                </S.Tab>
-              )}
-            </S.Tabs>
-
-            {tabLoading && (
-              <S.Loading>
-                <Loader2 />
-              </S.Loading>
+                <Pencil size={14} /> Editar Cargo
+              </Button>
             )}
-
-            {!tabLoading && tab === "data" && (
-              <S.Section>
-                <h4>Identificação e vínculo</h4>
-                <S.Grid>
-                  <Field
-                    label="Tipo"
-                    value={memberTypeLabels[details.memberType]}
-                  />
-                  <Field
-                    label="Situação"
-                    value={memberStatusLabels[details.memberStatus]}
-                  />
-                  <Field label="Nascimento" value={date(details.birthDate)} />
-                  <Field label="Sexo" value={formatGender(details.gender)} />
-                  <Field
-                    label="Estado civil"
-                    value={formatMaritalStatus(
-                      details.maritalStatus,
-                      details.gender,
-                    )}
-                  />
-                  <Field label="Nacionalidade" value={details.nationality} />
-                  <Field label="Naturalidade / UF" value={[details.naturalCity, details.naturalState].filter(Boolean).join(" / ")} />
-                  <Field label="Profissão" value={details.profession} />
-                  <Field label="Escolaridade" value={details.educationLevel} />
-                  <Field label="Congregação" value={details.congregationName} />
-                  <Field label="Regional" value={details.regionName} />
-                  <Field label="Matrícula" value={details.memberCode} />
-                  <Field label="CPF" value={details.cpf} />
-                  <Field
-                    label="RG / órgão"
-                    value={[details.rg, details.issuingAgency]
-                      .filter(Boolean)
-                      .join(" / ")}
-                  />
-                </S.Grid>
-
-                <S.Divider />
-                <h4>Contato, endereço e família</h4>
-                <S.Grid>
-                  <WhatsAppField value={details.whatsapp} />
-                  <Field label="E-mail" value={details.email} />
-                  <Field label="Endereço" value={details.address} />
-                  <Field label="Pai" value={details.fatherName} />
-                  <Field label="Mãe" value={details.motherName} />
-                  <Field label="Cônjuge" value={details.spouseName} />
-                </S.Grid>
-
-                <S.Divider />
-                <S.RolesAccordion>
-                  <summary>
-                    <span>
-                      Cargo
-                      <S.RoleBadge>
-                        {currentRole?.name || "Sem cargo atual"}
-                      </S.RoleBadge>
-                    </span>
-                    <ChevronDown size={17} aria-hidden="true" />
-                  </summary>
+          </S.TabHeader>
+          {!details.roles.length ? (
+            <S.Empty>Nenhum Cargo vinculado ao membro.</S.Empty>
+          ) : (
+            <S.Documents>
+              {details.roles.map((role) => (
+                <S.Document key={role.id}>
                   <div>
-                <S.TabHeader>
-                  <div>
-                    <h4>Cargo</h4>
+                    <h5>
+                      {role.name}
+                      {role.status === "ACTIVE" && (
+                        <S.CurrentBadge>Atual</S.CurrentBadge>
+                      )}
+                    </h5>
                     <p>
-                      Um único Cargo atual, com os vínculos anteriores
-                      preservados.
+                      {memberRoleStatusLabels[role.status] ?? role.status}{" "}
+                      · {date(role.startDate)}
+                      {role.endDate ? ` até ${date(role.endDate)}` : ""}
                     </p>
                   </div>
-                  {capabilities.manageRoles && (
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={openRoleEditor}
-                    >
-                      <Pencil size={14} /> Editar Cargo
-                    </Button>
-                  )}
-                </S.TabHeader>
-                {!details.roles.length ? (
-                  <S.Empty>Nenhum Cargo vinculado ao membro.</S.Empty>
-                ) : (
-                  <S.Documents>
-                    {details.roles.map((role) => (
-                      <S.Document key={role.id}>
-                        <div>
-                          <h5>
-                            {role.name}
-                            {role.status === "ACTIVE" && (
-                              <S.CurrentBadge>Atual</S.CurrentBadge>
-                            )}
-                          </h5>
-                          <p>
-                            {memberRoleStatusLabels[role.status] ?? role.status}{" "}
-                            · {date(role.startDate)}
-                            {role.endDate ? ` até ${date(role.endDate)}` : ""}
-                          </p>
-                        </div>
-                      </S.Document>
-                    ))}
-                  </S.Documents>
-                )}
+                </S.Document>
+              ))}
+            </S.Documents>
+          )}
 
-                  </div>
-                </S.RolesAccordion>
+            </div>
+          </S.RolesAccordion>
 
-                <S.Divider />
-                <h4>Histórico de fé</h4>
-                <S.Grid>
-                  <Field label="Igreja anterior" value={details.previousChurch} />
-                  <Field label="Igreja de origem da carta" value={details.letterOriginChurch} />
-                  <Field
-                    label="Conversão"
-                    value={date(details.conversionDate)}
-                  />
-                  <Field
-                    label="Batismo nas águas"
-                    value={date(details.baptismDate)}
-                  />
-                  <Field
-                    label="Igreja do batismo"
-                    value={details.baptismChurch}
-                  />
-                  <Field
-                    label="Batismo com Espírito Santo"
-                    value={
-                      details.hasHolySpiritBaptism
-                        ? `Sim${details.holySpiritBaptismDate ? ` · ${date(details.holySpiritBaptismDate)}` : ""}`
-                        : "Não"
-                    }
-                  />
-                  <Field
-                    label="Recebido por"
-                    value={
-                      details.receivedBy
-                        ? receivedByLabels[details.receivedBy]
-                        : null
-                    }
-                  />
-                  <Field
-                    label="Data de recebimento"
-                    value={date(details.receivedDate)}
-                  />
-                </S.Grid>
-                {(details.notes || details.pastoralNotes) && (
-                  <>
-                    <S.Divider />
-                    <h4>Observações</h4>
-                    <S.Grid>
-                      <Field label="Gerais" value={details.notes} />
-                      <Field
-                        label="Pastorais (restritas)"
-                        value={details.pastoralNotes}
-                      />
-                    </S.Grid>
-                  </>
-                )}
-              </S.Section>
+          <S.Divider />
+          <h4>Histórico de fé</h4>
+          <S.Grid>
+            <Field label="Igreja anterior" value={details.previousChurch} />
+            <Field label="Igreja de origem da carta" value={details.letterOriginChurch} />
+            <Field
+              label="Conversão"
+              value={date(details.conversionDate)}
+            />
+            <Field
+              label="Batismo nas águas"
+              value={date(details.baptismDate)}
+            />
+            <Field
+              label="Igreja do batismo"
+              value={details.baptismChurch}
+            />
+            <Field
+              label="Batismo com Espírito Santo"
+              value={
+                details.hasHolySpiritBaptism
+                  ? `Sim${details.holySpiritBaptismDate ? ` · ${date(details.holySpiritBaptismDate)}` : ""}`
+                  : "Não"
+              }
+            />
+            <Field
+              label="Recebido por"
+              value={
+                details.receivedBy
+                  ? receivedByLabels[details.receivedBy]
+                  : null
+              }
+            />
+            <Field
+              label="Data de recebimento"
+              value={date(details.receivedDate)}
+            />
+          </S.Grid>
+          {(details.notes || details.pastoralNotes) && (
+            <>
+              <S.Divider />
+              <h4>Observações</h4>
+              <S.Grid>
+                <Field label="Gerais" value={details.notes} />
+                <Field
+                  label="Pastorais (restritas)"
+                  value={details.pastoralNotes}
+                />
+              </S.Grid>
+            </>
+          )}
+        </S.Section>
+      )}
+
+      {!tabLoading && tab === "history" && (
+        <S.Section>
+          <S.TabHeader>
+            <div>
+              <h4>Linha do tempo</h4>
+              <p>{history?.total ?? 0} evento(s) visível(is).</p>
+            </div>
+            {capabilities.createHistory && (
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => setShowHistoryForm((value) => !value)}
+              >
+                <Plus size={14} /> Adicionar evento
+              </Button>
             )}
+          </S.TabHeader>
+          {showHistoryForm && (
+            <S.UploadForm onSubmit={addHistory}>
+              <S.FormField>
+                <span>Título *</span>
+                <S.FormControl name="title" required />
+              </S.FormField>
+              <S.FormField>
+                <span>Data *</span>
+                <DateField
+                  name="eventDate"
+                  label="Data" hideLabel
+                  required
+                  max={new Date().toISOString().slice(0, 10)}
+                />
+              </S.FormField>
+              <S.FormField $span={2}>
+                <span>Descrição</span>
+                <S.FormControl name="description" />
+              </S.FormField>
+              <S.CheckField $span={2}>
+                <Checkbox
+                  id="member-history-sensitive"
+                  name="sensitive"
+                  label="Evento sensível"
+                />
+              </S.CheckField>
+              <S.FormActions>
+                <Button type="submit" size="sm" loading={busy}>
+                  Registrar
+                </Button>
+              </S.FormActions>
+            </S.UploadForm>
+          )}
+          {!history?.items.length ? (
+            <S.Empty>Nenhum evento encontrado.</S.Empty>
+          ) : (
+            <S.Timeline>
+              {history.items.map((item) => (
+                <S.Event key={item.id}>
+                  <article>
+                    <S.TabHeader>
+                      <h5>
+                        {item.title}
+                        {item.sensitive ? " · Restrito" : ""}
+                      </h5>
+                      <time>{date(item.eventDate)}</time>
+                    </S.TabHeader>
+                    <HistoryChange item={item} />
+                    {item.description && <p>{item.description}</p>}
+                  </article>
+                </S.Event>
+              ))}
+            </S.Timeline>
+          )}
+        </S.Section>
+      )}
 
-            {!tabLoading && tab === "history" && (
-              <S.Section>
-                <S.TabHeader>
+      {financeVisited && <div hidden={tab !== "finance"}><MemberFinanceTab memberId={memberId} canExport={capabilities.exportSheet} /></div>}
+
+      {!tabLoading && tab === "events" && (
+        <S.Section>
+          {!events?.items.length ? (
+            <S.Empty>
+              Nenhuma inscrição em evento vinculada ao membro.
+            </S.Empty>
+          ) : (
+            <>
+              <S.SimpleTable>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Nome</th>
+                      <th>Data</th>
+                      <th>Local</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {events.items.map((item) => (
+                      <tr key={item.id}>
+                        <td>{item.name}</td>
+                        <td>{eventDateTime(item.startsAt)}</td>
+                        <td>{item.location}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </S.SimpleTable>
+              {events.pageCount > 1 && (
+                <S.Pager>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    disabled={events.page <= 1}
+                    onClick={() => void changeEventsPage(events.page - 1)}
+                  >
+                    Anterior
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    disabled={events.page >= events.pageCount}
+                    onClick={() => void changeEventsPage(events.page + 1)}
+                  >
+                    Próxima
+                  </Button>
+                </S.Pager>
+              )}
+            </>
+          )}
+        </S.Section>
+      )}
+
+      {!tabLoading && tab === "documents" && (
+        <D.Content>
+          {capabilities.manageDocuments && (
+            <D.UploadPanel>
+              <D.SectionHeading>
+                <div>
+                  <h3>Anexar novo documento</h3>
+                  <p>
+                    O arquivo ficará privado e disponível somente para
+                    usuários autorizados.
+                  </p>
+                </div>
+              </D.SectionHeading>
+              <D.UploadForm onSubmit={upload}>
+                <D.FormGrid>
+                  <D.Field>
+                    <span>Nome do documento *</span>
+                    <D.Input
+                      name="title"
+                      placeholder="Ex.: Certidão de casamento"
+                      maxLength={140}
+                      required
+                      disabled={busy}
+                    />
+                  </D.Field>
+                  <D.Field>
+                    <span>Tipo *</span>
+                    <D.Select
+                      name="type"
+                      defaultValue="OTHER"
+                      disabled={busy}
+                    >
+                      {MEMBER_DOCUMENT_TYPES.map(([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </D.Select>
+                  </D.Field>
+                </D.FormGrid>
+                <D.FileDrop>
+                  <input
+                    name="file"
+                    type="file"
+                    accept={MEMBER_DOCUMENT_ACCEPT}
+                    required
+                    disabled={busy}
+                    onChange={(event) =>
+                      setSelectedFile(event.target.files?.[0] ?? null)
+                    }
+                  />
                   <div>
-                    <h4>Linha do tempo</h4>
-                    <p>{history?.total ?? 0} evento(s) visível(is).</p>
-                  </div>
-                  {capabilities.createHistory && (
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => setShowHistoryForm((value) => !value)}
-                    >
-                      <Plus size={14} /> Adicionar evento
-                    </Button>
-                  )}
-                </S.TabHeader>
-                {showHistoryForm && (
-                  <S.UploadForm onSubmit={addHistory}>
-                    <S.FormField>
-                      <span>Título *</span>
-                      <S.FormControl name="title" required />
-                    </S.FormField>
-                    <S.FormField>
-                      <span>Data *</span>
-                      <DateField
-                        name="eventDate"
-                        label="Data" hideLabel
-                        required
-                        max={new Date().toISOString().slice(0, 10)}
-                      />
-                    </S.FormField>
-                    <S.FormField $span={2}>
-                      <span>Descrição</span>
-                      <S.FormControl name="description" />
-                    </S.FormField>
-                    <S.CheckField $span={2}>
-                      <Checkbox
-                        id="member-history-sensitive"
-                        name="sensitive"
-                        label="Evento sensível"
-                      />
-                    </S.CheckField>
-                    <S.FormActions>
-                      <Button type="submit" size="sm" loading={busy}>
-                        Registrar
-                      </Button>
-                    </S.FormActions>
-                  </S.UploadForm>
-                )}
-                {!history?.items.length ? (
-                  <S.Empty>Nenhum evento encontrado.</S.Empty>
-                ) : (
-                  <S.Timeline>
-                    {history.items.map((item) => (
-                      <S.Event key={item.id}>
-                        <article>
-                          <S.TabHeader>
-                            <h5>
-                              {item.title}
-                              {item.sensitive ? " · Restrito" : ""}
-                            </h5>
-                            <time>{date(item.eventDate)}</time>
-                          </S.TabHeader>
-                          <HistoryChange item={item} />
-                          {item.description && <p>{item.description}</p>}
-                        </article>
-                      </S.Event>
-                    ))}
-                  </S.Timeline>
-                )}
-              </S.Section>
-            )}
-
-            {tab === "finance" && <MemberFinanceTab memberId={memberId} canExport={capabilities.exportSheet} />}
-
-            {!tabLoading && tab === "events" && (
-              <S.Section>
-                {!events?.items.length ? (
-                  <S.Empty>
-                    Nenhuma inscrição em evento vinculada ao membro.
-                  </S.Empty>
-                ) : (
-                  <>
-                    <S.SimpleTable>
-                      <table>
-                        <thead>
-                          <tr>
-                            <th>Nome</th>
-                            <th>Data</th>
-                            <th>Local</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {events.items.map((item) => (
-                            <tr key={item.id}>
-                              <td>{item.name}</td>
-                              <td>{eventDateTime(item.startsAt)}</td>
-                              <td>{item.location}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </S.SimpleTable>
-                    {events.pageCount > 1 && (
-                      <S.Pager>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="secondary"
-                          disabled={events.page <= 1}
-                          onClick={() => void changeEventsPage(events.page - 1)}
-                        >
-                          Anterior
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="secondary"
-                          disabled={events.page >= events.pageCount}
-                          onClick={() => void changeEventsPage(events.page + 1)}
-                        >
-                          Próxima
-                        </Button>
-                      </S.Pager>
+                    <Upload />
+                    <strong>Clique para selecionar o arquivo</strong>
+                    <small>PDF, JPG, PNG ou WEBP · máximo de 10 MB</small>
+                    {selectedFile && (
+                      <D.SelectedFile>
+                        <Paperclip /> {selectedFile.name} ·{" "}
+                        {formatFileSize(selectedFile.size)}
+                      </D.SelectedFile>
                     )}
-                  </>
-                )}
-              </S.Section>
-            )}
+                  </div>
+                </D.FileDrop>
+                <S.CheckField>
+                  <Checkbox
+                    id="member-document-sensitive"
+                    name="sensitive"
+                    value="true"
+                    label="Documento sensível"
+                  />
+                </S.CheckField>
+                <D.UploadFooter>
+                  <small>
+                    O nome original do arquivo será preservado para
+                    consulta.
+                  </small>
+                  <Button type="submit" size="sm" loading={busy}>
+                    <Upload /> {busy ? "Enviando..." : "Anexar documento"}
+                  </Button>
+                </D.UploadFooter>
+              </D.UploadForm>
+            </D.UploadPanel>
+          )}
 
-            {!tabLoading && tab === "documents" && (
-              <D.Content>
-                {capabilities.manageDocuments && (
-                  <D.UploadPanel>
-                    <D.SectionHeading>
-                      <div>
-                        <h3>Anexar novo documento</h3>
-                        <p>
-                          O arquivo ficará privado e disponível somente para
-                          usuários autorizados.
-                        </p>
-                      </div>
-                    </D.SectionHeading>
-                    <D.UploadForm onSubmit={upload}>
-                      <D.FormGrid>
-                        <D.Field>
-                          <span>Nome do documento *</span>
-                          <D.Input
-                            name="title"
-                            placeholder="Ex.: Certidão de casamento"
-                            maxLength={140}
-                            required
-                            disabled={busy}
-                          />
-                        </D.Field>
-                        <D.Field>
-                          <span>Tipo *</span>
-                          <D.Select
-                            name="type"
-                            defaultValue="OTHER"
-                            disabled={busy}
-                          >
-                            {MEMBER_DOCUMENT_TYPES.map(([value, label]) => (
-                              <option key={value} value={value}>
-                                {label}
-                              </option>
-                            ))}
-                          </D.Select>
-                        </D.Field>
-                      </D.FormGrid>
-                      <D.FileDrop>
-                        <input
-                          name="file"
-                          type="file"
-                          accept={MEMBER_DOCUMENT_ACCEPT}
-                          required
-                          disabled={busy}
-                          onChange={(event) =>
-                            setSelectedFile(event.target.files?.[0] ?? null)
-                          }
-                        />
-                        <div>
-                          <Upload />
-                          <strong>Clique para selecionar o arquivo</strong>
-                          <small>PDF, JPG, PNG ou WEBP · máximo de 10 MB</small>
-                          {selectedFile && (
-                            <D.SelectedFile>
-                              <Paperclip /> {selectedFile.name} ·{" "}
-                              {formatFileSize(selectedFile.size)}
-                            </D.SelectedFile>
-                          )}
-                        </div>
-                      </D.FileDrop>
-                      <S.CheckField>
-                        <Checkbox
-                          id="member-document-sensitive"
-                          name="sensitive"
-                          value="true"
-                          label="Documento sensível"
-                        />
-                      </S.CheckField>
-                      <D.UploadFooter>
-                        <small>
-                          O nome original do arquivo será preservado para
-                          consulta.
-                        </small>
-                        <Button type="submit" size="sm" loading={busy}>
-                          <Upload /> {busy ? "Enviando..." : "Anexar documento"}
-                        </Button>
-                      </D.UploadFooter>
-                    </D.UploadForm>
-                  </D.UploadPanel>
-                )}
-
-                <D.DocumentsSection>
-                  <D.SectionHeading>
-                    <div>
-                      <h3>Documentos anexados</h3>
-                      <p>
-                        Visualize os arquivos vinculados à ficha deste membro.
-                      </p>
-                    </div>
-                    <D.CountBadge>{documents?.length ?? 0}</D.CountBadge>
-                  </D.SectionHeading>
-                  {!documents?.length ? (
-                    <D.EmptyState>
-                      <div>
+          <D.DocumentsSection>
+            <D.SectionHeading>
+              <div>
+                <h3>Documentos anexados</h3>
+                <p>
+                  Visualize os arquivos vinculados à ficha deste membro.
+                </p>
+              </div>
+              <D.CountBadge>{documents?.length ?? 0}</D.CountBadge>
+            </D.SectionHeading>
+            {!documents?.length ? (
+              <D.EmptyState>
+                <div>
+                  <span>
+                    <Paperclip />
+                  </span>
+                  <h4>Nenhum documento anexado</h4>
+                  <p>
+                    Os documentos enviados aparecerão organizados aqui.
+                  </p>
+                </div>
+              </D.EmptyState>
+            ) : (
+              <D.DocumentList>
+                {documents.map((document) => {
+                  const action =
+                    documentBusy?.id === document.id
+                      ? documentBusy.kind
+                      : null;
+                  return (
+                    <D.DocumentRow key={document.id}>
+                      <D.DocumentIcon
+                        $image={Boolean(
+                          document.mimeType?.startsWith("image/"),
+                        )}
+                      >
+                        <DocumentIcon document={document} />
+                      </D.DocumentIcon>
+                      <D.DocumentInfo>
+                        <strong title={document.title}>
+                          {document.title}
+                        </strong>
                         <span>
-                          <Paperclip />
+                          <span>{documentTypeLabel(document.type)}</span>
+                          <span>{formatFileSize(document.fileSize)}</span>
+                          <span>{dateTime(document.uploadedAt)}</span>
+                          <span title={document.fileName}>
+                            {document.fileName}
+                          </span>
+                          {document.sensitive && <span>Restrito</span>}
                         </span>
-                        <h4>Nenhum documento anexado</h4>
-                        <p>
-                          Os documentos enviados aparecerão organizados aqui.
-                        </p>
-                      </div>
-                    </D.EmptyState>
-                  ) : (
-                    <D.DocumentList>
-                      {documents.map((document) => {
-                        const action =
-                          documentBusy?.id === document.id
-                            ? documentBusy.kind
-                            : null;
-                        return (
-                          <D.DocumentRow key={document.id}>
-                            <D.DocumentIcon
-                              $image={Boolean(
-                                document.mimeType?.startsWith("image/"),
-                              )}
+                      </D.DocumentInfo>
+                      <D.DocumentActions>
+                        <D.DocumentAction
+                          type="button"
+                          title="Visualizar"
+                          aria-label={`Visualizar ${document.title}`}
+                          disabled={Boolean(action)}
+                          data-loading={action === "open"}
+                          onClick={() => void openDocument(document)}
+                        >
+                          {action === "open" ? (
+                            <Loader2 />
+                          ) : document.mimeType === "application/pdf" ||
+                            document.mimeType?.startsWith("image/") ? (
+                            <Eye />
+                          ) : (
+                            <Download />
+                          )}
+                        </D.DocumentAction>
+                        {capabilities.manageDocuments && (
+                          <>
+                            <D.DocumentAction
+                              type="button"
+                              title="Editar"
+                              aria-label={`Editar ${document.title}`}
+                              disabled={Boolean(action)}
+                              onClick={() => {
+                                setReplacementFile(null);
+                                setEditDocument(document);
+                              }}
                             >
-                              <DocumentIcon document={document} />
-                            </D.DocumentIcon>
-                            <D.DocumentInfo>
-                              <strong title={document.title}>
-                                {document.title}
-                              </strong>
-                              <span>
-                                <span>{documentTypeLabel(document.type)}</span>
-                                <span>{formatFileSize(document.fileSize)}</span>
-                                <span>{dateTime(document.uploadedAt)}</span>
-                                <span title={document.fileName}>
-                                  {document.fileName}
-                                </span>
-                                {document.sensitive && <span>Restrito</span>}
-                              </span>
-                            </D.DocumentInfo>
-                            <D.DocumentActions>
-                              <D.DocumentAction
-                                type="button"
-                                title="Visualizar"
-                                aria-label={`Visualizar ${document.title}`}
-                                disabled={Boolean(action)}
-                                data-loading={action === "open"}
-                                onClick={() => void openDocument(document)}
-                              >
-                                {action === "open" ? (
-                                  <Loader2 />
-                                ) : document.mimeType === "application/pdf" ||
-                                  document.mimeType?.startsWith("image/") ? (
-                                  <Eye />
-                                ) : (
-                                  <Download />
-                                )}
-                              </D.DocumentAction>
-                              {capabilities.manageDocuments && (
-                                <>
-                                  <D.DocumentAction
-                                    type="button"
-                                    title="Editar"
-                                    aria-label={`Editar ${document.title}`}
-                                    disabled={Boolean(action)}
-                                    onClick={() => {
-                                      setReplacementFile(null);
-                                      setEditDocument(document);
-                                    }}
-                                  >
-                                    <Pencil />
-                                  </D.DocumentAction>
-                                  <D.DocumentAction
-                                    type="button"
-                                    $danger
-                                    title="Excluir"
-                                    aria-label={`Excluir ${document.title}`}
-                                    disabled={Boolean(action)}
-                                    onClick={() => setDeleteId(document.id)}
-                                  >
-                                    <Trash2 />
-                                  </D.DocumentAction>
-                                </>
-                              )}
-                            </D.DocumentActions>
-                          </D.DocumentRow>
-                        );
-                      })}
-                    </D.DocumentList>
-                  )}
-                </D.DocumentsSection>
-              </D.Content>
+                              <Pencil />
+                            </D.DocumentAction>
+                            <D.DocumentAction
+                              type="button"
+                              $danger
+                              title="Excluir"
+                              aria-label={`Excluir ${document.title}`}
+                              disabled={Boolean(action)}
+                              onClick={() => setDeleteId(document.id)}
+                            >
+                              <Trash2 />
+                            </D.DocumentAction>
+                          </>
+                        )}
+                      </D.DocumentActions>
+                    </D.DocumentRow>
+                  );
+                })}
+              </D.DocumentList>
             )}
-          </>
-        )}
-      </S.DetailsModal>
-
-      {showSheet && details && (
-        <MemberSheetModal
-          memberId={memberId}
-          memberName={details.fullName}
-          canHistory={capabilities.viewHistory}
-          canEvents={capabilities.viewEvents}
-          onClose={() => setShowSheet(false)}
-        />
+          </D.DocumentsSection>
+        </D.Content>
       )}
-      {showCredential && (
-        <MemberCredentialModal
-          memberId={memberId}
-          onClose={() => setShowCredential(false)}
-        />
-      )}
-
       {showRoleEditor && details && (
         <Modal
           open

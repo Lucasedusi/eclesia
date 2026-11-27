@@ -30,7 +30,7 @@ async function BirthdaysContent({ searchParams }: Props) {
   if (result.outOfRange) redirect(birthdayHref(filters));
   return <Panel>
     <BirthdayControls filters={filters} month={calendar.month} label={calendar.label}
-      total={result.total} canExport={caps.exportSheet} congregations={congregations}>
+      columns={3 + Number(caps.viewRoles) + Number(caps.viewFull)} total={result.total} canExport={caps.exportSheet} congregations={congregations}>
       <BirthdayList filters={filters} items={result.items} total={result.total} page={page} viewContact={caps.viewFull} viewRoles={caps.viewRoles} />
     </BirthdayControls>
   </Panel>;
