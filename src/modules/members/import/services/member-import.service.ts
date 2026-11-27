@@ -47,6 +47,7 @@ function mapBatch(row: AnyRow, churchName: string): MemberImportBatch {
     skippedRows: Number(row.skipped_rows),
     importedRows: Number(row.imported_rows),
     settingsSnapshot: (row.settings_snapshot ?? {}) as Record<string, unknown>,
+    memberStatus: row.settings_snapshot?.member_status === "INACTIVE" ? "INACTIVE" : "ACTIVE",
     failureMessage: row.failure_message,
     createdBy: row.created_by,
     createdByName: profileName(first<AnyRow>(row.creator)),

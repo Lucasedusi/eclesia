@@ -81,6 +81,10 @@ export async function prepareMemberImportAction(
 ): Promise<MemberImportActionResult<MemberImportWorkspaceData>> {
   const context = await requireAccessContext(PERMISSIONS.membersImport);
   const congregationId = String(formData.get("congregationId") ?? "");
+  const memberStatus = formData.get("memberStatus") ?? "ACTIVE";
+  if (memberStatus !== "ACTIVE" && memberStatus !== "INACTIVE") {
+    return { success: false, message: "Selecione Ativos ou Inativos para a situação dos membros." };
+  }
   const fileValue = formData.get("file");
   if (!congregationId) return { success: false, message: "Selecione a Congregação de destino." };
   if (!(fileValue instanceof File) || fileValue.size === 0) {
@@ -268,6 +272,7 @@ export async function prepareMemberImportAction(
         file_sha256: fileSha256,
         normalization_version: MEMBER_IMPORT_NORMALIZATION_VERSION,
         settings_snapshot: {
+          member_status: memberStatus,
           file_format: format,
           workbook_schema: parsed.congregationWorkbook ? "congregation" : "legacy",
           recognized_columns: parsed.recognizedColumns,

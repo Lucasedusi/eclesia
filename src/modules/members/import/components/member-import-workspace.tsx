@@ -1,6 +1,7 @@
 "use client";
 
-import { importIncludedPhone } from "../utils/member-import-normalizers";
+import { importIncludedPhone, normalizeGender } from "../utils/member-import-normalizers";
+import { formatGender } from "../../utils/member-formatters";
 import { ResultsSkeleton } from "@/components/ui/results-skeleton";
 
 import {
@@ -47,6 +48,7 @@ import {
   rollbackMemberImportAction,
 } from "../actions/member-import.actions";
 import {
+  IMPORTED_MEMBER_STATUS_LABELS,
   MARITAL_STATUS_IMPORT_OPTIONS,
   MEMBER_IMPORT_CLASSIFICATION_LABELS,
   MEMBER_IMPORT_PAGE_SIZES,
@@ -55,6 +57,7 @@ import {
   memberImportFileFormat,
 } from "../constants/member-import";
 import type {
+  ImportedMemberStatus,
   MemberImportItem,
   MemberImportReviewParams,
   MemberImportWorkspaceData,
@@ -114,19 +117,17 @@ function GenderChoice({ item, busy, onResolve }: {
   busy: string;
   onResolve: (item: MemberImportItem, resolution: Resolution) => void;
 }) {
-  const pending = busy.startsWith(`item:${item.id}:`) ? busy.split(":")[2] : "";
-  let gender = item.gender;
-  if (pending === "SET_GENDER_MALE") gender = "MALE";
-  if (pending === "SET_GENDER_FEMALE") gender = "FEMALE";
-  if (pending === "CLEAR_GENDER") gender = null;
-  const disabled = Boolean(busy) || item.decision === "SKIP" || item.classification === "IMPORTED";
+  if (normalizeGender(item.genderRaw ?? "") || item.decision === "SKIP" || item.classification === "IMPORTED") {
+    return <small>Sexo: {formatGender(item.gender)}</small>;
+  }
   return (
-    <S.GenderChoices role="group" aria-label={`Sexo de ${item.fullName}`}>
-      <Checkbox label="Masculino" checked={gender === "MALE"} disabled={disabled}
-        onChange={event => onResolve(item, event.target.checked ? "SET_GENDER_MALE" : "CLEAR_GENDER")} />
-      <Checkbox label="Feminino" checked={gender === "FEMALE"} disabled={disabled}
-        onChange={event => onResolve(item, event.target.checked ? "SET_GENDER_FEMALE" : "CLEAR_GENDER")} />
-    </S.GenderChoices>
+    <S.Select aria-label={`Sexo de ${item.fullName}`} value={item.gender ?? ""} disabled={Boolean(busy)}
+      onChange={event => onResolve(item, event.target.value === "MALE" ? "SET_GENDER_MALE"
+        : event.target.value === "FEMALE" ? "SET_GENDER_FEMALE" : "CLEAR_GENDER")}>
+      <option value="">Sexo não informado</option>
+      <option value="MALE">Masculino</option>
+      <option value="FEMALE">Feminino</option>
+    </S.Select>
   );
 }
 
@@ -227,6 +228,7 @@ export function MemberImportWorkspace({ initial }: Props) {
   const [tab, setTab] = useState<"new" | "history">("new");
   const [step, setStep] = useState(() => initialStep(initial));
   const [congregationId, setCongregationId] = useState(initial.batch?.congregationId ?? "");
+  const [memberStatus, setMemberStatus] = useState<ImportedMemberStatus>("ACTIVE");
   const [history, setHistory] = useState<MemberImportHistory | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -286,6 +288,7 @@ export function MemberImportWorkspace({ initial }: Props) {
     }
     const form = new FormData();
     form.set("congregationId", congregationId);
+    form.set("memberStatus", memberStatus);
     form.set("file", file);
     setBusy("analyze");
     try {
@@ -461,6 +464,7 @@ export function MemberImportWorkspace({ initial }: Props) {
     setWorkspace({ ...workspace, batch: null, items: null, roleMappings: [], maritalMappings: [] });
     setFile(null);
     setCongregationId("");
+    setMemberStatus("ACTIVE");
     setAccepted(false);
     setStep(1);
     setTab("new");
@@ -501,6 +505,15 @@ export function MemberImportWorkspace({ initial }: Props) {
                       {workspace.congregations.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
                     </S.Select>
                     <small>Todos os membros deste lote serão vinculados a esta Congregação.</small>
+                  </S.Field>
+                  <S.Field>
+                    <span>Situação dos membros</span>
+                    <S.Select aria-label="Situação dos membros" value={memberStatus}
+                      onChange={event => setMemberStatus(event.target.value === "INACTIVE" ? "INACTIVE" : "ACTIVE")}>
+                      <option value="ACTIVE">{IMPORTED_MEMBER_STATUS_LABELS.ACTIVE}</option>
+                      <option value="INACTIVE">{IMPORTED_MEMBER_STATUS_LABELS.INACTIVE}</option>
+                    </S.Select>
+                    <small>A situação escolhida vale para todos os membros deste lote.</small>
                   </S.Field>
                   <S.Dropzone
                     $dragging={dragging}
@@ -905,7 +918,7 @@ function ConfirmationStep({
         </S.InfoGrid>
         <S.SummaryList>
           <div><ShieldCheck /><span>A importação revalidará CPF, Cargo e Congregação imediatamente antes de gravar.</span></div>
-          <div><Users /><span>Os membros serão criados como <strong>MEMBER</strong> e <strong>ACTIVE</strong>. Sexo, CEP, cidade/UF, naturalidade e filiação serão gravados quando informados.</span></div>
+          <div><Users /><span>Situação dos membros ao concluir o lote: <strong>{IMPORTED_MEMBER_STATUS_LABELS[batch.memberStatus]}</strong>.</span></div>
           <div><History /><span>{batch.settingsSnapshot.workbook_schema === "congregation" ? "A data do cadastro será preservada como data de origem. Conversão e batismo usam as datas da ficha." : batch.settingsSnapshot.file_format === "csv" ? "A data de cadastro no MEMBROS WEB fica no lote de origem. O cargo atual será registrado sem data inicial." : "O cargo atual será registrado sem data inicial. As datas de recebimento, conversão e batismo informadas na planilha serão preservadas no cadastro e na linha do tempo."}</span></div>
           <div><FileCheck2 /><span>O lote, a linha de origem e as decisões registradas permanecerão rastreáveis para auditoria e relatório.</span></div>
         </S.SummaryList>
@@ -963,7 +976,7 @@ function ResultStep({
         <div>
           <Button variant="secondary" onClick={onHistory}><History size={16} /> Histórico</Button>
           <Button variant="report" loading={busy === "report"} onClick={onReport}><Download size={16} /> Relatório</Button>
-          {!rolledBack && !cancelled && <Link href={`/membros?importBatch=${batch.id}`} className="app-button-secondary"><Users size={16} /> Ver membros</Link>}
+          {!rolledBack && !cancelled && <Link href={`/membros?importBatch=${batch.id}&status=${batch.memberStatus}`} className="app-button-secondary"><Users size={16} /> Ver membros</Link>}
           <Button onClick={onNew}>Nova importação</Button>
         </div>
       </S.Footer>

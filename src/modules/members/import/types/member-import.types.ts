@@ -16,6 +16,7 @@ export type MemberImportClassification =
   | "IMPORTED";
 
 export type MemberImportDecision = "PENDING" | "IMPORT" | "IMPORT_ANYWAY" | "SKIP";
+export type ImportedMemberStatus = "ACTIVE" | "INACTIVE";
 export type MemberImportIssueSeverity = "INFO" | "WARNING" | "ERROR";
 
 export type MemberImportIssue = {
@@ -117,6 +118,7 @@ export type MemberImportBatch = {
   skippedRows: number;
   importedRows: number;
   settingsSnapshot: Record<string, unknown>;
+  memberStatus: ImportedMemberStatus;
   failureMessage: string | null;
   createdBy: string;
   createdByName: string;

@@ -2,6 +2,8 @@ export const MEMBER_IMPORT_MAX_FILE_SIZE = 5 * 1024 * 1024;
 export const MEMBER_IMPORT_MAX_ROWS = 500;
 export const MEMBER_IMPORT_NORMALIZATION_VERSION = 6;
 
+export const IMPORTED_MEMBER_STATUS_LABELS = { ACTIVE: "Ativos", INACTIVE: "Inativos" } as const;
+
 export function memberImportFileFormat(filename: string) {
   const name = filename.toLowerCase();
   if (name.endsWith(".csv")) return "csv";

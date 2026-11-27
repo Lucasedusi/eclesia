@@ -6,6 +6,7 @@ import type { MemberImportBatch, MemberImportItem } from "../types/member-import
 import {
   BRAZILIAN_STATE_OPTIONS,
   CONGREGATION_COLUMNS,
+  IMPORTED_MEMBER_STATUS_LABELS,
   MEMBER_IMPORT_STATUS_LABELS,
 } from "../constants/member-import";
 
@@ -91,6 +92,7 @@ export async function generateMemberImportReport(batch: MemberImportBatch, items
     ["Aba", batch.worksheetName],
     ["Responsável", batch.createdByName],
     ["Status", MEMBER_IMPORT_STATUS_LABELS[batch.status] ?? batch.status],
+    ["Situação dos membros", IMPORTED_MEMBER_STATUS_LABELS[batch.memberStatus]],
     ["Linhas", batch.totalRows],
     ["Importados", batch.importedRows],
     ["Pulados", batch.skippedRows],

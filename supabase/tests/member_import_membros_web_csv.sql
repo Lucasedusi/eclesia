@@ -75,7 +75,7 @@ begin
     select 1 from public.members m
     join public.member_sensitive_identity s on s.member_id = m.id and s.church_id = m.church_id
     where m.source_import_batch_id = batch and m.congregation_id = destination
-      and m.email = 'membro@example.invalid' and m.address = 'Rua Exemplo'
+      and m.member_status = 'ACTIVE' and m.email = 'membro@example.invalid' and m.address = 'Rua Exemplo'
       and s.rg = '001X' and s.cpf is null and m.received_date is null
   ) or exists (select 1 from public.member_history where church_id = church and history_type = 'MEMBER_RECEIVED') then
     raise exception 'Divergência na gravação do CSV';
@@ -164,6 +164,27 @@ begin
       where m.source_import_batch_id=batch and h.history_type='MEMBER_RECEIVED') then
     raise exception 'Divergência na gravação da planilha de congregação';
   end if;
+
+  -- A situação pertence ao lote inteiro e também se aplica a membros sem cargo.
+  payload := jsonb_set(payload, '{settings_snapshot,member_status}', '"INACTIVE"')
+    || jsonb_build_object('file_sha256', repeat('e',64));
+  set local role authenticated;
+  batch := public.prepare_member_import_official(payload, items);
+  perform public.execute_member_import(batch);
+  perform public.execute_member_import(batch);
+  reset role;
+  if (select count(*) from public.members m where m.church_id = church
+    and m.source_import_batch_id = batch and m.member_status = 'INACTIVE' and m.deleted_at is null) <> 2 then
+    raise exception 'Situação inativa do lote não foi aplicada a todos os cadastros';
+  end if;
+  set local role authenticated;
+  begin
+    perform public.prepare_member_import_official(jsonb_set(payload, '{settings_snapshot,member_status}', '"DECEASED"')
+      || jsonb_build_object('file_sha256', repeat('f',64)), items);
+    raise exception 'Situação inválida aceita na preparação do lote';
+  exception when check_violation then
+    null;
+  end;
 end;
 $test$;
 
