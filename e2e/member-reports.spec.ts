@@ -4,7 +4,7 @@ import { readFile as readFileAsync } from "node:fs/promises";
 import ExcelJS from "exceljs";
 import { PDFDocument } from "pdf-lib";
 
-type Fixture = { total: number; congregations: string[]; regions: string[]; role: string; sessions: Record<string, string> };
+type Fixture = { total: number; congregations: string[]; regions: string[]; role: string; sessions: Record<string, string>; cpfSearch?: { prefix: string; unit: string } };
 const fixture: Fixture | null = process.env.E2E_MEMBER_REPORT_FIXTURE ? JSON.parse(readFileSync(process.env.E2E_MEMBER_REPORT_FIXTURE, "utf8")) : null;
 async function workbook(bytes: Buffer) { const book = new ExcelJS.Workbook(); await book.xlsx.load(bytes as unknown as ExcelJS.Buffer); return book.worksheets[0]; }
 async function exportSheet(api: APIRequestContext, input: object) {
@@ -87,6 +87,37 @@ test.describe("listagens de membros", () => {
     } finally { await limited.dispose(); }
     const viewer = await playwright.request.newContext({ baseURL: process.env.E2E_BASE_URL, storageState: fixture!.sessions.viewer });
     try { expect((await viewer.post("/api/members/reports", { data: { kind: "simplified", format: "xlsx" } })).status()).toBe(403); } finally { await viewer.dispose(); }
+  });
+  test("busca por CPF acima de 100 registros respeita permissão, regional e congregação na lista e no Excel", async ({ browser, baseURL }) => {
+    test.skip(!fixture?.cpfSearch, "Requer setup --cpf-search no Supabase local.");
+    const { prefix, unit } = fixture!.cpfSearch!;
+    for (const name of ["cpfAllowed", "cpfRestricted"]) {
+      const allowed = name === "cpfAllowed";
+      const context = await browser.newContext({ baseURL, storageState: fixture!.sessions[name] });
+      try {
+        const page = await context.newPage();
+        const search = new URLSearchParams({ search: prefix, pageSize: "100" });
+        await page.goto(`/membros?${search}`);
+        await expect(page.getByText(allowed ? /· 126 registro\(s\)/ : /· 0 registro\(s\)/)).toBeVisible();
+        search.set("congregation", unit);
+        search.set("page", allowed ? "2" : "1");
+        await page.goto(`/membros?${search}`);
+        await expect(page.getByText(allowed ? /Página 2 de 2 · 125 registro\(s\)/ : /· 0 registro\(s\)/)).toBeVisible();
+        if (allowed) await expect(page.getByRole("row").filter({ hasText: "Cadastro de teste 0125" })).toBeVisible();
+
+        const sheet = await exportSheet(context.request, { kind: "custom", format: "xlsx", fields: [], filters: { search: prefix, congregationId: unit } });
+        if (allowed) {
+          const expectedCodes = Array.from({ length: 125 }, (_, index) => `T${String(index + 1).padStart(4, "0")}`);
+          const codes = sheet.getColumn(1).values.slice(7);
+          expect(codes).toEqual(expectedCodes);
+        } else {
+          expect(sheet.rowCount).toBe(7);
+          expect(sheet.getCell("A7").value).toContain("Nenhum membro");
+        }
+      } finally {
+        await context.close();
+      }
+    }
   });
   test("permite nova tentativa após erro e cabe na tela pequena", async ({ page }, info) => {
     await page.setViewportSize({ width: 390, height: 844 }); await page.goto("/membros"); await page.getByRole("button", { name: "Relatório", exact: true }).click();

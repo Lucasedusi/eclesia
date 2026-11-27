@@ -2,18 +2,24 @@
 import { execFileSync, spawn } from 'node:child_process';
 import { mkdirSync, writeFileSync, readFileSync, existsSync, unlinkSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
+import { join } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
 import { createServerClient } from '@supabase/ssr';
 const root = 'tmp/member-reports';
 mkdirSync(root, { recursive: true });
-const status = JSON.parse(execFileSync('npx', ['supabase', 'status', '--output', 'json'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }));
+const workdir = process.env.E2E_MEMBER_REPORT_SUPABASE_WORKDIR ?? '.';
+const project = /^project_id\s*=\s*"([\w-]+)"/m.exec(readFileSync(join(workdir, 'supabase/config.toml'), 'utf8'))?.[1];
+if (!project) throw new Error('Local Supabase project id required');
+const status = JSON.parse(execFileSync('npx', ['supabase', 'status', '--workdir', workdir, '--output', 'json'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }));
 if (!status.API_URL?.startsWith('http://127.0.0.1:')) throw new Error('Local Supabase required');
 const env = { ...process.env, NEXT_PUBLIC_SUPABASE_URL: status.API_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: status.PUBLISHABLE_KEY ?? status.ANON_KEY,
   SUPABASE_SECRET_KEY: status.SECRET_KEY ?? status.SERVICE_ROLE_KEY, SUPABASE_SERVICE_ROLE_KEY: status.SERVICE_ROLE_KEY,
-  E2E_BASE_URL: 'http://localhost:3222', E2E_STORAGE_STATE: `${root}/full.json`, E2E_MEMBER_REPORT_FIXTURE: `${root}/fixture.json`,
+  E2E_BASE_URL: process.env.E2E_BASE_URL ?? 'http://localhost:3222', E2E_STORAGE_STATE: `${root}/full.json`, E2E_MEMBER_REPORT_FIXTURE: `${root}/fixture.json`,
   MERCADO_PAGO_MOCK_MODE: 'true', MERCADO_PAGO_ENV: 'test', MERCADO_PAGO_ACCESS_TOKEN: '', BREVO_API_KEY: '' };
+const appHost = new URL(env.E2E_BASE_URL).hostname;
+if (!['localhost', '127.0.0.1', '[::1]'].includes(appHost)) throw new Error('Local app required');
 const admin = createClient(status.API_URL, env.SUPABASE_SECRET_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
-const sql = (query) => execFileSync('docker', ['exec','-i','supabase_db_eclesia','psql','-X','-v','ON_ERROR_STOP=1','-U','postgres','-d','postgres'], { input: query, stdio: ['pipe','ignore','pipe'] });
+const sql = (query) => execFileSync('docker', ['exec','-i',`supabase_db_${project}`,'psql','-X','-v','ON_ERROR_STOP=1','-U','postgres','-d','postgres'], { input: query, stdio: ['pipe','ignore','pipe'] });
 const command = process.argv[2];
 if (command === 'setup') {
   if (existsSync(`${root}/fixture.json`) && !JSON.parse(readFileSync(`${root}/fixture.json`, 'utf8')).cleanedUp) throw new Error('Fixture already exists; cleanup first');
@@ -23,6 +29,10 @@ if (command === 'setup') {
   const dashboard = process.argv.includes('--dashboard');
   const sessionNames = ['full','limited','region','congregation','ministry','viewer'];
   if (dashboard) sessionNames.push('localTreasurer','localViewer');
+  if (process.argv.includes('--cpf-search')) {
+    ids.cpfSearch = { prefix: '74950', region: randomUUID(), unit: randomUUID(), sibling: randomUUID() };
+    sessionNames.push('cpfAllowed', 'cpfRestricted');
+  }
   for (const name of sessionNames) {
     const email = `report-${randomUUID()}@example.invalid`, password = `${randomUUID()}Az1!`;
     const result = await admin.auth.admin.createUser({ email, password, email_confirm: true });
@@ -34,7 +44,39 @@ if (command === 'setup') {
   ids.congregations.forEach((id,i) => { query += `insert into public.congregations(id,church_id,region_id,name,is_headquarters) values ('${id}','${ids.churches[i===3?1:0]}',${i===3?'null':`'${ids.regions[i===2?1:0]}'`},'Congregação de Teste ${i+1}',${i===3?'true':'false'});`; });
   query += `insert into public.ministries(id,church_id,name,is_global) values ('${ids.ministry}','${ids.churches[0]}','Ministério de Teste',true); insert into public.roles(id,church_id,name,female_name) values ('${ids.role}','${ids.churches[0]}','Diácono','Diaconisa');`;
   if (dashboard) query += `insert into public.congregations(church_id,region_id,name) select '${ids.churches[0]}','${ids.regions[0]}','Congregação de Teste Extra ' || i from generate_series(1,10) i;`;
+  if (ids.cpfSearch) {
+    const { prefix, region, unit, sibling } = ids.cpfSearch;
+    const church = ids.churches[1];
+    query += `insert into public.regions(id, church_id, name) values ('${region}', '${church}', 'Regional da busca');
+      insert into public.congregations(id, church_id, region_id, name) values
+        ('${unit}', '${church}', '${region}', 'Unidade da busca'),
+        ('${sibling}', '${church}', '${region}', 'Outra unidade da regional');
+      with inserted as (
+        insert into public.members(church_id, congregation_id, full_name, member_code, deleted_at)
+        select '${church}', case n when 126 then '${sibling}'::uuid when 127 then '${ids.congregations[3]}'::uuid else '${unit}'::uuid end,
+          'Cadastro de teste ' || lpad(n::text, 4, '0'), 'T' || lpad(n::text, 4, '0'), case when n=128 then now() end
+        from generate_series(1,128) n returning id, member_code
+      ), bases as (
+        select id, '${prefix}' || substring(member_code from 2) as base from inserted
+      ), first_digits as (
+        select id, base || (select (sum(substr(base,i,1)::int * (11-i)) * 10 % 11) % 10 from generate_series(1,9) i) as base
+        from bases
+      )
+      insert into public.member_sensitive_identity(church_id, member_id, cpf)
+      select '${church}', id, base || (select (sum(substr(base,i,1)::int * (12-i)) * 10 % 11) % 10 from generate_series(1,10) i)
+      from first_digits;`;
+  }
   ids.users.forEach((u) => {
+    if (u.name === 'cpfAllowed' || u.name === 'cpfRestricted') {
+      query += `update public.profiles set status='ACTIVE' where id='${u.id}';
+        insert into public.user_church_access(id,profile_id,church_id,role,access_scope,region_id,status,accepted_at)
+        values ('${u.access}','${u.id}','${ids.churches[1]}','SECRETARY','REGION','${ids.cpfSearch.region}','ACTIVE',now());
+        insert into public.user_permission_overrides(access_id,permission_id,effect)
+        select '${u.access}',id,case when key='members.view_sensitive_identity' and '${u.name}'='cpfRestricted' then 'DENY' else 'ALLOW' end
+        from public.permissions where status='ACTIVE' and deleted_at is null
+        and key in ('members.export','members.view_basic','members.view_full','members.view_sensitive_identity','organization.view');`;
+      return;
+    }
     const scope = u.name==='region'?'REGION':['congregation','localTreasurer','localViewer'].includes(u.name)?'CONGREGATION':u.name==='ministry'?'MINISTRY':'CHURCH';
     const role = u.name==='full'?'ADMIN':u.name==='ministry'?'MINISTRY_LEADER':u.name==='localTreasurer'?'TREASURER':['viewer','localViewer'].includes(u.name)?'VIEWER':'SECRETARY';
     query += `insert into public.profiles(id,full_name,status) values ('${u.id}','Usuário Fictício ${u.name}','ACTIVE') on conflict(id) do update set status='ACTIVE'; insert into public.user_church_access(id,profile_id,church_id,role,access_scope,status,region_id,congregation_id,ministry_id,accepted_at) values ('${u.access}','${u.id}','${ids.churches[0]}','${role}','${scope}','ACTIVE',${scope==='REGION'?`'${ids.regions[0]}'`:'null'},${scope==='CONGREGATION'?`'${ids.congregations[0]}'`:'null'},${scope==='MINISTRY'?`'${ids.ministry}'`:'null'},'2020-01-01');`;
@@ -90,7 +132,7 @@ if (command === 'setup') {
     const cookies = [];
     const client = createServerClient(status.API_URL,env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,{cookies:{getAll:()=>cookies,setAll:values=>cookies.push(...values)}});
     const login = await client.auth.signInWithPassword({email:credential.email,password:credential.password}); if(login.error) throw new Error(login.error.message);
-    writeFileSync(ids.sessions[credential.name],JSON.stringify({cookies:cookies.map(c=>({name:c.name,value:c.value,domain:'localhost',path:'/',expires:-1,httpOnly:false,secure:false,sameSite:'Lax'})),origins:[]}),{mode:0o600});
+    writeFileSync(ids.sessions[credential.name],JSON.stringify({cookies:cookies.map(c=>({name:c.name,value:c.value,domain:appHost,path:'/',expires:-1,httpOnly:false,secure:false,sameSite:'Lax'})),origins:[]}),{mode:0o600});
   }
   console.log(`Local fictional report fixtures and ${sessionNames.length} sessions created.`);
 } else if(command === 'cleanup') {
@@ -103,7 +145,7 @@ if (command === 'setup') {
   }
   for(const church of ids.churches) sql(`begin; delete from public.member_ministries where church_id='${church}'; delete from public.member_roles where church_id='${church}'; delete from public.member_history where church_id='${church}'; delete from public.member_pastoral_notes where church_id='${church}'; delete from public.member_sensitive_identity where church_id='${church}'; delete from public.members where church_id='${church}'; delete from public.user_church_access where church_id='${church}'; delete from public.ministries where church_id='${church}'; delete from public.roles where church_id='${church}'; delete from public.congregations where church_id='${church}'; delete from public.regions where church_id='${church}'; delete from public.app_settings where church_id='${church}'; delete from public.audit_logs where church_id='${church}'; delete from public.churches where id='${church}'; commit;`);
   for(const u of ids.users) { const r=await admin.auth.admin.deleteUser(u.id); if(r.error) throw new Error(r.error.message); }
-  for (const name of ['full','limited','region','congregation','ministry','viewer','localTreasurer','localViewer']) { const session = `${root}/${name}.json`; if (existsSync(session)) unlinkSync(session); }
+  for (const name of ['full','limited','region','congregation','ministry','viewer','localTreasurer','localViewer','cpfAllowed','cpfRestricted']) { const session = `${root}/${name}.json`; if (existsSync(session)) unlinkSync(session); }
   writeFileSync(`${root}/fixture.json`, JSON.stringify({ ...ids, cleanedUp: true }), { mode: 0o600 });
   console.log('Local fictional report fixtures removed.');
 } else {
