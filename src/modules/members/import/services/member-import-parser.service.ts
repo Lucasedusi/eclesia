@@ -1,6 +1,7 @@
 import "server-only";
 
 import ExcelJS from "exceljs";
+import { parseString } from "@fast-csv/parse";
 import {
   MEMBER_IMPORT_COLUMNS,
   MEMBER_IMPORT_HEADER_ALIASES,
@@ -191,7 +192,81 @@ function classifyBaseRow(
   };
 }
 
-export async function parseMemberImportWorkbook(buffer: Buffer): Promise<ParsedMemberImportFile> {
+const csvColumns = ["id", "nome", "fone", "dtnascimento", "cargo", "endereco", "cpf", "identidade", "email", "estadocivil", "dtcadastro"] as const;
+
+function invalidCsv() {
+  return new MemberImportParserError("IMPORT_CSV_INVALID", "O CSV contém um cabeçalho, aspas ou quantidade de colunas inválidos. Envie a exportação original do MEMBROS WEB.");
+}
+
+function decodeMemberCsv(buffer: Buffer) {
+  if (buffer.includes(0)) throw invalidCsv();
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(buffer);
+  } catch {
+    return new TextDecoder("windows-1252").decode(buffer);
+  }
+}
+
+async function parseMemberCsv(buffer: Buffer): Promise<ParsedMemberImportFile> {
+  const text = decodeMemberCsv(buffer);
+  const firstLine = text.trimStart().split(/[\r\n]/, 1)[0];
+  const delimiter = firstLine.includes(";") ? ";" : ",";
+  const stream = parseString<string[], string[]>(text, { delimiter });
+  const columnIndex = new Map<string, number>();
+  const rows: ParsedMemberImportRow[] = [];
+  let width = 0;
+  let rowNumber = 0;
+  let emptyRows = 0;
+  try {
+    for await (const fields of stream as AsyncIterable<string[]>) {
+      rowNumber++;
+      if (fields.every((field) => !field.trim())) {
+        if (width) emptyRows++;
+        continue;
+      }
+      if (!width) {
+        width = fields.length;
+        if (width > 128) throw invalidCsv();
+        fields.forEach((field, index) => {
+          const name = normalizeImportHeader(field);
+          if (!name || columnIndex.has(name)) throw invalidCsv();
+          columnIndex.set(name, index);
+        });
+        if (!MEMBER_IMPORT_REQUIRED_COLUMNS.every((name) => columnIndex.has(name))) {
+          throw new MemberImportParserError("IMPORT_HEADER_MISSING", "O CSV precisa conter as colunas nome e cargo.");
+        }
+        continue;
+      }
+      if (fields.length !== width) throw invalidCsv();
+      if (rows.length >= MEMBER_IMPORT_MAX_ROWS) {
+        throw new MemberImportParserError("IMPORT_ROW_LIMIT_EXCEEDED", "O lote deve possuir no máximo 500 membros.");
+      }
+      const source = {} as MemberImportSourceData;
+      for (const column of MEMBER_IMPORT_COLUMNS) source[column] = "";
+      const csvSource: ParsedMemberImportRow["sourceData"] = source;
+      for (const name of csvColumns) {
+        const index = columnIndex.get(name);
+        if (index !== undefined) csvSource[name] = fields[index].trim();
+      }
+      // No legado, dtcadastro é a criação do registro, não o recebimento na igreja.
+      const row = classifyBaseRow(rowNumber, csvSource, { ...source, dtcadastro: null });
+      if (csvSource.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(csvSource.email)) {
+        row.issues.push(createImportIssue("EMAIL_INVALID", "email", "ERROR", "O e-mail do cadastro é inválido. Corrija o arquivo ou pule a linha."));
+      }
+      rows.push(row);
+    }
+  } catch (error) {
+    if (error instanceof MemberImportParserError) throw error;
+    throw invalidCsv();
+  }
+  if (!rows.length) throw new MemberImportParserError("IMPORT_WORKSHEET_EMPTY", "O CSV não possui membros para importar.");
+  const recognizedColumns = csvColumns.filter((name) => columnIndex.has(name));
+  const supported = new Set<string>(csvColumns);
+  return { worksheetName: "MEMBROS WEB", recognizedColumns, ignoredColumns: [...columnIndex.keys()].filter((name) => !supported.has(name)), emptyRows, rows };
+}
+
+export async function parseMemberImportWorkbook(buffer: Buffer, format: "xlsx" | "csv" = "xlsx"): Promise<ParsedMemberImportFile> {
+  if (format === "csv") return parseMemberCsv(buffer);
   const workbook = new ExcelJS.Workbook();
   try {
     await workbook.xlsx.load(Uint8Array.from(buffer).buffer);

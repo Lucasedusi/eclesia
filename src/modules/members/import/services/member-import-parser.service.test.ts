@@ -18,6 +18,35 @@ async function workbookBuffer(rows: ExcelJS.CellValue[][]) {
   return Buffer.from(new Uint8Array(bytes));
 }
 
+describe("CSV do MEMBROS WEB", () => {
+  const header = "Id;nome;fone;dtnascimento;igreja;cargo;endereco;cpf;identidade;email;estadocivil;dtcadastro";
+
+  it("lê texto Windows-1252, aspas e zeros iniciais, sem transformar cadastro em recebimento", async () => {
+    const csv = header + '\r\n0007;"João ""Júnior""";;1980-12-07;Ebenézer;Mb;"Rua A; 10";;00123;a@example.org;Casado(a);2000-05-01';
+    const parsed = await parseMemberImportWorkbook(Buffer.from(csv, "latin1"), "csv");
+    expect(parsed.rows).toHaveLength(1);
+    expect(parsed.rows[0]).toMatchObject({
+      fullName: 'João "Júnior"', birthDate: "1980-12-07", receivedDate: null,
+      sourceData: { id: "0007", endereco: "Rua A; 10", identidade: "00123", email: "a@example.org", dtcadastro: "2000-05-01" },
+    });
+  });
+
+  it("aceita BOM UTF-8 e campos multilinha", async () => {
+    const csv = '\uFEFF' + header + '\n0008;Ana Lúcia;;;Ebenézer;Mb;"Linha A\nLinha B";;;;;';
+    const parsed = await parseMemberImportWorkbook(Buffer.from(csv), "csv");
+    expect(parsed.rows[0]).toMatchObject({ fullName: "Ana Lúcia", sourceData: { endereco: "Linha A\nLinha B" } });
+  });
+
+  it.each([
+    [header + '\n1;"aspas abertas', "IMPORT_CSV_INVALID"],
+    [header + '\n1;Ana', "IMPORT_CSV_INVALID"],
+    ["nome;nome;cargo\nAna;Outra;Mb", "IMPORT_CSV_INVALID"],
+    [header + "\n" + Array(501).fill("1;Exemplo;;;Ebenézer;Mb;;;;;;").join("\n"), "IMPORT_ROW_LIMIT_EXCEEDED"],
+  ])("rejeita CSV inválido ou acima do limite (%#)", async (input, code) => {
+    await expect(parseMemberImportWorkbook(Buffer.from(input), "csv")).rejects.toMatchObject({ code });
+  });
+});
+
 describe("parser XLSX da importação de membros", () => {
   it("reconhece cabeçalhos normalizados e ignora colunas extras", async () => {
     const buffer = await workbookBuffer([

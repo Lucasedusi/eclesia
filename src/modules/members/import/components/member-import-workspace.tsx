@@ -49,6 +49,7 @@ import {
   MEMBER_IMPORT_PAGE_SIZES,
   MEMBER_IMPORT_STATUS_LABELS,
   MEMBER_IMPORT_STEPS,
+  memberImportFileFormat,
 } from "../constants/member-import";
 import type {
   MemberImportItem,
@@ -239,9 +240,9 @@ export function MemberImportWorkspace({ initial }: Props) {
   }
 
   function chooseFile(next: File | null) {
-    if (next && !next.name.toLocaleLowerCase("pt-BR").endsWith(".xlsx")) {
+    if (next && !memberImportFileFormat(next.name)) {
       setFile(null);
-      setNotice({ title: "Arquivo inválido", description: "Selecione uma planilha no formato XLSX.", variant: "danger" });
+      setNotice({ title: "Arquivo inválido", description: "Selecione um arquivo CSV ou XLSX.", variant: "danger" });
       return;
     }
     setFile(next);
@@ -256,7 +257,7 @@ export function MemberImportWorkspace({ initial }: Props) {
   async function analyze(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!file || !congregationId) {
-      setNotice({ title: "Dados incompletos", description: "Selecione a Congregação e a planilha XLSX.", variant: "warning" });
+      setNotice({ title: "Dados incompletos", description: "Selecione a Congregação e um arquivo CSV ou XLSX.", variant: "warning" });
       return;
     }
     const form = new FormData();
@@ -449,7 +450,7 @@ export function MemberImportWorkspace({ initial }: Props) {
           {step === 1 && (
             <S.Card>
               <S.CardHeader>
-                <div><h2>Destino e arquivo</h2><p>Escolha uma Congregação e envie a planilha-padrão do EKLESIA.</p></div>
+                <div><h2>Destino e arquivo</h2><p>Escolha a Congregação de destino e envie o CSV original do MEMBROS WEB ou a planilha XLSX do Eklesias.</p></div>
                 <Button size="sm" variant="outline" loading={busy === "template"} onClick={() => download("/api/members/imports/template", "template")}>
                   <FileDown size={16} /> Baixar modelo
                 </Button>
@@ -473,10 +474,10 @@ export function MemberImportWorkspace({ initial }: Props) {
                     <div>
                       <UploadCloud aria-hidden="true" />
                       <strong>Arraste a planilha aqui ou clique para selecionar</strong>
-                      <p>Somente arquivo XLSX, com até 5 MB e 500 membros.</p>
-                      <small>Modelo oficial com 18 campos cadastrais; os formatos anteriores continuam aceitos.</small>
+                      <p>CSV original do MEMBROS WEB ou planilha XLSX.</p>
+                      <small>Até 5 MB e 500 membros por lote.</small>
                     </div>
-                    <input type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={(event) => chooseFile(event.target.files?.item(0) ?? null)} />
+                    <input type="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={(event) => chooseFile(event.target.files?.item(0) ?? null)} />
                   </S.Dropzone>
                   {file && (
                     <S.FileSelected>
@@ -657,13 +658,13 @@ function ValidationStep({
   return (
     <S.Card>
       <S.CardHeader>
-        <div><h2>Validação e equivalências</h2><p>{batch.originalFilename} · aba {batch.worksheetName} · {formatBytes(batch.fileSizeBytes)}</p></div>
+        <div><h2>Validação e equivalências</h2><p>{batch.originalFilename} · {settings.file_format === "csv" ? "CSV do MEMBROS WEB" : `aba ${batch.worksheetName}`} · {formatBytes(batch.fileSizeBytes)}</p></div>
         <S.Status $status={batch.status}>{MEMBER_IMPORT_STATUS_LABELS[batch.status] ?? batch.status}</S.Status>
       </S.CardHeader>
       <S.CardBody>
         <BatchStats workspace={workspace} />
         <S.InfoGrid>
-          <S.InfoBox $tone="success"><h3>Estrutura reconhecida</h3><p>{Array.isArray(settings.recognized_columns) ? settings.recognized_columns.length : 0} de 18 campos reconhecidos. Os formatos antigos permanecem compatíveis.</p></S.InfoBox>
+          <S.InfoBox $tone="success"><h3>Estrutura reconhecida</h3><p>{Array.isArray(settings.recognized_columns) ? settings.recognized_columns.length : 0} campos reconhecidos.</p>{settings.file_format === "csv" && <p>O ID e a data do cadastro antigo ficam registradas no lote. O destino é a Congregação selecionada.</p>}</S.InfoBox>
           <S.InfoBox $tone={ignored.length ? "warning" : "info"}><h3>Colunas ignoradas</h3><p>{ignored.length ? ignored.join(", ") : "Nenhuma coluna extra encontrada."}</p></S.InfoBox>
         </S.InfoGrid>
         <div>
@@ -861,12 +862,12 @@ function ConfirmationStep({
         </S.Stats>
         <S.InfoGrid>
           <S.InfoBox $tone="info"><h3>Destino</h3><p>{batch.churchName}<br />{batch.congregationName}</p></S.InfoBox>
-          <S.InfoBox $tone="info"><h3>Arquivo de origem</h3><p>{batch.originalFilename}<br />Aba {batch.worksheetName}</p></S.InfoBox>
+          <S.InfoBox $tone="info"><h3>Arquivo de origem</h3><p>{batch.originalFilename}<br />{batch.settingsSnapshot.file_format === "csv" ? "CSV do MEMBROS WEB" : `Aba ${batch.worksheetName}`}</p></S.InfoBox>
         </S.InfoGrid>
         <S.SummaryList>
           <div><ShieldCheck /><span>A importação revalidará CPF, Cargo e Congregação imediatamente antes de gravar.</span></div>
           <div><Users /><span>Os membros serão criados como <strong>MEMBER</strong> e <strong>ACTIVE</strong>. Sexo, CEP, cidade/UF, naturalidade e filiação serão gravados quando informados.</span></div>
-          <div><History /><span>O Cargo atual não terá data inicial. Recebimento, conversão e os dois tipos de batismo serão preservados no cadastro e na linha do tempo.</span></div>
+          <div><History /><span>{batch.settingsSnapshot.file_format === "csv" ? "A data de cadastro no MEMBROS WEB fica no lote de origem. O cargo atual será registrado sem data inicial." : "O cargo atual será registrado sem data inicial. As datas de recebimento, conversão e batismo informadas na planilha serão preservadas no cadastro e na linha do tempo."}</span></div>
           <div><FileCheck2 /><span>O lote, a linha de origem e as decisões registradas permanecerão rastreáveis para auditoria e relatório.</span></div>
         </S.SummaryList>
         <S.InfoBox $tone="warning">

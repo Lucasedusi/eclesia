@@ -8,6 +8,7 @@ import { requireAccessContext } from "@/modules/auth/services/access-context.ser
 import {
   MEMBER_IMPORT_MAX_FILE_SIZE,
   MEMBER_IMPORT_NORMALIZATION_VERSION,
+  memberImportFileFormat,
 } from "../constants/member-import";
 import {
   getDuplicateMemberCandidates,
@@ -44,7 +45,7 @@ function friendlyError(message: string) {
     IMPORT_BATCH_INVALID_STATUS: "Este lote não pode mais ser alterado neste estado.",
     IMPORT_CONGREGATION_INVALID: "Selecione uma Congregação ativa dentro do seu escopo.",
     IMPORT_FILE_TOO_LARGE: "O arquivo deve possuir no máximo 5 MB.",
-    IMPORT_FILE_INVALID_TYPE: "Envie uma planilha no formato XLSX.",
+    IMPORT_FILE_INVALID_TYPE: "Envie um arquivo CSV ou XLSX.",
     IMPORT_FILE_DUPLICATE: "Este arquivo já foi importado para a Congregação selecionada.",
     IMPORT_WORKSHEET_EMPTY: "A planilha não possui membros para importar.",
     IMPORT_HEADER_MISSING: "A planilha não possui os cabeçalhos obrigatórios.",
@@ -80,10 +81,11 @@ export async function prepareMemberImportAction(
   const fileValue = formData.get("file");
   if (!congregationId) return { success: false, message: "Selecione a Congregação de destino." };
   if (!(fileValue instanceof File) || fileValue.size === 0) {
-    return { success: false, message: "Selecione uma planilha XLSX para analisar." };
+    return { success: false, message: "Selecione um CSV ou XLSX para analisar." };
   }
-  if (!fileValue.name.toLocaleLowerCase("pt-BR").endsWith(".xlsx")) {
-    return { success: false, message: "Envie uma planilha no formato XLSX.", code: "IMPORT_FILE_INVALID_TYPE" };
+  const format = memberImportFileFormat(fileValue.name);
+  if (!format) {
+    return { success: false, message: "Envie um arquivo CSV ou XLSX.", code: "IMPORT_FILE_INVALID_TYPE" };
   }
   if (fileValue.size > MEMBER_IMPORT_MAX_FILE_SIZE) {
     return { success: false, message: "O arquivo deve possuir no máximo 5 MB.", code: "IMPORT_FILE_TOO_LARGE" };
@@ -116,7 +118,7 @@ export async function prepareMemberImportAction(
       };
     }
 
-    const parsed = await parseMemberImportWorkbook(buffer);
+    const parsed = await parseMemberImportWorkbook(buffer, format);
     const roleByKey = new Map<string, { id: string; variant: "DEFAULT" | "FEMALE" }>();
     for (const role of options.roles) {
       if (role.abbreviation) roleByKey.set(normalizeRoleKey(role.abbreviation), { id: role.id, variant: "DEFAULT" });
@@ -254,6 +256,7 @@ export async function prepareMemberImportAction(
         file_sha256: fileSha256,
         normalization_version: MEMBER_IMPORT_NORMALIZATION_VERSION,
         settings_snapshot: {
+          file_format: format,
           recognized_columns: parsed.recognizedColumns,
           ignored_columns: parsed.ignoredColumns,
           empty_rows: parsed.emptyRows,

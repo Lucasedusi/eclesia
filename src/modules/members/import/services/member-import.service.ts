@@ -67,7 +67,6 @@ function mapItem(row: AnyRow): MemberImportItem {
   return {
     id: row.id,
     rowNumber: row.row_number,
-    sourceData: row.source_data,
     fullName: row.full_name,
     phoneRaw: row.phone_raw,
     whatsapp: row.whatsapp,
