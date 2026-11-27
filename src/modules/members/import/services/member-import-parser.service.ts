@@ -3,6 +3,7 @@ import "server-only";
 import ExcelJS from "exceljs";
 import { parseString } from "@fast-csv/parse";
 import {
+  CONGREGATION_COLUMNS,
   MEMBER_IMPORT_COLUMNS,
   MEMBER_IMPORT_HEADER_ALIASES,
   MEMBER_IMPORT_MAX_ROWS,
@@ -53,8 +54,8 @@ function hasAnyValue(values: ExcelJS.CellValue[]) {
 
 function classifyBaseRow(
   rowNumber: number,
-  sourceData: MemberImportSourceData,
-  cellValues: Record<keyof MemberImportSourceData, ExcelJS.CellValue>,
+  sourceData: ParsedMemberImportRow["sourceData"],
+  cellValues: Partial<Record<keyof MemberImportSourceData, ExcelJS.CellValue>>,
 ): ParsedMemberImportRow {
   const issues: MemberImportIssue[] = [];
   for (const field of MEMBER_IMPORT_COLUMNS) {
@@ -72,7 +73,7 @@ function classifyBaseRow(
   const roleRaw = normalizeMemberName(sourceData.cargo);
 
   const whatsapp = normalizeImportPhone(sourceData.fone);
-  if (sourceData.fone && !whatsapp) {
+  if (sourceData.fone && !whatsapp && !sourceData.telefone_fixo) {
     issues.push(createImportIssue("PHONE_INVALID", "fone", "WARNING", "O telefone não possui DDD e 11 dígitos e não será gravado."));
   }
 
@@ -264,6 +265,36 @@ async function parseMemberCsv(buffer: Buffer): Promise<ParsedMemberImportFile> {
   return { worksheetName: "MEMBROS WEB", recognizedColumns, ignoredColumns: [...columnIndex.keys()].filter((name) => !supported.has(name)), emptyRows, rows };
 }
 
+function readCongregationFields(source: ParsedMemberImportRow["sourceData"], cells: Record<string, ExcelJS.CellValue>) {
+  const issues: MemberImportIssue[] = [];
+  for (const [, key] of CONGREGATION_COLUMNS) {
+    source[key] = rawCellValue(cells[key]);
+    if (!legacyKeys.has(normalizeImportHeader(key)) && hasFormulaValue(cells[key])) {
+      issues.push(createImportIssue("FORMULA_NOT_ALLOWED", key, "ERROR", "Fórmulas não são permitidas nos campos da importação."));
+    }
+  }
+  const registration = normalizeImportDate(cells.cadastro_legado, "cadastro_legado");
+  if (registration.issue) issues.push(registration.issue);
+  source.cadastro_legado = registration.value ?? "";
+  const origin = source.naturalidade ?? "";
+  const parts = origin.match(/^(.+?)[\s,/-]+([a-z]{2})$/i);
+  if (parts && normalizeBrazilianState(parts[2])) {
+    source.naturalidade_cidade = parts[1].trim();
+    source.naturalidade_uf = parts[2].toUpperCase();
+  } else {
+    source.naturalidade_cidade = origin;
+  }
+  const digits = source.fone.replace(/\D/g, "");
+  const local = digits.length === 12 && digits.startsWith("55") ? digits.slice(2) : digits;
+  if (local.length === 10) source.telefone_fixo = local;
+  return issues;
+}
+
+// Rótulos visíveis do modelo e chaves técnicas aceitas nos arquivos anteriores.
+const legacyKeys = new Map<string, string>(MEMBER_IMPORT_COLUMNS.map(key => [normalizeImportHeader(key), key]));
+for (const [alias, key] of Object.entries(MEMBER_IMPORT_HEADER_ALIASES)) legacyKeys.set(normalizeImportHeader(alias), key);
+const officialKeys = new Map<string, string>(CONGREGATION_COLUMNS.map(([label, key]) => [normalizeImportHeader(label), key]));
+
 export async function parseMemberImportWorkbook(buffer: Buffer, format: "xlsx" | "csv" = "xlsx"): Promise<ParsedMemberImportFile> {
   if (format === "csv") return parseMemberCsv(buffer);
   const workbook = new ExcelJS.Workbook();
@@ -273,71 +304,61 @@ export async function parseMemberImportWorkbook(buffer: Buffer, format: "xlsx" |
     throw new MemberImportParserError("IMPORT_FILE_INVALID_TYPE", "Não foi possível ler o arquivo XLSX.");
   }
 
-  const worksheet = workbook.worksheets.find((sheet) => {
-    let found = false;
-    sheet.eachRow({ includeEmpty: false }, (row) => {
-      if (hasAnyValue((row.values as ExcelJS.CellValue[]).slice(1))) found = true;
-    });
-    return found;
-  });
+  const worksheet = workbook.worksheets.length === 1
+    ? workbook.worksheets[0]
+    : workbook.worksheets.find(sheet => sheet.actualRowCount > 0);
   if (!worksheet) throw new MemberImportParserError("IMPORT_WORKSHEET_EMPTY", "A planilha não possui linhas para importar.");
 
-  let headerRowNumber = 0;
-  const columnByHeader = new Map<string, number>();
-  const canonicalHeaderByNormalizedValue = new Map(
-    MEMBER_IMPORT_COLUMNS.map((column) => [normalizeImportHeader(column), column]),
-  );
-  Object.entries(MEMBER_IMPORT_HEADER_ALIASES).forEach(([alias, column]) => {
-    canonicalHeaderByNormalizedValue.set(normalizeImportHeader(alias), column);
-  });
-  worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
-    if (headerRowNumber) return;
-    const values = (row.values as ExcelJS.CellValue[]).slice(1);
-    if (!hasAnyValue(values)) return;
-    headerRowNumber = rowNumber;
-    values.forEach((value, index) => {
-      const normalizedHeader = normalizeImportHeader(rawCellValue(value));
-      const header = canonicalHeaderByNormalizedValue.get(normalizedHeader) ?? normalizedHeader;
-      if (header && !columnByHeader.has(header)) columnByHeader.set(header, index + 1);
-    });
-  });
-  if (!headerRowNumber) throw new MemberImportParserError("IMPORT_HEADER_MISSING", "Não foi possível localizar o cabeçalho da planilha.");
-
-  const expectedHeaders = new Set<string>(MEMBER_IMPORT_COLUMNS);
-  const missingRequired = MEMBER_IMPORT_REQUIRED_COLUMNS.filter((column) => !columnByHeader.has(column));
-  if (missingRequired.length) {
-    throw new MemberImportParserError(
-      "IMPORT_HEADER_MISSING",
-      `A planilha precisa conter as colunas obrigatórias: ${missingRequired.join(", ")}.`,
-    );
-  }
-
-  const recognizedColumns = MEMBER_IMPORT_COLUMNS.filter((column) => columnByHeader.has(column));
-  const ignoredColumns = [...columnByHeader.keys()].filter((column) => !expectedHeaders.has(column));
+  let headerRead = false;
   const rows: ParsedMemberImportRow[] = [];
   let emptyRows = 0;
+  const columnIndex = new Map<string, number>();
+  let congregationWorkbook = false;
+  const recognizedColumns: string[] = [];
+  const ignoredColumns: string[] = [];
 
-  for (let rowNumber = headerRowNumber + 1; rowNumber <= worksheet.rowCount; rowNumber += 1) {
-    const row = worksheet.getRow(rowNumber);
-    const supportedValues = {} as Record<keyof MemberImportSourceData, ExcelJS.CellValue>;
-    const sourceData = {} as MemberImportSourceData;
-    for (const column of MEMBER_IMPORT_COLUMNS) {
-      const index = columnByHeader.get(column);
-      const cellValue = index ? row.getCell(index).value : null;
-      supportedValues[column] = cellValue;
-      sourceData[column] = rawCellValue(cellValue);
+  worksheet.eachRow(row => {
+    if (!headerRead) {
+      const cells = (row.values as ExcelJS.CellValue[]).slice(1);
+      if (!hasAnyValue(cells)) return;
+      headerRead = true;
+      const labels = cells.map(value => normalizeImportHeader(rawCellValue(value)));
+      const officialOnly = labels.filter(label => officialKeys.has(label) && !legacyKeys.has(label));
+      const hasLegacyHeader = labels.some(label => legacyKeys.has(label) && !officialKeys.has(label));
+      congregationWorkbook = officialOnly.length > 0 && (!hasLegacyHeader || officialOnly.length > 1);
+      const keys = congregationWorkbook ? officialKeys : legacyKeys;
+      if (congregationWorkbook && workbook.worksheets.length !== 1) {
+        throw new MemberImportParserError("IMPORT_HEADER_INVALID", "Envie o XLSX de uma única aba com os 21 campos do modelo.");
+      }
+      labels.forEach((label, i) => {
+        const key = keys.get(label);
+        if (!key) {
+          if (label) ignoredColumns.push(label);
+          return;
+        }
+        if (columnIndex.has(key)) {
+          if (congregationWorkbook) throw new MemberImportParserError("IMPORT_HEADER_INVALID", `Cabeçalho repetido: ${rawCellValue(cells[i])}.`);
+          return;
+        }
+        columnIndex.set(key, i + 1);
+        recognizedColumns.push(congregationWorkbook ? rawCellValue(cells[i]) : key);
+      });
+      const missing = congregationWorkbook
+        ? CONGREGATION_COLUMNS.filter(([, key]) => !columnIndex.has(key)).map(([label]) => label)
+        : MEMBER_IMPORT_REQUIRED_COLUMNS.filter(key => !columnIndex.has(key));
+      if (missing.length) throw new MemberImportParserError("IMPORT_HEADER_MISSING", `Faltam os cabeçalhos: ${missing.join(", ")}.`);
+      return;
     }
-    if (!hasAnyValue(Object.values(supportedValues))) {
-      emptyRows += 1;
-      continue;
-    }
-    rows.push(classifyBaseRow(rowNumber, sourceData, supportedValues));
-  }
 
+    const cells = Object.fromEntries([...columnIndex].map(([key, index]) => [key, row.getCell(index).value]));
+    if (!hasAnyValue(Object.values(cells))) { emptyRows++; return; }
+    if (rows.length >= MEMBER_IMPORT_MAX_ROWS) throw new MemberImportParserError("IMPORT_ROW_LIMIT_EXCEEDED", "O lote deve possuir no máximo 500 membros.");
+    const source = Object.fromEntries(MEMBER_IMPORT_COLUMNS.map(key => [key, rawCellValue(cells[key])])) as ParsedMemberImportRow["sourceData"];
+    const extraIssues = congregationWorkbook ? readCongregationFields(source, cells) : [];
+    const parsed = classifyBaseRow(row.number, source, cells);
+    parsed.issues.push(...extraIssues);
+    rows.push(parsed);
+  });
   if (!rows.length) throw new MemberImportParserError("IMPORT_WORKSHEET_EMPTY", "A planilha não possui membros para importar.");
-  if (rows.length > MEMBER_IMPORT_MAX_ROWS) {
-    throw new MemberImportParserError("IMPORT_ROW_LIMIT_EXCEEDED", `O arquivo possui ${rows.length} linhas; o limite é ${MEMBER_IMPORT_MAX_ROWS}.`);
-  }
-
-  return { worksheetName: worksheet.name, recognizedColumns, ignoredColumns, emptyRows, rows };
+  return { worksheetName: worksheet.name, congregationWorkbook, recognizedColumns, ignoredColumns, emptyRows, rows };
 }

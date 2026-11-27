@@ -7283,6 +7283,8 @@ export type Database = {
           holy_spirit_baptism_date: string | null
           id: string
           inactive_reason: string | null
+          landline: string | null
+          legacy_registration_date: string | null
           letter_destination_church: string | null
           letter_origin_church: string | null
           marital_status: string | null
@@ -7336,6 +7338,8 @@ export type Database = {
           holy_spirit_baptism_date?: string | null
           id?: string
           inactive_reason?: string | null
+          landline?: string | null
+          legacy_registration_date?: string | null
           letter_destination_church?: string | null
           letter_origin_church?: string | null
           marital_status?: string | null
@@ -7389,6 +7393,8 @@ export type Database = {
           holy_spirit_baptism_date?: string | null
           id?: string
           inactive_reason?: string | null
+          landline?: string | null
+          legacy_registration_date?: string | null
           letter_destination_church?: string | null
           letter_origin_church?: string | null
           marital_status?: string | null

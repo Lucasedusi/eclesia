@@ -67,6 +67,13 @@ function mapItem(row: AnyRow): MemberImportItem {
   return {
     id: row.id,
     rowNumber: row.row_number,
+    address: row.source_data?.endereco || null,
+    district: row.source_data?.bairro || null,
+    country: row.source_data?.pais || null,
+    profession: row.source_data?.profissao || null,
+    nationality: row.source_data?.nacionalidade || null,
+    legacyRegistrationDate: row.source_data?.cadastro_legado || null,
+    landline: row.source_data?.telefone_fixo || null,
     fullName: row.full_name,
     phoneRaw: row.phone_raw,
     whatsapp: row.whatsapp,
@@ -75,7 +82,7 @@ function mapItem(row: AnyRow): MemberImportItem {
     roleId: row.role_id,
     roleName,
     roleTitleVariant: row.role_title_variant,
-    cpf: row.cpf,
+    cpfSuffix: row.cpf?.slice(-2) ?? null,
     maritalStatusRaw: row.marital_status_raw,
     maritalStatus: row.marital_status,
     receivedDate: row.received_date,
@@ -230,7 +237,7 @@ async function getMemberImportMappings(context: AuthContext, batchId: string) {
   };
 }
 
-async function getMemberImportHistory(context: AuthContext): Promise<MemberImportHistory> {
+export async function getMemberImportHistory(context: AuthContext): Promise<MemberImportHistory> {
   const supabase = await createClient();
   const [listResult, statsResult] = await Promise.all([
     supabase
@@ -275,19 +282,18 @@ export async function getMemberImportWorkspace(
   batchId?: string,
   params: MemberImportReviewParams = { page: 1, pageSize: 20, search: "", classification: "" },
 ): Promise<MemberImportWorkspaceData> {
-  const [options, history, batch] = await Promise.all([
+  const [options, batch] = await Promise.all([
     getImportOptions(context),
-    getMemberImportHistory(context),
     batchId ? getMemberImportBatch(context, batchId) : Promise.resolve(null),
   ]);
   if (!batch) {
-    return { ...options, history, batch: null, items: null, roleMappings: [], maritalMappings: [] };
+    return { ...options, batch: null, items: null, roleMappings: [], maritalMappings: [] };
   }
   const [items, mappings] = await Promise.all([
     listMemberImportItems(context, batch.id, params),
     getMemberImportMappings(context, batch.id),
   ]);
-  return { ...options, history, batch, items, ...mappings };
+  return { ...options, batch, items, ...mappings };
 }
 
 export async function getExistingCpfMembers(context: AuthContext, cpfs: string[]) {

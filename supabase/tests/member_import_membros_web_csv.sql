@@ -136,7 +136,34 @@ begin
     raise exception 'Cargo opcional ou sexo por membro divergente após a confirmação';
   end if;
 
-
+  -- Planilha oficial. O contador passa da largura configurada dentro do mesmo lote.
+  update public.app_settings set member_code_next_number=99, member_code_padding=2,
+    member_code_prefix='T', enable_member_auto_code=true where church_id=church;
+  items := jsonb_set(items, '{0,source_data}', '{"endereco":"Rua Teste, 42","bairro":"Centro","pais":"Portugal",
+    "profissao":"Docente","nacionalidade":"Portuguesa","telefone_fixo":"1134567890","cadastro_legado":"2015-03-10"}');
+  items := jsonb_set(items, '{0,received_date}', '"2015-03-10"');
+  payload := payload || jsonb_build_object('file_sha256',repeat('d',64),'original_filename','limpa.xlsx',
+    'settings_snapshot',jsonb_build_object('workbook_schema','congregation'));
+  set local role authenticated;
+  batch := public.prepare_member_import_official(payload,items);
+  duplicate_batch := public.prepare_member_import_official(payload,items);
+  perform public.execute_member_import(batch);
+  begin
+    perform public.execute_member_import(duplicate_batch);
+    raise exception 'Mesmo lote confirmado duas vezes';
+  exception when raise_exception then
+    if sqlerrm <> 'IMPORT_DUPLICATE_CHANGED_DURING_CONFIRMATION' then raise; end if;
+  end;
+  reset role;
+  if not exists (select 1 from public.members where source_import_batch_id=batch and church_id=church
+    and member_code='T99' and address='Rua Teste, 42' and district='Centro' and country='Portugal'
+    and profession='Docente' and nationality='Portuguesa' and legacy_registration_date=date '2015-03-10'
+    and landline='1134567890' and whatsapp is null and received_date is null)
+    or not exists (select 1 from public.members where source_import_batch_id=batch and member_code='T100')
+    or exists (select 1 from public.member_history h join public.members m on m.id=h.member_id
+      where m.source_import_batch_id=batch and h.history_type='MEMBER_RECEIVED') then
+    raise exception 'Divergência na gravação da planilha de congregação';
+  end if;
 end;
 $test$;
 

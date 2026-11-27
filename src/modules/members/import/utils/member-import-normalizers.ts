@@ -93,6 +93,7 @@ function isoDate(year: number, month: number, day: number) {
 
 type ImportDateField =
   | "dtnascimento"
+  | "cadastro_legado"
   | "dtcadastro"
   | "data_batismo_agua"
   | "data_batismo_espirito"
@@ -100,6 +101,7 @@ type ImportDateField =
 
 const DATE_ISSUES: Record<ImportDateField, { invalid: string; future: string }> = {
   dtnascimento: { invalid: "BIRTH_DATE_INVALID", future: "BIRTH_DATE_FUTURE" },
+  cadastro_legado: { invalid: "LEGACY_DATE_INVALID", future: "LEGACY_DATE_FUTURE" },
   dtcadastro: { invalid: "RECEIVED_DATE_INVALID", future: "RECEIVED_DATE_FUTURE" },
   data_batismo_agua: { invalid: "BAPTISM_DATE_INVALID", future: "BAPTISM_DATE_FUTURE" },
   data_batismo_espirito: { invalid: "HOLY_SPIRIT_BAPTISM_DATE_INVALID", future: "HOLY_SPIRIT_BAPTISM_DATE_FUTURE" },
@@ -160,6 +162,6 @@ export function createImportIssue(
   return issue(code, field, severity, message);
 }
 
-export function hasFormulaValue(value: unknown): value is { formula: string } {
-  return Boolean(value && typeof value === "object" && "formula" in value);
+export function hasFormulaValue(value: unknown): boolean {
+  return Boolean(value && typeof value === "object" && ("formula" in value || "sharedFormula" in value));
 }

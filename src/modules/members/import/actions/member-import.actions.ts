@@ -15,6 +15,9 @@ import {
   getExistingCpfMembers,
   getExistingPhoneMembers,
   getImportOptions,
+  listMemberImportItems,
+  getMemberImportHistory,
+  getMemberImportBatch,
   getMemberImportWorkspace,
 } from "../services/member-import.service";
 import {
@@ -119,10 +122,19 @@ export async function prepareMemberImportAction(
     }
 
     const parsed = await parseMemberImportWorkbook(buffer, format);
-    const roleByKey = new Map<string, { id: string; variant: "DEFAULT" | "FEMALE" }>();
+    type Match = { id: string; variant: "DEFAULT" | "FEMALE" };
+    const roleByKey = new Map<string, Match | null>();
     for (const role of options.roles) {
-      if (role.abbreviation) roleByKey.set(normalizeRoleKey(role.abbreviation), { id: role.id, variant: "DEFAULT" });
-      if (role.femaleAbbreviation) roleByKey.set(normalizeRoleKey(role.femaleAbbreviation), { id: role.id, variant: "FEMALE" });
+      for (const [label, variant] of [
+        [role.abbreviation, "DEFAULT"], [role.femaleAbbreviation, "FEMALE"],
+        [role.name, "DEFAULT"], [role.femaleName, "FEMALE"],
+      ] as const) {
+        if (!label) continue;
+        const key = normalizeRoleKey(label);
+        const existing = roleByKey.get(key);
+        if (existing === undefined) roleByKey.set(key, { id: role.id, variant });
+        else if (existing?.id !== role.id) roleByKey.set(key, null);
+      }
     }
 
     const validCpfs = [...new Set(parsed.rows.map((row) => row.cpf).filter((cpf): cpf is string => Boolean(cpf)))];
@@ -156,7 +168,7 @@ export async function prepareMemberImportAction(
       const issues = [...row.issues];
       const roleMatch = roleByKey.get(normalizeRoleKey(row.roleRaw));
       if (!roleMatch && row.roleRaw) {
-        issues.push(createImportIssue("ROLE_UNKNOWN", "cargo", "ERROR", "A sigla não corresponde a um Cargo ativo do EKLESIA."));
+        issues.push(createImportIssue("ROLE_UNKNOWN", "cargo", "ERROR", "Selecione a equivalência deste cargo."));
       }
       if (row.cpf && (cpfCounts.get(row.cpf) ?? 0) > 1) {
         issues.push(createImportIssue("CPF_DUPLICATE_FILE", "cpf", "ERROR", "O mesmo CPF aparece em mais de uma linha do arquivo."));
@@ -257,6 +269,7 @@ export async function prepareMemberImportAction(
         normalization_version: MEMBER_IMPORT_NORMALIZATION_VERSION,
         settings_snapshot: {
           file_format: format,
+          workbook_schema: parsed.congregationWorkbook ? "congregation" : "legacy",
           recognized_columns: parsed.recognizedColumns,
           ignored_columns: parsed.ignoredColumns,
           empty_rows: parsed.emptyRows,
@@ -301,6 +314,24 @@ export async function getMemberImportWorkspaceAction(
   }
 }
 
+export async function getMemberImportHistoryAction() {
+  const context = await requireAccessContext(PERMISSIONS.membersImport);
+  return getMemberImportHistory(context);
+}
+
+export async function getMemberImportPageAction(input: unknown) {
+  const context = await requireAccessContext(PERMISSIONS.membersImport);
+  const parsed = memberImportReviewSchema.safeParse(input);
+  if (!parsed.success) return { success: false as const, message: "Filtros inválidos." };
+  try {
+    const { batchId, ...params } = parsed.data;
+    const items = await listMemberImportItems(context, batchId, params);
+    return { success: true as const, items };
+  } catch {
+    return { success: false as const, message: "Não foi possível carregar as linhas do lote." };
+  }
+}
+
 export async function resolveMemberImportMappingAction(
   input: unknown,
 ): Promise<MemberImportActionResult<MemberImportWorkspaceData>> {
@@ -321,7 +352,7 @@ export async function resolveMemberImportMappingAction(
 
 export async function resolveMemberImportItemAction(
   input: unknown,
-): Promise<MemberImportActionResult<MemberImportWorkspaceData>> {
+): Promise<MemberImportActionResult<Pick<MemberImportWorkspaceData, "batch" | "items">>> {
   const context = await requireAccessContext(PERMISSIONS.membersImport);
   const parsed = memberImportItemResolutionSchema.safeParse(input);
   if (!parsed.success) return { success: false, message: "A decisão informada é inválida." };
@@ -334,7 +365,11 @@ export async function resolveMemberImportItemAction(
   if (error) return { success: false, message: friendlyError(error.message) };
   revalidatePath("/membros/importar");
   const { batchId, page, pageSize, search, classification } = parsed.data;
-  return { success: true, message: "Decisão registrada.", data: await getMemberImportWorkspace(context, batchId, { page, pageSize, search, classification }) };
+  const [batch, items] = await Promise.all([
+    getMemberImportBatch(context, batchId),
+    listMemberImportItems(context, batchId, { page, pageSize, search, classification }),
+  ]);
+  return { success: true, message: "Decisão registrada.", data: { batch, items } };
 }
 
 export async function confirmMemberImportAction(
@@ -356,7 +391,7 @@ export async function confirmMemberImportAction(
         IMPORT_DUPLICATE_CHANGED_DURING_CONFIRMATION: true,
       }).find((code) => error.message.includes(code)) ?? "IMPORT_EXECUTION_FAILED",
       failure_message: safeMessage,
-    }).eq("id", batchId).eq("church_id", context.church.id);
+    }).eq("id", batchId).eq("church_id", context.church.id).in("status", ["READY", "FAILED"]);
     return { success: false, message: safeMessage };
   }
   revalidatePath("/membros");

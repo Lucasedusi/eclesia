@@ -53,7 +53,7 @@ export type MemberImportSourceData = {
 
 export type ParsedMemberImportRow = {
   rowNumber: number;
-  sourceData: MemberImportSourceData & Partial<Record<"id" | "endereco" | "identidade" | "email", string>>;
+  sourceData: MemberImportSourceData & Partial<Record<"id" | "endereco" | "identidade" | "email" | "bairro" | "pais" | "profissao" | "naturalidade" | "nacionalidade" | "cadastro_legado" | "telefone_fixo", string>>;
   fullName: string;
   normalizedNameKey: string;
   phoneRaw: string;
@@ -80,6 +80,7 @@ export type ParsedMemberImportRow = {
 };
 
 export type ParsedMemberImportFile = {
+  congregationWorkbook?: boolean;
   worksheetName: string;
   recognizedColumns: string[];
   ignoredColumns: string[];
@@ -128,6 +129,13 @@ export type MemberImportBatch = {
 };
 
 export type MemberImportItem = {
+  address: string | null;
+  district: string | null;
+  country: string | null;
+  profession: string | null;
+  nationality: string | null;
+  legacyRegistrationDate: string | null;
+  landline: string | null;
   id: string;
   rowNumber: number;
   fullName: string;
@@ -138,7 +146,7 @@ export type MemberImportItem = {
   roleId: string | null;
   roleName: string | null;
   roleTitleVariant: "AUTO" | "DEFAULT" | "FEMALE";
-  cpf: string | null;
+  cpfSuffix: string | null;
   maritalStatusRaw: string | null;
   maritalStatus: string | null;
   receivedDate: string | null;
@@ -215,7 +223,6 @@ export type MemberImportWorkspaceData = {
   items: MemberImportItemsResult | null;
   roleMappings: MemberImportRoleMapping[];
   maritalMappings: MemberImportMaritalMapping[];
-  history: MemberImportHistory;
 };
 
 export type MemberImportActionResult<T = undefined> =

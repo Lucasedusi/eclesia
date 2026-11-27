@@ -168,3 +168,40 @@ describe("parser XLSX da importação de membros", () => {
     await expect(parseMemberImportWorkbook(buffer)).rejects.toMatchObject({ code: "IMPORT_ROW_LIMIT_EXCEEDED" });
   });
 });
+
+describe("planilha limpa de uma congregação", () => {
+  const headers = ["Nome", "Cargo", "Sexo", "Data de nascimento", "Endereço", "Bairro", "Cidade", "Estado",
+    "País", "CEP", "Telefone", "CPF", "Estado civil", "Profissão", "Naturalidade", "Nacionalidade",
+    "Data do cadastro", "Data de conversão", "Data de batismo nas águas", "Nome do pai", "Nome da mãe"];
+
+  it("preserva os 21 campos e distingue data legada, recebimento e telefone fixo", async () => {
+    const result = await parseMemberImportWorkbook(await workbookBuffer([headers, [
+      "Pessoa de Teste", "Diaconisa", "Feminino", "10/05/1985", "Rua A, 42", "Centro", "São Paulo", "SP",
+      "Portugal", "01234-000", "(11) 3456-7890", "", "Casado(a)", "Docente", "São José dos Campos / SP",
+      "Portuguesa", new Date("2015-03-10T00:00:00Z"), "12/12/2000", "13/12/2001", "Pai do Teste", "Mãe do Teste",
+    ]]));
+    expect(result.recognizedColumns).toEqual(headers);
+    expect(result.rows[0]).toMatchObject({
+      fullName: "Pessoa de Teste", roleRaw: "Diaconisa", gender: "FEMALE", birthDate: "1985-05-10",
+      receivedDate: null, whatsapp: null, maritalStatus: "MARRIED", city: "São Paulo", state: "SP",
+      naturalCity: "São José dos Campos", naturalState: "SP", zipCode: "01234000", issues: [],
+      conversionDate: "2000-12-12", baptismDate: "2001-12-13", fatherName: "Pai do Teste", motherName: "Mãe do Teste",
+      sourceData: { endereco: "Rua A, 42", bairro: "Centro", pais: "Portugal", profissao: "Docente",
+        nacionalidade: "Portuguesa", cadastro_legado: "2015-03-10", telefone_fixo: "1134567890" },
+    });
+  });
+
+  it("identifica as colunas ausentes e repetidas", async () => {
+    await expect(parseMemberImportWorkbook(await workbookBuffer([headers.slice(0, -1)]))).rejects.toThrow("Nome da mãe");
+    await expect(parseMemberImportWorkbook(await workbookBuffer([[...headers, "nome do pai"]]))).rejects.toThrow("repetido");
+  });
+
+  it("rejeita fórmulas em campos exclusivos e datas de origem inválidas", async () => {
+    const row: ExcelJS.CellValue[] = headers.map(() => "");
+    row[0] = "Pessoa de Teste";
+    row[4] = { formula: "1+1", result: 2 };
+    row[16] = "31/02/2010";
+    const { rows } = await parseMemberImportWorkbook(await workbookBuffer([headers, row]));
+    expect(rows[0].issues.map(issue => issue.code)).toEqual(expect.arrayContaining(["FORMULA_NOT_ALLOWED", "LEGACY_DATE_INVALID"]));
+  });
+});

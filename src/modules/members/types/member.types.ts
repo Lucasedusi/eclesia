@@ -88,6 +88,8 @@ export type MemberCapabilities = {
 };
 
 export type MemberCoreDetails = {
+  landline: string | null;
+  legacyRegistrationDate: string | null;
   id: string;
   memberCode: string | null;
   fullName: string;

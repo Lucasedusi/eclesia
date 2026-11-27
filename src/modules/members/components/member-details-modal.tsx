@@ -786,6 +786,8 @@ export function MemberDetailsContent({
           <h4>Contato, endereço e família</h4>
           <S.Grid>
             <WhatsAppField value={details.whatsapp} />
+            {details.landline && <Field label="Telefone fixo" value={details.landline} />}
+            {details.legacyRegistrationDate && <Field label="Cadastro no sistema de origem" value={date(details.legacyRegistrationDate)} />}
             <Field label="E-mail" value={details.email} />
             <Field label="Endereço" value={details.address} />
             <Field label="Pai" value={details.fatherName} />

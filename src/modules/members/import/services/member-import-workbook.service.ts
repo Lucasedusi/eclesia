@@ -4,7 +4,7 @@ import ExcelJS from "exceljs";
 import type { MemberImportBatch, MemberImportItem } from "../types/member-import.types";
 import {
   BRAZILIAN_STATE_OPTIONS,
-  MEMBER_IMPORT_COLUMNS,
+  CONGREGATION_COLUMNS,
   MEMBER_IMPORT_STATUS_LABELS,
 } from "../constants/member-import";
 
@@ -47,79 +47,25 @@ export async function generateMemberImportTemplate() {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = "EKLESIA";
   const worksheet = workbook.addWorksheet("Membros", { views: [{ state: "frozen", ySplit: 1 }] });
-  worksheet.addRow([...MEMBER_IMPORT_COLUMNS]);
-  styleHeader(worksheet.getRow(1));
-  worksheet.autoFilter = { from: "A1", to: "R1" };
-  worksheet.getCell("A1").note = "Obrigatório. Nome completo do membro.";
-  worksheet.getCell("D1").note = "Opcional. Preencha a sigla de um cargo ativo ou deixe em branco.";
-  worksheet.getCell("B1").note = "Opcional. Informe DDD e 9 dígitos.";
-  worksheet.getCell("C1").note = "Opcional. Formato dd/MM/aaaa.";
-  worksheet.getCell("E1").note = "Opcional. O CPF será validado antes da importação.";
-  worksheet.getCell("F1").note = "Opcional. Ex.: Solteiro(a), Casado(a), Separado(a).";
-  worksheet.getCell("G1").note = "Opcional. Data em que a pessoa foi recebida como membro.";
-  worksheet.getCell("H1").note = "Opcional. Use Masculino, Feminino, M ou F.";
-  worksheet.getCell("I1").note = "Opcional. CEP do endereço atual, com oito dígitos.";
-  worksheet.getCell("J1").note = "Opcional. Cidade do endereço atual.";
-  worksheet.getCell("K1").note = "Opcional. UF do endereço atual, com duas letras.";
-  worksheet.getCell("L1").note = "Opcional. Cidade onde a pessoa nasceu.";
-  worksheet.getCell("M1").note = "Opcional. UF da naturalidade, com duas letras.";
-  worksheet.getCell("N1").note = "Opcional. Nome completo do pai.";
-  worksheet.getCell("O1").note = "Opcional. Nome completo da mãe.";
-  worksheet.getCell("P1").note = "Opcional. Data do batismo nas águas, no formato dd/MM/aaaa.";
-  worksheet.getCell("Q1").note = "Opcional. Data do batismo com o Espírito Santo, no formato dd/MM/aaaa.";
-  worksheet.getCell("R1").note = "Opcional. Data da conversão, no formato dd/MM/aaaa.";
-  worksheet.addRow([
-    "Maria da Silva", "(62) 99999-8888", "10/05/1985", "Mb", "529.982.247-25", "Casado(a)",
-    "15/03/2010", "Feminino", "76550-000", "Porangatu", "GO", "Porangatu", "GO",
-    "José da Silva", "Ana da Silva", "20/06/1998", "10/08/2001", "15/05/1997",
-  ]);
-  for (let row = 2; row <= 501; row += 1) {
-    worksheet.getCell(`F${row}`).dataValidation = {
-      type: "list",
-      allowBlank: true,
-      formulae: ['"Solteiro(a),Casado(a),Divorciado(a),Separado(a),Viúvo(a),União estável,Outro"'],
-    };
-    worksheet.getCell(`H${row}`).dataValidation = {
-      type: "list",
-      allowBlank: true,
-      formulae: ['"Masculino,Feminino,M,F"'],
-    };
-    worksheet.getCell(`K${row}`).dataValidation = {
-      type: "list",
-      allowBlank: true,
-      formulae: [`"${BRAZILIAN_STATE_OPTIONS.join(",")}"`],
-    };
-    worksheet.getCell(`M${row}`).dataValidation = {
-      type: "list",
-      allowBlank: true,
-      formulae: [`"${BRAZILIAN_STATE_OPTIONS.join(",")}"`],
-    };
-    worksheet.getCell(`C${row}`).numFmt = "dd/mm/yyyy";
-    worksheet.getCell(`G${row}`).numFmt = "dd/mm/yyyy";
-    worksheet.getCell(`P${row}`).numFmt = "dd/mm/yyyy";
-    worksheet.getCell(`Q${row}`).numFmt = "dd/mm/yyyy";
-    worksheet.getCell(`R${row}`).numFmt = "dd/mm/yyyy";
+  worksheet.columns = CONGREGATION_COLUMNS.map(([header, key]) => ({
+    header, key, width: Math.max(18, header.length + 4),
+  }));
+  for (const key of ["nome", "endereco", "nome_pai", "nome_mae"]) worksheet.getColumn(key).width = 36;
+  for (const key of ["fone", "cep", "cpf"]) worksheet.getColumn(key).numFmt = "@";
+  for (const key of ["dtnascimento", "cadastro_legado", "data_conversao", "data_batismo_agua"]) {
+    worksheet.getColumn(key).numFmt = "dd/mm/yyyy";
   }
-  worksheet.columns = [
-    { key: "nome", width: 34 },
-    { key: "fone", width: 20 },
-    { key: "dtnascimento", width: 18 },
-    { key: "cargo", width: 14 },
-    { key: "cpf", width: 18 },
-    { key: "estadocivil", width: 20 },
-    { key: "dtcadastro", width: 18 },
-    { key: "sexo", width: 14 },
-    { key: "cep", width: 14 },
-    { key: "cidade", width: 24 },
-    { key: "estado", width: 14 },
-    { key: "naturalidade_cidade", width: 24 },
-    { key: "naturalidade_uf", width: 17 },
-    { key: "nome_pai", width: 30 },
-    { key: "nome_mae", width: 30 },
-    { key: "data_batismo_agua", width: 20 },
-    { key: "data_batismo_espirito", width: 22 },
-    { key: "data_conversao", width: 18 },
-  ];
+  styleHeader(worksheet.getRow(1));
+  worksheet.autoFilter = "A1:U1";
+  worksheet.getCell("Q1").note = "Data do cadastro no sistema de origem.";
+  for (let row = 2; row <= 501; row++) {
+    for (const [column, options] of [
+      ["C", "Masculino,Feminino,M,F"], ["H", BRAZILIAN_STATE_OPTIONS.join(",")],
+      ["M", "Solteiro(a),Casado(a),Divorciado(a),Separado(a),Viúvo(a),União estável,Outro"],
+    ]) {
+      worksheet.getCell(column + row).dataValidation = { type: "list", allowBlank: true, formulae: [`"${options}"`] };
+    }
+  }
   return Buffer.from(await workbook.xlsx.writeBuffer());
 }
 
@@ -155,75 +101,97 @@ export async function generateMemberImportReport(batch: MemberImportBatch, items
   summary.getColumn(2).width = 74;
 
   const imported = workbook.addWorksheet("Importados", { views: [{ state: "frozen", ySplit: 1 }] });
-  imported.addRow([
-    "Linha", "Código", "Nome", "Telefone", "Nascimento", "Sexo", "CPF", "Estado civil",
-    "CEP", "Cidade", "Estado", "Naturalidade", "UF", "Nome do pai", "Nome da mãe",
-    "Batismo nas águas", "Batismo com o Espírito Santo", "Conversão", "Recebimento", "Cargo", "Avisos",
-  ]);
-  styleHeader(imported.getRow(1));
-  items.filter((item) => item.classification === "IMPORTED").forEach((item) => {
-    imported.addRow([
-      item.rowNumber,
-      item.importedMemberCode ?? "",
-      item.fullName,
-      item.whatsapp ?? item.phoneRaw ?? "",
-      asExcelDate(item.birthDate),
-      genderLabel(item.gender),
-      maskedCpf(item.cpf),
-      item.maritalStatusRaw ?? "",
-      item.zipCode ?? "",
-      item.city ?? "",
-      item.state ?? "",
-      item.naturalCity ?? "",
-      item.naturalState ?? "",
-      item.fatherName ?? "",
-      item.motherName ?? "",
-      asExcelDate(item.baptismDate),
-      asExcelDate(item.holySpiritBaptismDate),
-      asExcelDate(item.conversionDate),
-      asExcelDate(item.receivedDate),
-      item.roleName ?? item.roleRaw,
-      issueText(item),
-    ]);
-  });
-  imported.autoFilter = { from: "A1", to: "U1" };
-  ["E", "P", "Q", "R", "S"].forEach((column) => { imported.getColumn(column).numFmt = "dd/mm/yyyy"; });
-  fitColumns(imported, 36);
-
   const rejected = workbook.addWorksheet("Não importados", { views: [{ state: "frozen", ySplit: 1 }] });
-  rejected.addRow([
-    "Linha", "Nome", "Telefone", "Nascimento", "Sexo", "CPF", "CEP", "Cidade", "Estado", "Naturalidade", "UF",
-    "Nome do pai", "Nome da mãe", "Batismo nas águas", "Batismo com o Espírito Santo", "Conversão",
-    "Recebimento", "Cargo", "Situação", "Motivo",
-  ]);
-  styleHeader(rejected.getRow(1));
-  items.filter((item) => item.classification !== "IMPORTED").forEach((item) => {
-    rejected.addRow([
-      item.rowNumber,
-      item.fullName,
-      item.whatsapp ?? item.phoneRaw ?? "",
-      asExcelDate(item.birthDate),
-      genderLabel(item.gender),
-      maskedCpf(item.cpf),
-      item.zipCode ?? "",
-      item.city ?? "",
-      item.state ?? "",
-      item.naturalCity ?? "",
-      item.naturalState ?? "",
-      item.fatherName ?? "",
-      item.motherName ?? "",
-      asExcelDate(item.baptismDate),
-      asExcelDate(item.holySpiritBaptismDate),
-      asExcelDate(item.conversionDate),
-      asExcelDate(item.receivedDate),
-      item.roleName ?? item.roleRaw,
-      item.classification === "SKIPPED" ? "Pulado" : item.classification,
-      issueText(item),
+  if (batch.settingsSnapshot.workbook_schema === "congregation") {
+    for (const sheet of [imported, rejected]) {
+      sheet.addRow([...CONGREGATION_COLUMNS.map(([label]) => label), "Linha", "Situação", "Avisos"]);
+      styleHeader(sheet.getRow(1));
+      sheet.autoFilter = "A1:X1";
+      for (const column of ["D", "Q", "R", "S"]) sheet.getColumn(column).numFmt = "dd/mm/yyyy";
+    }
+    for (const item of items) {
+      const sheet = item.classification === "IMPORTED" ? imported : rejected;
+      sheet.addRow([
+        item.fullName, item.roleName ?? item.roleRaw, genderLabel(item.gender), asExcelDate(item.birthDate),
+        item.address, item.district, item.city, item.state, item.country, item.zipCode,
+        item.landline ?? item.whatsapp ?? item.phoneRaw, maskedCpf(item.cpfSuffix), item.maritalStatusRaw,
+        item.profession, [item.naturalCity, item.naturalState].filter(Boolean).join(" / "), item.nationality,
+        asExcelDate(item.legacyRegistrationDate), asExcelDate(item.conversionDate), asExcelDate(item.baptismDate),
+        item.fatherName, item.motherName, item.rowNumber, item.classification, issueText(item),
+      ]);
+    }
+    fitColumns(imported);
+    fitColumns(rejected);
+  } else {
+    imported.addRow([
+      "Linha", "Código", "Nome", "Telefone", "Nascimento", "Sexo", "CPF", "Estado civil",
+      "CEP", "Cidade", "Estado", "Naturalidade", "UF", "Nome do pai", "Nome da mãe",
+      "Batismo nas águas", "Batismo com o Espírito Santo", "Conversão", "Recebimento", "Cargo", "Avisos",
     ]);
-  });
-  rejected.autoFilter = { from: "A1", to: "T1" };
-  ["D", "N", "O", "P", "Q"].forEach((column) => { rejected.getColumn(column).numFmt = "dd/mm/yyyy"; });
-  fitColumns(rejected, 36);
+    styleHeader(imported.getRow(1));
+    items.filter((item) => item.classification === "IMPORTED").forEach((item) => {
+      imported.addRow([
+        item.rowNumber,
+        item.importedMemberCode ?? "",
+        item.fullName,
+        item.whatsapp ?? item.phoneRaw ?? "",
+        asExcelDate(item.birthDate),
+        genderLabel(item.gender),
+        maskedCpf(item.cpfSuffix),
+        item.maritalStatusRaw ?? "",
+        item.zipCode ?? "",
+        item.city ?? "",
+        item.state ?? "",
+        item.naturalCity ?? "",
+        item.naturalState ?? "",
+        item.fatherName ?? "",
+        item.motherName ?? "",
+        asExcelDate(item.baptismDate),
+        asExcelDate(item.holySpiritBaptismDate),
+        asExcelDate(item.conversionDate),
+        asExcelDate(item.receivedDate),
+        item.roleName ?? item.roleRaw,
+        issueText(item),
+      ]);
+    });
+    imported.autoFilter = { from: "A1", to: "U1" };
+    ["E", "P", "Q", "R", "S"].forEach((column) => { imported.getColumn(column).numFmt = "dd/mm/yyyy"; });
+    fitColumns(imported, 36);
+
+    rejected.addRow([
+      "Linha", "Nome", "Telefone", "Nascimento", "Sexo", "CPF", "CEP", "Cidade", "Estado", "Naturalidade", "UF",
+      "Nome do pai", "Nome da mãe", "Batismo nas águas", "Batismo com o Espírito Santo", "Conversão",
+      "Recebimento", "Cargo", "Situação", "Motivo",
+    ]);
+    styleHeader(rejected.getRow(1));
+    items.filter((item) => item.classification !== "IMPORTED").forEach((item) => {
+      rejected.addRow([
+        item.rowNumber,
+        item.fullName,
+        item.whatsapp ?? item.phoneRaw ?? "",
+        asExcelDate(item.birthDate),
+        genderLabel(item.gender),
+        maskedCpf(item.cpfSuffix),
+        item.zipCode ?? "",
+        item.city ?? "",
+        item.state ?? "",
+        item.naturalCity ?? "",
+        item.naturalState ?? "",
+        item.fatherName ?? "",
+        item.motherName ?? "",
+        asExcelDate(item.baptismDate),
+        asExcelDate(item.holySpiritBaptismDate),
+        asExcelDate(item.conversionDate),
+        asExcelDate(item.receivedDate),
+        item.roleName ?? item.roleRaw,
+        item.classification === "SKIPPED" ? "Pulado" : item.classification,
+        issueText(item),
+      ]);
+    });
+    rejected.autoFilter = { from: "A1", to: "T1" };
+    ["D", "N", "O", "P", "Q"].forEach((column) => { rejected.getColumn(column).numFmt = "dd/mm/yyyy"; });
+    fitColumns(rejected, 36);
+  }
 
   const decisions = workbook.addWorksheet("Decisões", { views: [{ state: "frozen", ySplit: 1 }] });
   decisions.addRow(["Linha", "Nome", "Decisão", "Resoluções registradas"]);

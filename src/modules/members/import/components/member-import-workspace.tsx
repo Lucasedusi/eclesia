@@ -38,6 +38,8 @@ import {
   cancelMemberImportAction,
   confirmMemberImportAction,
   getMemberImportWorkspaceAction,
+  getMemberImportPageAction,
+  getMemberImportHistoryAction,
   prepareMemberImportAction,
   resolveMemberImportItemAction,
   resolveMemberImportMappingAction,
@@ -55,6 +57,7 @@ import type {
   MemberImportItem,
   MemberImportReviewParams,
   MemberImportWorkspaceData,
+  MemberImportHistory,
 } from "../types/member-import.types";
 import * as P from "../../components/member-create-form/member-form-progress.styles";
 import * as S from "./member-import.styles";
@@ -133,8 +136,7 @@ function naturalityLabel(item: MemberImportItem) {
 
 function addressLabel(item: MemberImportItem) {
   const location = [item.city, item.state].filter(Boolean).join(" / ");
-  if (!location && !item.zipCode) return "Não informado";
-  return [location, item.zipCode ? `CEP ${item.zipCode}` : ""].filter(Boolean).join(" · ");
+  return [item.address, item.district, location, item.country, item.zipCode].filter(Boolean).join(" · ") || "Não informado";
 }
 
 function issueCodes(item: MemberImportItem) {
@@ -224,6 +226,7 @@ export function MemberImportWorkspace({ initial }: Props) {
   const [tab, setTab] = useState<"new" | "history">("new");
   const [step, setStep] = useState(() => initialStep(initial));
   const [congregationId, setCongregationId] = useState(initial.batch?.congregationId ?? "");
+  const [history, setHistory] = useState<MemberImportHistory | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
   const [busy, setBusy] = useState("");
@@ -301,6 +304,17 @@ export function MemberImportWorkspace({ initial }: Props) {
     }
   }
 
+  async function openHistory() {
+    setTab("history");
+    setHistory(null);
+    try {
+      setHistory(await getMemberImportHistoryAction());
+    } catch {
+      setTab("new");
+      showResult(false, "Não foi possível carregar o histórico.");
+    }
+  }
+
   async function loadBatch(batchId: string) {
     setBusy(`batch:${batchId}`);
     try {
@@ -337,10 +351,10 @@ export function MemberImportWorkspace({ initial }: Props) {
     setFilters(next);
     setBusy("review");
     try {
-      const response = await getMemberImportWorkspaceAction({ batchId: batch.id, ...next });
+      const response = await getMemberImportPageAction({ batchId: batch.id, ...next });
       if (request !== reviewRequest.current) return;
       if (response.success) {
-        setWorkspace(response.data);
+        setWorkspace(previous => ({ ...previous, items: response.items }));
       } else showResult(false, response.message);
     } finally {
       if (request === reviewRequest.current) setBusy("");
@@ -367,7 +381,7 @@ export function MemberImportWorkspace({ initial }: Props) {
       const response = await resolveMemberImportItemAction({ batchId: batch.id, itemId: item.id, resolution, ...filters });
       if (request !== reviewRequest.current) return;
       if (response.success) {
-        setWorkspace(response.data);
+        setWorkspace(previous => ({ ...previous, ...response.data }));
         if (!["SET_GENDER_MALE", "SET_GENDER_FEMALE", "CLEAR_GENDER"].includes(resolution)) showResult(true, response.message);
       } else showResult(false, response.message);
     } finally {
@@ -458,13 +472,13 @@ export function MemberImportWorkspace({ initial }: Props) {
         <S.Tab type="button" $active={tab === "new"} onClick={() => setTab("new")} role="tab" aria-selected={tab === "new"}>
           <FileSpreadsheet size={16} /> Nova importação
         </S.Tab>
-        <S.Tab type="button" $active={tab === "history"} onClick={() => setTab("history")} role="tab" aria-selected={tab === "history"}>
+        <S.Tab type="button" $active={tab === "history"} onClick={openHistory} role="tab" aria-selected={tab === "history"}>
           <History size={16} /> Histórico
         </S.Tab>
       </S.Tabs>
 
       {tab === "history" ? (
-        <HistoryView workspace={workspace} busy={busy} onOpen={loadBatch} onNew={newImport} />
+        history ? <HistoryView history={history} busy={busy} onOpen={loadBatch} onNew={newImport} /> : <ResultsSkeleton label="Carregando histórico" columns={5} />
       ) : step <= 4 ? (
         <S.WorkflowLayout>
           <ImportProgress current={step} />
@@ -472,7 +486,7 @@ export function MemberImportWorkspace({ initial }: Props) {
           {step === 1 && (
             <S.Card>
               <S.CardHeader>
-                <div><h2>Destino e arquivo</h2><p>Escolha a Congregação de destino e envie o CSV original do MEMBROS WEB ou a planilha XLSX do Eklesias.</p></div>
+                <div><h2>Destino e arquivo</h2><p>Escolha a congregação e envie um XLSX de uma aba com os 21 campos do modelo. O CSV original do MEMBROS WEB e os modelos XLSX anteriores também são aceitos.</p></div>
                 <Button size="sm" variant="outline" loading={busy === "template"} onClick={() => download("/api/members/imports/template", "template")}>
                   <FileDown size={16} /> Baixar modelo
                 </Button>
@@ -496,7 +510,7 @@ export function MemberImportWorkspace({ initial }: Props) {
                     <div>
                       <UploadCloud aria-hidden="true" />
                       <strong>Arraste a planilha aqui ou clique para selecionar</strong>
-                      <p>CSV original do MEMBROS WEB ou planilha XLSX.</p>
+                      <p>XLSX de uma congregação ou CSV original do MEMBROS WEB.</p>
                       <small>Até 5 MB e 500 membros por lote.</small>
                     </div>
                     <input type="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={(event) => chooseFile(event.target.files?.item(0) ?? null)} />
@@ -562,7 +576,7 @@ export function MemberImportWorkspace({ initial }: Props) {
           workspace={workspace}
           busy={busy}
           onNew={newImport}
-          onHistory={() => setTab("history")}
+          onHistory={openHistory}
           onReport={() => download(`/api/members/imports/${batch.id}/report`, "report")}
           onRollback={() => { setRollbackBlockers([]); setRollbackOpen(true); }}
         />
@@ -686,7 +700,7 @@ function ValidationStep({
       <S.CardBody>
         <BatchStats workspace={workspace} />
         <S.InfoGrid>
-          <S.InfoBox $tone="success"><h3>Estrutura reconhecida</h3><p>{Array.isArray(settings.recognized_columns) ? settings.recognized_columns.length : 0} campos reconhecidos.</p>{settings.file_format === "csv" && <p>O ID e a data do cadastro antigo ficam registradas no lote. O destino é a Congregação selecionada.</p>}</S.InfoBox>
+          <S.InfoBox $tone="success"><h3>Estrutura reconhecida</h3><p>{Array.isArray(settings.recognized_columns) ? settings.recognized_columns.length : 0} campos reconhecidos para {batch.congregationName}.</p>{settings.workbook_schema === "congregation" && <p>País em branco usa o padrão Brasil do cadastro. Telefones fixos são registrados separadamente do WhatsApp.</p>}{settings.file_format === "csv" && <p>O ID e a data do cadastro antigo ficam registradas no lote. O destino é a Congregação selecionada.</p>}</S.InfoBox>
           <S.InfoBox $tone={ignored.length ? "warning" : "info"}><h3>Colunas ignoradas</h3><p>{ignored.length ? ignored.join(", ") : "Nenhuma coluna extra encontrada."}</p></S.InfoBox>
         </S.InfoGrid>
         <div>
@@ -793,9 +807,9 @@ function ReviewStep({
               {items.items.map((item) => (
                 <tr key={item.id}>
                   <td><strong>#{item.rowNumber}</strong><small><S.Status $status={item.classification}>{MEMBER_IMPORT_CLASSIFICATION_LABELS[item.classification]}</S.Status></small></td>
-                  <td><strong>{item.fullName || "Nome ausente"}</strong><GenderChoice item={item} busy={busy} onResolve={onResolve} /><small>CPF {maskCpf(item.cpf)}</small><small>{item.maritalStatusRaw || "Estado civil não informado"}</small></td>
+                  <td><strong>{item.fullName || "Nome ausente"}</strong><GenderChoice item={item} busy={busy} onResolve={onResolve} /><small>CPF {maskCpf(item.cpfSuffix)}</small><small>{item.maritalStatusRaw || "Estado civil não informado"}</small></td>
                   <td>{item.whatsapp || item.phoneRaw || "Sem telefone"}<small>Nasc.: {formatDate(item.birthDate)} · Conversão: {formatDate(item.conversionDate)}</small><small>Águas: {formatDate(item.baptismDate)} · Espírito: {formatDate(item.holySpiritBaptismDate)} · Receb.: {formatDate(item.receivedDate)}</small></td>
-                  <td><strong>{addressLabel(item)}</strong><small>Naturalidade: {naturalityLabel(item)}</small><small>Pai: {item.fatherName || "não informado"} · Mãe: {item.motherName || "não informada"}</small></td>
+                  <td><strong>{addressLabel(item)}</strong><small>Naturalidade: {naturalityLabel(item)}</small><small>{[item.profession, item.nationality].filter(Boolean).join(" · ")}</small>{item.legacyRegistrationDate && <small>Cadastro de origem: {formatDate(item.legacyRegistrationDate)}</small>}<small>Pai: {item.fatherName || "não informado"} · Mãe: {item.motherName || "não informada"}</small></td>
                   <td><strong>{item.roleName ?? (item.roleRaw ? "Não mapeado" : "Sem cargo")}</strong><small>Origem: {item.roleRaw || "—"}</small></td>
                   <td>{item.issues.length ? <IssueList item={item} /> : <S.Status $status="VALID">Sem pendências</S.Status>}</td>
                   <td><ItemActions item={item} busy={busy} onResolve={onResolve} /></td>
@@ -808,10 +822,13 @@ function ReviewStep({
           {items.items.map((item) => (
             <S.MobileRow key={item.id}>
               <header><div><h3>#{item.rowNumber} · {item.fullName || "Nome ausente"}</h3><p>{item.roleName || item.roleRaw || "Sem cargo"}</p></div><S.Status $status={item.classification}>{MEMBER_IMPORT_CLASSIFICATION_LABELS[item.classification]}</S.Status></header>
-              <GenderChoice item={item} busy={busy} onResolve={onResolve} /><div><strong>CPF:</strong> {maskCpf(item.cpf)}</div>
+              <GenderChoice item={item} busy={busy} onResolve={onResolve} /><div><strong>CPF:</strong> {maskCpf(item.cpfSuffix)}</div>
               <div><strong>Nascimento:</strong> {formatDate(item.birthDate)} · <strong>Conversão:</strong> {formatDate(item.conversionDate)}</div>
               <div><strong>Batismo nas águas:</strong> {formatDate(item.baptismDate)} · <strong>Batismo com o Espírito:</strong> {formatDate(item.holySpiritBaptismDate)}</div>
               <div><strong>Endereço:</strong> {addressLabel(item)}</div>
+              <div><strong>Telefone:</strong> {item.phoneRaw || "—"}</div>
+              {item.legacyRegistrationDate && <div><strong>Cadastro de origem:</strong> {formatDate(item.legacyRegistrationDate)}</div>}
+              <div>{[item.profession, item.nationality, item.maritalStatusRaw].filter(Boolean).join(" · ")}</div>
               <div><strong>Naturalidade:</strong> {naturalityLabel(item)}</div>
               <div><strong>Filiação:</strong> {item.fatherName || "Pai não informado"} · {item.motherName || "Mãe não informada"}</div>
               {item.issues.length ? <IssueList item={item} /> : <S.Status $status="VALID">Sem pendências</S.Status>}
@@ -887,7 +904,7 @@ function ConfirmationStep({
         <S.SummaryList>
           <div><ShieldCheck /><span>A importação revalidará CPF, Cargo e Congregação imediatamente antes de gravar.</span></div>
           <div><Users /><span>Os membros serão criados como <strong>MEMBER</strong> e <strong>ACTIVE</strong>. Sexo, CEP, cidade/UF, naturalidade e filiação serão gravados quando informados.</span></div>
-          <div><History /><span>{batch.settingsSnapshot.file_format === "csv" ? "A data de cadastro no MEMBROS WEB fica no lote de origem. O cargo atual será registrado sem data inicial." : "O cargo atual será registrado sem data inicial. As datas de recebimento, conversão e batismo informadas na planilha serão preservadas no cadastro e na linha do tempo."}</span></div>
+          <div><History /><span>{batch.settingsSnapshot.workbook_schema === "congregation" ? "A data do cadastro será preservada como data de origem. Conversão e batismo usam as datas da ficha." : batch.settingsSnapshot.file_format === "csv" ? "A data de cadastro no MEMBROS WEB fica no lote de origem. O cargo atual será registrado sem data inicial." : "O cargo atual será registrado sem data inicial. As datas de recebimento, conversão e batismo informadas na planilha serão preservadas no cadastro e na linha do tempo."}</span></div>
           <div><FileCheck2 /><span>O lote, a linha de origem e as decisões registradas permanecerão rastreáveis para auditoria e relatório.</span></div>
         </S.SummaryList>
         <S.InfoBox $tone="warning">
@@ -953,17 +970,16 @@ function ResultStep({
 }
 
 function HistoryView({
-  workspace,
+  history,
   busy,
   onOpen,
   onNew,
 }: {
-  workspace: MemberImportWorkspaceData;
+  history: MemberImportHistory;
   busy: string;
   onOpen: (batchId: string) => void;
   onNew: () => void;
 }) {
-  const { history } = workspace;
   return (
     <S.Card>
       <S.CardHeader><div><h2>Histórico de importações</h2><p>Consulte lotes, decisões, relatórios e resultados anteriores.</p></div><Button size="sm" onClick={onNew}><FileSpreadsheet size={16} /> Nova importação</Button></S.CardHeader>

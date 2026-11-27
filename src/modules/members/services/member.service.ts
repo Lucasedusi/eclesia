@@ -59,7 +59,7 @@ const MEMBER_EDIT_SELECT = [
 ].join(", ");
 
 const MEMBER_CORE_SELECT = [
-  MEMBER_EDIT_SELECT, "member_code", "member_status", "created_at", "deleted_at",
+  MEMBER_EDIT_SELECT, "landline", "legacy_registration_date", "member_code", "member_status", "created_at", "deleted_at",
   "congregations!inner(name, regions(name))",
 ].join(", ");
 
@@ -327,6 +327,8 @@ export async function getMemberCoreDetails(context: AuthContext, memberId: strin
     id: row.id, memberCode: row.member_code, fullName: row.full_name, gender: row.gender,
     birthDate: row.birth_date, maritalStatus: row.marital_status, nationality: row.nationality, naturalCity: row.natural_city,
     naturalState: row.natural_state, profession: row.profession, educationLevel: row.education_level,
+    landline: capabilities.viewFull && row.landline ? formatBrazilPhone(row.landline) : null,
+    legacyRegistrationDate: capabilities.viewFull ? row.legacy_registration_date : null,
     whatsapp: capabilities.viewFull ? formatBrazilPhone(row.whatsapp ?? "") : null, email: capabilities.viewFull ? row.email : null, address: capabilities.viewFull ? address : "Informação restrita",
     fatherName: capabilities.viewFull ? row.father_name : null, motherName: capabilities.viewFull ? row.mother_name : null,
     spouseName: capabilities.viewFull ? row.spouse_name : null, congregationName: congregation.name ?? "Congregação", regionName: region?.name ?? null,
