@@ -98,11 +98,11 @@ test.describe("listagens de membros", () => {
         const page = await context.newPage();
         const search = new URLSearchParams({ search: prefix, pageSize: "100" });
         await page.goto(`/membros?${search}`);
-        await expect(page.getByText(allowed ? /· 126 registro\(s\)/ : /· 0 registro\(s\)/)).toBeVisible();
+        await expect(page.getByRole("main").getByText(allowed ? /· 126 registro\(s\)/ : /· 0 registro\(s\)/).filter({ visible: true })).toBeVisible();
         search.set("congregation", unit);
         search.set("page", allowed ? "2" : "1");
         await page.goto(`/membros?${search}`);
-        await expect(page.getByText(allowed ? /Página 2 de 2 · 125 registro\(s\)/ : /· 0 registro\(s\)/)).toBeVisible();
+        await expect(page.getByRole("main").getByText(allowed ? /Página 2 de 2 · 125 registro\(s\)/ : /· 0 registro\(s\)/).filter({ visible: true })).toBeVisible();
         if (allowed) await expect(page.getByRole("row").filter({ hasText: "Cadastro de teste 0125" })).toBeVisible();
 
         const sheet = await exportSheet(context.request, { kind: "custom", format: "xlsx", fields: [], filters: { search: prefix, congregationId: unit } });
