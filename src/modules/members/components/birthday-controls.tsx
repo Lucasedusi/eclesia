@@ -18,7 +18,7 @@ type Props = {
   congregations: { id: string; name: string; regions: { id: string; name: string } | null }[];
   children: ReactNode;
 };
-const periods = [["today", "Dia"], ["week", "Semana"], ["month", "Mês"], ["all", "Todos"]] as const;
+const periods = [["today", "Dia"], ["week", "Semana"], ["month", "Mês"]] as const;
 
 export function BirthdayPageLink({ href, children }: { href?: string; children: ReactNode }) {
   if (!href) return <Button variant="secondary" size="sm" disabled>{children}</Button>;

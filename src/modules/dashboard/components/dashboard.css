@@ -88,6 +88,18 @@
 .church-dashboard-birthday-heading { display: flex; align-items: center; gap: 12px; }
 .church-dashboard-birthday-heading .church-dashboard-icon { width: 44px; height: 44px; flex: none; background: var(--eclesia-primary-soft); color: var(--eclesia-primary); }
 .church-dashboard-section-header .birthday-period { width: 8rem; max-width: 100%; flex: none; }
+.birthday-period select {
+  min-height: 40px;
+  padding-inline-start: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background-color: var(--card);
+}
+.birthday-period select:is(:focus-visible, [aria-expanded="true"]) {
+  border-color: var(--eclesia-primary);
+  outline: 2px solid var(--eclesia-primary);
+  outline-offset: 2px;
+}
 .church-dashboard-switch { display: inline-flex; width: fit-content; padding: 3px; gap: 2px; background: var(--surface-soft); border-radius: var(--radius-control); }
 .church-dashboard-switch button { padding: 6px 10px; font-size: 12px; font-weight: 550; border-radius: 4px; color: var(--text-muted); cursor: pointer; }
 .church-dashboard-switch button[aria-pressed="true"] { background: var(--eclesia-primary); color: white; }

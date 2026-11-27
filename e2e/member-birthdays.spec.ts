@@ -26,20 +26,20 @@ test("abre em Hoje, filtra por mês e matrícula e mantém o WhatsApp no celular
   await page.getByRole("link", { name: "Mês", exact: true }).click();
   await page.getByLabel("Mês do aniversário").selectOption(String(fixture!.otherBirthdayMonth));
   await expect(page.getByRole("main").getByText(/25 aniversariantes/)).toBeVisible();
-  await page.getByRole("link", { name: "Todos", exact: true }).click();
-  await expect(page.getByRole("main").getByText(/28 aniversariantes/)).toBeVisible();
+  const periods = page.getByRole("navigation", { name: "Período dos aniversários" });
+  await expect(periods.getByRole("link")).toHaveText(["Dia", "Semana", "Mês"]);
   await page.getByRole("link", { name: "Próxima" }).click();
   await expect(page.getByRole("main").getByText("Página 2 de 2")).toBeVisible();
+  await periods.getByRole("link", { name: "Dia", exact: true }).click();
   await page.getByRole("textbox", { name: "Pesquisar aniversariantes" }).fill("00001");
   await expect(table.getByRole("row")).toHaveCount(2);
-  const periods = page.getByRole("navigation", { name: "Período dos aniversários" });
   const pdf = page.getByRole("button", { name: "Exportar PDF" });
   for (const width of [320, 390]) {
     await page.setViewportSize({ width, height: 844 });
     await expect(async () => {
       const group = (await periods.boundingBox())!;
       const button = (await pdf.boundingBox())!;
-      const last = (await periods.getByRole("link", { name: "Todos" }).boundingBox())!;
+      const last = (await periods.getByRole("link", { name: "Mês", exact: true }).boundingBox())!;
       expect(Math.abs((group.y + group.height / 2) - (button.y + button.height / 2))).toBeLessThan(3);
       expect(button.x).toBeGreaterThanOrEqual(group.x + group.width);
       expect(last.x + last.width).toBeLessThanOrEqual(group.x + group.width);

@@ -69,6 +69,8 @@ test("aniversariantes abrem em Dia e o período atualiza no celular", async ({ p
   await expect(page.getByRole("heading", { name: "Membros por regional" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Membros por cargo" })).toHaveCount(0);
   await expect(select).toHaveValue("today");
+  await expect(select).toHaveCSS("border-top-style", "solid");
+  await expect(select).toHaveCSS("border-top-width", "1px");
   await expect(rows).toHaveCount(3);
   const birthdayHeader = page.getByRole("columnheader", { name: "Aniversário", exact: true });
   await expect(birthdayHeader).toBeVisible();
