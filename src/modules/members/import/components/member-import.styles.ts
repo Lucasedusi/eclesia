@@ -68,6 +68,7 @@ export const StepIndicator = styled(P.StepButton)`
 `;
 
 export const Card = styled.section`
+  --card-inline-padding: 22px;
   min-width: 0;
   container-type: inline-size;
   overflow: hidden;
@@ -83,7 +84,7 @@ export const CardHeader = styled.header`
   justify-content: space-between;
   gap: 20px;
   border-bottom: 1px solid #edf0f4;
-  padding: 20px 22px;
+  padding: 20px var(--card-inline-padding);
   h2 {
     margin: 0;
     color: #101828;
@@ -413,7 +414,7 @@ export const Toolbar = styled.div`
   gap: 12px;
   border-bottom: 1px solid #edf0f4;
   background: #fbfcfd;
-  padding: 14px 20px;
+  padding: 14px var(--card-inline-padding);
   @container (max-width: 620px) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     > :first-child { grid-column: 1 / -1; }
@@ -466,10 +467,10 @@ export const Table = styled.table`
     font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 650;
   }
-  th:first-child { width: 84px; }
+  th:first-child { width: calc(76px + var(--card-inline-padding)); }
   th:nth-child(2) { width: 32%; }
   th:nth-child(3) { width: 18%; }
-  th:last-child { width: 55px; }
+  th:last-child { width: calc(45px + var(--card-inline-padding)); }
   td {
     border-bottom: 1px solid #e8ebf0;
     color: #475467;
@@ -478,9 +479,12 @@ export const Table = styled.table`
     overflow-wrap: anywhere;
     vertical-align: top;
   }
-  td:last-child, th:last-child { text-align: center; }
   td:first-child small { white-space: nowrap; }
-  td:last-child > button { margin-inline: auto; }
+  @media (width > 850px) {
+    :is(th, td):first-child { padding-inline-start: var(--card-inline-padding); }
+    :is(th, td):last-child { padding-inline-end: var(--card-inline-padding); text-align: end; }
+    td:last-child > button { margin-inline-start: auto; }
+  }
   tr:last-child td { border-bottom: 0; }
   strong { color: #243047; }
   small { display: block; margin-top: 3px; color: #667085; font-size: inherit; }
@@ -494,7 +498,7 @@ export const Table = styled.table`
       overflow: hidden;
       clip-path: inset(50%);
     }
-    tbody { padding: 12px; }
+    tbody { padding: 12px var(--card-inline-padding); }
     tr {
       display: grid;
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -568,7 +572,7 @@ export const Pagination = styled.footer`
   justify-content: space-between;
   gap: 12px;
   border-top: 1px solid #edf0f4;
-  padding: 14px 20px;
+  padding: 14px var(--card-inline-padding);
   color: #667085;
   font-size: calc(10px + var(--eclesia-font-size-adjustment, 0px));
   > div {

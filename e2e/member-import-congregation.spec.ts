@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import ExcelJS from "exceljs";
 import { randomUUID } from "node:crypto";
 
@@ -13,6 +13,19 @@ async function expectSingleLineMetrics(page: Page, count: number) {
     return lines.length !== 1 || lines[0].right > card.right;
   }).map(label => label.textContent));
   expect(overflowing).toEqual([]);
+}
+
+async function expectReviewInsets(member: Locator, layout: "table" | "cards") {
+  const [leftOffset, rightOffset] = await member.evaluate((row, mode) => {
+    const header = row.closest("section")!.querySelector("header")!;
+    const title = header.querySelector("h2")!.getBoundingClientRect();
+    const rightEdge = header.getBoundingClientRect().right - parseFloat(getComputedStyle(header).paddingRight);
+    const first = mode === "cards" ? row : row.querySelector("td:first-child strong")!;
+    const last = mode === "cards" ? row : row.querySelector("td:last-child button")!;
+    return [first.getBoundingClientRect().left - title.left, rightEdge - last.getBoundingClientRect().right];
+  }, layout);
+  expect(Math.abs(leftOffset)).toBeLessThan(1);
+  expect(Math.abs(rightOffset)).toBeLessThan(1);
 }
 
 test("importa a planilha oficial e permite conferir o resultado no relatório", async ({ page, request }) => {
@@ -61,6 +74,7 @@ test("importa a planilha oficial e permite conferir o resultado no relatório", 
   const table = await page.getByRole("table").boundingBox();
   expect(table!.x).toBeGreaterThanOrEqual(progress!.x + progress!.width);
   const member = page.getByRole("row").filter({ hasText: name });
+  await expectReviewInsets(member, "table");
   await member.getByText("Detalhes da ficha", { exact: true }).click();
   await expect(member.getByText("Nascimento: 10/05/1985")).toBeVisible();
   await expect(member.getByText(/Portuguesa/)).toBeVisible();
@@ -78,6 +92,7 @@ test("importa a planilha oficial e permite conferir o resultado no relatório", 
   await situation.selectOption("");
   const desktop = page.viewportSize()!;
   await page.setViewportSize({ width: 390, height: 844 });
+  await expectReviewInsets(member, "cards");
   await expect(page.getByRole("button", { name: "Resolver estado civil", exact: true })).toHaveCount(2);
   await page.getByRole("button", { name: "Resolver estado civil", exact: true }).first().click();
   await dialog.getByRole("combobox").selectOption("MARRIED");
