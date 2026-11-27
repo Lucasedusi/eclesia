@@ -1,7 +1,8 @@
 "use client";
 
 import { importIncludedPhone, normalizeGender } from "../utils/member-import-normalizers";
-import { formatGender } from "../../utils/member-formatters";
+import { IconButton } from "../../components/members.styles";
+import { formatGender, formatMaritalStatus } from "../../utils/member-formatters";
 import { ResultsSkeleton } from "@/components/ui/results-skeleton";
 
 import {
@@ -14,19 +15,25 @@ import {
 } from "react";
 import Link from "next/link";
 import {
+  type LucideIcon,
   AlertTriangle,
   ArrowLeft,
   ArrowRight,
+  BadgeCheck,
+  Ban,
   CheckCircle2,
+  CircleX,
   Download,
   FileCheck2,
   FileDown,
   FileSpreadsheet,
   History,
   Info,
+  ListOrdered,
   RotateCcw,
   Search,
   ShieldCheck,
+  SkipForward,
   Trash2,
   UploadCloud,
   Users,
@@ -68,6 +75,8 @@ import * as S from "./member-import.styles";
 
 type Props = { initial: MemberImportWorkspaceData };
 type Notice = { title: string; description: string; variant: "success" | "danger" | "warning" };
+type PendingMapping = { kind: "ROLE" | "MARITAL_STATUS"; raw: string };
+type ApplyMapping = (target: PendingMapping, value: string) => Promise<boolean>;
 type Resolution =
   | "SKIP"
   | "RESTORE"
@@ -145,7 +154,7 @@ function issueCodes(item: MemberImportItem) {
   return new Set(item.issues.filter((issue) => !issue.resolved).map((issue) => issue.code));
 }
 
-function ItemActions({
+function IssueActions({
   item,
   busy,
   onResolve,
@@ -156,26 +165,10 @@ function ItemActions({
 }) {
   const codes = issueCodes(item);
   const related = item.issues.find((issue) => issue.relatedMemberId);
-  const canChange = item.classification !== "IMPORTED";
-  if (!canChange) {
-    return item.importedMemberId ? (
-      <Link href={`/membros?search=${encodeURIComponent(item.importedMemberCode ?? item.fullName)}`} className="app-button-secondary">
-        Abrir membro
-      </Link>
-    ) : null;
-  }
+  if (item.decision === "SKIP" || item.classification === "IMPORTED") return null;
   const loading = (resolution: Resolution) => busy === `item:${item.id}:${resolution}`;
   return (
     <S.RowActions>
-      {item.classification === "SKIPPED" ? (
-        <Button size="sm" variant="outline" loading={loading("RESTORE")} onClick={() => onResolve(item, "RESTORE")}>
-          Restaurar
-        </Button>
-      ) : (
-        <Button size="sm" variant="secondary" loading={loading("SKIP")} onClick={() => onResolve(item, "SKIP")}>
-          Pular
-        </Button>
-      )}
       {(codes.has("CPF_INVALID") || codes.has("CPF_DUPLICATE_FILE")) && (
         <Button size="sm" variant="outline" loading={loading("IMPORT_WITHOUT_CPF")} onClick={() => onResolve(item, "IMPORT_WITHOUT_CPF")}>
           Sem CPF
@@ -334,15 +327,20 @@ export function MemberImportWorkspace({ initial }: Props) {
     }
   }
 
-  async function mapValue(kind: "ROLE" | "MARITAL_STATUS", rawValue: string, value: string) {
-    if (!batch || !value) return;
-    setBusy(`mapping:${kind}:${rawValue}`);
+  async function mapValue({ kind, raw }: PendingMapping, value: string) {
+    if (!batch || !value || busy) return false;
+    setBusy("mapping");
     try {
-      const response = await resolveMemberImportMappingAction({ kind, batchId: batch.id, rawValue, value });
+      const response = await resolveMemberImportMappingAction({ kind, batchId: batch.id, rawValue: raw, value, ...filters });
       if (response.success) {
-        applyWorkspace(response.data, 2);
-        showResult(true, response.message);
-      } else showResult(false, response.message);
+        setWorkspace(response.data);
+        setFilters(previous => ({ ...previous, page: response.data.items?.page ?? previous.page }));
+      }
+      showResult(response.success, response.message);
+      return response.success;
+    } catch {
+      showResult(false, "Não foi possível aplicar a equivalência. Tente novamente.");
+      return false;
     } finally {
       setBusy("");
     }
@@ -485,15 +483,15 @@ export function MemberImportWorkspace({ initial }: Props) {
       {tab === "history" ? (
         history ? <HistoryView history={history} busy={busy} onOpen={loadBatch} onNew={newImport} /> : <ResultsSkeleton label="Carregando histórico" columns={5} />
       ) : step <= 4 ? (
-        <S.WorkflowLayout>
+        <S.WorkflowLayout $review={step === 3}>
           <ImportProgress current={step} />
           <S.WorkflowContent>
           {step === 1 && (
             <S.Card>
               <S.CardHeader>
-                <div><h2>Destino e arquivo</h2><p>Escolha a congregação e envie um XLSX de uma aba com os 20 campos do modelo. O CSV original do MEMBROS WEB e os modelos XLSX anteriores também são aceitos.</p></div>
+                <div><h2>Destino e arquivo</h2><p>Escolha a congregação e envie um XLSX de uma aba com os 20 campos do modelo</p></div>
                 <Button size="sm" variant="outline" loading={busy === "template"} onClick={() => download("/api/members/imports/template", "template")}>
-                  <FileDown size={16} /> Baixar modelo
+                  <FileDown size={16} aria-hidden="true" /> Modelo
                 </Button>
               </S.CardHeader>
               <form onSubmit={analyze}>
@@ -552,7 +550,6 @@ export function MemberImportWorkspace({ initial }: Props) {
             <ValidationStep
               workspace={workspace}
               busy={busy}
-              onMap={mapValue}
               onBack={newImport}
               onReview={() => { setStep(3); void loadReview(filters); }}
               onCancel={cancelBatch}
@@ -567,6 +564,7 @@ export function MemberImportWorkspace({ initial }: Props) {
               searchInput={searchInput}
               onSearch={search}
               onLoad={next => void loadReview({ ...next, search: searchInput.trim().length >= 3 ? searchInput.trim() : "" })}
+              onMap={mapValue}
               onResolve={resolveItem}
               onBack={() => setStep(2)}
               onContinue={() => setStep(4)}
@@ -672,15 +670,24 @@ function ImportProgress({ current }: { current: number }) {
   );
 }
 
+function Metric({ icon: Icon, value, label, tone = "neutral" }: {
+  icon: LucideIcon;
+  value: number;
+  label: string;
+  tone?: S.MetricTone;
+}) {
+  return <S.Stat $tone={tone}><span><Icon aria-hidden="true" /></span><div><strong>{value}</strong><small>{label}</small></div></S.Stat>;
+}
+
 function BatchStats({ workspace }: { workspace: MemberImportWorkspaceData }) {
   const batch = workspace.batch!;
   return (
     <S.Stats>
-      <S.Stat><strong>{batch.totalRows}</strong><small>Total de linhas</small></S.Stat>
-      <S.Stat $tone="success"><strong>{batch.validRows}</strong><small>Prontas</small></S.Stat>
-      <S.Stat $tone="warning"><strong>{batch.warningRows}</strong><small>Com alertas</small></S.Stat>
-      <S.Stat $tone="danger"><strong>{batch.errorRows}</strong><small>Com erros</small></S.Stat>
-      <S.Stat $tone="muted"><strong>{batch.skippedRows}</strong><small>Puladas</small></S.Stat>
+      <Metric icon={ListOrdered} value={batch.totalRows} label="Total de linhas" />
+      <Metric icon={CheckCircle2} value={batch.validRows} label="Prontas" tone="success" />
+      <Metric icon={AlertTriangle} value={batch.warningRows} label="Com alertas" tone="warning" />
+      <Metric icon={CircleX} value={batch.errorRows} label="Com erros" tone="danger" />
+      <Metric icon={SkipForward} value={batch.skippedRows} label="Puladas" tone="muted" />
     </S.Stats>
   );
 }
@@ -688,14 +695,12 @@ function BatchStats({ workspace }: { workspace: MemberImportWorkspaceData }) {
 function ValidationStep({
   workspace,
   busy,
-  onMap,
   onBack,
   onReview,
   onCancel,
 }: {
   workspace: MemberImportWorkspaceData;
   busy: string;
-  onMap: (kind: "ROLE" | "MARITAL_STATUS", raw: string, value: string) => void;
   onBack: () => void;
   onReview: () => void;
   onCancel: () => void;
@@ -703,12 +708,10 @@ function ValidationStep({
   const batch = workspace.batch!;
   const settings = batch.settingsSnapshot;
   const ignored = Array.isArray(settings.ignored_columns) ? settings.ignored_columns as string[] : [];
-  const unresolvedRoles = workspace.roleMappings.filter((item) => item.status === "REQUIRES_MAPPING").length;
-  const unresolvedMarital = workspace.maritalMappings.filter((item) => item.status === "REQUIRES_MAPPING").length;
   return (
     <S.Card>
       <S.CardHeader>
-        <div><h2>Validação e equivalências</h2><p>{batch.originalFilename} · {settings.file_format === "csv" ? "CSV do MEMBROS WEB" : `aba ${batch.worksheetName}`} · {formatBytes(batch.fileSizeBytes)}</p></div>
+        <div><h2>Validação da planilha</h2><p>{batch.originalFilename} · {settings.file_format === "csv" ? "CSV do MEMBROS WEB" : `aba ${batch.worksheetName}`} · {formatBytes(batch.fileSizeBytes)}</p></div>
         <S.Status $status={batch.status}>{MEMBER_IMPORT_STATUS_LABELS[batch.status] ?? batch.status}</S.Status>
       </S.CardHeader>
       <S.CardBody>
@@ -717,56 +720,9 @@ function ValidationStep({
           <S.InfoBox $tone="success"><h3>Estrutura reconhecida</h3><p>{Array.isArray(settings.recognized_columns) ? settings.recognized_columns.length : 0} campos reconhecidos para {batch.congregationName}.</p>{settings.workbook_schema === "congregation" && <p>País em branco usa o padrão Brasil do cadastro.</p>}{settings.file_format === "csv" && <p>O ID e a data do cadastro antigo ficam registradas no lote. O destino é a Congregação selecionada.</p>}</S.InfoBox>
           <S.InfoBox $tone={ignored.length ? "warning" : "info"}><h3>Colunas ignoradas</h3><p>{ignored.length ? ignored.join(", ") : "Nenhuma coluna extra encontrada."}</p></S.InfoBox>
         </S.InfoGrid>
-        <div>
-          <h3>Equivalência de Cargos</h3>
-          <S.MappingList>
-            {workspace.roleMappings.map((mapping) => (
-              <S.Mapping key={mapping.rawValue}>
-                <div><strong>{mapping.rawValue || "Não informado"}</strong><small>{mapping.count} linha(s)</small></div>
-                {mapping.status === "RECOGNIZED" ? <S.Status $status="VALID">{mapping.roleName}</S.Status> : (
-                  <S.Select
-                    aria-label={`Mapear Cargo ${mapping.rawValue}`}
-                    defaultValue=""
-                    disabled={busy === `mapping:ROLE:${mapping.rawValue}`}
-                    onChange={(event) => onMap("ROLE", mapping.rawValue, event.target.value)}
-                  >
-                    <option value="">Selecione o Cargo correspondente</option>
-                    {workspace.roles.map((role) => <option key={role.id} value={role.id}>{role.name}</option>)}
-                  </S.Select>
-                )}
-              </S.Mapping>
-            ))}
-          </S.MappingList>
-        </div>
-        {workspace.maritalMappings.length > 0 && (
-          <div>
-            <h3>Equivalência de estado civil</h3>
-            <S.MappingList>
-              {workspace.maritalMappings.map((mapping) => (
-                <S.Mapping key={mapping.rawValue}>
-                  <div><strong>{mapping.rawValue}</strong><small>{mapping.count} linha(s)</small></div>
-                  {mapping.status === "RECOGNIZED" ? <S.Status $status="VALID">{mapping.label}</S.Status> : (
-                    <S.Select
-                      aria-label={`Mapear estado civil ${mapping.rawValue}`}
-                      defaultValue=""
-                      disabled={busy === `mapping:MARITAL_STATUS:${mapping.rawValue}`}
-                      onChange={(event) => onMap("MARITAL_STATUS", mapping.rawValue, event.target.value)}
-                    >
-                      <option value="">Selecione a equivalência</option>
-                      {MARITAL_STATUS_IMPORT_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                    </S.Select>
-                  )}
-                </S.Mapping>
-              ))}
-            </S.MappingList>
-          </div>
-        )}
-        {(unresolvedRoles > 0 || unresolvedMarital > 0) && (
-          <S.InfoBox $tone="warning"><h3>Mapeamentos pendentes</h3><p>Há {unresolvedRoles} Cargo(s) e {unresolvedMarital} estado(s) civil(is) que exigem equivalência. Também é possível pular as linhas correspondentes na revisão.</p></S.InfoBox>
-        )}
       </S.CardBody>
       <S.Footer>
-        <div><Button variant="ghost" onClick={onBack}><ArrowLeft size={16} /> Nova planilha</Button><Button variant="ghost" loading={busy === "cancel"} onClick={onCancel}>Cancelar lote</Button></div>
+        <div><Button variant="secondary" onClick={onBack}><FileSpreadsheet size={16} /> Nova planilha</Button><Button variant="secondary" loading={busy === "cancel"} onClick={onCancel}><Ban size={16} /> Cancelar lote</Button></div>
         <div><Button onClick={onReview}>Revisar membros <ArrowRight size={16} /></Button></div>
       </S.Footer>
     </S.Card>
@@ -779,6 +735,7 @@ function ReviewStep({
   filters,
   searchInput,
   onSearch,
+  onMap,
   onLoad,
   onResolve,
   onBack,
@@ -788,6 +745,7 @@ function ReviewStep({
   busy: string;
   filters: MemberImportReviewParams;
   searchInput: string;
+  onMap: ApplyMapping;
   onSearch: (event: ChangeEvent<HTMLInputElement>) => void;
   onLoad: (params: MemberImportReviewParams) => void;
   onResolve: (item: MemberImportItem, resolution: Resolution) => void;
@@ -795,6 +753,7 @@ function ReviewStep({
   onContinue: () => void;
 }) {
   const batch = workspace.batch!;
+  const [mapping, setMapping] = useState<PendingMapping | null>(null);
   const items = workspace.items!;
   const includePhone = importIncludedPhone(batch.settingsSnapshot);
   return (
@@ -804,54 +763,72 @@ function ReviewStep({
         <S.Status $status={batch.status}>{MEMBER_IMPORT_STATUS_LABELS[batch.status] ?? batch.status}</S.Status>
       </S.CardHeader>
       <S.Toolbar>
-        <S.Search><Search aria-hidden="true" /><input value={searchInput} onChange={onSearch} placeholder="Buscar por nome (mínimo 3 caracteres)" /></S.Search>
-        <S.Select value={filters.classification} onChange={(event) => onLoad({ ...filters, page: 1, classification: event.target.value })}>
+        <S.Search><Search aria-hidden="true" /><input value={searchInput} onChange={onSearch} aria-label="Buscar por nome (mínimo 3 caracteres)" placeholder="Buscar por nome" /></S.Search>
+        <S.Select aria-label="Filtrar por situação" value={filters.classification} onChange={(event) => onLoad({ ...filters, page: 1, classification: event.target.value })}>
           {CLASSIFICATION_FILTERS.map((value) => <option key={value || "all"} value={value}>{value ? MEMBER_IMPORT_CLASSIFICATION_LABELS[value] : "Todas as situações"}</option>)}
         </S.Select>
-        <S.Select value={filters.pageSize} onChange={(event) => onLoad({ ...filters, page: 1, pageSize: Number(event.target.value) as 20 | 50 | 100 })}>
+        <S.Select aria-label="Linhas por página" value={filters.pageSize} onChange={(event) => onLoad({ ...filters, page: 1, pageSize: Number(event.target.value) as 20 | 50 | 100 })}>
           {MEMBER_IMPORT_PAGE_SIZES.map((size) => <option key={size} value={size}>{size} por página</option>)}
         </S.Select>
       </S.Toolbar>
       {busy === "review" || (searchInput.trim().length >= 3 && searchInput.trim() !== filters.search) ? (
-        <ResultsSkeleton label="Carregando revisão dos membros" columns={7} />
+        <ResultsSkeleton label="Carregando revisão dos membros" columns={6} />
       ) : <>
         <S.TableWrap>
           <S.Table>
-            <thead><tr><th>Linha / situação</th><th>Membro</th><th>{includePhone ? "Contato e datas" : "Datas"}</th><th>Endereço, naturalidade e filiação</th><th>Cargo</th><th>Pendências</th><th>Decisão</th></tr></thead>
+            <thead><tr>{["Linha", "Membro", "Datas", "Cargos", "Pendências", "Ação"].map(label =>
+              <th key={label} scope="col">{label}</th>
+            )}</tr></thead>
             <tbody>
-              {items.items.map((item) => (
+              {items.items.map(item => (
                 <tr key={item.id}>
-                  <td><strong>#{item.rowNumber}</strong><small><S.Status $status={item.classification}>{MEMBER_IMPORT_CLASSIFICATION_LABELS[item.classification]}</S.Status></small></td>
-                  <td><strong>{item.fullName || "Nome ausente"}</strong><GenderChoice item={item} busy={busy} onResolve={onResolve} /><small>CPF {maskCpf(item.cpfSuffix)}</small><small>{item.maritalStatusRaw || "Estado civil não informado"}</small></td>
-                  <td>{includePhone && (item.whatsapp || item.phoneRaw || "Sem telefone")}<small>Nasc.: {formatDate(item.birthDate)} · Conversão: {formatDate(item.conversionDate)}</small><small>Águas: {formatDate(item.baptismDate)} · Espírito: {formatDate(item.holySpiritBaptismDate)} · Receb.: {formatDate(item.receivedDate)}</small></td>
-                  <td><strong>{addressLabel(item)}</strong><small>Naturalidade: {naturalityLabel(item)}</small><small>{[item.profession, item.nationality].filter(Boolean).join(" · ")}</small>{item.legacyRegistrationDate && <small>Cadastro de origem: {formatDate(item.legacyRegistrationDate)}</small>}<small>Pai: {item.fatherName || "não informado"} · Mãe: {item.motherName || "não informada"}</small></td>
-                  <td><strong>{item.roleName ?? (item.roleRaw ? "Não mapeado" : "Sem cargo")}</strong><small>Origem: {item.roleRaw || "—"}</small></td>
-                  <td>{item.issues.length ? <IssueList item={item} /> : <S.Status $status="VALID">Sem pendências</S.Status>}</td>
-                  <td><ItemActions item={item} busy={busy} onResolve={onResolve} /></td>
+                  <td data-label="Linha"><strong>#{item.rowNumber}</strong><small><S.Status $status={item.classification}>{MEMBER_IMPORT_CLASSIFICATION_LABELS[item.classification]}</S.Status></small></td>
+                  <td data-label="Membro">
+                    <strong>{item.fullName || "Nome ausente"}</strong>
+                    <GenderChoice item={item} busy={busy} onResolve={onResolve} />
+                    <small>CPF {maskCpf(item.cpfSuffix)}</small>
+                    <small>{item.maritalStatus ? formatMaritalStatus(item.maritalStatus, item.gender) : item.maritalStatusRaw || "Estado civil não informado"}</small>
+                    <S.MemberDetails>
+                      <summary>Detalhes da ficha</summary>
+                      <small>Endereço: {addressLabel(item)}</small>
+                      <small>Naturalidade: {naturalityLabel(item)}</small>
+                      {item.profession && <small>Profissão: {item.profession}</small>}
+                      {item.nationality && <small>Nacionalidade: {item.nationality}</small>}
+                      <small>Pai: {item.fatherName || "não informado"}</small>
+                      <small>Mãe: {item.motherName || "não informada"}</small>
+                      {includePhone && <small>Telefone: {item.whatsapp || item.phoneRaw || "não informado"}</small>}
+                    </S.MemberDetails>
+                  </td>
+                  <td data-label="Datas">
+                    <small>Nascimento: {formatDate(item.birthDate)}</small>
+                    {item.legacyRegistrationDate && <small>Cadastro: {formatDate(item.legacyRegistrationDate)}</small>}
+                    {item.conversionDate && <small>Conversão: {formatDate(item.conversionDate)}</small>}
+                    {item.baptismDate && <small>Batismo nas águas: {formatDate(item.baptismDate)}</small>}
+                    {item.holySpiritBaptismDate && <small>Batismo no Espírito: {formatDate(item.holySpiritBaptismDate)}</small>}
+                    {item.receivedDate && <small>Recebimento: {formatDate(item.receivedDate)}</small>}
+                  </td>
+                  <td data-label="Cargos"><strong>{item.roleName ?? (item.roleRaw ? "Não mapeado" : "Sem cargo")}</strong>{item.roleRaw && item.roleRaw !== item.roleName && <small>Origem: {item.roleRaw}</small>}</td>
+                  <td data-label="Pendências">
+                    {item.issues.length ? <IssueList item={item} busy={busy} onMap={setMapping} /> : <S.Status $status="VALID">Sem pendências</S.Status>}
+                    <IssueActions item={item} busy={busy} onResolve={onResolve} />
+                  </td>
+                  <td data-label="Ação">
+                    {item.classification === "IMPORTED" ? (
+                      item.importedMemberId && <Link href={`/membros?search=${encodeURIComponent(item.importedMemberCode ?? item.fullName)}`}>Abrir membro</Link>
+                    ) : item.decision === "SKIP" ? (
+                      <IconButton type="button" title="Restaurar linha" aria-label="Restaurar linha" disabled={Boolean(busy)} onClick={() => onResolve(item, "RESTORE")}><RotateCcw /></IconButton>
+                    ) : (
+                      <IconButton type="button" title="Pular esta linha" aria-label="Pular esta linha" disabled={Boolean(busy)} onClick={() => onResolve(item, "SKIP")}><Trash2 /></IconButton>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </S.Table>
         </S.TableWrap>
-        <S.MobileRows>
-          {items.items.map((item) => (
-            <S.MobileRow key={item.id}>
-              <header><div><h3>#{item.rowNumber} · {item.fullName || "Nome ausente"}</h3><p>{item.roleName || item.roleRaw || "Sem cargo"}</p></div><S.Status $status={item.classification}>{MEMBER_IMPORT_CLASSIFICATION_LABELS[item.classification]}</S.Status></header>
-              <GenderChoice item={item} busy={busy} onResolve={onResolve} /><div><strong>CPF:</strong> {maskCpf(item.cpfSuffix)}</div>
-              <div><strong>Nascimento:</strong> {formatDate(item.birthDate)} · <strong>Conversão:</strong> {formatDate(item.conversionDate)}</div>
-              <div><strong>Batismo nas águas:</strong> {formatDate(item.baptismDate)} · <strong>Batismo com o Espírito:</strong> {formatDate(item.holySpiritBaptismDate)}</div>
-              <div><strong>Endereço:</strong> {addressLabel(item)}</div>
-              {includePhone && <div><strong>Telefone:</strong> {item.phoneRaw || "—"}</div>}
-              {item.legacyRegistrationDate && <div><strong>Cadastro de origem:</strong> {formatDate(item.legacyRegistrationDate)}</div>}
-              <div>{[item.profession, item.nationality, item.maritalStatusRaw].filter(Boolean).join(" · ")}</div>
-              <div><strong>Naturalidade:</strong> {naturalityLabel(item)}</div>
-              <div><strong>Filiação:</strong> {item.fatherName || "Pai não informado"} · {item.motherName || "Mãe não informada"}</div>
-              {item.issues.length ? <IssueList item={item} /> : <S.Status $status="VALID">Sem pendências</S.Status>}
-              <ItemActions item={item} busy={busy} onResolve={onResolve} />
-            </S.MobileRow>
-          ))}
-        </S.MobileRows>
       </>}
+      {mapping && <MappingDialog target={mapping} workspace={workspace} busy={Boolean(busy)}
+        onClose={() => setMapping(null)} onApply={onMap} />}
       {items.total === 0 && <S.Empty><div><Users /><h3>Nenhuma linha encontrada</h3><p>Ajuste os filtros para visualizar os membros deste lote.</p></div></S.Empty>}
       <S.Pagination>
         <span>{items.total} linha(s) · página {items.page} de {items.pageCount}</span>
@@ -863,7 +840,7 @@ function ReviewStep({
       <S.Footer>
         <div><Button variant="ghost" onClick={onBack}><ArrowLeft size={16} /> Validação</Button></div>
         <div>
-          {batch.status !== "READY" && <S.InfoBox $tone="warning">Resolva ou pule as {batch.errorRows} linha(s) pendentes.</S.InfoBox>}
+          {batch.status !== "READY" && <S.InfoBox $tone="warning">Resolva as pendências ou pule as linhas correspondentes.</S.InfoBox>}
           <Button disabled={Boolean(busy) || batch.status !== "READY"} onClick={onContinue}>Revisar confirmação <ArrowRight size={16} /></Button>
         </div>
       </S.Footer>
@@ -871,16 +848,61 @@ function ReviewStep({
   );
 }
 
-function IssueList({ item }: { item: MemberImportItem }) {
+function IssueList({ item, busy, onMap }: {
+  item: MemberImportItem;
+  busy: string;
+  onMap: (target: PendingMapping) => void;
+}) {
   return (
     <S.Issues>
-      {item.issues.map((issue, index) => (
-        <li key={`${issue.code}-${index}`}>
-          {issue.severity === "INFO" ? <Info /> : issue.resolved ? <CheckCircle2 /> : <AlertTriangle />}
-          <span>{issue.message}{issue.resolved ? ` · Resolvido: ${issue.resolution ?? "decisão registrada"}` : ""}</span>
-        </li>
-      ))}
+      {item.issues.map((issue, index) => {
+        const isRole = issue.code === "ROLE_UNKNOWN" || issue.code === "ROLE_INACTIVE";
+        const isMarital = issue.code === "MARITAL_STATUS_UNKNOWN";
+        const raw = isRole ? item.roleRaw : isMarital ? item.maritalStatusRaw : null;
+        const label = isRole ? "cargo" : "estado civil";
+        return (
+          <li key={`${issue.code}-${index}`} data-resolved={issue.resolved || undefined} data-severity={issue.severity}>
+            {issue.resolved ? <CheckCircle2 /> : issue.severity === "INFO" ? <Info /> : <AlertTriangle />}
+            <div>
+              {raw && issue.resolved ? `Equivalência de ${label} aplicada.` : issue.message}
+              {!raw && issue.resolved && ` · Resolvido: ${issue.resolution ?? "decisão registrada"}`}
+              {raw && !issue.resolved && item.decision !== "SKIP" && item.classification !== "IMPORTED" && (
+                <Button size="sm" variant="secondary" disabled={Boolean(busy)} aria-label={`Resolver ${label}`}
+                  onClick={() => onMap({ kind: isRole ? "ROLE" : "MARITAL_STATUS", raw })}>Resolver</Button>
+              )}
+            </div>
+          </li>
+        );
+      })}
     </S.Issues>
+  );
+}
+
+function MappingDialog({ target, workspace, busy, onClose, onApply }: {
+  target: PendingMapping;
+  workspace: MemberImportWorkspaceData;
+  busy: boolean;
+  onClose: () => void;
+  onApply: ApplyMapping;
+}) {
+  const [value, setValue] = useState("");
+  const isRole = target.kind === "ROLE";
+  const label = isRole ? "cargo" : "estado civil";
+  const mappings = isRole ? workspace.roleMappings : workspace.maritalMappings;
+  const count = mappings.find(mapping => mapping.rawValue === target.raw)?.count ?? 1;
+  const options = isRole ? workspace.roles.map(role => ({ value: role.id, label: role.name })) : MARITAL_STATUS_IMPORT_OPTIONS;
+  return (
+    <Modal size="sm" title={`Resolver ${label}`} busy={busy} onClose={onClose}
+      description={`“${target.raw}” aparece em ${count === 1 ? "1 linha" : count + " linhas"} deste lote.`}
+      footer={<><Button variant="secondary" disabled={busy} onClick={onClose}>Cancelar</Button>
+        <Button disabled={!value || busy} loading={busy} onClick={async () => { if (await onApply(target, value)) onClose(); }}>Aplicar</Button></>}>
+      <S.Field><span>{isRole ? "Cargo correspondente" : "Estado civil correspondente"}</span>
+        <S.Select value={value} disabled={busy} onChange={event => setValue(event.target.value)}>
+          <option value="">Selecione</option>
+          {options.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+        </S.Select>
+      </S.Field>
+    </Modal>
   );
 }
 
@@ -906,11 +928,11 @@ function ConfirmationStep({
       <S.CardHeader><div><h2>Confirmação do lote</h2><p>Esta é a última etapa antes da gravação transacional dos membros.</p></div><S.Status $status={batch.status}>{MEMBER_IMPORT_STATUS_LABELS[batch.status]}</S.Status></S.CardHeader>
       <S.CardBody>
         <S.Stats>
-          <S.Stat $tone="success"><strong>{willImport}</strong><small>Serão importados</small></S.Stat>
-          <S.Stat $tone="muted"><strong>{batch.skippedRows}</strong><small>Serão pulados</small></S.Stat>
-          <S.Stat $tone="warning"><strong>{batch.warningRows}</strong><small>Com alertas aceitos</small></S.Stat>
-          <S.Stat><strong>{workspace.roleMappings.filter((item) => item.roleId).length}</strong><small>Cargos atribuídos</small></S.Stat>
-          <S.Stat><strong>1</strong><small>Operação atômica</small></S.Stat>
+          <Metric icon={Users} value={willImport} label="Serão importados" tone="success" />
+          <Metric icon={SkipForward} value={batch.skippedRows} label="Serão pulados" tone="muted" />
+          <Metric icon={AlertTriangle} value={batch.warningRows} label="Com alertas aceitos" tone="warning" />
+          <Metric icon={BadgeCheck} value={workspace.roleMappings.filter((item) => item.roleId).length} label="Cargos atribuídos" />
+          <Metric icon={ShieldCheck} value={1} label="Operação atômica" />
         </S.Stats>
         <S.InfoGrid>
           <S.InfoBox $tone="info"><h3>Destino</h3><p>{batch.churchName}<br />{batch.congregationName}</p></S.InfoBox>
@@ -999,12 +1021,12 @@ function HistoryView({
     <S.Card>
       <S.CardHeader><div><h2>Histórico de importações</h2><p>Consulte lotes, decisões, relatórios e resultados anteriores.</p></div><Button size="sm" onClick={onNew}><FileSpreadsheet size={16} /> Nova importação</Button></S.CardHeader>
       <S.CardBody>
-        <S.HistoryStats>
-          <S.Stat $tone="success"><strong>{history.stats.completed}</strong><small>Lotes concluídos</small></S.Stat>
-          <S.Stat><strong>{history.stats.imported}</strong><small>Membros importados</small></S.Stat>
-          <S.Stat $tone="warning"><strong>{history.stats.warnings}</strong><small>Lotes com alertas</small></S.Stat>
-          <S.Stat $tone="muted"><strong>{history.stats.rolledBack}</strong><small>Lotes desfeitos</small></S.Stat>
-        </S.HistoryStats>
+        <S.Stats>
+          <Metric icon={CheckCircle2} value={history.stats.completed} label="Lotes concluídos" tone="success" />
+          <Metric icon={Users} value={history.stats.imported} label="Membros importados" />
+          <Metric icon={AlertTriangle} value={history.stats.warnings} label="Lotes com alertas" tone="warning" />
+          <Metric icon={RotateCcw} value={history.stats.rolledBack} label="Lotes desfeitos" tone="muted" />
+        </S.Stats>
         {history.items.length ? (
           <S.HistoryList>
             {history.items.map((item) => (

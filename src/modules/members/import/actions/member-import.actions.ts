@@ -352,7 +352,11 @@ export async function resolveMemberImportMappingAction(
   });
   if (error) return { success: false, message: friendlyError(error.message) };
   revalidatePath("/membros/importar");
-  return { success: true, message: "Mapeamento aplicado ao lote.", data: await getMemberImportWorkspace(context, parsed.data.batchId) };
+  const { batchId, page, pageSize, search, classification } = parsed.data;
+  // A correção pode retirar todas as linhas da página filtrada pela situação.
+  const review = { page: classification ? 1 : page, pageSize, search, classification };
+  const workspace = await getMemberImportWorkspace(context, batchId, review);
+  return { success: true, message: "Equivalência aplicada às linhas do lote.", data: workspace };
 }
 
 export async function resolveMemberImportItemAction(

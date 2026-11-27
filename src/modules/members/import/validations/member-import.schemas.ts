@@ -9,10 +9,9 @@ export const memberImportReviewSchema = z.object({
 });
 
 export const memberImportMappingSchema = z.discriminatedUnion("kind", [
-  z.object({ kind: z.literal("ROLE"), batchId: z.string().uuid(), rawValue: z.string().min(1).max(120), value: z.string().uuid() }),
-  z.object({
+  memberImportReviewSchema.extend({ kind: z.literal("ROLE"), rawValue: z.string().min(1).max(120), value: z.string().uuid() }),
+  memberImportReviewSchema.extend({
     kind: z.literal("MARITAL_STATUS"),
-    batchId: z.string().uuid(),
     rawValue: z.string().min(1).max(120),
     value: z.enum(["SINGLE", "MARRIED", "DIVORCED", "SEPARATED", "WIDOWED", "STABLE_UNION", "OTHER"]),
   }),

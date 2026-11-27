@@ -18,8 +18,13 @@ test("importa a planilha oficial e permite conferir o resultado no relatório", 
   const otherNames = Array.from({ length: 9 }, () => "Membro de teste " + randomUUID());
   otherNames.forEach((otherName, index) => {
     sheet.getRow(index + 3).values = [otherName, "", index === 0 ? "" : "Masculino"];
+    if (index < 2) {
+      sheet.getCell(`B${index + 3}`).value = "Cargo da origem";
+      sheet.getCell(`L${index + 3}`).value = "Estado da origem";
+    }
   });
   await page.goto("/membros/importar");
+  await expect(page.getByRole("button", { name: "Modelo", exact: true })).toBeVisible();
   await page.getByRole("combobox").first().selectOption(destination!);
   const memberStatus = page.getByRole("combobox", { name: "Situação dos membros" });
   await expect(memberStatus).toHaveValue("ACTIVE");
@@ -30,8 +35,41 @@ test("importa a planilha oficial e permite conferir o resultado no relatório", 
   });
   await page.getByRole("button", { name: "Analisar planilha" }).click();
   await expect(page.getByText(/20 campos reconhecidos/)).toBeVisible();
+  await expect(page.getByText(/Equivalência de (Cargos|estado civil)/)).toHaveCount(0);
   await page.getByRole("button", { name: "Revisar membros" }).click();
-  await expect(page.getByRole("row").filter({ hasText: name })).toContainText("Portuguesa");
+  await expect(page.getByRole("columnheader")).toHaveText(["Linha", "Membro", "Datas", "Cargos", "Pendências", "Ação"]);
+  const member = page.getByRole("row").filter({ hasText: name });
+  await member.getByText("Detalhes da ficha", { exact: true }).click();
+  await expect(member.getByText(/Portuguesa/)).toBeVisible();
+  const situation = page.getByRole("combobox", { name: "Filtrar por situação" });
+  await situation.selectOption("ERROR");
+  await expect(page.getByRole("button", { name: "Resolver cargo", exact: true })).toHaveCount(2);
+  await page.getByRole("button", { name: "Resolver cargo", exact: true }).first().click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toContainText("2 linhas");
+  await dialog.getByRole("combobox").click();
+  await dialog.getByRole("listbox").getByRole("option", { name: "Diácono", exact: true }).click();
+  await dialog.getByRole("button", { name: "Aplicar" }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(situation).toHaveValue("ERROR");
+  await situation.selectOption("");
+  const desktop = page.viewportSize()!;
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.getByRole("button", { name: "Resolver estado civil", exact: true })).toHaveCount(2);
+  await page.getByRole("button", { name: "Resolver estado civil", exact: true }).first().click();
+  await dialog.getByRole("combobox").selectOption("MARRIED");
+  await dialog.getByRole("button", { name: "Aplicar" }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /^Resolver/ })).toHaveCount(0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.setViewportSize(desktop);
+  for (const otherName of otherNames.slice(0, 2)) {
+    const resolvedRow = page.getByRole("row").filter({ hasText: otherName });
+    await expect(resolvedRow.getByRole("cell").nth(3)).toContainText("Diácono");
+    await expect(resolvedRow.getByRole("cell").nth(1)).toContainText("Casado");
+  }
+  await member.getByRole("button", { name: "Pular esta linha" }).click();
+  await member.getByRole("button", { name: "Restaurar linha" }).click();
   await expect(page.getByRole("row").filter({ hasText: name })).toContainText("Feminino");
   await expect(page.getByRole("checkbox")).toHaveCount(0);
   await expect(page.getByRole("row").filter({ hasText: name }).getByRole("combobox")).toHaveCount(0);
