@@ -84,6 +84,15 @@ test("aniversariantes abrem em Dia e o período atualiza no celular", async ({ p
   await select.selectOption("month");
   await expect(page).toHaveURL(/period=month/);
   await expect(select).toHaveValue("month");
+  await expect(page.getByRole("heading", { name: "Membros por regional" })).toBeVisible();
+  await page.reload();
+  await expect(select).toHaveValue("month");
+  await page.goto("/?period=week&page=999");
+  await page.getByRole("link", { name: "Voltar à primeira página" }).click();
+  await expect(page).toHaveURL(/\/\?period=week$/);
+  await expect(rows).toHaveCount(4);
+  await page.goBack();
+  await expect(page.getByRole("link", { name: "Voltar à primeira página" })).toBeVisible();
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 

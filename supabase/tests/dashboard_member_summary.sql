@@ -16,6 +16,8 @@ declare
   roles_allowed boolean;
 begin
   if has_function_privilege('anon','public.get_dashboard_member_summary(uuid)','execute')
+    or has_function_privilege('anon','public.get_dashboard_member_scope(uuid)','execute')
+    or not has_function_privilege('authenticated','public.get_dashboard_member_scope(uuid)','execute')
     or has_function_privilege('anon','private.dashboard_congregation_roles(uuid)','execute')
     or not has_function_privilege('authenticated','public.get_dashboard_member_summary(uuid)','execute')
     then raise exception 'Unexpected dashboard function grants'; end if;
@@ -59,10 +61,14 @@ begin
       into expected_areas from public.regions r where r.church_id=a.church_id and r.deleted_at is null;
 
     set local role authenticated;
+    if exists(select from public.get_dashboard_member_scope(a.id)) <> allowed then
+      raise exception 'Birthday and summary scopes disagree';
+    end if;
     actual := public.get_dashboard_member_summary(a.id);
     if public.get_dashboard_member_summary(gen_random_uuid()) is not null then raise exception 'Unknown access accepted'; end if;
     perform set_config('request.jwt.claim.sub', gen_random_uuid()::text, true);
-    if public.get_dashboard_member_summary(a.id) is not null or private.dashboard_congregation_roles(a.id) is not null then
+    if public.get_dashboard_member_summary(a.id) is not null or private.dashboard_congregation_roles(a.id) is not null
+      or exists(select from public.get_dashboard_member_scope(a.id)) then
       raise exception 'Another identity could read the dashboard';
     end if;
     reset role;

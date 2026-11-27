@@ -6,6 +6,7 @@
   min-width: 0;
 }
 .church-dashboard .church-dashboard-heading { margin-bottom: 20px; }
+.church-dashboard > .church-dashboard-panel { margin-top: clamp(16px, 1.7cqi, 24px); }
 .church-dashboard-grid {
   display: grid;
   gap: clamp(16px, 1.7cqi, 24px);
@@ -155,6 +156,7 @@
 .church-dashboard-pagination span { margin-right: auto; }
 
 @container church-dashboard (max-width: 840px) {
+  .church-dashboard > .church-dashboard-panel { margin-top: 12px; }
   .church-dashboard-columns { --dashboard-column-min: 54px; }
   .church-dashboard-grid, .church-dashboard-grid[data-organization="true"] {
     grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;
@@ -164,6 +166,7 @@
   .church-dashboard-switch.mobile-switch button { min-height: 34px; }
 }
 @container church-dashboard (max-width: 480px) {
+  .church-dashboard > .church-dashboard-panel { margin-top: 10px; }
   .church-dashboard-grid, .church-dashboard-grid[data-organization="true"] { gap: 10px; }
   .church-dashboard-panel { padding: 14px; }
   .church-dashboard-metric { padding: 14px clamp(9px, 3cqi, 14px); }

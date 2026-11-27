@@ -21,24 +21,26 @@ function pageHref(period: DashboardPeriod, page: number) {
   return search.size ? `/?${search}` : "/";
 }
 
-export async function DashboardBirthdays({ context, searchParams, showCongregation }: {
-  context: AuthContext; searchParams: DashboardParams; showCongregation: boolean;
+export async function DashboardBirthdays({ context, searchParams }: {
+  context: AuthContext; searchParams: DashboardParams;
 }) {
   const query = await searchParams;
+  const showCongregation = context.access.scope === "CHURCH" && hasPermission(context.permissions, PERMISSIONS.organizationView);
   const showContact = hasPermission(context.permissions, PERMISSIONS.membersViewFull);
   const period = dashboardPeriod(query.period);
   const page = pageNumber.parse(query.page);
   const filters = birthdayFiltersSchema.parse({ period });
   const { ranges, label } = birthdayCalendar(filters);
   const start = (page - 1) * BIRTHDAY_PAGE_SIZE;
-  const client = await createClient();
-  const result = await readBirthdayBatch(client, context, filters, ranges, start, start + BIRTHDAY_PAGE_SIZE - 1, "dashboard");
-  const pages = Math.ceil((result.count ?? 0) / BIRTHDAY_PAGE_SIZE);
-  const missingPage = page > 1 && (result.error?.code === "PGRST103" || (!result.error && !result.data?.length));
+  const result = await createClient()
+    .then(client => readBirthdayBatch(client, context, filters, ranges, start, start + BIRTHDAY_PAGE_SIZE - 1, "dashboard"))
+    .catch(() => null);
+  const pages = Math.ceil((result?.count ?? 0) / BIRTHDAY_PAGE_SIZE);
+  const missingPage = result && page > 1 && (result.error?.code === "PGRST103" || (!result.error && !result.data?.length));
 
   return <BirthdayPeriod period={period} label={label} columns={2 + Number(showContact) + Number(showCongregation)}>
     {missingPage ? <p className="church-dashboard-empty"><Link href={pageHref(period, 1)} scroll={false}>Voltar à primeira página</Link></p>
-      : result.error || !result.data ? <p role="alert" className="church-dashboard-empty">Não foi possível carregar os aniversariantes.</p>
+      : !result || result.error || !result.data || result.count === null ? <p role="alert" className="church-dashboard-empty">Não foi possível carregar os aniversariantes.</p>
       : result.data.length === 0 ? <p className="church-dashboard-empty">{period === "today" ? "Nenhum aniversariante hoje." : "Nenhum aniversariante neste período."}</p>
       : <>
         <table className="church-dashboard-table" aria-label="Aniversariantes do período">
