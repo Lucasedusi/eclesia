@@ -1,5 +1,7 @@
 import "server-only";
 
+import { measureServerOperation } from "@/lib/performance/server-performance";
+import { memberSearchQuery } from "./member-search-query";
 import { createClient } from "@/lib/supabase/server";
 import { PERMISSIONS, hasPermission } from "@/modules/auth/constants/permissions";
 import { loadChurchLogoDataUri } from "@/modules/auth/services/church-logo.service";
@@ -17,20 +19,23 @@ const PAGE_SIZE = 500, LIMIT = 10_000;
 type Row = Record<string, unknown>;
 const value = (row: Row, key: string) => typeof row[key] === "string" ? row[key].trim() : "";
 const first = (input: unknown): Row => (Array.isArray(input) ? input[0] : input) as Row ?? {};
-const cleanSearch = (text: string) => text.trim().replace(/[(),.*%]/g, "").replace(/\s+/g, " ");
-const lower = (text: string) => text.toLocaleLowerCase("pt-BR");
 const addressKeys = ["address", "number", "complement", "district", "city", "state", "zip_code", "country"];
 const computed = new Set(["congregation", "region", "role", "role_start_date", "cpf", "rg", "issuing_agency", "full_address", "natural_origin"]);
 
-async function allRows<T extends Row>(load: (start: number, end: number) => PromiseLike<{ data: T[] | null; count: number | null; error: unknown }>) {
+async function allRows<T extends Row>(load: (start: number, end: number, needCount: boolean) => PromiseLike<{ data: T[] | null; count: number | null; error: unknown }>) {
   const rows: T[] = [], ids = new Set<string>();
   let total: number | undefined;
   do {
-    const result = await load(rows.length, rows.length + PAGE_SIZE - 1);
-    if (result.error || !Array.isArray(result.data) || result.count === null) throw new MemberReportError("MEMBER_REPORT_LOAD_FAILED");
-    if (result.count > LIMIT) throw new MemberReportError("MEMBER_REPORT_TOO_LARGE");
-    total ??= result.count;
-    if (result.count !== total || (rows.length < total && !result.data.length)) throw new MemberReportError("MEMBER_REPORT_LOAD_FAILED");
+    // Include one extra slot when the last batch lands exactly on a page boundary,
+    // so a growing result cannot silently lose its tail.
+    const checkTail = total !== undefined && total - rows.length === PAGE_SIZE;
+    const result = await load(rows.length, rows.length + PAGE_SIZE - 1 + Number(checkTail), total === undefined);
+    if (result.error || !Array.isArray(result.data)) throw new MemberReportError("MEMBER_REPORT_LOAD_FAILED");
+    const count = result.count ?? total;
+    if (count === undefined) throw new MemberReportError("MEMBER_REPORT_LOAD_FAILED");
+    if (count > LIMIT) throw new MemberReportError("MEMBER_REPORT_TOO_LARGE");
+    total ??= count;
+    if (count !== total || (rows.length < total && !result.data.length)) throw new MemberReportError("MEMBER_REPORT_LOAD_FAILED");
     for (const row of result.data) {
       const id = value(row, "id");
       if (!id || ids.has(id)) throw new MemberReportError("MEMBER_REPORT_LOAD_FAILED");
@@ -71,11 +76,8 @@ export async function loadMemberReportDocument(context: AuthContext, options: Me
   const columns = getMemberReportColumns(options, access);
   if (options.kind === "custom" && columns.some((field) => !canUseMemberReportField(field, access))) deny();
   const keys = new Set<MemberReportFieldKey>(columns.map((f) => f.key));
-  const search = cleanSearch(filters.search);
-  const digits = search.replace(/\D/g, "");
-  const searchCpf = search.length >= 3 && digits.length >= 3 && access.viewSensitiveIdentity;
+  const search = filters.search.trim();
   const identityKeys = ["cpf", "rg", "issuing_agency"].filter((key) => keys.has(key as MemberReportFieldKey));
-  if (searchCpf && !identityKeys.includes("cpf")) identityKeys.push("cpf");
   const withRoles = access.viewRoles && (keys.has("role") || keys.has("role_start_date") || Boolean(filters.roleId));
   const fields = new Set(["id", "church_id", "congregation_id", "deleted_at", "member_code", "full_name"]);
   for (const key of keys) if (!computed.has(key)) fields.add(key);
@@ -95,8 +97,8 @@ export async function loadMemberReportDocument(context: AuthContext, options: Me
   ].join(",");
   try {
     const client = await createClient(), churchId = context.church.id;
-    const rows = await allRows((start, end) => {
-      let query = client.from("members").select(projection, { count: "exact" }).eq("church_id", churchId)
+    const rows = await allRows((start, end, needCount) => {
+      let query = memberSearchQuery(client, churchId, search, access.viewSensitiveIdentity, projection, needCount ? { count: "exact" } : {})
         .eq("congregations.church_id", churchId).is("congregations.deleted_at", null);
       query = filters.archived ? query.not("deleted_at", "is", null) : query.is("deleted_at", null);
       if (scope === "REGION") query = query.eq("congregations.region_id", regionId!);
@@ -112,14 +114,17 @@ export async function loadMemberReportDocument(context: AuthContext, options: Me
       if (identityKeys.length) query = query.eq("identity.church_id", churchId).is("identity.deleted_at", null);
       const sort = filters.sort;
       query = sort === "recent" || sort === "oldest" ? query.order("created_at", { ascending: sort === "oldest" }) : sort === "code" ? query.order("member_code") : query.order("full_name", { ascending: sort !== "name_desc" });
-      return query.order("id").range(start, end).returns<Row[]>();
+      return measureServerOperation("members.report.read-batch", async () => {
+        const batch = await query.order("id").range(start, end).returns<Row[]>();
+        if (batch.error) throw new MemberReportError("MEMBER_REPORT_LOAD_FAILED");
+        return batch;
+      }, { route: "/api/members/reports", supabaseCalls: 1 });
     });
     function identityOf(row: Row) {
       const identity = first(row.identity);
       return identity.church_id === churchId && identity.member_id === row.id && identity.deleted_at === null ? identity : {};
     }
-    const selected = search.length < 3 ? rows : rows.filter((row) => lower(value(row, "full_name")).includes(lower(search)) || lower(value(row, "member_code")).includes(lower(search)) || (searchCpf && value(identityOf(row), "cpf").replace(/\D/g, "").includes(digits)));
-    const reportRows = selected.map((row) => {
+    const reportRows = rows.map((row) => {
       const congregation = first(row.congregations), region = first(congregation.regions), identity = identityOf(row);
       const roles = (Array.isArray(row.active_roles) ? row.active_roles as Row[] : []).filter((link) => {
         const role = first(link.roles);
@@ -203,7 +208,9 @@ async function birthdayDocument(context: AuthContext, options: BirthdayReportOpt
 
 export async function generateMemberReportDownload(context: AuthContext, options: MemberReportOptions | BirthdayReportOptions) {
   const document = options.kind === "birthdays" ? await birthdayDocument(context, options) : await loadMemberReportDocument(context, options);
-  const body = options.format === "pdf" ? await createMemberReportPdf(document) : await createMemberReportWorkbook(document);
+  const body = await measureServerOperation(`members.report.render.${options.format}`, async () =>
+    options.format === "pdf" ? createMemberReportPdf(document) : createMemberReportWorkbook(document),
+  { route: "/api/members/reports" });
   try {
     const client = await createClient();
     const { error } = await client.rpc("log_audit", { p_church_id: context.church.id, p_module: "members", p_action: "EXPORT_MEMBER_REPORT", p_entity_type: "member", p_description: "Emissão de listagem de membros.",

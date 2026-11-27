@@ -23,14 +23,24 @@ const member: Row = { id: "member-1", church_id: church, congregation_id: congre
   identity: { church_id: church, member_id: "member-1", deleted_at: null, cpf: "00000000191", rg: "RG-TESTE", issuing_agency: "SSP" },
 };
 function database(rows: Row[] = [member], mode: "normal" | "error" | "changed" | "duplicate" | "audit" = "normal") {
-  const calls: { table: string; select: string; filters: [string, string, unknown][]; range?: [number, number] }[] = [];
+  const calls: { table: string; select: string; filters: [string, string, unknown][]; range?: [number, number]; count?: string; or?: string }[] = [];
   function from(table: string) {
     const call: typeof calls[number] = { table, select: "", filters: [] }; calls.push(call);
     const get = (row: Row, key: string): unknown => key.split(".").reduce<unknown>((v, part) => v && typeof v === "object" ? (v as Row)[part] : undefined, row);
     const result = () => {
       let data = table === "members" ? rows.map((row) => ({ ...row })) : table === "churches" ? [{ id: church, name: "Igreja de Teste", senior_pastor_name: "Paulo", senior_pastor_spouse_name: "Ana", deleted_at: null }] : [];
+      const expression = call.or;
+      if (expression) {
+        const text = expression.match(/full_name\.ilike\."%(.*?)%",/)?.[1].toLowerCase();
+        if (!text) throw new Error("Unexpected search expression");
+
+        const digits = text.replace(/\D/g, "");
+        data = data.filter((row) => [row.full_name, row.member_code].some((v) => String(v).toLowerCase().includes(text))
+          || (expression.includes("cpf_match.not.is.null") && digits.length >= 3 && String(get(row, "identity.cpf")).includes(digits)));
+      }
+      if (mode === "changed" && call.range?.[0]) data.pop();
       for (const [key, op, expected] of call.filters) {
-        if (key.startsWith("active_roles.") || key.startsWith("identity.") || key.startsWith("ministry_scope.")) continue;
+        if (key.startsWith("active_roles.") || key.startsWith("identity.") || key.startsWith("cpf_match.") || key.startsWith("ministry_scope.")) continue;
         if (key.startsWith("congregations.") && !call.select.includes("congregations!inner")) continue;
         data = data.filter((row) => {
           const value = get(row, key);
@@ -38,11 +48,12 @@ function database(rows: Row[] = [member], mode: "normal" | "error" | "changed" |
           return op === "not" ? value !== expected : value === expected;
         });
       }
-      const count = data.length + (mode === "changed" && call.range?.[0] ? 1 : 0);
+      const count = call.count ? data.length : null;
       if (call.range) data = mode === "duplicate" && call.range[0] ? data.slice(0, 500) : data.slice(call.range[0], call.range[1] + 1);
       return { data, count, error: mode === "error" ? { message: "PRIVATE" } : null };
     };
-    const q = { select: (select: string) => { call.select = select; return q; }, eq: (key: string, value: unknown) => { call.filters.push([key, "eq", value]); return q; },
+    const q = { select: (select: string, options?: { count?: string }) => { call.select = select; call.count = options?.count; return q; }, eq: (key: string, value: unknown) => { call.filters.push([key, "eq", value]); return q; },
+      or: (expr: string) => { call.or = expr; return q; }, ilike: () => q,
       in: (key: string, values: string[]) => { call.filters.push([key, "in", values]); return q; },
       is: (key: string, value: unknown) => { call.filters.push([key, "is", value]); return q; }, not: (key: string, _op: string, value: unknown) => { call.filters.push([key, "not", value]); return q; },
       order: () => q, returns: () => q, range: (start: number, end: number) => { call.range = [start, end]; return q; },
@@ -106,6 +117,15 @@ describe("member report data", () => {
     expect((await loadMemberReportDocument(noIdentity, options)).rows).toHaveLength(0);
     expect((await loadMemberReportDocument(context, { ...simple, filters: { ...simple.filters, search: "Ana" } })).rows).toHaveLength(120);
   });
+  it("applies the export limit to matching members and keeps search-only CPF off the wire", async () => {
+    const unrelated = Array.from({ length: 10_001 }, (_, i) => ({ ...member, id: `m${i}`, full_name: "Outra pessoa" }));
+    const db = database([member, ...unrelated]);
+    const options = { ...simple, filters: { ...simple.filters, search: "Ana" } };
+    expect((await loadMemberReportDocument(context, options)).rows.map((row) => row.id)).toEqual(["member-1"]);
+    expect(db.calls[0].or).toContain("full_name.ilike");
+    expect(db.calls[0].count).toBe("exact");
+    expect(db.calls[0].select).not.toContain("identity");
+  });
   it("applies regional/congregational scope and all structured filters", async () => {
     const db = database();
     await loadMemberReportDocument({ ...context, access: { ...context.access, scope: "REGION", regionId: region } }, { ...simple, filters: { ...simple.filters, congregationId: congregation, status: "ACTIVE", memberType: "MEMBER" } });
@@ -123,7 +143,9 @@ describe("member report data", () => {
   });
   it("reads all pages and rejects inconsistent or excessive exports", async () => {
     const many = Array.from({ length: 1001 }, (_, i) => ({ ...member, id: `m${i}` }));
-    database(many); expect((await loadMemberReportDocument(context, simple)).rows).toHaveLength(1001);
+    const db = database(many);
+    expect((await loadMemberReportDocument(context, simple)).rows).toHaveLength(1001);
+    expect(db.calls.filter((call) => call.table === "members").map((call) => call.count)).toEqual(["exact", undefined, undefined]);
     for (const mode of ["changed", "duplicate", "error"] as const) { database(many, mode); await expect(loadMemberReportDocument(context, simple)).rejects.toThrow("MEMBER_REPORT_LOAD_FAILED"); }
     database(Array.from({ length: 10001 }, (_, i) => ({ ...member, id: `m${i}` }))); await expect(loadMemberReportDocument(context, simple)).rejects.toThrow("MEMBER_REPORT_TOO_LARGE");
   });

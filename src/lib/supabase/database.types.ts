@@ -9291,6 +9291,17 @@ export type Database = {
           deleted_count: number
         }[]
       }
+      get_dashboard_member_scope: {
+        Args: { p_access_id: string }
+        Returns: {
+          church_id: string
+          congregation_id: string
+          congregation_name: string
+          is_field: boolean
+          view_contact: boolean
+          view_organization: boolean
+        }[]
+      }
       get_dashboard_member_summary: {
         Args: { p_access_id: string }
         Returns: Json
