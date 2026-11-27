@@ -18,6 +18,7 @@ import type {
   MemberEventItem,
   MemberFilters,
   MemberHistoryItem,
+  MemberListData,
   MemberListItem,
   MemberListParams,
   MemberListResult,
@@ -65,10 +66,6 @@ function first<T>(value: T | T[] | null | undefined): T | null {
   return Array.isArray(value) ? value[0] ?? null : value ?? null;
 }
 
-function safeSearch(value: string) {
-  return value.trim().slice(0, 80).replace(/[(),.*%]/g, " ").replace(/\s+/g, " ");
-}
-
 export function getMemberCapabilities(context: AuthContext): MemberCapabilities {
   const can = (permission: string) => hasPermission(context.permissions, permission);
   return {
@@ -114,23 +111,34 @@ export function normalizeMemberListParams(value: Partial<MemberListParams>): Mem
   };
 }
 
-export async function listMembers(context: AuthContext, input: Partial<MemberListParams>): Promise<MemberListResult> {
-  const params = normalizeMemberListParams(input);
-  const supabase = await createClient();
-  const roleFilterRelation = params.roleId
-    ? ", role_filter:member_roles!member_roles_member_id_fkey!inner(role_id, status, deleted_at)"
-    : "";
-  const selectColumns: string = `id, member_code, full_name, gender, member_status, member_type, whatsapp, congregation_id, created_at, updated_at, deleted_at, congregations!inner(id, name, region_id, regions(name)), active_roles:member_roles!member_roles_member_id_fkey(status, deleted_at, title_variant, role:roles!member_roles_role_id_fkey(name, female_name))${roleFilterRelation}`;
-
-  let query = supabase
-    .from("members")
-    .select(selectColumns, { count: "exact" })
-    .eq("church_id", context.church.id);
-
+function memberListQuery(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  context: AuthContext,
+  params: MemberListParams,
+  countOnly: boolean,
+) {
+  const projections = countOnly
+    ? ["id", "congregations!inner(id)"]
+    : ["id", "member_code", "full_name", "gender", "member_status", "member_type", "congregation_id",
+       "created_at", "updated_at", "deleted_at", "congregations!inner(id,name,region_id,regions(name))",
+       "active_roles:member_roles!member_roles_member_id_fkey(status,deleted_at,title_variant,role:roles!member_roles_role_id_fkey(name,female_name))"];
+  if (!countOnly && hasPermission(context.permissions, PERMISSIONS.membersViewFull)) projections.push("whatsapp");
+  if (params.roleId) projections.push("role_filter:member_roles!member_roles_member_id_fkey!inner(role_id)");
+  const columns = projections.join(",");
+  const search = params.search.trim();
+  const exact = countOnly ? "exact" : undefined;
+  let query = search.length >= 3
+    ? supabase.rpc("search_member_rows", {
+        p_church_id: context.church.id,
+        p_search: search,
+        p_search_cpf: hasPermission(context.permissions, PERMISSIONS.membersViewSensitiveIdentity),
+      }, { count: exact }).select(columns)
+    : supabase.from("members").select(columns, { count: exact, head: countOnly });
+  query = query.eq("church_id", context.church.id);
   query = params.archived ? query.not("deleted_at", "is", null) : query.is("deleted_at", null);
   if (params.congregationId) query = query.eq("congregation_id", params.congregationId);
   if (params.regionId) query = query.eq("congregations.region_id", params.regionId);
-  query = query.eq("active_roles.status", "ACTIVE").is("active_roles.deleted_at", null);
+  if (!countOnly) query = query.eq("active_roles.status", "ACTIVE").is("active_roles.deleted_at", null);
   if (params.roleId) {
     query = query
       .eq("role_filter.role_id", params.roleId)
@@ -141,40 +149,42 @@ export async function listMembers(context: AuthContext, input: Partial<MemberLis
   if (params.memberType) query = query.eq("member_type", params.memberType);
   if (params.importBatchId) query = query.eq("source_import_batch_id", params.importBatchId);
 
-  const search = safeSearch(params.search);
-  if (search.length >= 3) {
-    const terms = [`full_name.ilike.%${search}%`, `member_code.ilike.%${search}%`];
-    if (getMemberCapabilities(context).viewSensitiveIdentity && /^\d{3,}$/.test(search.replace(/\D/g, ""))) {
-      const { data } = await supabase
-        .from("member_sensitive_identity")
-        .select("member_id")
-        .eq("church_id", context.church.id)
-        .ilike("cpf", `%${search.replace(/\D/g, "")}%`)
-        .is("deleted_at", null)
-        .limit(100);
-      const sensitiveIds = (data ?? []).map((row) => row.member_id);
-      if (sensitiveIds.length) terms.push(`id.in.(${sensitiveIds.join(",")})`);
-    }
-    query = query.or(terms.join(","));
-  }
+  return query;
+}
 
+export async function countMembers(context: AuthContext, input: Partial<MemberListParams>): Promise<number | null> {
+  const supabase = await createClient();
+  const params = normalizeMemberListParams(input);
+  const query = memberListQuery(supabase, context, params, true);
+  const { count, error } = await measureServerOperation(
+    "members.count",
+    () => query.limit(0),
+    { supabaseCalls: 1, route: "/membros" },
+  );
+  return error ? null : count;
+}
+
+export async function listMembers(context: AuthContext, input: Partial<MemberListParams>): Promise<MemberListResult> {
+  const params = normalizeMemberListParams(input);
+  const supabase = await createClient();
+  let query = memberListQuery(supabase, context, params, false);
   if (params.sort === "name_desc") query = query.order("full_name", { ascending: false }).order("id");
   else if (params.sort === "recent") query = query.order("created_at", { ascending: false }).order("id");
   else if (params.sort === "oldest") query = query.order("created_at", { ascending: true }).order("id");
-  else if (params.sort === "code") query = query.order("member_code", { ascending: true, nullsFirst: false }).order("full_name");
+  else if (params.sort === "code") query = query.order("member_code", { ascending: true, nullsFirst: false }).order("full_name").order("id");
   else query = query.order("full_name", { ascending: true }).order("id");
 
   const from = (params.page - 1) * params.pageSize;
-  const { data, count, error } = await measureServerOperation(
+  const { data, error } = await measureServerOperation(
     "members.list",
-    () => query.range(from, from + params.pageSize - 1),
+    () => query.range(from, from + params.pageSize),
     { supabaseCalls: 1, route: "/membros" },
   );
   if (error) throw new Error(`Não foi possível carregar os membros: ${error.message}`);
   const rows = (data ?? []) as unknown as AnyRow[];
   const capabilities = getMemberCapabilities(context);
 
-  const items: MemberListItem[] = rows.map((row) => {
+  const items: MemberListItem[] = rows.slice(0, params.pageSize).map((row) => {
     const congregation = first<AnyRow>(row.congregations) ?? {};
     const region = first<AnyRow>(congregation.regions);
     const activeRoleLink = ((row.active_roles ?? []) as AnyRow[]).find(
@@ -205,19 +215,25 @@ export async function listMembers(context: AuthContext, input: Partial<MemberLis
       archived: Boolean(row.deleted_at),
     };
   });
-  const total = count ?? 0;
-  return { items, total, page: params.page, pageSize: params.pageSize, pageCount: Math.ceil(total / params.pageSize) };
+  return { items, page: params.page, hasNextPage: rows.length > params.pageSize };
 }
 
-export async function getMemberStats(context: AuthContext): Promise<MemberStats> {
+export function getMemberListData(context: AuthContext, params: Partial<MemberListParams>): MemberListData {
+  return {
+    rows: listMembers(context, params).catch(() => null),
+    total: countMembers(context, params).catch(() => null),
+  };
+}
+
+export async function getMemberStats(context: AuthContext): Promise<MemberStats | null> {
   const supabase = await createClient();
   const { data, error } = await measureServerOperation(
     "members.stats",
     () => supabase.rpc("get_member_stats", { p_church_id: context.church.id }),
     { supabaseCalls: 1, route: "/membros" },
   );
-  if (error) return { total: 0, active: 0, inactive: 0, visitors: 0, archived: 0 };
-  const row = (data ?? {}) as AnyRow;
+  if (error || !data) return null;
+  const row = data as AnyRow;
   return {
     total: Number(row.total ?? 0) + Number(row.archived ?? 0), active: Number(row.active ?? 0), inactive: Number(row.inactive ?? 0),
     visitors: Number(row.visitors ?? 0), archived: Number(row.archived ?? 0),

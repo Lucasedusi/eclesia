@@ -83,6 +83,33 @@ test.describe("ajustes de membros", () => {
     await expect(advanced).toHaveAttribute("aria-expanded", "false");
     await expect(status).toHaveValue("ACTIVE");
   });
+  test("preserva a última busca, o foco, a URL e a paginação", async ({ page }) => {
+    await page.goto("/membros?page=2");
+    await expect(page.getByText("Página 2 de 2 · 31 registro(s)")).toBeVisible();
+    const search = page.getByRole("textbox", { name: "Pesquisar membros" });
+    await search.fill("Membro de Teste");
+    await search.press("Enter");
+    await search.fill("Ana de Teste");
+    await search.press("Enter");
+    await expect(search).toBeFocused();
+    await expect(page.locator("tbody tr")).toHaveCount(1);
+    await expect(page.locator("tbody tr")).toContainText("Ana de Teste");
+    await expect(page.getByText("Página 1 de 1 · 1 registro(s)")).toBeVisible();
+    await expect(search).toBeFocused();
+    const url = new URL(page.url());
+    expect(url.searchParams.get("search")).toBe("Ana de Teste");
+    expect(url.searchParams.has("page")).toBe(false);
+    await page.reload();
+    await expect(search).toHaveValue("Ana de Teste");
+    await expect(page.locator("tbody tr")).toHaveCount(1);
+    await search.fill("An");
+    await expect(search).toBeFocused();
+    await expect(page.getByText("Página 1 de 2 · 31 registro(s)")).toBeVisible();
+    await page.getByRole("button", { name: "Próxima", exact: true }).click();
+    await expect(page.locator("tbody tr")).toHaveCount(11);
+    await expect(page.getByText("Página 2 de 2 · 31 registro(s)")).toBeVisible();
+  });
+
   test("libera a rolagem ao sair de Membros com a ficha e o editor de cargo abertos", async ({ page }) => {
     await page.goto("/membros/aniversariantes");
     await page.getByRole("link", { name: "Listagem", exact: true }).click();

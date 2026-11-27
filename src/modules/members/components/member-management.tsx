@@ -7,11 +7,13 @@ import {
   ChangeEvent,
   FormEvent,
   KeyboardEvent,
+  type ComponentProps,
+  Suspense,
+  use,
   useEffect,
   useId,
   useRef,
   useState,
-  useTransition,
 } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -55,7 +57,7 @@ import type {
   MemberLifecycleInput,
   MemberListItem,
   MemberListParams,
-  MemberListResult,
+  MemberListData,
   MemberStats,
 } from "../types/member.types";
 import {
@@ -71,9 +73,9 @@ const MemberReportModal = dynamic(
 );
 
 type Props = {
-  initial: MemberListResult;
+  initial: MemberListData;
   params: MemberListParams;
-  filters: MemberFilters;
+  filters: Promise<MemberFilters | null>;
   capabilities: MemberCapabilities;
 };
 
@@ -83,7 +85,32 @@ type Notice = {
   variant: "success" | "danger" | "warning";
 };
 
-export function MemberStatsCards({ stats }: { stats: MemberStats }) {
+type FilterSelectProps = ComponentProps<typeof S.Select> & {
+  filters: Props["filters"];
+  catalog: keyof MemberFilters;
+  placeholder: string;
+};
+
+function MemberFilterOptions({ filters, catalog, placeholder, ...props }: FilterSelectProps) {
+  const options = use(filters);
+  return <S.Select {...props} disabled={!options}>
+    <option value="">{options ? placeholder : "Opções indisponíveis"}</option>
+    {options?.[catalog].map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+  </S.Select>;
+}
+
+function MemberFilterSelect(props: FilterSelectProps) {
+  return <Suspense fallback={<S.Select aria-label={props["aria-label"]} disabled><option>Carregando opções…</option></S.Select>}>
+    <MemberFilterOptions {...props} />
+  </Suspense>;
+}
+
+function DetailsWithFilters({ filters, ...props }: Omit<ComponentProps<typeof MemberDetailsModal>, "filters"> & { filters: Props["filters"] }) {
+  return <MemberDetailsModal {...props} filters={use(filters) ?? { regions: [], congregations: [], roles: [] }} />;
+}
+
+export function MemberStatsCards({ stats }: { stats: MemberStats | null }) {
+  if (!stats) return <S.Panel className="p-4" role="status">Resumo dos membros indisponível.</S.Panel>;
   return (
     <S.Stats aria-label="Resumo dos membros">
       <S.Stat>
@@ -132,7 +159,8 @@ export function MemberManagement({
   filters,
   capabilities,
 }: Props) {
-  const [result, setResult] = useState(initial);
+  const [requestedList, setRequestedList] = useState<MemberListData | null>(null);
+  const list = requestedList ?? initial;
   const [params, setParams] = useState(initialParams);
   const [searchInput, setSearchInput] = useState(initialParams.search);
   const [advancedFiltersOpen, setAdvancedFiltersOpen] = useState(
@@ -143,7 +171,7 @@ export function MemberManagement({
       initialParams.sort !== "name_asc",
     ),
   );
-  const [pending, startTransition] = useTransition();
+  const [pending, setPending] = useState(false);
   const [selection, setSelection] = useState<ReturnType<typeof prepareMemberDetails> | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
   const [menuMember, setMenuMember] = useState<MemberListItem | null>(null);
@@ -191,17 +219,12 @@ export function MemberManagement({
     const currentRequest = ++requestId.current;
     setParams(normalized);
     writeUrl(normalized);
-    startTransition(async () => {
-      const response = await listMembersAction(normalized);
-      if (currentRequest !== requestId.current) return;
-      if (response.success) setResult(response.data);
-      else {
-        setNotice({
-          title: "Listagem indisponível",
-          description: response.message,
-          variant: "danger",
-        });
-      }
+    const response = listMembersAction(normalized);
+    const rows = response.then((result) => result.rows).catch(() => null);
+    setPending(true);
+    setRequestedList({ rows, total: response.then((result) => result.total).catch(() => null) });
+    void rows.then(() => {
+      if (currentRequest === requestId.current) setPending(false);
     });
   }
 
@@ -221,7 +244,10 @@ export function MemberManagement({
       load({ ...params, search: "", page: 1 });
       return;
     }
-    if (length < 3) return;
+    if (length < 3) {
+      if (params.search) load({ ...params, search: "", page: 1 });
+      return;
+    }
     searchTimer.current = setTimeout(
       () => load({ ...params, search: value, page: 1 }),
       400,
@@ -351,6 +377,7 @@ export function MemberManagement({
       }[lifecycle.action]
     : "";
 
+  const editingSearch = searchInput.trim().length >= 3 && searchInput.trim() !== params.search;
   const hasActiveFilters = Boolean(
     searchInput.trim() ||
     params.regionId ||
@@ -427,7 +454,7 @@ export function MemberManagement({
 
           <S.Toolbar>
             <MemberSearchField label="Pesquisar membros" placeholder={capabilities.viewSensitiveIdentity ? "Nome, código ou CPF" : "Nome ou código"}
-              value={searchInput} pending={pending} onChange={search} onKeyDown={submitSearch} onClear={clearSearch} />
+              value={searchInput} maxLength={80} pending={pending} onChange={search} onKeyDown={submitSearch} onClear={clearSearch} />
             <S.Select
               aria-label="Situação dos membros"
               value={params.status}
@@ -440,32 +467,10 @@ export function MemberManagement({
                 </option>
               ))}
             </S.Select>
-            <S.Select
-              aria-label="Regional"
-              value={params.regionId}
-              onChange={(event) => changeFilter("regionId", event.target.value)}
-            >
-              <option value="">Todas as Regionais</option>
-              {filters.regions.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </S.Select>
-            <S.Select
-              aria-label="Congregação"
-              value={params.congregationId}
-              onChange={(event) =>
-                changeFilter("congregationId", event.target.value)
-              }
-            >
-              <option value="">Todas as Congregações</option>
-              {filters.congregations.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </S.Select>
+            <MemberFilterSelect filters={filters} catalog="regions" placeholder="Todas as Regionais"
+              aria-label="Regional" value={params.regionId} onChange={(event) => changeFilter("regionId", event.target.value)} />
+            <MemberFilterSelect filters={filters} catalog="congregations" placeholder="Todas as Congregações"
+              aria-label="Congregação" value={params.congregationId} onChange={(event) => changeFilter("congregationId", event.target.value)} />
             <S.AdvancedFiltersButton
               type="button"
               $open={advancedFiltersOpen}
@@ -489,20 +494,8 @@ export function MemberManagement({
 
             {advancedFiltersOpen && (
               <S.AdvancedFilters id="member-advanced-filters">
-                <S.Select
-                  aria-label="Cargo"
-                  value={params.roleId}
-                  onChange={(event) =>
-                    changeFilter("roleId", event.target.value)
-                  }
-                >
-                  <option value="">Todos os Cargos</option>
-                  {filters.roles.map((item) => (
-                    <option key={item.value} value={item.value}>
-                      {item.label}
-                    </option>
-                  ))}
-                </S.Select>
+                <MemberFilterSelect filters={filters} catalog="roles" placeholder="Todos os Cargos"
+                  aria-label="Cargo" value={params.roleId} onChange={(event) => changeFilter("roleId", event.target.value)} />
                 <S.Select
                   value={params.memberType}
                   onChange={(event) =>
@@ -539,129 +532,19 @@ export function MemberManagement({
             )}
           </S.Toolbar>
 
-          {pending || (searchInput.trim().length >= 3 && searchInput.trim() !== params.search) ? (
+          {editingSearch ? (
             <ResultsSkeleton label="Carregando membros" columns={6} />
-          ) : result.items.length === 0 ? (
-            <S.Empty>
-              <div>
-                <UsersRound size={30} />
-                <h3>Nenhum membro encontrado</h3>
-                <p>Ajuste os filtros ou cadastre um novo membro.</p>
-              </div>
-            </S.Empty>
           ) : (
-            <>
-              <S.TableWrap>
-                <S.Table>
-                  <thead>
-                    <tr>
-                      <th>Membro</th>
-                      <th>Congregação</th>
-                      <th>Cargo</th>
-                      <th>WhatsApp</th>
-                      <th>Situação</th>
-                      <th>Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {result.items.map((member) => (
-                      <tr key={member.id}>
-                        <td>
-                          <MemberIdentity name={member.fullName} code={member.memberCode} />
-                        </td>
-                        <td>
-                          {member.congregationName}
-                          <br />
-                          <small>{member.regionName}</small>
-                        </td>
-                        <td>{member.role || "—"}</td>
-                        <td>{member.whatsapp || "Não informado"}</td>
-                        <td>
-                          <S.Status $status={member.memberStatus}>
-                            {member.archived
-                              ? "Arquivado"
-                              : memberStatusLabels[member.memberStatus]}
-                          </S.Status>
-                        </td>
-                        <td>
-                          <S.Actions>
-                            <S.IconButton
-                              title="Ver ficha"
-                              onClick={() => setSelection(prepareMemberDetails(member.id))}
-                            >
-                              <Eye />
-                            </S.IconButton>
-                            {capabilities.update && !member.archived && (
-                              <Link
-                                href={`/membros/${member.id}/editar`}
-                                aria-label={`Editar ${member.fullName}`}
-                              >
-                                <S.IconButton as="span" title="Editar">
-                                  <Pencil />
-                                  <LinkPendingIndicator />
-                                </S.IconButton>
-                              </Link>
-                            )}
-                            <S.IconButton
-                              title="Outras ações"
-                              onClick={() => setMenuMember(member)}
-                            >
-                              <MoreHorizontal />
-                            </S.IconButton>
-                          </S.Actions>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </S.Table>
-              </S.TableWrap>
-              <S.MobileList>
-                {result.items.map((member) => (
-                  <S.MobileCard key={member.id}>
-                    <MemberIdentity name={member.fullName} code={member.memberCode} />
-                    <S.MobileMeta>
-                      <div>
-                        <span>Congregação</span>
-                        <strong>{member.congregationName}</strong>
-                      </div>
-                      <div>
-                        <span>Cargo</span>
-                        <strong>{member.role || "—"}</strong>
-                      </div>
-                      <div>
-                        <span>WhatsApp</span>
-                        <strong>{member.whatsapp || "Não informado"}</strong>
-                      </div>
-                    </S.MobileMeta>
-                    <S.Actions>
-                      <S.IconButton aria-label="Ver ficha" onClick={() => setSelection(prepareMemberDetails(member.id))}>
-                        <Eye />
-                      </S.IconButton>
-                      {capabilities.update && !member.archived && (
-                        <Link
-                          href={`/membros/${member.id}/editar`}
-                          aria-label={`Editar ${member.fullName}`}
-                        >
-                          <S.IconButton as="span" title="Editar">
-                            <Pencil />
-                            <LinkPendingIndicator />
-                          </S.IconButton>
-                        </Link>
-                      )}
-                      <S.IconButton onClick={() => setMenuMember(member)}>
-                        <MoreHorizontal />
-                      </S.IconButton>
-                    </S.Actions>
-                  </S.MobileCard>
-                ))}
-              </S.MobileList>
-            </>
+            <Suspense fallback={<ResultsSkeleton label="Carregando membros" columns={6} />}>
+              <MemberRows rows={list.rows} capabilities={capabilities}
+                onDetails={(member) => setSelection(prepareMemberDetails(member.id))} onMenu={setMenuMember} />
+            </Suspense>
           )}
 
           <S.Pagination>
             <span>
-              Página {result.page} de {Math.max(1, result.pageCount)} ·{" "}
-              {result.total} registro(s)
+              Página {params.page}
+              <Suspense fallback=" · Calculando total…"><MemberTotal total={list.total} pageSize={params.pageSize} /></Suspense>
             </span>
             <div>
               <S.Select
@@ -677,19 +560,14 @@ export function MemberManagement({
               <Button
                 size="sm"
                 variant="secondary"
-                disabled={result.page <= 1 || pending}
+                disabled={params.page <= 1 || pending || editingSearch}
                 onClick={() => load({ ...params, search: searchInput, page: params.page - 1 })}
               >
                 <ArrowLeft size={14} /> Anterior
               </Button>
-              <Button
-                size="sm"
-                variant="secondary"
-                disabled={result.page >= result.pageCount || pending}
-                onClick={() => load({ ...params, search: searchInput, page: params.page + 1 })}
-              >
-                Próxima <ArrowRight size={14} />
-              </Button>
+              <Suspense fallback={<Button size="sm" variant="secondary" disabled>Próxima <ArrowRight size={14} /></Button>}>
+                <NextPage rows={list.rows} disabled={editingSearch} onNext={() => load({ ...params, search: searchInput, page: params.page + 1 })} />
+              </Suspense>
             </div>
           </S.Pagination>
         </S.Panel>
@@ -698,14 +576,16 @@ export function MemberManagement({
       {reportOpen && <MemberReportModal params={params} capabilities={capabilities} onClose={() => setReportOpen(false)} />}
 
       {selection && (
-        <MemberDetailsModal
-          key={selection.memberId}
-          selection={selection}
-          capabilities={capabilities}
-          filters={filters}
-          onClose={() => setSelection(null)}
-          onChanged={() => void refresh()}
-        />
+        <Suspense fallback={<ModalLoading title="Preparando ficha do membro" description="Carregando as opções da ficha." />}>
+          <DetailsWithFilters
+            key={selection.memberId}
+            selection={selection}
+            capabilities={capabilities}
+            filters={filters}
+            onClose={() => setSelection(null)}
+            onChanged={() => void refresh()}
+          />
+        </Suspense>
       )}
 
       {menuMember && (
@@ -876,18 +756,8 @@ export function MemberManagement({
               {lifecycle.action === "MOVE_CONGREGATION" && (
                 <S.Field>
                   <span>Nova Congregação *</span>
-                  <S.Select
-                    name="targetCongregationId"
-                    required
-                    defaultValue=""
-                  >
-                    <option value="">Selecione</option>
-                    {filters.congregations.map((item) => (
-                      <option key={item.value} value={item.value}>
-                        {item.label}
-                      </option>
-                    ))}
-                  </S.Select>
+                  <MemberFilterSelect filters={filters} catalog="congregations" placeholder="Selecione"
+                    name="targetCongregationId" aria-label="Nova Congregação" required defaultValue="" />
                 </S.Field>
               )}
               {lifecycle.action === "TRANSFER" && (
@@ -958,6 +828,142 @@ export function MemberManagement({
           />
         </ToastViewport>
       )}
+    </>
+  );
+}
+
+function MemberTotal({ total, pageSize }: { total: MemberListData["total"]; pageSize: number }) {
+  const count = use(total);
+  return count === null ? " · Total indisponível" : ` de ${Math.max(1, Math.ceil(count / pageSize))} · ${count} registro(s)`;
+}
+
+function NextPage({ rows, disabled, onNext }: { rows: MemberListData["rows"]; disabled: boolean; onNext: () => void }) {
+  const result = use(rows);
+  return <Button size="sm" variant="secondary" disabled={disabled || !result?.hasNextPage} onClick={onNext}>
+    Próxima <ArrowRight size={14} />
+  </Button>;
+}
+
+function MemberRows({ rows, capabilities, onDetails, onMenu }: {
+  rows: MemberListData["rows"]; capabilities: MemberCapabilities;
+  onDetails: (member: MemberListItem) => void; onMenu: (member: MemberListItem) => void;
+}) {
+  const result = use(rows);
+  if (!result) return <S.Empty role="alert">Não foi possível carregar a listagem de membros.</S.Empty>;
+  return result.items.length === 0 ? (
+    <S.Empty>
+      <div>
+        <UsersRound size={30} />
+        <h3>Nenhum membro encontrado</h3>
+        <p>Ajuste os filtros ou cadastre um novo membro.</p>
+      </div>
+    </S.Empty>
+  ) : (
+    <>
+      <S.TableWrap>
+        <S.Table>
+          <thead>
+            <tr>
+              <th>Membro</th>
+              <th>Congregação</th>
+              <th>Cargo</th>
+              <th>WhatsApp</th>
+              <th>Situação</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {result.items.map((member) => (
+              <tr key={member.id}>
+                <td>
+                  <MemberIdentity name={member.fullName} code={member.memberCode} />
+                </td>
+                <td>
+                  {member.congregationName}
+                  <br />
+                  <small>{member.regionName}</small>
+                </td>
+                <td>{member.role || "—"}</td>
+                <td>{member.whatsapp || "Não informado"}</td>
+                <td>
+                  <S.Status $status={member.memberStatus}>
+                    {member.archived
+                      ? "Arquivado"
+                      : memberStatusLabels[member.memberStatus]}
+                  </S.Status>
+                </td>
+                <td>
+                  <S.Actions>
+                    <S.IconButton
+                      title="Ver ficha"
+                      onClick={() => onDetails(member)}
+                    >
+                      <Eye />
+                    </S.IconButton>
+                    {capabilities.update && !member.archived && (
+                      <Link
+                        href={`/membros/${member.id}/editar`}
+                        aria-label={`Editar ${member.fullName}`}
+                      >
+                        <S.IconButton as="span" title="Editar">
+                          <Pencil />
+                          <LinkPendingIndicator />
+                        </S.IconButton>
+                      </Link>
+                    )}
+                    <S.IconButton
+                      title="Outras ações"
+                      onClick={() => onMenu(member)}
+                    >
+                      <MoreHorizontal />
+                    </S.IconButton>
+                  </S.Actions>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </S.Table>
+      </S.TableWrap>
+      <S.MobileList>
+        {result.items.map((member) => (
+          <S.MobileCard key={member.id}>
+            <MemberIdentity name={member.fullName} code={member.memberCode} />
+            <S.MobileMeta>
+              <div>
+                <span>Congregação</span>
+                <strong>{member.congregationName}</strong>
+              </div>
+              <div>
+                <span>Cargo</span>
+                <strong>{member.role || "—"}</strong>
+              </div>
+              <div>
+                <span>WhatsApp</span>
+                <strong>{member.whatsapp || "Não informado"}</strong>
+              </div>
+            </S.MobileMeta>
+            <S.Actions>
+              <S.IconButton aria-label="Ver ficha" onClick={() => onDetails(member)}>
+                <Eye />
+              </S.IconButton>
+              {capabilities.update && !member.archived && (
+                <Link
+                  href={`/membros/${member.id}/editar`}
+                  aria-label={`Editar ${member.fullName}`}
+                >
+                  <S.IconButton as="span" title="Editar">
+                    <Pencil />
+                    <LinkPendingIndicator />
+                  </S.IconButton>
+                </Link>
+              )}
+              <S.IconButton onClick={() => onMenu(member)}>
+                <MoreHorizontal />
+              </S.IconButton>
+            </S.Actions>
+          </S.MobileCard>
+        ))}
+      </S.MobileList>
     </>
   );
 }

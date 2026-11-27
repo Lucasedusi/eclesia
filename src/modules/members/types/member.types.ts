@@ -37,10 +37,13 @@ export type MemberListItem = {
 
 export type MemberListResult = {
   items: MemberListItem[];
-  total: number;
   page: number;
-  pageSize: number;
-  pageCount: number;
+  hasNextPage: boolean;
+};
+
+export type MemberListData = {
+  rows: Promise<MemberListResult | null>;
+  total: Promise<number | null>;
 };
 
 export type MemberStats = {

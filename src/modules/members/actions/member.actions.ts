@@ -10,7 +10,7 @@ import {
   getMemberEvents,
   getMemberFinance,
   getMemberHistory,
-  listMembers,
+  getMemberListData,
 } from "../services/member.service";
 import type {
   MemberActionResponse,
@@ -34,12 +34,7 @@ function friendlyError(message: string) {
 
 export async function listMembersAction(params: Partial<MemberListParams>) {
   const context = await requireAccessContext(PERMISSIONS.membersViewBasic);
-  try {
-    return { success: true as const, data: await listMembers(context, params) };
-  } catch (error) {
-    console.error("Erro ao listar membros:", error);
-    return { success: false as const, message: "Não foi possível atualizar a listagem." };
-  }
+  return getMemberListData(context, params);
 }
 
 export async function getMemberDetailsAction(memberId: string) {

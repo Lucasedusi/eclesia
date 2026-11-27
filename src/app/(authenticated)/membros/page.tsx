@@ -4,12 +4,11 @@ import { PERMISSIONS } from "@/modules/auth/constants/permissions";
 import { requireAccessContext } from "@/modules/auth/services/access-context.service";
 import { MemberListTabs } from "@/modules/members/components/member-list-tabs";
 import { MemberManagement, MemberStatsCards } from "@/modules/members/components/member-management";
-import type { MemberFilters, MemberListResult } from "@/modules/members/types/member.types";
 import {
   getMemberCapabilities,
   getMemberFilters,
   getMemberStats,
-  listMembers,
+  getMemberListData,
   normalizeMemberListParams,
 } from "@/modules/members/services/member.service";
 
@@ -20,30 +19,8 @@ async function MemberStatsContent({ promise }: { promise: ReturnType<typeof getM
   return <MemberStatsCards stats={await promise} />;
 }
 
-async function MemberListContent({
-  promise,
-  params,
-  capabilities,
-}: {
-  promise: Promise<[MemberListResult, MemberFilters]>;
-  params: ReturnType<typeof normalizeMemberListParams>;
-  capabilities: ReturnType<typeof getMemberCapabilities>;
-}) {
-  const [initial, filters] = await promise;
-  const resultVersion = [
-    initial.page,
-    initial.total,
-    ...initial.items.map((item) => `${item.id}:${item.updatedAt}:${item.role ?? ""}`),
-  ].join("|");
-  return <MemberManagement key={resultVersion} initial={initial} params={params} filters={filters} capabilities={capabilities} />;
-}
-
 function MemberStatsLoading() {
   return <div className="app-skeleton-stats" aria-busy="true" aria-label="Carregando resumo dos membros">{Array.from({ length: 4 }, (_, index) => <span key={index} className="app-skeleton-block app-skeleton-stat" />)}</div>;
-}
-
-function MemberListLoading() {
-  return <div className="app-skeleton-panel" aria-busy="true" aria-label="Carregando relação de membros"><span className="app-skeleton-block app-skeleton-toolbar" />{Array.from({ length: 6 }, (_, index) => <span key={index} className="app-skeleton-block app-skeleton-row" />)}</div>;
 }
 
 export default async function MembersPage({ searchParams }: { searchParams: Search }) {
@@ -57,15 +34,16 @@ export default async function MembersPage({ searchParams }: { searchParams: Sear
     archived: value(query.archived) === "true", sort: value(query.sort) as never,
   });
   const capabilities = getMemberCapabilities(context);
-  const statsPromise = getMemberStats(context);
-  const listPromise = Promise.all([listMembers(context, params), getMemberFilters(context)]);
+  const statsPromise = getMemberStats(context).catch(() => null);
+  const list = getMemberListData(context, params);
+  const filters = getMemberFilters(context).catch(() => null);
 
   return <>
     <PageHeader title="Membros" subtitle="Gerencie os cadastros de membros e crianças." badge="Administração" />
     <MemberListTabs active="list" />
     <div className="grid gap-[18px]">
       <Suspense fallback={<MemberStatsLoading />}><MemberStatsContent promise={statsPromise} /></Suspense>
-      <Suspense fallback={<MemberListLoading />}><MemberListContent promise={listPromise} params={params} capabilities={capabilities} /></Suspense>
+      <MemberManagement key={context.access.id} initial={list} params={params} filters={filters} capabilities={capabilities} />
     </div>
   </>;
 }
