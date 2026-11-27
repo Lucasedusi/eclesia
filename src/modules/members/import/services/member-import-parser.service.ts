@@ -70,7 +70,6 @@ function classifyBaseRow(
   }
 
   const roleRaw = normalizeMemberName(sourceData.cargo);
-  if (!roleRaw) issues.push(createImportIssue("ROLE_REQUIRED", "cargo", "ERROR", "Informe a sigla do Cargo atual."));
 
   const whatsapp = normalizeImportPhone(sourceData.fone);
   if (sourceData.fone && !whatsapp) {
@@ -101,7 +100,7 @@ function classifyBaseRow(
 
   const gender = normalizeGender(sourceData.sexo);
   if (sourceData.sexo && !gender) {
-    issues.push(createImportIssue("GENDER_UNKNOWN", "sexo", "WARNING", "O sexo deve ser Masculino, Feminino, M ou F e não será gravado."));
+    issues.push(createImportIssue("GENDER_UNKNOWN", "sexo", "WARNING", "Valor de sexo desconhecido. Escolha Masculino ou Feminino na revisão, se souber."));
   }
 
   const zipCodeResult = normalizeImportZipCode(sourceData.cep);
@@ -192,7 +191,7 @@ function classifyBaseRow(
   };
 }
 
-const csvColumns = ["id", "nome", "fone", "dtnascimento", "cargo", "endereco", "cpf", "identidade", "email", "estadocivil", "dtcadastro"] as const;
+const csvColumns = ["id", "nome", "fone", "dtnascimento", "cargo", "endereco", "cpf", "identidade", "email", "estadocivil", "dtcadastro", "sexo"] as const;
 
 function invalidCsv() {
   return new MemberImportParserError("IMPORT_CSV_INVALID", "O CSV contém um cabeçalho, aspas ou quantidade de colunas inválidos. Envie a exportação original do MEMBROS WEB.");
@@ -233,7 +232,7 @@ async function parseMemberCsv(buffer: Buffer): Promise<ParsedMemberImportFile> {
           columnIndex.set(name, index);
         });
         if (!MEMBER_IMPORT_REQUIRED_COLUMNS.every((name) => columnIndex.has(name))) {
-          throw new MemberImportParserError("IMPORT_HEADER_MISSING", "O CSV precisa conter as colunas nome e cargo.");
+          throw new MemberImportParserError("IMPORT_HEADER_MISSING", "O CSV precisa conter a coluna nome.");
         }
         continue;
       }

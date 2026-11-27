@@ -15,6 +15,13 @@ export const Module = styled.div`
   animation: ${enter} 220ms ease both;
 `;
 
+export const GenderChoices = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-block: 6px;
+`;
+
 export const Tabs = styled.div`
   display: inline-flex;
   width: fit-content;

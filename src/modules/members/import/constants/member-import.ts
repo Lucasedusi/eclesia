@@ -1,6 +1,6 @@
 export const MEMBER_IMPORT_MAX_FILE_SIZE = 5 * 1024 * 1024;
 export const MEMBER_IMPORT_MAX_ROWS = 500;
-export const MEMBER_IMPORT_NORMALIZATION_VERSION = 3;
+export const MEMBER_IMPORT_NORMALIZATION_VERSION = 4;
 
 export function memberImportFileFormat(filename: string) {
   const name = filename.toLowerCase();
@@ -34,7 +34,7 @@ export const MEMBER_IMPORT_HEADER_ALIASES: Readonly<Record<string, (typeof MEMBE
   data_batismo: "data_batismo_agua",
 };
 
-export const MEMBER_IMPORT_REQUIRED_COLUMNS = ["nome", "cargo"] as const;
+export const MEMBER_IMPORT_REQUIRED_COLUMNS = ["nome"] as const;
 
 export const MEMBER_IMPORT_STEPS = [
   { id: 1, title: "Destino e arquivo", description: "Selecione a Congregação e a planilha." },

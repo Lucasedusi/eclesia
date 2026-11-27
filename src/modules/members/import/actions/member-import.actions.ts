@@ -67,8 +67,8 @@ function hasBlockingDecision(issues: MemberImportIssue[]) {
   ));
 }
 
-function classify(issues: MemberImportIssue[], roleId: string | null) {
-  if (!roleId || issues.some((issue) => issue.severity === "ERROR" && !issue.resolved)) return "ERROR" as const;
+function classify(issues: MemberImportIssue[]) {
+  if (issues.some((issue) => issue.severity === "ERROR" && !issue.resolved)) return "ERROR" as const;
   if (issues.some((issue) => issue.severity === "WARNING")) return "WARNING" as const;
   return "VALID" as const;
 }
@@ -211,7 +211,7 @@ export async function prepareMemberImportAction(
         });
       }
 
-      const classification = classify(issues, roleMatch?.id ?? null);
+      const classification = classify(issues);
       const decision = hasBlockingDecision(issues) ? "PENDING" : "IMPORT";
       return {
         row_number: row.rowNumber,
@@ -223,7 +223,7 @@ export async function prepareMemberImportAction(
         birth_date: row.birthDate,
         role_raw: row.roleRaw,
         role_id: roleMatch?.id ?? null,
-        role_title_variant: row.gender === "FEMALE" ? "FEMALE" : roleMatch?.variant ?? "AUTO",
+        role_title_variant: row.gender === "MALE" ? "DEFAULT" : row.gender === "FEMALE" ? "FEMALE" : roleMatch?.variant ?? "AUTO",
         cpf: row.cpf,
         marital_status_raw: row.maritalStatusRaw,
         marital_status: row.maritalStatus,
@@ -333,7 +333,8 @@ export async function resolveMemberImportItemAction(
   });
   if (error) return { success: false, message: friendlyError(error.message) };
   revalidatePath("/membros/importar");
-  return { success: true, message: "Decisão registrada.", data: await getMemberImportWorkspace(context, parsed.data.batchId) };
+  const { batchId, page, pageSize, search, classification } = parsed.data;
+  return { success: true, message: "Decisão registrada.", data: await getMemberImportWorkspace(context, batchId, { page, pageSize, search, classification }) };
 }
 
 export async function confirmMemberImportAction(

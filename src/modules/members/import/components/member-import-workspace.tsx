@@ -70,7 +70,10 @@ type Resolution =
   | "IMPORT_WITHOUT_BAPTISM_DATE"
   | "IMPORT_WITHOUT_HOLY_SPIRIT_BAPTISM_DATE"
   | "IMPORT_WITHOUT_CONVERSION_DATE"
-  | "IMPORT_AS_NEW";
+  | "IMPORT_AS_NEW"
+  | "SET_GENDER_MALE"
+  | "SET_GENDER_FEMALE"
+  | "CLEAR_GENDER";
 
 const CLASSIFICATION_FILTERS = ["", "VALID", "WARNING", "ERROR", "SKIPPED", "IMPORTED"] as const;
 const TERMINAL_STATUSES = ["COMPLETED", "ROLLED_BACK", "CANCELLED"];
@@ -102,8 +105,25 @@ function maskCpf(value: string | null) {
   return value ? `***.***.***-${value.slice(-2)}` : "Não informado";
 }
 
-function genderLabel(value: MemberImportItem["gender"]) {
-  return value === "MALE" ? "Masculino" : value === "FEMALE" ? "Feminino" : "Não informado";
+function GenderChoice({ item, busy, onResolve }: {
+  item: MemberImportItem;
+  busy: string;
+  onResolve: (item: MemberImportItem, resolution: Resolution) => void;
+}) {
+  const pending = busy.startsWith(`item:${item.id}:`) ? busy.split(":")[2] : "";
+  let gender = item.gender;
+  if (pending === "SET_GENDER_MALE") gender = "MALE";
+  if (pending === "SET_GENDER_FEMALE") gender = "FEMALE";
+  if (pending === "CLEAR_GENDER") gender = null;
+  const disabled = Boolean(busy) || item.decision === "SKIP" || item.classification === "IMPORTED";
+  return (
+    <S.GenderChoices role="group" aria-label={`Sexo de ${item.fullName}`}>
+      <Checkbox label="Masculino" checked={gender === "MALE"} disabled={disabled}
+        onChange={event => onResolve(item, event.target.checked ? "SET_GENDER_MALE" : "CLEAR_GENDER")} />
+      <Checkbox label="Feminino" checked={gender === "FEMALE"} disabled={disabled}
+        onChange={event => onResolve(item, event.target.checked ? "SET_GENDER_FEMALE" : "CLEAR_GENDER")} />
+    </S.GenderChoices>
+  );
 }
 
 function naturalityLabel(item: MemberImportItem) {
@@ -340,16 +360,18 @@ export function MemberImportWorkspace({ initial }: Props) {
   }
 
   async function resolveItem(item: MemberImportItem, resolution: Resolution) {
-    if (!batch) return;
+    if (!batch || busy) return;
+    const request = ++reviewRequest.current;
     setBusy(`item:${item.id}:${resolution}`);
     try {
-      const response = await resolveMemberImportItemAction({ batchId: batch.id, itemId: item.id, resolution });
+      const response = await resolveMemberImportItemAction({ batchId: batch.id, itemId: item.id, resolution, ...filters });
+      if (request !== reviewRequest.current) return;
       if (response.success) {
         setWorkspace(response.data);
-        showResult(true, response.message);
+        if (!["SET_GENDER_MALE", "SET_GENDER_FEMALE", "CLEAR_GENDER"].includes(resolution)) showResult(true, response.message);
       } else showResult(false, response.message);
     } finally {
-      setBusy("");
+      if (request === reviewRequest.current) setBusy("");
     }
   }
 
@@ -673,9 +695,7 @@ function ValidationStep({
             {workspace.roleMappings.map((mapping) => (
               <S.Mapping key={mapping.rawValue}>
                 <div><strong>{mapping.rawValue || "Não informado"}</strong><small>{mapping.count} linha(s)</small></div>
-                {mapping.status === "RECOGNIZED" ? <S.Status $status="VALID">{mapping.roleName}</S.Status> : !mapping.rawValue ? (
-                  <S.Status $status="ERROR">Cargo obrigatório</S.Status>
-                ) : (
+                {mapping.status === "RECOGNIZED" ? <S.Status $status="VALID">{mapping.roleName}</S.Status> : (
                   <S.Select
                     aria-label={`Mapear Cargo ${mapping.rawValue}`}
                     defaultValue=""
@@ -773,10 +793,10 @@ function ReviewStep({
               {items.items.map((item) => (
                 <tr key={item.id}>
                   <td><strong>#{item.rowNumber}</strong><small><S.Status $status={item.classification}>{MEMBER_IMPORT_CLASSIFICATION_LABELS[item.classification]}</S.Status></small></td>
-                  <td><strong>{item.fullName || "Nome ausente"}</strong><small>{genderLabel(item.gender)} · CPF {maskCpf(item.cpf)}</small><small>{item.maritalStatusRaw || "Estado civil não informado"}</small></td>
+                  <td><strong>{item.fullName || "Nome ausente"}</strong><GenderChoice item={item} busy={busy} onResolve={onResolve} /><small>CPF {maskCpf(item.cpf)}</small><small>{item.maritalStatusRaw || "Estado civil não informado"}</small></td>
                   <td>{item.whatsapp || item.phoneRaw || "Sem telefone"}<small>Nasc.: {formatDate(item.birthDate)} · Conversão: {formatDate(item.conversionDate)}</small><small>Águas: {formatDate(item.baptismDate)} · Espírito: {formatDate(item.holySpiritBaptismDate)} · Receb.: {formatDate(item.receivedDate)}</small></td>
                   <td><strong>{addressLabel(item)}</strong><small>Naturalidade: {naturalityLabel(item)}</small><small>Pai: {item.fatherName || "não informado"} · Mãe: {item.motherName || "não informada"}</small></td>
-                  <td><strong>{item.roleName ?? "Não mapeado"}</strong><small>Origem: {item.roleRaw || "—"}</small></td>
+                  <td><strong>{item.roleName ?? (item.roleRaw ? "Não mapeado" : "Sem cargo")}</strong><small>Origem: {item.roleRaw || "—"}</small></td>
                   <td>{item.issues.length ? <IssueList item={item} /> : <S.Status $status="VALID">Sem pendências</S.Status>}</td>
                   <td><ItemActions item={item} busy={busy} onResolve={onResolve} /></td>
                 </tr>
@@ -787,8 +807,8 @@ function ReviewStep({
         <S.MobileRows>
           {items.items.map((item) => (
             <S.MobileRow key={item.id}>
-              <header><div><h3>#{item.rowNumber} · {item.fullName || "Nome ausente"}</h3><p>{item.roleName ?? item.roleRaw ?? "Cargo não mapeado"}</p></div><S.Status $status={item.classification}>{MEMBER_IMPORT_CLASSIFICATION_LABELS[item.classification]}</S.Status></header>
-              <div><strong>Sexo:</strong> {genderLabel(item.gender)} · <strong>CPF:</strong> {maskCpf(item.cpf)}</div>
+              <header><div><h3>#{item.rowNumber} · {item.fullName || "Nome ausente"}</h3><p>{item.roleName || item.roleRaw || "Sem cargo"}</p></div><S.Status $status={item.classification}>{MEMBER_IMPORT_CLASSIFICATION_LABELS[item.classification]}</S.Status></header>
+              <GenderChoice item={item} busy={busy} onResolve={onResolve} /><div><strong>CPF:</strong> {maskCpf(item.cpf)}</div>
               <div><strong>Nascimento:</strong> {formatDate(item.birthDate)} · <strong>Conversão:</strong> {formatDate(item.conversionDate)}</div>
               <div><strong>Batismo nas águas:</strong> {formatDate(item.baptismDate)} · <strong>Batismo com o Espírito:</strong> {formatDate(item.holySpiritBaptismDate)}</div>
               <div><strong>Endereço:</strong> {addressLabel(item)}</div>
@@ -812,7 +832,7 @@ function ReviewStep({
         <div><Button variant="ghost" onClick={onBack}><ArrowLeft size={16} /> Validação</Button></div>
         <div>
           {batch.status !== "READY" && <S.InfoBox $tone="warning">Resolva ou pule as {batch.errorRows} linha(s) pendentes.</S.InfoBox>}
-          <Button disabled={batch.status !== "READY"} onClick={onContinue}>Revisar confirmação <ArrowRight size={16} /></Button>
+          <Button disabled={Boolean(busy) || batch.status !== "READY"} onClick={onContinue}>Revisar confirmação <ArrowRight size={16} /></Button>
         </div>
       </S.Footer>
     </S.Card>

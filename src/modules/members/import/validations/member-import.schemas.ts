@@ -18,8 +18,7 @@ export const memberImportMappingSchema = z.discriminatedUnion("kind", [
   }),
 ]);
 
-export const memberImportItemResolutionSchema = z.object({
-  batchId: z.string().uuid(),
+export const memberImportItemResolutionSchema = memberImportReviewSchema.extend({
   itemId: z.string().uuid(),
   resolution: z.enum([
     "SKIP",
@@ -31,5 +30,8 @@ export const memberImportItemResolutionSchema = z.object({
     "IMPORT_WITHOUT_HOLY_SPIRIT_BAPTISM_DATE",
     "IMPORT_WITHOUT_CONVERSION_DATE",
     "IMPORT_AS_NEW",
+    "SET_GENDER_MALE",
+    "SET_GENDER_FEMALE",
+    "CLEAR_GENDER",
   ]),
 });

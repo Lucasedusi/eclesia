@@ -14,6 +14,8 @@ declare
   access_id uuid := gen_random_uuid();
   batch uuid;
   duplicate_batch uuid;
+  no_role_item uuid;
+  with_role_item uuid;
   payload jsonb;
   items jsonb;
   forbidden jsonb;
@@ -91,6 +93,50 @@ begin
   ) then
     raise exception 'Data de recebimento do modelo XLSX não preservada';
   end if;
+
+  -- O mesmo lote admite linhas com e sem cargo e mantém a escolha de sexo por linha.
+  set local role authenticated;
+  items := jsonb_build_array(
+    jsonb_build_object('row_number', 2, 'source_data', '{}'::jsonb, 'full_name', 'Sem cargo',
+      'normalized_name_key', 'sem cargo', 'role_raw', '', 'classification', 'VALID', 'decision', 'IMPORT'),
+    jsonb_build_object('row_number', 3, 'source_data', '{}'::jsonb, 'full_name', 'Com cargo',
+      'normalized_name_key', 'com cargo', 'role_raw', 'CT', 'role_id', member_role,
+      'classification', 'VALID', 'decision', 'IMPORT'));
+  batch := public.prepare_member_import_official(payload || jsonb_build_object('file_sha256', repeat('c',64)), items);
+  reset role;
+  select id into strict no_role_item from public.member_import_items where batch_id = batch and row_number = 2;
+  select id into strict with_role_item from public.member_import_items where batch_id = batch and row_number = 3;
+  perform set_config('request.jwt.claim.sub', gen_random_uuid()::text, true);
+  set local role authenticated;
+  begin
+    perform public.resolve_member_import_official_item(batch, no_role_item, 'SET_GENDER_MALE');
+    raise exception 'Alteração de sexo por outro usuário aceita';
+  exception when raise_exception then
+    if sqlerrm <> 'IMPORT_PERMISSION_DENIED' then raise; end if;
+  end;
+  perform set_config('request.jwt.claim.sub', actor::text, true);
+  perform public.resolve_member_import_official_item(batch, no_role_item, 'SET_GENDER_MALE');
+  perform public.resolve_member_import_official_item(batch, no_role_item, 'SET_GENDER_FEMALE');
+  perform public.resolve_member_import_official_item(batch, with_role_item, 'SET_GENDER_FEMALE');
+  perform public.resolve_member_import_official_item(batch, with_role_item, 'CLEAR_GENDER');
+  perform public.execute_member_import(batch);
+  begin
+    perform public.resolve_member_import_official_item(batch, with_role_item, 'SET_GENDER_MALE');
+    raise exception 'Edição de lote já concluído aceita';
+  exception when raise_exception then
+    if sqlerrm <> 'IMPORT_BATCH_INVALID_STATUS' then raise; end if;
+  end;
+  reset role;
+  if not exists (select 1 from public.members m where m.source_import_batch_id = batch
+      and m.full_name = 'Sem cargo' and m.gender = 'FEMALE'
+      and not exists(select 1 from public.member_roles mr where mr.church_id = church and mr.member_id = m.id)
+      and not exists(select 1 from public.member_history h where h.church_id = church and h.member_id = m.id and h.history_type = 'ROLE_ASSIGNED'))
+    or not exists (select 1 from public.members m join public.member_roles mr on mr.member_id = m.id and mr.church_id = m.church_id
+      where m.source_import_batch_id = batch and m.full_name = 'Com cargo' and m.gender is null and mr.role_id = member_role) then
+    raise exception 'Cargo opcional ou sexo por membro divergente após a confirmação';
+  end if;
+
+
 end;
 $test$;
 

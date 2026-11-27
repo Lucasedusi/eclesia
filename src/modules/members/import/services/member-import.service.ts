@@ -201,15 +201,17 @@ async function getMemberImportMappings(context: AuthContext, batchId: string) {
   const roleMap = new Map<string, MemberImportRoleMapping>();
   const maritalMap = new Map<string, MemberImportMaritalMapping>();
   for (const rawRow of (data ?? []) as unknown as AnyRow[]) {
-    const role = first<AnyRow>(rawRow.role);
-    const existingRole = roleMap.get(rawRow.role_raw);
-    roleMap.set(rawRow.role_raw, {
-      rawValue: rawRow.role_raw,
-      count: (existingRole?.count ?? 0) + 1,
-      roleId: rawRow.role_id,
-      roleName: role?.name ?? null,
-      status: rawRow.role_id ? "RECOGNIZED" : "REQUIRES_MAPPING",
-    });
+    if (rawRow.role_raw?.trim()) {
+      const role = first<AnyRow>(rawRow.role);
+      const existingRole = roleMap.get(rawRow.role_raw);
+      roleMap.set(rawRow.role_raw, {
+        rawValue: rawRow.role_raw,
+        count: (existingRole?.count ?? 0) + 1,
+        roleId: rawRow.role_id,
+        roleName: role?.name ?? null,
+        status: rawRow.role_id ? "RECOGNIZED" : "REQUIRES_MAPPING",
+      });
+    }
     if (rawRow.marital_status_raw) {
       const existingMarital = maritalMap.get(rawRow.marital_status_raw);
       const option = MARITAL_STATUS_IMPORT_OPTIONS.find((item) => item.value === rawRow.marital_status);

@@ -51,7 +51,7 @@ export async function generateMemberImportTemplate() {
   styleHeader(worksheet.getRow(1));
   worksheet.autoFilter = { from: "A1", to: "R1" };
   worksheet.getCell("A1").note = "Obrigatório. Nome completo do membro.";
-  worksheet.getCell("D1").note = "Obrigatório. Use a sigla de um Cargo ativo no EKLESIA.";
+  worksheet.getCell("D1").note = "Opcional. Preencha a sigla de um cargo ativo ou deixe em branco.";
   worksheet.getCell("B1").note = "Opcional. Informe DDD e 9 dígitos.";
   worksheet.getCell("C1").note = "Opcional. Formato dd/MM/aaaa.";
   worksheet.getCell("E1").note = "Opcional. O CPF será validado antes da importação.";

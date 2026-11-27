@@ -18,6 +18,18 @@ async function workbookBuffer(rows: ExcelJS.CellValue[][]) {
   return Buffer.from(new Uint8Array(bytes));
 }
 
+describe.each(["csv", "xlsx"] as const)("cargo opcional no %s", (format) => {
+  it.each([["nome", "sexo"], ["nome", "sexo", "cargo"]])("aceita cabeçalho %j e cargo em branco", async (...columns) => {
+    const values = columns.map(column => column === "nome" ? "Pessoa de teste" : column === "sexo" ? "F" : "");
+    const file = format === "csv"
+      ? Buffer.from([columns.join(";"), values.join(";")].join("\n"))
+      : await workbookBuffer([columns, values]);
+    const { rows } = await parseMemberImportWorkbook(file, format);
+    expect(rows[0]).toMatchObject({ roleRaw: "", gender: "FEMALE" });
+    expect(rows[0].issues.map(issue => issue.code)).not.toContain("ROLE_REQUIRED");
+  });
+});
+
 describe("CSV do MEMBROS WEB", () => {
   const header = "Id;nome;fone;dtnascimento;igreja;cargo;endereco;cpf;identidade;email;estadocivil;dtcadastro";
 
