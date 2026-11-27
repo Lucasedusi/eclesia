@@ -483,7 +483,7 @@ export function MemberImportWorkspace({ initial }: Props) {
       {tab === "history" ? (
         history ? <HistoryView history={history} busy={busy} onOpen={loadBatch} onNew={newImport} /> : <ResultsSkeleton label="Carregando histórico" columns={5} />
       ) : step <= 4 ? (
-        <S.WorkflowLayout $review={step === 3}>
+        <S.WorkflowLayout>
           <ImportProgress current={step} />
           <S.WorkflowContent>
           {step === 1 && (
@@ -670,23 +670,24 @@ function ImportProgress({ current }: { current: number }) {
   );
 }
 
-function Metric({ icon: Icon, value, label, tone = "neutral" }: {
+function Metric({ icon: Icon, value, label, description, tone = "neutral" }: {
   icon: LucideIcon;
   value: number;
   label: string;
+  description?: string;
   tone?: S.MetricTone;
 }) {
-  return <S.Stat $tone={tone}><span><Icon aria-hidden="true" /></span><div><strong>{value}</strong><small>{label}</small></div></S.Stat>;
+  return <S.Stat $tone={tone} title={description}><span><Icon aria-hidden="true" /></span><div><strong>{value}</strong><small>{label}</small></div></S.Stat>;
 }
 
 function BatchStats({ workspace }: { workspace: MemberImportWorkspaceData }) {
   const batch = workspace.batch!;
   return (
     <S.Stats>
-      <Metric icon={ListOrdered} value={batch.totalRows} label="Total de linhas" />
+      <Metric icon={ListOrdered} value={batch.totalRows} label="Linhas" description="Total de linhas" />
       <Metric icon={CheckCircle2} value={batch.validRows} label="Prontas" tone="success" />
-      <Metric icon={AlertTriangle} value={batch.warningRows} label="Com alertas" tone="warning" />
-      <Metric icon={CircleX} value={batch.errorRows} label="Com erros" tone="danger" />
+      <Metric icon={AlertTriangle} value={batch.warningRows} label="Alertas" description="Com alertas" tone="warning" />
+      <Metric icon={CircleX} value={batch.errorRows} label="Erros" description="Com erros" tone="danger" />
       <Metric icon={SkipForward} value={batch.skippedRows} label="Puladas" tone="muted" />
     </S.Stats>
   );
@@ -772,11 +773,11 @@ function ReviewStep({
         </S.Select>
       </S.Toolbar>
       {busy === "review" || (searchInput.trim().length >= 3 && searchInput.trim() !== filters.search) ? (
-        <ResultsSkeleton label="Carregando revisão dos membros" columns={6} />
+        <ResultsSkeleton label="Carregando revisão dos membros" columns={5} />
       ) : <>
         <S.TableWrap>
           <S.Table>
-            <thead><tr>{["Linha", "Membro", "Datas", "Cargos", "Pendências", "Ação"].map(label =>
+            <thead><tr>{["Linha", "Membro", "Cargos", "Pendências", "Ação"].map(label =>
               <th key={label} scope="col">{label}</th>
             )}</tr></thead>
             <tbody>
@@ -797,15 +798,13 @@ function ReviewStep({
                       <small>Pai: {item.fatherName || "não informado"}</small>
                       <small>Mãe: {item.motherName || "não informada"}</small>
                       {includePhone && <small>Telefone: {item.whatsapp || item.phoneRaw || "não informado"}</small>}
+                      <small>Nascimento: {formatDate(item.birthDate)}</small>
+                      {item.legacyRegistrationDate && <small>Cadastro: {formatDate(item.legacyRegistrationDate)}</small>}
+                      {item.conversionDate && <small>Conversão: {formatDate(item.conversionDate)}</small>}
+                      {item.baptismDate && <small>Batismo nas águas: {formatDate(item.baptismDate)}</small>}
+                      {item.holySpiritBaptismDate && <small>Batismo no Espírito: {formatDate(item.holySpiritBaptismDate)}</small>}
+                      {item.receivedDate && <small>Recebimento: {formatDate(item.receivedDate)}</small>}
                     </S.MemberDetails>
-                  </td>
-                  <td data-label="Datas">
-                    <small>Nascimento: {formatDate(item.birthDate)}</small>
-                    {item.legacyRegistrationDate && <small>Cadastro: {formatDate(item.legacyRegistrationDate)}</small>}
-                    {item.conversionDate && <small>Conversão: {formatDate(item.conversionDate)}</small>}
-                    {item.baptismDate && <small>Batismo nas águas: {formatDate(item.baptismDate)}</small>}
-                    {item.holySpiritBaptismDate && <small>Batismo no Espírito: {formatDate(item.holySpiritBaptismDate)}</small>}
-                    {item.receivedDate && <small>Recebimento: {formatDate(item.receivedDate)}</small>}
                   </td>
                   <td data-label="Cargos"><strong>{item.roleName ?? (item.roleRaw ? "Não mapeado" : "Sem cargo")}</strong>{item.roleRaw && item.roleRaw !== item.roleName && <small>Origem: {item.roleRaw}</small>}</td>
                   <td data-label="Pendências">
@@ -928,11 +927,11 @@ function ConfirmationStep({
       <S.CardHeader><div><h2>Confirmação do lote</h2><p>Esta é a última etapa antes da gravação transacional dos membros.</p></div><S.Status $status={batch.status}>{MEMBER_IMPORT_STATUS_LABELS[batch.status]}</S.Status></S.CardHeader>
       <S.CardBody>
         <S.Stats>
-          <Metric icon={Users} value={willImport} label="Serão importados" tone="success" />
-          <Metric icon={SkipForward} value={batch.skippedRows} label="Serão pulados" tone="muted" />
-          <Metric icon={AlertTriangle} value={batch.warningRows} label="Com alertas aceitos" tone="warning" />
-          <Metric icon={BadgeCheck} value={workspace.roleMappings.filter((item) => item.roleId).length} label="Cargos atribuídos" />
-          <Metric icon={ShieldCheck} value={1} label="Operação atômica" />
+          <Metric icon={Users} value={willImport} label="Importar" description="Serão importados" tone="success" />
+          <Metric icon={SkipForward} value={batch.skippedRows} label="Pular" description="Serão pulados" tone="muted" />
+          <Metric icon={AlertTriangle} value={batch.warningRows} label="Alertas" description="Com alertas aceitos" tone="warning" />
+          <Metric icon={BadgeCheck} value={workspace.roleMappings.filter((item) => item.roleId).length} label="Cargos" description="Cargos atribuídos" />
+          <Metric icon={ShieldCheck} value={1} label="Operação" description="Operação atômica" />
         </S.Stats>
         <S.InfoGrid>
           <S.InfoBox $tone="info"><h3>Destino</h3><p>{batch.churchName}<br />{batch.congregationName}</p></S.InfoBox>
@@ -1022,10 +1021,10 @@ function HistoryView({
       <S.CardHeader><div><h2>Histórico de importações</h2><p>Consulte lotes, decisões, relatórios e resultados anteriores.</p></div><Button size="sm" onClick={onNew}><FileSpreadsheet size={16} /> Nova importação</Button></S.CardHeader>
       <S.CardBody>
         <S.Stats>
-          <Metric icon={CheckCircle2} value={history.stats.completed} label="Lotes concluídos" tone="success" />
-          <Metric icon={Users} value={history.stats.imported} label="Membros importados" />
-          <Metric icon={AlertTriangle} value={history.stats.warnings} label="Lotes com alertas" tone="warning" />
-          <Metric icon={RotateCcw} value={history.stats.rolledBack} label="Lotes desfeitos" tone="muted" />
+          <Metric icon={CheckCircle2} value={history.stats.completed} label="Concluídos" description="Lotes concluídos" tone="success" />
+          <Metric icon={Users} value={history.stats.imported} label="Membros" description="Membros importados" />
+          <Metric icon={AlertTriangle} value={history.stats.warnings} label="Com alertas" description="Lotes com alertas" tone="warning" />
+          <Metric icon={RotateCcw} value={history.stats.rolledBack} label="Desfeitos" description="Lotes desfeitos" tone="muted" />
         </S.Stats>
         {history.items.length ? (
           <S.HistoryList>

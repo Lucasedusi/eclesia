@@ -1,6 +1,19 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import ExcelJS from "exceljs";
 import { randomUUID } from "node:crypto";
+
+async function expectSingleLineMetrics(page: Page, count: number) {
+  const labels = page.locator("article:has(> span > svg) > div > small");
+  await expect(labels).toHaveCount(count);
+  const overflowing = await labels.evaluateAll(nodes => nodes.filter(label => {
+    const range = document.createRange();
+    range.selectNodeContents(label);
+    const lines = range.getClientRects();
+    const card = label.closest("article")!.getBoundingClientRect();
+    return lines.length !== 1 || lines[0].right > card.right;
+  }).map(label => label.textContent));
+  expect(overflowing).toEqual([]);
+}
 
 test("importa a planilha oficial e permite conferir o resultado no relatório", async ({ page, request }) => {
   const destination = process.env.E2E_IMPORT_CONGREGATION;
@@ -35,11 +48,21 @@ test("importa a planilha oficial e permite conferir o resultado no relatório", 
   });
   await page.getByRole("button", { name: "Analisar planilha" }).click();
   await expect(page.getByText(/20 campos reconhecidos/)).toBeVisible();
+  await expectSingleLineMetrics(page, 5);
   await expect(page.getByText(/Equivalência de (Cargos|estado civil)/)).toHaveCount(0);
   await page.getByRole("button", { name: "Revisar membros" }).click();
-  await expect(page.getByRole("columnheader")).toHaveText(["Linha", "Membro", "Datas", "Cargos", "Pendências", "Ação"]);
+  await expect(page.getByRole("columnheader")).toHaveText(["Linha", "Membro", "Cargos", "Pendências", "Ação"]);
+  const steps = page.getByRole("list", { name: "Etapas da importação de membros" });
+  const [firstStep, secondStep] = await steps.getByRole("listitem").evaluateAll(items =>
+    items.slice(0, 2).map(item => item.getBoundingClientRect().toJSON())
+  );
+  expect(secondStep.top).toBeGreaterThanOrEqual(firstStep.bottom);
+  const progress = await page.getByRole("complementary", { name: "Etapa 3 de 4" }).boundingBox();
+  const table = await page.getByRole("table").boundingBox();
+  expect(table!.x).toBeGreaterThanOrEqual(progress!.x + progress!.width);
   const member = page.getByRole("row").filter({ hasText: name });
   await member.getByText("Detalhes da ficha", { exact: true }).click();
+  await expect(member.getByText("Nascimento: 10/05/1985")).toBeVisible();
   await expect(member.getByText(/Portuguesa/)).toBeVisible();
   const situation = page.getByRole("combobox", { name: "Filtrar por situação" });
   await situation.selectOption("ERROR");
@@ -65,7 +88,7 @@ test("importa a planilha oficial e permite conferir o resultado no relatório", 
   await page.setViewportSize(desktop);
   for (const otherName of otherNames.slice(0, 2)) {
     const resolvedRow = page.getByRole("row").filter({ hasText: otherName });
-    await expect(resolvedRow.getByRole("cell").nth(3)).toContainText("Diácono");
+    await expect(resolvedRow.getByRole("cell").nth(2)).toContainText("Diácono");
     await expect(resolvedRow.getByRole("cell").nth(1)).toContainText("Casado");
   }
   await member.getByRole("button", { name: "Pular esta linha" }).click();
@@ -78,9 +101,14 @@ test("importa a planilha oficial e permite conferir o resultado no relatório", 
   await expect(missingGender).toHaveValue("FEMALE");
   await page.getByRole("button", { name: "Revisar confirmação" }).click();
   await expect(page.getByText("Inativos", { exact: true })).toBeVisible();
+  await expectSingleLineMetrics(page, 5);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expectSingleLineMetrics(page, 5);
+  await page.setViewportSize(desktop);
   await page.getByRole("checkbox").check();
   await page.getByRole("button", { name: "Confirmar importação" }).click();
   await expect(page.getByRole("link", { name: "Ver membros" })).toBeVisible();
+  await expectSingleLineMetrics(page, 5);
   const batch = new URL(page.url()).searchParams.get("batch");
   const report = await request.get(`/api/members/imports/${batch}/report`);
   expect(report.status()).toBe(200);
@@ -102,4 +130,7 @@ test("importa a planilha oficial e permite conferir o resultado no relatório", 
   )).toBe(true);
   await page.getByRole("link", { name: "Ver membros" }).click();
   await expect(page.getByRole("row").filter({ hasText: name })).toContainText("Inativo");
+  await page.goto("/membros/importar");
+  await page.getByRole("tab", { name: "Histórico" }).click();
+  await expectSingleLineMetrics(page, 4);
 });

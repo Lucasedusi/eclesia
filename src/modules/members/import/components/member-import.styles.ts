@@ -1,7 +1,7 @@
 "use client";
 
 import { PickerSelect } from "@/components/form/pickers/picker-select";
-import styled, { css, keyframes } from "styled-components";
+import styled, { keyframes } from "styled-components";
 import * as P from "../../components/member-create-form/member-form-progress.styles";
 
 const enter = keyframes`
@@ -48,20 +48,14 @@ export const Tab = styled.button<{ $active?: boolean }>`
   }
 `;
 
-export const WorkflowLayout = styled.div<{ $review: boolean }>`
+export const WorkflowLayout = styled.div`
   display: grid;
   gap: 20px;
 
   @media (min-width: 1180px) {
-    grid-template-columns: ${({ $review }) => $review ? "minmax(0, 1fr)" : "minmax(280px, 360px) minmax(0, 1fr)"};
+    grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
     align-items: flex-start;
   }
-
-  ${({ $review }) => $review && css`
-    @media (min-width: 850px) {
-      ${P.StepList} { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-    }
-  `}
 `;
 
 export const WorkflowContent = styled.div`
@@ -286,8 +280,9 @@ export const Footer = styled.footer`
 
 export const Stats = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(126px, 100%), 1fr));
-  gap: 10px;
+  font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, calc(54px + 10ch)), 1fr));
+  gap: 8px;
   @container (min-width: 640px) {
     grid-template-columns: none;
     grid-auto-flow: column;
@@ -308,19 +303,15 @@ export const Stat = styled.article<{ $tone: MetricTone }>`
   display: flex;
   min-width: 0;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   border: 1px solid #cccccc96;
   border-radius: 6px;
   background: #fff;
-  padding: 12px;
-  @container (min-width: 640px) and (max-width: 760px) {
-    gap: 7px;
-    padding: 10px 8px;
-  }
+  padding: 10px 8px;
   > span {
     display: grid;
-    flex: 0 0 32px;
-    height: 32px;
+    flex: 0 0 28px;
+    height: 28px;
     place-items: center;
     border-radius: 8px;
     color: ${({ $tone }) => metricColors[$tone].ink};
@@ -337,6 +328,7 @@ export const Stat = styled.article<{ $tone: MetricTone }>`
   small {
     margin-top: 3px;
     color: #596579;
+    white-space: nowrap;
     font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
     line-height: 1.3;
   }
@@ -466,7 +458,7 @@ export const Table = styled.table`
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
-  th, td { padding: 14px 12px; text-align: left; }
+  th, td { padding: 12px clamp(6px, 1.3cqw, 12px); text-align: left; }
   th {
     border-bottom: 1px solid #dce2ea;
     background: #f7f9fc;
@@ -474,11 +466,10 @@ export const Table = styled.table`
     font-size: calc(11px + var(--eclesia-font-size-adjustment, 0px));
     font-weight: 650;
   }
-  th:first-child { width: 10%; }
-  th:nth-child(2) { width: 25%; }
-  th:nth-child(3) { width: 21%; }
-  th:nth-child(4) { width: 14%; }
-  th:last-child { width: 8%; }
+  th:first-child { width: 84px; }
+  th:nth-child(2) { width: 32%; }
+  th:nth-child(3) { width: 18%; }
+  th:last-child { width: 55px; }
   td {
     border-bottom: 1px solid #e8ebf0;
     color: #475467;
@@ -488,12 +479,13 @@ export const Table = styled.table`
     vertical-align: top;
   }
   td:last-child, th:last-child { text-align: center; }
+  td:first-child small { white-space: nowrap; }
   td:last-child > button { margin-inline: auto; }
   tr:last-child td { border-bottom: 0; }
   strong { color: #243047; }
   small { display: block; margin-top: 3px; color: #667085; font-size: inherit; }
   td > small:first-child { margin-top: 0; }
-  @container (max-width: 759px) {
+  @media (max-width: 850px) {
     &, tbody { display: block; }
     thead {
       position: absolute;
@@ -521,7 +513,7 @@ export const Table = styled.table`
       font-weight: 650;
       content: attr(data-label);
     }
-    td:nth-child(2), td:nth-child(5) { grid-column: 1 / -1; }
+    td[data-label="Membro"], td[data-label="Pendências"] { grid-column: 1 / -1; }
     td:last-child { grid-area: 1 / 2; text-align: right; }
     td:last-child > button { margin-inline: auto 0; }
   }
