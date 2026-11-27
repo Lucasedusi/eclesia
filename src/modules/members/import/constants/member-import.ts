@@ -1,6 +1,6 @@
 export const MEMBER_IMPORT_MAX_FILE_SIZE = 5 * 1024 * 1024;
 export const MEMBER_IMPORT_MAX_ROWS = 500;
-export const MEMBER_IMPORT_NORMALIZATION_VERSION = 5;
+export const MEMBER_IMPORT_NORMALIZATION_VERSION = 6;
 
 export function memberImportFileFormat(filename: string) {
   const name = filename.toLowerCase();
@@ -35,7 +35,7 @@ export const CONGREGATION_COLUMNS = [
   ["Nome", "nome"], ["Cargo", "cargo"], ["Sexo", "sexo"],
   ["Data de nascimento", "dtnascimento"], ["Endereço", "endereco"], ["Bairro", "bairro"],
   ["Cidade", "cidade"], ["Estado", "estado"], ["País", "pais"], ["CEP", "cep"],
-  ["Telefone", "fone"], ["CPF", "cpf"], ["Estado civil", "estadocivil"],
+  ["CPF", "cpf"], ["Estado civil", "estadocivil"],
   ["Profissão", "profissao"], ["Naturalidade", "naturalidade"], ["Nacionalidade", "nacionalidade"],
   ["Data do cadastro", "cadastro_legado"], ["Data de conversão", "data_conversao"],
   ["Data de batismo nas águas", "data_batismo_agua"], ["Nome do pai", "nome_pai"],

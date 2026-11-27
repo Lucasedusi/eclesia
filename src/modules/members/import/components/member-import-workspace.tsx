@@ -1,5 +1,6 @@
 "use client";
 
+import { importIncludedPhone } from "../utils/member-import-normalizers";
 import { ResultsSkeleton } from "@/components/ui/results-skeleton";
 
 import {
@@ -486,7 +487,7 @@ export function MemberImportWorkspace({ initial }: Props) {
           {step === 1 && (
             <S.Card>
               <S.CardHeader>
-                <div><h2>Destino e arquivo</h2><p>Escolha a congregação e envie um XLSX de uma aba com os 21 campos do modelo. O CSV original do MEMBROS WEB e os modelos XLSX anteriores também são aceitos.</p></div>
+                <div><h2>Destino e arquivo</h2><p>Escolha a congregação e envie um XLSX de uma aba com os 20 campos do modelo. O CSV original do MEMBROS WEB e os modelos XLSX anteriores também são aceitos.</p></div>
                 <Button size="sm" variant="outline" loading={busy === "template"} onClick={() => download("/api/members/imports/template", "template")}>
                   <FileDown size={16} /> Baixar modelo
                 </Button>
@@ -700,7 +701,7 @@ function ValidationStep({
       <S.CardBody>
         <BatchStats workspace={workspace} />
         <S.InfoGrid>
-          <S.InfoBox $tone="success"><h3>Estrutura reconhecida</h3><p>{Array.isArray(settings.recognized_columns) ? settings.recognized_columns.length : 0} campos reconhecidos para {batch.congregationName}.</p>{settings.workbook_schema === "congregation" && <p>País em branco usa o padrão Brasil do cadastro. Telefones fixos são registrados separadamente do WhatsApp.</p>}{settings.file_format === "csv" && <p>O ID e a data do cadastro antigo ficam registradas no lote. O destino é a Congregação selecionada.</p>}</S.InfoBox>
+          <S.InfoBox $tone="success"><h3>Estrutura reconhecida</h3><p>{Array.isArray(settings.recognized_columns) ? settings.recognized_columns.length : 0} campos reconhecidos para {batch.congregationName}.</p>{settings.workbook_schema === "congregation" && <p>País em branco usa o padrão Brasil do cadastro.</p>}{settings.file_format === "csv" && <p>O ID e a data do cadastro antigo ficam registradas no lote. O destino é a Congregação selecionada.</p>}</S.InfoBox>
           <S.InfoBox $tone={ignored.length ? "warning" : "info"}><h3>Colunas ignoradas</h3><p>{ignored.length ? ignored.join(", ") : "Nenhuma coluna extra encontrada."}</p></S.InfoBox>
         </S.InfoGrid>
         <div>
@@ -782,6 +783,7 @@ function ReviewStep({
 }) {
   const batch = workspace.batch!;
   const items = workspace.items!;
+  const includePhone = importIncludedPhone(batch.settingsSnapshot);
   return (
     <S.Card>
       <S.CardHeader>
@@ -802,13 +804,13 @@ function ReviewStep({
       ) : <>
         <S.TableWrap>
           <S.Table>
-            <thead><tr><th>Linha / situação</th><th>Membro</th><th>Contato e datas</th><th>Endereço, naturalidade e filiação</th><th>Cargo</th><th>Pendências</th><th>Decisão</th></tr></thead>
+            <thead><tr><th>Linha / situação</th><th>Membro</th><th>{includePhone ? "Contato e datas" : "Datas"}</th><th>Endereço, naturalidade e filiação</th><th>Cargo</th><th>Pendências</th><th>Decisão</th></tr></thead>
             <tbody>
               {items.items.map((item) => (
                 <tr key={item.id}>
                   <td><strong>#{item.rowNumber}</strong><small><S.Status $status={item.classification}>{MEMBER_IMPORT_CLASSIFICATION_LABELS[item.classification]}</S.Status></small></td>
                   <td><strong>{item.fullName || "Nome ausente"}</strong><GenderChoice item={item} busy={busy} onResolve={onResolve} /><small>CPF {maskCpf(item.cpfSuffix)}</small><small>{item.maritalStatusRaw || "Estado civil não informado"}</small></td>
-                  <td>{item.whatsapp || item.phoneRaw || "Sem telefone"}<small>Nasc.: {formatDate(item.birthDate)} · Conversão: {formatDate(item.conversionDate)}</small><small>Águas: {formatDate(item.baptismDate)} · Espírito: {formatDate(item.holySpiritBaptismDate)} · Receb.: {formatDate(item.receivedDate)}</small></td>
+                  <td>{includePhone && (item.whatsapp || item.phoneRaw || "Sem telefone")}<small>Nasc.: {formatDate(item.birthDate)} · Conversão: {formatDate(item.conversionDate)}</small><small>Águas: {formatDate(item.baptismDate)} · Espírito: {formatDate(item.holySpiritBaptismDate)} · Receb.: {formatDate(item.receivedDate)}</small></td>
                   <td><strong>{addressLabel(item)}</strong><small>Naturalidade: {naturalityLabel(item)}</small><small>{[item.profession, item.nationality].filter(Boolean).join(" · ")}</small>{item.legacyRegistrationDate && <small>Cadastro de origem: {formatDate(item.legacyRegistrationDate)}</small>}<small>Pai: {item.fatherName || "não informado"} · Mãe: {item.motherName || "não informada"}</small></td>
                   <td><strong>{item.roleName ?? (item.roleRaw ? "Não mapeado" : "Sem cargo")}</strong><small>Origem: {item.roleRaw || "—"}</small></td>
                   <td>{item.issues.length ? <IssueList item={item} /> : <S.Status $status="VALID">Sem pendências</S.Status>}</td>
@@ -826,7 +828,7 @@ function ReviewStep({
               <div><strong>Nascimento:</strong> {formatDate(item.birthDate)} · <strong>Conversão:</strong> {formatDate(item.conversionDate)}</div>
               <div><strong>Batismo nas águas:</strong> {formatDate(item.baptismDate)} · <strong>Batismo com o Espírito:</strong> {formatDate(item.holySpiritBaptismDate)}</div>
               <div><strong>Endereço:</strong> {addressLabel(item)}</div>
-              <div><strong>Telefone:</strong> {item.phoneRaw || "—"}</div>
+              {includePhone && <div><strong>Telefone:</strong> {item.phoneRaw || "—"}</div>}
               {item.legacyRegistrationDate && <div><strong>Cadastro de origem:</strong> {formatDate(item.legacyRegistrationDate)}</div>}
               <div>{[item.profession, item.nationality, item.maritalStatusRaw].filter(Boolean).join(" · ")}</div>
               <div><strong>Naturalidade:</strong> {naturalityLabel(item)}</div>

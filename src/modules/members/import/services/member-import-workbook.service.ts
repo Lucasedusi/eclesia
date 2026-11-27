@@ -1,5 +1,6 @@
 import "server-only";
 
+import { importIncludedPhone } from "../utils/member-import-normalizers";
 import ExcelJS from "exceljs";
 import type { MemberImportBatch, MemberImportItem } from "../types/member-import.types";
 import {
@@ -51,17 +52,17 @@ export async function generateMemberImportTemplate() {
     header, key, width: Math.max(18, header.length + 4),
   }));
   for (const key of ["nome", "endereco", "nome_pai", "nome_mae"]) worksheet.getColumn(key).width = 36;
-  for (const key of ["fone", "cep", "cpf"]) worksheet.getColumn(key).numFmt = "@";
+  for (const key of ["cep", "cpf"]) worksheet.getColumn(key).numFmt = "@";
   for (const key of ["dtnascimento", "cadastro_legado", "data_conversao", "data_batismo_agua"]) {
     worksheet.getColumn(key).numFmt = "dd/mm/yyyy";
   }
   styleHeader(worksheet.getRow(1));
-  worksheet.autoFilter = "A1:U1";
-  worksheet.getCell("Q1").note = "Data do cadastro no sistema de origem.";
+  worksheet.autoFilter = "A1:T1";
+  worksheet.getCell("P1").note = "Data do cadastro no sistema de origem.";
   for (let row = 2; row <= 501; row++) {
     for (const [column, options] of [
       ["C", "Masculino,Feminino,M,F"], ["H", BRAZILIAN_STATE_OPTIONS.join(",")],
-      ["M", "Solteiro(a),Casado(a),Divorciado(a),Separado(a),Viúvo(a),União estável,Outro"],
+      ["L", "Solteiro(a),Casado(a),Divorciado(a),Separado(a),Viúvo(a),União estável,Outro"],
     ]) {
       worksheet.getCell(column + row).dataValidation = { type: "list", allowBlank: true, formulae: [`"${options}"`] };
     }
@@ -103,18 +104,21 @@ export async function generateMemberImportReport(batch: MemberImportBatch, items
   const imported = workbook.addWorksheet("Importados", { views: [{ state: "frozen", ySplit: 1 }] });
   const rejected = workbook.addWorksheet("Não importados", { views: [{ state: "frozen", ySplit: 1 }] });
   if (batch.settingsSnapshot.workbook_schema === "congregation") {
+    const includePhone = importIncludedPhone(batch.settingsSnapshot);
+    const headers: string[] = CONGREGATION_COLUMNS.map(([label]) => label);
+    if (includePhone) headers.splice(10, 0, "Telefone");
     for (const sheet of [imported, rejected]) {
-      sheet.addRow([...CONGREGATION_COLUMNS.map(([label]) => label), "Linha", "Situação", "Avisos"]);
+      sheet.addRow([...headers, "Linha", "Situação", "Avisos"]);
       styleHeader(sheet.getRow(1));
-      sheet.autoFilter = "A1:X1";
-      for (const column of ["D", "Q", "R", "S"]) sheet.getColumn(column).numFmt = "dd/mm/yyyy";
+      sheet.autoFilter = includePhone ? "A1:X1" : "A1:W1";
+      for (const column of includePhone ? ["D", "Q", "R", "S"] : ["D", "P", "Q", "R"]) sheet.getColumn(column).numFmt = "dd/mm/yyyy";
     }
     for (const item of items) {
       const sheet = item.classification === "IMPORTED" ? imported : rejected;
       sheet.addRow([
         item.fullName, item.roleName ?? item.roleRaw, genderLabel(item.gender), asExcelDate(item.birthDate),
         item.address, item.district, item.city, item.state, item.country, item.zipCode,
-        item.landline ?? item.whatsapp ?? item.phoneRaw, maskedCpf(item.cpfSuffix), item.maritalStatusRaw,
+        ...(includePhone ? [item.landline ?? item.whatsapp ?? item.phoneRaw] : []), maskedCpf(item.cpfSuffix), item.maritalStatusRaw,
         item.profession, [item.naturalCity, item.naturalState].filter(Boolean).join(" / "), item.nationality,
         asExcelDate(item.legacyRegistrationDate), asExcelDate(item.conversionDate), asExcelDate(item.baptismDate),
         item.fatherName, item.motherName, item.rowNumber, item.classification, issueText(item),

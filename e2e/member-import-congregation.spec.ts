@@ -13,7 +13,7 @@ test("importa a planilha oficial e permite conferir o resultado no relatório", 
   const sheet = book.worksheets[0];
   const name = "Pessoa de teste " + randomUUID();
   sheet.getRow(2).values = [name, "Diaconisa", "Feminino", "10/05/1985", "Rua de Teste, 10", "Centro", "Goiânia", "GO",
-    "Portugal", "01234-000", "(11) 3456-7890", "", "Casado(a)", "Docente", "Goiânia GO", "Portuguesa",
+    "Portugal", "01234-000", "", "Casado(a)", "Docente", "Goiânia GO", "Portuguesa",
     "10/03/2015", "10/03/2000", "10/03/2001", "Pai de Teste", "Mãe de Teste"];
   await page.goto("/membros/importar");
   await page.getByRole("combobox").first().selectOption(destination!);
@@ -22,7 +22,7 @@ test("importa a planilha oficial e permite conferir o resultado no relatório", 
     buffer: Buffer.from(await book.xlsx.writeBuffer()),
   });
   await page.getByRole("button", { name: "Analisar planilha" }).click();
-  await expect(page.getByText(/21 campos reconhecidos/)).toBeVisible();
+  await expect(page.getByText(/20 campos reconhecidos/)).toBeVisible();
   await page.getByRole("button", { name: "Revisar membros" }).click();
   await expect(page.getByRole("row").filter({ hasText: name })).toContainText("Portuguesa");
   await page.getByRole("button", { name: "Revisar confirmação" }).click();
@@ -37,6 +37,7 @@ test("importa a planilha oficial e permite conferir o resultado no relatório", 
   const imported = result.getWorksheet("Importados")!;
   expect(imported.getCell("A2").value).toBe(name);
   expect(imported.getCell("B2").value).toBe("Diaconisa");
-  expect(imported.getCell("K2").value).toBe("1134567890");
-  expect(imported.getCell("Q2").value).toEqual(new Date("2015-03-10T00:00:00Z"));
+  expect(imported.getRow(1).values).not.toContain("Telefone");
+  expect(imported.getCell("K1").value).toBe("CPF");
+  expect(imported.getCell("P2").value).toEqual(new Date("2015-03-10T00:00:00Z"));
 });

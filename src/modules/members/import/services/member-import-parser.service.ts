@@ -73,7 +73,7 @@ function classifyBaseRow(
   const roleRaw = normalizeMemberName(sourceData.cargo);
 
   const whatsapp = normalizeImportPhone(sourceData.fone);
-  if (sourceData.fone && !whatsapp && !sourceData.telefone_fixo) {
+  if (sourceData.fone && !whatsapp) {
     issues.push(createImportIssue("PHONE_INVALID", "fone", "WARNING", "O telefone não possui DDD e 11 dígitos e não será gravado."));
   }
 
@@ -284,9 +284,6 @@ function readCongregationFields(source: ParsedMemberImportRow["sourceData"], cel
   } else {
     source.naturalidade_cidade = origin;
   }
-  const digits = source.fone.replace(/\D/g, "");
-  const local = digits.length === 12 && digits.startsWith("55") ? digits.slice(2) : digits;
-  if (local.length === 10) source.telefone_fixo = local;
   return issues;
 }
 
@@ -328,7 +325,7 @@ export async function parseMemberImportWorkbook(buffer: Buffer, format: "xlsx" |
       congregationWorkbook = officialOnly.length > 0 && (!hasLegacyHeader || officialOnly.length > 1);
       const keys = congregationWorkbook ? officialKeys : legacyKeys;
       if (congregationWorkbook && workbook.worksheets.length !== 1) {
-        throw new MemberImportParserError("IMPORT_HEADER_INVALID", "Envie o XLSX de uma única aba com os 21 campos do modelo.");
+        throw new MemberImportParserError("IMPORT_HEADER_INVALID", "Envie o XLSX de uma única aba com os 20 campos do modelo.");
       }
       labels.forEach((label, i) => {
         const key = keys.get(label);

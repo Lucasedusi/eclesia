@@ -9,6 +9,13 @@ export function normalizeImportHeader(value: string) {
   return normalizeNameKey(value).replace(/[\s._-]+/g, "");
 }
 
+export function importIncludedPhone(settings: Record<string, unknown>) {
+  if (settings.workbook_schema !== "congregation") return true;
+  return Array.isArray(settings.recognized_columns) && settings.recognized_columns.some(
+    column => typeof column === "string" && normalizeImportHeader(column) === "telefone",
+  );
+}
+
 export function normalizeMemberName(value: string) {
   return value.trim().replace(/\s+/g, " ");
 }

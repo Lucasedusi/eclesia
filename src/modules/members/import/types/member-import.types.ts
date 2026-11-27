@@ -53,7 +53,7 @@ export type MemberImportSourceData = {
 
 export type ParsedMemberImportRow = {
   rowNumber: number;
-  sourceData: MemberImportSourceData & Partial<Record<"id" | "endereco" | "identidade" | "email" | "bairro" | "pais" | "profissao" | "naturalidade" | "nacionalidade" | "cadastro_legado" | "telefone_fixo", string>>;
+  sourceData: MemberImportSourceData & Partial<Record<"id" | "endereco" | "identidade" | "email" | "bairro" | "pais" | "profissao" | "naturalidade" | "nacionalidade" | "cadastro_legado", string>>;
   fullName: string;
   normalizedNameKey: string;
   phoneRaw: string;
