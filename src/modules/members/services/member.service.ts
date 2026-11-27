@@ -27,6 +27,7 @@ import type {
   PaginatedTab,
 } from "../types/member.types";
 import { toMemberEventItem } from "../utils/member-events";
+import { memberSearchQuery } from "./member-search-query";
 
 // Supabase returns relation shapes dynamically because this project does not yet
 // use generated Database generics. The casts remain isolated in this service.
@@ -124,17 +125,11 @@ function memberListQuery(
        "active_roles:member_roles!member_roles_member_id_fkey(status,deleted_at,title_variant,role:roles!member_roles_role_id_fkey(name,female_name))"];
   if (!countOnly && hasPermission(context.permissions, PERMISSIONS.membersViewFull)) projections.push("whatsapp");
   if (params.roleId) projections.push("role_filter:member_roles!member_roles_member_id_fkey!inner(role_id)");
-  const columns = projections.join(",");
-  const search = params.search.trim();
-  const exact = countOnly ? "exact" : undefined;
-  let query = search.length >= 3
-    ? supabase.rpc("search_member_rows", {
-        p_church_id: context.church.id,
-        p_search: search,
-        p_search_cpf: hasPermission(context.permissions, PERMISSIONS.membersViewSensitiveIdentity),
-      }, { count: exact }).select(columns)
-    : supabase.from("members").select(columns, { count: exact, head: countOnly });
-  query = query.eq("church_id", context.church.id);
+  let query = memberSearchQuery(
+    supabase, context.church.id, params.search,
+    hasPermission(context.permissions, PERMISSIONS.membersViewSensitiveIdentity),
+    projections.join(","), { count: countOnly ? "exact" : undefined, head: countOnly },
+  );
   query = params.archived ? query.not("deleted_at", "is", null) : query.is("deleted_at", null);
   if (params.congregationId) query = query.eq("congregation_id", params.congregationId);
   if (params.regionId) query = query.eq("congregations.region_id", params.regionId);
@@ -158,7 +153,7 @@ export async function countMembers(context: AuthContext, input: Partial<MemberLi
   const query = memberListQuery(supabase, context, params, true);
   const { count, error } = await measureServerOperation(
     "members.count",
-    () => query.limit(0),
+    () => query,
     { supabaseCalls: 1, route: "/membros" },
   );
   return error ? null : count;
